@@ -1,0 +1,4 @@
+/*
+
+TABLE temporary_post
+*/
