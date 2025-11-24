@@ -1,0 +1,224 @@
+syntax = "proto3";
+
+package dataservices.userproto;
+
+
+// User Management (TABLE: account)
+
+service UserService {
+    rpc CreateUser (CreateUserRequest) returns (ReadUserResponse);
+    rpc UpdateUser (UpdateUserRequest) returns (ReadUserResponse);
+    rpc ReadUser (ReadUserRequest) returns (ReadUserResponse);
+    rpc DeleteUser (DeleteUserRequest) returns (DeleteUserResponse);
+
+
+}
+message ReadUserRequest {
+    string user_id = 1;
+}
+message ReadUserResponse {
+    string user_id = 1;
+    string avatar_asset_id = 2;
+    int64 created_at = 3;
+    string public_key = 4;
+    string username = 5;
+}
+
+message CreateUserRequest {
+    string username = 1;
+    string public_key = 2;
+}
+
+message UpdateUserRequest {
+    string user_id = 1;
+    string username = 2;
+    string avatar_asset_id = 3;
+}
+
+message DeleteUserRequest {
+    string user_id = 1;
+}
+
+message DeleteUserResponse {}
+
+
+// User Device Management (TABLE: user_device)
+
+service UserDeviceService {
+    rpc CreateDevice (CreateDeviceRequest) returns (DeviceObjectResponse);
+    rpc ReadDevices (ReadDevicesRequest) returns (ReadDevicesResponse);
+    rpc UpdateDevice (UpdateDeviceRequest) returns (DeviceObjectResponse);
+    rpc DeleteDevice (DeleteDeviceRequest) returns (DeleteDeviceResponse);
+}
+
+
+message CreateDeviceRequest {
+    string user_id = 1;
+    string device_name = 2;
+    string public_key = 3;
+    string encrypted_account_private_key = 4;
+}
+
+message DeviceObjectResponse {
+    string device_id = 1;
+    string user_id = 2;
+    string device_name = 3;
+    string device_type = 4;
+    string device_public_key = 5;
+    int64 created_at = 6;
+    string encrypted_account_private_key = 7;
+}
+
+
+message ReadDevicesRequest {
+    string user_id = 1;
+    bool count_only = 2;
+}
+message ReadDevicesResponse {
+    int32 device_count = 1;
+    repeated DeviceObjectResponse devices = 2;
+}
+
+message UpdateDeviceRequest {
+    string device_id = 1;
+    string device_name = 2;
+    string device_type = 3;
+    string encrypted_account_private_key = 4;
+}
+message DeleteDeviceRequest {
+    string device_id = 1;
+}
+message DeleteDeviceResponse {}
+
+// relationship management (TABLE: friendship, friendship_request, blocked_user)
+
+
+service UserRelationshipService {
+    rpc CreateFriendshipInvite (CreateFriendshipInviteRequest) returns (FriendshipInviteResponse);
+    rpc ReadRecvFriendshipInvites (ReadRecvFriendshipInvitesRequest) returns (ReadRecvFriendshipInviteResponse);
+    rpc ReadSentFriendshipInvites (ReadSentFriendshipInvitesRequest) returns (ReadSentFriendshipInviteResponse);
+    rpc DeleteFriendshipInvite (DeleteFriendshipInviteRequest) returns (DeleteFriendshipInviteResponse);
+
+    rpc CreateFriendship (CreateFriendshipRequest) returns (FriendshipObjectResponse);
+    rpc ReadFriendships (ReadFriendshipsRequest) returns (ReadFriendshipsResponse);
+    rpc DeleteFriendship (DeleteFriendshipRequest) returns (DeleteFriendshipResponse);
+
+    rpc CreateBlockedUser (CreateBlockedUserRequest) returns (BlockedUserObjectResponse);
+    rpc ReadBlockedUsers (ReadBlockedUsersRequest) returns (ReadBlockedUsersResponse);
+    rpc ReadBlockedUser (ReadBlockedUserRequest) returns (BlockedUserObjectResponse);
+    rpc DeleteBlockedUser (DeleteBlockedUserRequest) returns (DeleteBlockedUserResponse);
+}
+
+// create friendship invite
+message CreateFriendshipInviteRequest {
+    string from_user_id = 1;
+    string to_user_id = 2;
+}
+
+message FriendshipInviteResponse {}
+
+message FriendshipInviteObject {
+    string user_id = 1;
+}
+
+// read received friendship invites
+message ReadRecvFriendshipInvitesRequest {
+    string to_user_id = 1;
+}
+
+message ReadRecvFriendshipInviteResponse {
+    repeated FriendshipInviteObject invites = 1;
+}
+
+// read sent friendship invites
+message ReadSentFriendshipInvitesRequest {
+    string from_user_id = 1;
+}
+
+message ReadSentFriendshipInviteResponse {
+    repeated FriendshipInviteObject invites = 1;
+}
+
+// remove friendship invite (decline or revoke)
+message DeleteFriendshipInviteRequest {
+    string from_user_id = 1;
+    string to_user_id = 2;
+}
+
+message DeleteFriendshipInviteResponse {}
+
+// create friendship
+message CreateFriendshipRequest {
+    string user_id_1 = 1;
+    string user_id_2 = 2;
+}
+
+message FriendshipObjectResponse {
+    string user_id_1 = 1;
+    string user_id_2 = 2;
+    int64 created_at = 3;
+}
+
+// read friendships
+
+message ReadFriendshipsRequest {
+    string user_id = 1;
+}
+
+message FriendshipsObjectResponse {
+    string user_id = 1;
+    int64 created_at = 2;
+}
+
+message ReadFriendshipsResponse {
+    repeated FriendshipsObjectResponse friendships = 1;
+}
+
+// delete friendship
+message DeleteFriendshipRequest {
+    string user_id_1 = 1;
+    string user_id_2 = 2;
+}
+message DeleteFriendshipResponse {}
+
+// create blocked user
+message CreateBlockedUserRequest {
+    string blocker_user_id = 1;
+    string blocked_user_id = 2;
+}
+
+message BlockedUserObjectResponse {
+    string blocker_user_id = 1;
+    string blocked_user_id = 2;
+}
+
+// read blocked users
+message ReadBlockedUsersRequest {
+    string blocker_user_id = 1;
+}
+
+message BlockedUsersObjectResponse {
+    string blocked_user_id = 2;
+}
+
+message ReadBlockedUsersResponse {
+    repeated BlockedUsersObjectResponse blocked_users = 1;
+}
+
+// read blocked user
+message ReadBlockedUserRequest {
+    string blocker_user_id = 1;
+    string blocked_user_id = 2;
+}
+
+// unblock blocked user
+message DeleteBlockedUserRequest {
+    string blocker_user_id = 1;
+    string blocked_user_id = 2;
+}
+message DeleteBlockedUserResponse {}
+
+
+
+
+
