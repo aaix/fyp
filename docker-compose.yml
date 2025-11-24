@@ -1,7 +1,7 @@
 
 networks:
   scylla-network:
-    driver: overlay
+    driver: bridge
 
 services:
   scylla-seed:
@@ -14,21 +14,26 @@ services:
         target: /var/lib/scylla
     hostname: scylla-seed
 
-  scylla-nodes:
+  scylla-node1:
     networks:
       - scylla-network
     image: az-scylla:latest
-    deploy:
-      mode: replicated
-      replicas: 3
-    
     volumes:
-      # The magic happens here: {{.Task.Slot}} will be 1, 2, 3...
-      # for each replica.
       - type: bind
-        source: ./database/data/scylla{{.Task.Slot}}/
+        source: ./database/data/scylla1/
         target: /var/lib/scylla
-    command: --seeds scylla-seed
     depends_on:
-      - sylla-seed
-    hostname: scylla-node.{{.Task.Slot}}
+      - scylla-seed
+    command: ["--seeds", "scylla-seed"]
+  
+  scylla-node2:
+    networks:
+      - scylla-network
+    image: az-scylla:latest
+    volumes:
+      - type: bind
+        source: ./database/data/scylla2/
+        target: /var/lib/scylla
+    depends_on:
+      - scylla-seed
+    command: ["--seeds", "scylla-seed"]
