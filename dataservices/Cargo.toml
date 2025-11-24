@@ -5,6 +5,8 @@ edition = "2024"
 
 [dependencies]
 scylla = "1.4.0"
-tokio = { version = "1.40"}
+tokio = { version = "1.40", features=["rt-multi-thread"]}
 tonic = { version = "0.14.2", features = ["server"] }
 
+[build-dependencies]
+tonic-prost-build = "*"
