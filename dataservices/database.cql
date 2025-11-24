@@ -13,6 +13,7 @@ CREATE TABLE user (
     username TEXT, -- probably needs to be queryable so users can find users
     created_at TIMESTAMP,
     public_key , -- ed25519 public key
+    avatar_asset_id UUID, -- foreign key: asset.asset_id
     PRIMARY KEY (id),
     INDEX (username),
 )
@@ -32,6 +33,7 @@ CREATE TABLE user_device (
 CREATE TABLE friendship (
     lower__user_id UUID,
     higher__user_id UUID,
+    created_at TIMESTAMP,
     PRIMARY KEY (lower__user_id, higher__user_id)
 )
 
