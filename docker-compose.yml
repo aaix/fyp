@@ -3,6 +3,14 @@ networks:
   scylla-network:
     driver: bridge
 
+x-scylla-base: &scylla-base
+  image: az-scylla:latest
+  networks:
+    - scylla-network
+  depends_on:
+    - scylla-seed
+
+
 services:
   scylla-seed:
     networks:
@@ -12,28 +20,47 @@ services:
       - type: bind
         source: ./database/data/scylla0/
         target: /var/lib/scylla
+      - type: bind
+        source: ./database/main.yaml
+        target: /etc/scylla/scylla.yaml
     hostname: scylla-seed
 
   scylla-node1:
-    networks:
-      - scylla-network
-    image: az-scylla:latest
+    <<: *scylla-base
     volumes:
       - type: bind
         source: ./database/data/scylla1/
         target: /var/lib/scylla
-    depends_on:
-      - scylla-seed
-    command: ["--seeds", "scylla-seed"]
-  
+      - type: bind
+        source: ./database/main.yaml
+        target: /etc/scylla/scylla.yaml
+
   scylla-node2:
-    networks:
-      - scylla-network
-    image: az-scylla:latest
+    <<: *scylla-base
     volumes:
       - type: bind
         source: ./database/data/scylla2/
         target: /var/lib/scylla
-    depends_on:
-      - scylla-seed
-    command: ["--seeds", "scylla-seed"]
+      - type: bind
+        source: ./database/main.yaml
+        target: /etc/scylla/scylla.yaml
+
+  scylla-node3:
+    <<: *scylla-base
+    volumes:
+      - type: bind
+        source: ./database/data/scylla3/
+        target: /var/lib/scylla
+      - type: bind
+        source: ./database/main.yaml
+        target: /etc/scylla/scylla.yaml
+
+  scylla-node4:
+    <<: *scylla-base
+    volumes:
+      - type: bind
+        source: ./database/data/scylla4/
+        target: /var/lib/scylla
+      - type: bind
+        source: ./database/main.yaml
+        target: /etc/scylla/scylla.yaml
