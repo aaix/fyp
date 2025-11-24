@@ -3,14 +3,14 @@
 TABLE user
 */
 use tonic::{Request, Response, Status};
+use crate::db_conn::db;
 
 use user_service::user_service_server::{UserService, UserServiceServer};
 use user_service::{CreateUserRequest, ReadUserResponse};
-
 use user_service::{DeleteUserRequest, DeleteUserResponse, ReadUserRequest, UpdateUserRequest};
 
 
-pub mod user_service {
+mod user_service {
     tonic::include_proto!("dataservices.userproto");
 }
 
@@ -52,6 +52,11 @@ impl UserService for ScyllaUserService {
     ) -> Result<Response<ReadUserResponse>, Status> {
         println!("Got a request: {:?}", request);
 
+        let user_id = request.get_ref().user_id.clone();
+
+        let res = db().await.query_unpaged("SELECT * FROM user WHERE user.user_id = ?", (&user_id,)).await.unwrap();
+
+
         Ok(Response::new(create_response()))
     }
 
@@ -60,7 +65,6 @@ impl UserService for ScyllaUserService {
         request: Request<UpdateUserRequest>,
     ) -> Result<Response<ReadUserResponse>, Status> {
         println!("Got a request: {:?}", request);
-
         
         Ok(Response::new(create_response()))
     }
