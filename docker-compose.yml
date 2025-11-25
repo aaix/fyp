@@ -2,6 +2,11 @@
 networks:
   scylla-network:
     driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.31.0.0/16
+
 
 x-scylla-base: &scylla-base
   image: az-scylla:latest

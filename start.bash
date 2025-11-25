@@ -1,5 +1,5 @@
 #!/bin/bash
 
-docker compose stop
+docker compose down
 docker build ./database -t az-scylla:latest
-docker compose up
+docker compose up -d
