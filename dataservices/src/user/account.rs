@@ -1,4 +1,7 @@
 
+use std::str::FromStr;
+
+use scylla::value::CqlTimeuuid;
 /*
 TABLE user
 */
@@ -52,9 +55,16 @@ impl UserService for ScyllaUserService {
     ) -> Result<Response<ReadUserResponse>, Status> {
         println!("Got a request: {:?}", request);
 
-        let user_id = request.get_ref().user_id.clone();
+        let user_id = match CqlTimeuuid::from_str(&request.get_ref().user_id) {
+            Ok(id) => id,
+            Err(e) => {
+                println!("Error parsing user_id: {:?}", e);
+                return Err(Status::invalid_argument("Invalid user_id format"));
+            }
+        };
 
-        let res = db().await.query_unpaged("SELECT * FROM user WHERE user.user_id = ?", (&user_id,)).await.unwrap();
+        let res = db().await.query_unpaged("SELECT * FROM dataservices.user WHERE user_id = ?", (&user_id,)).await.unwrap();
+        println!("DB response: {:?}", res);
 
 
         Ok(Response::new(create_response()))
