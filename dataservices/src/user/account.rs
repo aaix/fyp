@@ -1,12 +1,9 @@
-
-use std::str::FromStr;
+use crate::db_conn::db;
+use crate::models::user::User;
 
 use scylla::value::CqlTimeuuid;
-/*
-TABLE user
-*/
 use tonic::{Request, Response, Status};
-use crate::db_conn::db;
+
 
 use user_service::user_service_server::{UserService, UserServiceServer};
 use user_service::{CreateUserRequest, ReadUserResponse};
@@ -15,17 +12,6 @@ use user_service::{DeleteUserRequest, DeleteUserResponse, ReadUserRequest, Updat
 
 mod user_service {
     tonic::include_proto!("dataservices.userproto");
-}
-
-
-fn create_response() -> ReadUserResponse {
-    ReadUserResponse {
-        user_id:"1234".to_string(),
-        avatar_asset_id: "12345".to_string(),
-        created_at: 0,
-        public_key: "real key :smirk_cat:".to_string(),
-        username: "john".to_string(),
-    }
 }
 
 
@@ -46,7 +32,7 @@ impl UserService for ScyllaUserService {
     ) -> Result<Response<ReadUserResponse>, Status> {
         println!("Got a request: {:?}", request);
 
-        Ok(Response::new(create_response()))
+        Ok(Response::new(todo!()))
     }
 
     async fn read_user(
@@ -55,7 +41,7 @@ impl UserService for ScyllaUserService {
     ) -> Result<Response<ReadUserResponse>, Status> {
         println!("Got a request: {:?}", request);
 
-        let user_id = match CqlTimeuuid::from_str(&request.get_ref().user_id) {
+        let user_id = match CqlTimeuuid::from_slice(&request.get_ref().user_id) {
             Ok(id) => id,
             Err(e) => {
                 println!("Error parsing user_id: {:?}", e);
@@ -63,11 +49,27 @@ impl UserService for ScyllaUserService {
             }
         };
 
+        println!("Searchinf for user_id: {:?}", user_id);
+
         let res = db().await.query_unpaged("SELECT * FROM dataservices.user WHERE user_id = ?", (&user_id,)).await.unwrap();
-        println!("DB response: {:?}", res);
+        let row = match res.into_rows_result().unwrap().first_row::<User>() {
+            Ok(user) => user,
+            Err(e) => {
+                println!("Error fetching user from DB: {:?}", e);
+                return Err(Status::not_found("User not found"));
+            }
+        };
 
+        println!("Fetched user from DB: {:?}", row);
 
-        Ok(Response::new(create_response()))
+        let (user_id, username, public_key, avatar) = row.consume();
+
+        Ok(Response::new(ReadUserResponse {
+            user_id: user_id.as_bytes().to_vec(),
+            avatar_asset_id: avatar.map(|id| id.as_bytes().to_vec()),
+            public_key,
+            username,
+        }))
     }
 
     async fn update_user(
@@ -76,7 +78,7 @@ impl UserService for ScyllaUserService {
     ) -> Result<Response<ReadUserResponse>, Status> {
         println!("Got a request: {:?}", request);
         
-        Ok(Response::new(create_response()))
+        Ok(Response::new(todo!()))
     }
 
     async fn delete_user(
