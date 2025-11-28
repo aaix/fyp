@@ -18,10 +18,9 @@ message ReadUserRequest {
 }
 message ReadUserResponse {
     bytes user_id = 1;
-    bytes avatar_asset_id = 2;
-    int64 created_at = 3;
-    bytes public_key = 4;
-    string username = 5;
+    optional bytes avatar_asset_id = 2;
+    bytes public_key = 3;
+    string username = 4;
 }
 
 message CreateUserRequest {
@@ -64,9 +63,8 @@ message DeviceObjectResponse {
     bytes user_id = 2;
     string device_name = 3;
     string device_type = 4;
-    byte device_public_key = 5;
-    int64 created_at = 6;
-    bytes encrypted_account_private_key = 7;
+    bytes device_public_key = 5;
+    bytes encrypted_account_private_key = 6;
 }
 
 
