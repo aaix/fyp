@@ -7,3 +7,14 @@ pub struct PostLike {
     pub post_id: value::CqlTimeuuid,
     pub liker__user_id: value::CqlTimeuuid,
 }
+impl PostLike {
+    pub fn consume(self) -> (
+        value::CqlTimeuuid,
+        value::CqlTimeuuid,
+    ) {
+        (
+            self.post_id,
+            self.liker__user_id,
+        )
+    }
+}

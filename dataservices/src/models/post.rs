@@ -11,3 +11,22 @@ pub struct Post {
     pub opt_likes: Option<i32>,
     pub opt_comments: Option<i32>,
 }
+impl Post {
+    pub fn consume(self) -> (
+        value::CqlTimeuuid,
+        value::CqlTimeuuid,
+        String,
+        value::CqlTimestamp,
+        Option<i32>,
+        Option<i32>,
+    ) {
+        (
+            self.post_id,
+            self.author__user_id,
+            self.body,
+            self.last_edited,
+            self.opt_likes,
+            self.opt_comments,
+        )
+    }
+}

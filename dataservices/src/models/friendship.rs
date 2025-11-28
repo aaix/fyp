@@ -8,3 +8,16 @@ pub struct Friendship {
     pub higher__user_id: value::CqlTimeuuid,
     pub created_at: value::CqlTimestamp,
 }
+impl Friendship {
+    pub fn consume(self) -> (
+        value::CqlTimeuuid,
+        value::CqlTimeuuid,
+        value::CqlTimestamp,
+    ) {
+        (
+            self.lower__user_id,
+            self.higher__user_id,
+            self.created_at,
+        )
+    }
+}

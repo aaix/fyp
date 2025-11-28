@@ -9,3 +9,18 @@ pub struct User {
     pub public_key: Vec<u8>,
     pub opt_avatar_asset_id: Option<uuid::Uuid>,
 }
+impl User {
+    pub fn consume(self) -> (
+        value::CqlTimeuuid,
+        String,
+        Vec<u8>,
+        Option<uuid::Uuid>,
+    ) {
+        (
+            self.user_id,
+            self.username,
+            self.public_key,
+            self.opt_avatar_asset_id,
+        )
+    }
+}

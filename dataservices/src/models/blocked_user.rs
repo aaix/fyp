@@ -7,3 +7,14 @@ pub struct BlockedUser {
     pub blocker__user_id: value::CqlTimeuuid,
     pub blocked__user_id: value::CqlTimeuuid,
 }
+impl BlockedUser {
+    pub fn consume(self) -> (
+        value::CqlTimeuuid,
+        value::CqlTimeuuid,
+    ) {
+        (
+            self.blocker__user_id,
+            self.blocked__user_id,
+        )
+    }
+}

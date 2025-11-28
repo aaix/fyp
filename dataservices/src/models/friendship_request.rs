@@ -7,3 +7,14 @@ pub struct FriendshipRequest {
     pub requester__user_id: value::CqlTimeuuid,
     pub recipient__user_id: value::CqlTimeuuid,
 }
+impl FriendshipRequest {
+    pub fn consume(self) -> (
+        value::CqlTimeuuid,
+        value::CqlTimeuuid,
+    ) {
+        (
+            self.requester__user_id,
+            self.recipient__user_id,
+        )
+    }
+}
