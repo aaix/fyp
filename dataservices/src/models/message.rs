@@ -9,6 +9,6 @@ pub struct Message {
     pub bucket: i64,
     pub message_id: value::CqlTimeuuid,
     pub message_type: i32,
-    pub last_edited: value::CqlTimestamp,
-    pub content: String,
+    pub opt_last_edited: Option<value::CqlTimestamp>,
+    pub opt_content: Option<String>,
 }

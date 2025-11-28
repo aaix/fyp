@@ -9,5 +9,5 @@ pub struct Asset {
     pub bucket_id: uuid::Uuid,
     pub asset_type: i32,
     pub content_type: String,
-    pub file_name: String,
+    pub opt_file_name: Option<String>,
 }

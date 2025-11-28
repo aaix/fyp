@@ -23,8 +23,9 @@ class Row:
         if datatype[-1] == ",":
             datatype = datatype[:-1]
 
-        self.key = key
-        self.datatype = datatype
+        self.key: str = key
+        self.optional: bool = key.startswith("opt_")
+        self.datatype: str = datatype
 
     def __repr__(self):
         return f"<Row {self.key}: {self.datatype}>"
@@ -93,8 +94,11 @@ class RustModelGenerator(ModelGenerator):
     }
 
     @classmethod
-    def map_datatype(cls, datatype: str) -> str:
-        return cls.DATATYPE_MAP[datatype.lower()]
+    def map_datatype(cls, row: Row) -> str:
+        t = cls.DATATYPE_MAP[row.datatype.lower()]
+        if row.optional:
+            return f"Option<{t}>"
+        return t
 
     def generate(self) -> str:
         header = [
@@ -109,7 +113,7 @@ class RustModelGenerator(ModelGenerator):
         lines.append("#[derive(Debug, DeserializeRow)]")
         lines.append(f"pub struct {struct_name} {{")
         for row in self.table.rows:
-            rust_type = self.map_datatype(row.datatype)
+            rust_type = self.map_datatype(row)
             lines.append(f"    pub {row.key}: {rust_type},")
 
             # dependency tracking

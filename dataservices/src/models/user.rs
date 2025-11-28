@@ -2,11 +2,10 @@
 #![allow(nonstandard_style)]
 use scylla::DeserializeRow;
 use scylla::value;
-use uuid;
 #[derive(Debug, DeserializeRow)]
 pub struct User {
     pub user_id: value::CqlTimeuuid,
     pub username: String,
     pub public_key: Vec<u8>,
-    pub avatar_asset_id: uuid::Uuid,
+    pub opt_avatar_asset_id: Option<uuid::Uuid>,
 }

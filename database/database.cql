@@ -10,7 +10,7 @@ CREATE TABLE dataservices.user (
     user_id TIMEUUID,
     username TEXT, -- probably needs to be queryable so users can find users
     public_key BLOB, -- rsa public key
-    avatar_asset_id UUID, -- foreign key: asset.asset_id
+    opt_avatar_asset_id UUID, -- foreign key: asset.asset_id
     PRIMARY KEY (user_id),
 );
 CREATE INDEX user_by_username ON dataservices.user (username);
@@ -70,8 +70,8 @@ CREATE TABLE dataservices.message (
     bucket BIGINT, -- bucket to stop partitions from getting too large (100mb max recommended)
     message_id TIMEUUID,
     message_type INT,
-    last_edited TIMESTAMP,
-    content TEXT,
+    opt_last_edited TIMESTAMP,
+    opt_content TEXT,
     PRIMARY KEY ((channel_id, bucket), message_id)
 ) WITH CLUSTERING ORDER BY (message_id DESC);
 
@@ -88,7 +88,7 @@ CREATE TABLE dataservices.asset (
     bucket_id UUID, -- potential foreign key: user.user_id or post.post_id
     asset_type INT, -- enum: 0 = avatar, 1 = permanent post, 2 = temporary post, 3 = message attachment
     content_type TEXT, -- MIME type
-    file_name TEXT,
+    opt_file_name TEXT,
     PRIMARY KEY (asset_id)
 );
 
@@ -97,8 +97,8 @@ CREATE TABLE dataservices.post (
     author__user_id TIMEUUID, -- foreign key: user.user_id
     body TEXT,
     last_edited TIMESTAMP,
-    likes INT, -- denormalized count of likes
-    comments INT, -- denormalized count of comments
+    opt_likes INT, -- denormalized count of likes
+    opt_comments INT, -- denormalized count of comments
     PRIMARY KEY (post_id),
 );
 CREATE INDEX post_by_author ON dataservices.post (author__user_id);
@@ -109,7 +109,7 @@ CREATE TABLE dataservices.post_comment (
     post_id TIMEUUID, -- foreign key: post.post_id
     author__user_id UUID, -- foreign key: user.user_id
     body TEXT,
-    last_edited TIMESTAMP,
+    opt_last_edited TIMESTAMP,
     PRIMARY KEY (post_id, comment_id),
 );
 

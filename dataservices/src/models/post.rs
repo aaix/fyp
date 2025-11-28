@@ -8,6 +8,6 @@ pub struct Post {
     pub author__user_id: value::CqlTimeuuid,
     pub body: String,
     pub last_edited: value::CqlTimestamp,
-    pub likes: i32,
-    pub comments: i32,
+    pub opt_likes: Option<i32>,
+    pub opt_comments: Option<i32>,
 }

@@ -9,5 +9,5 @@ pub struct PostComment {
     pub post_id: value::CqlTimeuuid,
     pub author__user_id: uuid::Uuid,
     pub body: String,
-    pub last_edited: value::CqlTimestamp,
+    pub opt_last_edited: Option<value::CqlTimestamp>,
 }
