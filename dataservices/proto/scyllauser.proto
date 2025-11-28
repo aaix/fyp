@@ -20,13 +20,13 @@ message ReadUserResponse {
     bytes user_id = 1;
     bytes avatar_asset_id = 2;
     int64 created_at = 3;
-    string public_key = 4;
+    bytes public_key = 4;
     string username = 5;
 }
 
 message CreateUserRequest {
     string username = 1;
-    string public_key = 2;
+    bytes public_key = 2;
 }
 
 message UpdateUserRequest {
@@ -55,8 +55,8 @@ service UserDeviceService {
 message CreateDeviceRequest {
     bytes user_id = 1;
     string device_name = 2;
-    string public_key = 3;
-    string encrypted_account_private_key = 4;
+    bytes public_key = 3;
+    bytes encrypted_account_private_key = 4;
 }
 
 message DeviceObjectResponse {
@@ -64,9 +64,9 @@ message DeviceObjectResponse {
     bytes user_id = 2;
     string device_name = 3;
     string device_type = 4;
-    string device_public_key = 5;
+    byte device_public_key = 5;
     int64 created_at = 6;
-    string encrypted_account_private_key = 7;
+    bytes encrypted_account_private_key = 7;
 }
 
 
@@ -83,7 +83,7 @@ message UpdateDeviceRequest {
     bytes device_id = 1;
     string device_name = 2;
     string device_type = 3;
-    string encrypted_account_private_key = 4;
+    bytes encrypted_account_private_key = 4;
 }
 message DeleteDeviceRequest {
     bytes device_id = 1;
