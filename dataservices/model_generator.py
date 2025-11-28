@@ -123,6 +123,31 @@ class RustModelGenerator(ModelGenerator):
                 dependencies.add("use uuid;")
         lines.append("}")
 
+        # impl consume for zero copy extraction
+        # impl User {
+        #     pub fn consume(self) -> (value::CqlTimeuuid, String, Vec<u8>, Option<uuid::Uuid>) {
+        #         (
+        #             self.user_id,
+        #             self.username,
+        #             self.public_key,
+        #             self.opt_avatar_asset_id,
+        #         )
+        #     }
+        # }
+
+        lines.append(f"impl {struct_name} {{")
+        lines.append("    pub fn consume(self) -> (")
+        for row in self.table.rows:
+            rust_type = self.map_datatype(row)
+            lines.append(f"        {rust_type},")
+        lines.append("    ) {")
+        lines.append("        (")
+        for row in self.table.rows:
+            lines.append(f"            self.{row.key},")
+        lines.append("        )")
+        lines.append("    }")
+        lines.append("}")
+
         return "\n".join(chain(header, dependencies, lines))
 
 
