@@ -1,5 +1,6 @@
 use crate::db_conn::db;
 use crate::errors::{DSResult};
+use crate::helpers::gen_timeuuid;
 use crate::models::user::User;
 use crate::protos::{user_service};
 
@@ -18,6 +19,7 @@ use user_service::{DeleteUserRequest, DeleteUserResponse, ReadUserRequest, Updat
 #[derive(Debug)]
 pub struct ScyllaUserService {
     read_user_prepared: PreparedStatement,
+    create_user_prepared: PreparedStatement,
 }
 
 impl ScyllaUserService {
@@ -27,8 +29,13 @@ impl ScyllaUserService {
             "SELECT * FROM user WHERE user_id = ?"
         ).await.unwrap();
 
+        let create_user_prepared = db().await.prepare(
+            "INSERT INTO user (user_id, username, public_key) VALUES (?, ?, ?)"
+        ).await.unwrap();
+
         UserServiceServer::new(Self {
-            read_user_prepared
+            read_user_prepared,
+            create_user_prepared,
         })
     }
 
@@ -37,9 +44,7 @@ impl ScyllaUserService {
         request: Request<ReadUserRequest>,
     ) -> DSResult<Response<ReadUserResponse>> {
 
-        let user_id = request.get_ref().user_id.map(|parts| {
-            CqlTimeuuid::from_u64_pair(parts.id_high, parts.id_low)
-        }).ok_or(Status::invalid_argument("invalid user_id"))?;
+        let user_id: CqlTimeuuid = request.get_ref().user_id.map(|parts| parts.into()).ok_or(Status::invalid_argument("invalid user_id"))?;
 
 
         let res = db().await.execute_unpaged(
@@ -57,6 +62,34 @@ impl ScyllaUserService {
         }))
     }
 
+    async fn create_user_impl(
+        &self,
+        request: Request<CreateUserRequest>,
+    ) -> DSResult<Response<ReadUserResponse>> {
+
+        let user_id = gen_timeuuid();
+
+        // extract parts for zero copy
+        let parts = request.into_inner();
+        let username = parts.username;
+        let public_key = parts.public_key;
+
+
+        db().await.execute_unpaged(
+            &self.create_user_prepared,
+            (&user_id, &username, &public_key)
+        ).await?;
+
+
+
+        Ok(Response::new(ReadUserResponse {
+            user_id: Some(user_id.into()),
+            avatar_asset_id: None,
+            public_key: public_key,
+            username: username,
+        }))
+    }
+
 
 }
 
@@ -69,7 +102,7 @@ impl UserService for ScyllaUserService {
         request: Request<CreateUserRequest>,
     ) -> Result<Response<ReadUserResponse>, Status> {
 
-        Ok(Response::new(todo!()))
+        Ok(self.create_user_impl(request).await?)
     }
 
     async fn read_user(
