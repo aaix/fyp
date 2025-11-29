@@ -1,6 +1,9 @@
 use crate::db_conn::db;
+use crate::errors::{DSResult};
 use crate::models::user::User;
+use crate::protos::{user_service};
 
+use scylla::statement::prepared::PreparedStatement;
 use scylla::value::CqlTimeuuid;
 use tonic::{Request, Response, Status};
 
@@ -10,19 +13,64 @@ use user_service::{CreateUserRequest, ReadUserResponse};
 use user_service::{DeleteUserRequest, DeleteUserResponse, ReadUserRequest, UpdateUserRequest};
 
 
-mod user_service {
-    tonic::include_proto!("dataservices.userproto");
-}
 
 
 #[derive(Debug)]
-pub struct ScyllaUserService;
+pub struct ScyllaUserService {
+    read_user_prepared: PreparedStatement,
+}
 
 impl ScyllaUserService {
-    pub fn service() -> UserServiceServer<ScyllaUserService> {
-        UserServiceServer::new(Self {})
+    pub async fn service() -> UserServiceServer<ScyllaUserService> {
+
+        let read_user_prepared = db().await.prepare(
+            "SELECT * FROM user WHERE user_id = ?"
+        ).await.unwrap();
+
+        UserServiceServer::new(Self {
+            read_user_prepared
+        })
     }
+
+    async fn read_user_impl(
+        &self,
+        request: Request<ReadUserRequest>,
+    ) -> DSResult<Response<ReadUserResponse>> {
+        println!("Got a request: {:?}", request);
+
+        let user_id = request.get_ref().user_id.map(|parts| {
+            CqlTimeuuid::from_u64_pair(parts.id_high, parts.id_low)
+        });
+
+        if user_id.is_none() {
+            return Err(Status::invalid_argument("Invalid user_id format").into());
+        }
+
+        println!("Searchinf for user_id: {:?}", user_id);
+
+        let res = db().await.execute_unpaged(
+            &self.read_user_prepared, (&user_id,)
+        ).await?;
+
+
+        let row = res.into_rows_result()?.first_row::<User>()?;
+
+        println!("Fetched user from DB: {:?}", row);
+
+        let (_, username, public_key, avatar) = row.consume();
+
+        Ok(Response::new(ReadUserResponse {
+            user_id: Some(request.get_ref().user_id.unwrap()),
+            avatar_asset_id: avatar.map(|id| id.as_bytes().to_vec()),
+            public_key,
+            username,
+        }))
+    }
+
+
 }
+
+
 
 #[tonic::async_trait]
 impl UserService for ScyllaUserService {
@@ -39,37 +87,7 @@ impl UserService for ScyllaUserService {
         &self,
         request: Request<ReadUserRequest>,
     ) -> Result<Response<ReadUserResponse>, Status> {
-        println!("Got a request: {:?}", request);
-
-        let user_id = match CqlTimeuuid::from_slice(&request.get_ref().user_id) {
-            Ok(id) => id,
-            Err(e) => {
-                println!("Error parsing user_id: {:?}", e);
-                return Err(Status::invalid_argument("Invalid user_id format"));
-            }
-        };
-
-        println!("Searchinf for user_id: {:?}", user_id);
-
-        let res = db().await.query_unpaged("SELECT * FROM dataservices.user WHERE user_id = ?", (&user_id,)).await.unwrap();
-        let row = match res.into_rows_result().unwrap().first_row::<User>() {
-            Ok(user) => user,
-            Err(e) => {
-                println!("Error fetching user from DB: {:?}", e);
-                return Err(Status::not_found("User not found"));
-            }
-        };
-
-        println!("Fetched user from DB: {:?}", row);
-
-        let (user_id, username, public_key, avatar) = row.consume();
-
-        Ok(Response::new(ReadUserResponse {
-            user_id: user_id.as_bytes().to_vec(),
-            avatar_asset_id: avatar.map(|id| id.as_bytes().to_vec()),
-            public_key,
-            username,
-        }))
+        Ok(self.read_user_impl(request).await?)
     }
 
     async fn update_user(

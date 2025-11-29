@@ -10,7 +10,7 @@ async fn main() {
     let addr = "[::1]:3114".parse().unwrap();
 
     Server::builder()
-        .add_service(ScyllaUserService::service())
+        .add_service(ScyllaUserService::service().await)
         .serve(addr)
         .await.unwrap();
 }
