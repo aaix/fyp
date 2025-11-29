@@ -36,32 +36,22 @@ impl ScyllaUserService {
         &self,
         request: Request<ReadUserRequest>,
     ) -> DSResult<Response<ReadUserResponse>> {
-        println!("Got a request: {:?}", request);
 
         let user_id = request.get_ref().user_id.map(|parts| {
             CqlTimeuuid::from_u64_pair(parts.id_high, parts.id_low)
-        });
+        }).ok_or(Status::invalid_argument("invalid user_id"))?;
 
-        if user_id.is_none() {
-            return Err(Status::invalid_argument("Invalid user_id format").into());
-        }
-
-        println!("Searchinf for user_id: {:?}", user_id);
 
         let res = db().await.execute_unpaged(
             &self.read_user_prepared, (&user_id,)
         ).await?;
 
-
         let row = res.into_rows_result()?.first_row::<User>()?;
-
-        println!("Fetched user from DB: {:?}", row);
-
         let (_, username, public_key, avatar) = row.consume();
 
         Ok(Response::new(ReadUserResponse {
             user_id: Some(request.get_ref().user_id.unwrap()),
-            avatar_asset_id: avatar.map(|id| id.as_bytes().to_vec()),
+            avatar_asset_id: avatar.map(|asset_id| asset_id.into()),
             public_key,
             username,
         }))
@@ -78,7 +68,6 @@ impl UserService for ScyllaUserService {
         &self,
         request: Request<CreateUserRequest>,
     ) -> Result<Response<ReadUserResponse>, Status> {
-        println!("Got a request: {:?}", request);
 
         Ok(Response::new(todo!()))
     }

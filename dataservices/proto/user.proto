@@ -19,7 +19,7 @@ message ReadUserRequest {
 }
 message ReadUserResponse {
     plib.pUUID user_id = 1;
-    optional bytes avatar_asset_id = 2;
+    optional plib.pUUID avatar_asset_id = 2;
     bytes public_key = 3;
     string username = 4;
 }
@@ -30,13 +30,13 @@ message CreateUserRequest {
 }
 
 message UpdateUserRequest {
-    bytes user_id = 1;
+    plib.pUUID user_id = 1;
     string username = 2;
-    bytes avatar_asset_id = 3;
+    plib.pUUID avatar_asset_id = 3;
 }
 
 message DeleteUserRequest {
-    bytes user_id = 1;
+    plib.pUUID user_id = 1;
 }
 
 message DeleteUserResponse {}
@@ -53,15 +53,15 @@ service UserDeviceService {
 
 
 message CreateDeviceRequest {
-    bytes user_id = 1;
+    plib.pUUID user_id = 1;
     string device_name = 2;
     bytes public_key = 3;
     bytes encrypted_account_private_key = 4;
 }
 
 message DeviceObjectResponse {
-    bytes device_id = 1;
-    bytes user_id = 2;
+    plib.pUUID device_id = 1;
+    plib.pUUID user_id = 2;
     string device_name = 3;
     string device_type = 4;
     bytes device_public_key = 5;
@@ -70,7 +70,7 @@ message DeviceObjectResponse {
 
 
 message ReadDevicesRequest {
-    bytes user_id = 1;
+    plib.pUUID user_id = 1;
     bool count_only = 2;
 }
 message ReadDevicesResponse {
@@ -79,13 +79,13 @@ message ReadDevicesResponse {
 }
 
 message UpdateDeviceRequest {
-    bytes device_id = 1;
+    plib.pUUID device_id = 1;
     string device_name = 2;
     string device_type = 3;
     bytes encrypted_account_private_key = 4;
 }
 message DeleteDeviceRequest {
-    bytes device_id = 1;
+    plib.pUUID device_id = 1;
 }
 message DeleteDeviceResponse {}
 
@@ -110,19 +110,19 @@ service UserRelationshipService {
 
 // create friendship invite
 message CreateFriendshipInviteRequest {
-    bytes from_user_id = 1;
-    bytes to_user_id = 2;
+    plib.pUUID from_user_id = 1;
+    plib.pUUID to_user_id = 2;
 }
 
 message FriendshipInviteResponse {}
 
 message FriendshipInviteObject {
-    bytes user_id = 1;
+    plib.pUUID user_id = 1;
 }
 
 // read received friendship invites
 message ReadRecvFriendshipInvitesRequest {
-    bytes to_user_id = 1;
+    plib.pUUID to_user_id = 1;
 }
 
 message ReadRecvFriendshipInviteResponse {
@@ -131,7 +131,7 @@ message ReadRecvFriendshipInviteResponse {
 
 // read sent friendship invites
 message ReadSentFriendshipInvitesRequest {
-    bytes from_user_id = 1;
+    plib.pUUID from_user_id = 1;
 }
 
 message ReadSentFriendshipInviteResponse {
@@ -140,32 +140,32 @@ message ReadSentFriendshipInviteResponse {
 
 // remove friendship invite (decline or revoke)
 message DeleteFriendshipInviteRequest {
-    bytes from_user_id = 1;
-    bytes to_user_id = 2;
+    plib.pUUID from_user_id = 1;
+    plib.pUUID to_user_id = 2;
 }
 
 message DeleteFriendshipInviteResponse {}
 
 // create friendship
 message CreateFriendshipRequest {
-    bytes user_id_1 = 1;
-    bytes user_id_2 = 2;
+    plib.pUUID user_id_1 = 1;
+    plib.pUUID user_id_2 = 2;
 }
 
 message FriendshipObjectResponse {
-    bytes user_id_1 = 1;
-    bytes user_id_2 = 2;
+    plib.pUUID user_id_1 = 1;
+    plib.pUUID user_id_2 = 2;
     int64 created_at = 3;
 }
 
 // read friendships
 
 message ReadFriendshipsRequest {
-    bytes user_id = 1;
+    plib.pUUID user_id = 1;
 }
 
 message FriendshipsObjectResponse {
-    bytes user_id = 1;
+    plib.pUUID user_id = 1;
     int64 created_at = 2;
 }
 
@@ -175,29 +175,29 @@ message ReadFriendshipsResponse {
 
 // delete friendship
 message DeleteFriendshipRequest {
-    bytes user_id_1 = 1;
-    bytes user_id_2 = 2;
+    plib.pUUID user_id_1 = 1;
+    plib.pUUID user_id_2 = 2;
 }
 message DeleteFriendshipResponse {}
 
 // create blocked user
 message CreateBlockedUserRequest {
-    bytes blocker_user_id = 1;
-    bytes blocked_user_id = 2;
+    plib.pUUID blocker_user_id = 1;
+    plib.pUUID blocked_user_id = 2;
 }
 
 message BlockedUserObjectResponse {
-    bytes blocker_user_id = 1;
-    bytes blocked_user_id = 2;
+    plib.pUUID blocker_user_id = 1;
+    plib.pUUID blocked_user_id = 2;
 }
 
 // read blocked users
 message ReadBlockedUsersRequest {
-    bytes blocker_user_id = 1;
+    plib.pUUID blocker_user_id = 1;
 }
 
 message BlockedUsersObjectResponse {
-    bytes blocked_user_id = 2;
+    plib.pUUID blocked_user_id = 2;
 }
 
 message ReadBlockedUsersResponse {
@@ -206,14 +206,14 @@ message ReadBlockedUsersResponse {
 
 // read blocked user
 message ReadBlockedUserRequest {
-    bytes blocker_user_id = 1;
-    bytes blocked_user_id = 2;
+    plib.pUUID blocker_user_id = 1;
+    plib.pUUID blocked_user_id = 2;
 }
 
 // unblock blocked user
 message DeleteBlockedUserRequest {
-    bytes blocker_user_id = 1;
-    bytes blocked_user_id = 2;
+    plib.pUUID blocker_user_id = 1;
+    plib.pUUID blocked_user_id = 2;
 }
 message DeleteBlockedUserResponse {}
 
