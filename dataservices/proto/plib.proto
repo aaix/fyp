@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+package dataservices.plib;
+
+message pUUID {
+    uint64 id_high = 1;
+    uint64 id_low = 2;
+}

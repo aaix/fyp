@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package dataservices.userproto;
 
+import "plib.proto";
 
 // User Management (TABLE: account)
 
@@ -14,10 +15,10 @@ service UserService {
 
 }
 message ReadUserRequest {
-    bytes user_id = 1;
+    plib.pUUID user_id = 1;
 }
 message ReadUserResponse {
-    bytes user_id = 1;
+    plib.pUUID user_id = 1;
     optional bytes avatar_asset_id = 2;
     bytes public_key = 3;
     string username = 4;
