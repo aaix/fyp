@@ -1,4 +1,10 @@
+use std::sync::OnceLock;
+use scylla::value::CqlTimeuuid;
+use mac_address::get_mac_address;
+
 use crate::protos::plib::PUuid;
+
+static NODE_ID: OnceLock<[u8; 6]> = OnceLock::new();
 
 impl From<uuid::Uuid> for PUuid {
     fn from(uuid: uuid::Uuid) -> Self {
@@ -16,22 +22,27 @@ impl From<PUuid> for uuid::Uuid {
     }
 }
 
-impl From<PUuid> for scylla::value::CqlTimeuuid {
+impl From<PUuid> for CqlTimeuuid {
     fn from(puuid: PUuid) -> Self {
         let uuid: uuid::Uuid = puuid.into();
-        scylla::value::CqlTimeuuid::from(uuid)
+        CqlTimeuuid::from(uuid)
     }
 }
 
-impl From<scylla::value::CqlTimeuuid> for PUuid {
-    fn from(cql_timeuuid: scylla::value::CqlTimeuuid) -> Self {
+impl From<CqlTimeuuid> for PUuid {
+    fn from(cql_timeuuid: CqlTimeuuid) -> Self {
         let uuid: uuid::Uuid = cql_timeuuid.into();
         uuid.into()
     }
 }
 
-pub fn gen_timeuuid() -> scylla::value::CqlTimeuuid {
-    scylla::value::CqlTimeuuid::from(uuid::Uuid::new_v4())
+pub fn gen_timeuuid() -> CqlTimeuuid {
+    let node_id= *NODE_ID.get_or_init(|| {
+        let mac = get_mac_address().unwrap().unwrap();
+        println!("MAC address: {:02x?}", mac.bytes());
+        mac.bytes()
+    });
+    CqlTimeuuid::from(uuid::Uuid::now_v1(&node_id))
 }
 
 pub fn gen_uuid() -> uuid::Uuid {

@@ -6,13 +6,14 @@ use crate::protos::{user_service};
 use crate::req_tuuid;
 
 use scylla::statement::prepared::PreparedStatement;
-use scylla::value::CqlTimeuuid;
+use scylla::value::{CqlTimeuuid, MaybeUnset};
 use tonic::{Request, Response, Status};
 
 
 use user_service::user_service_server::{UserService, UserServiceServer};
 use user_service::{CreateUserRequest, ReadUserResponse};
 use user_service::{DeleteUserRequest, DeleteUserResponse, ReadUserRequest, UpdateUserRequest};
+use uuid::Uuid;
 
 
 
@@ -22,27 +23,33 @@ pub struct ScyllaUserService {
     read_user_prepared: PreparedStatement,
     create_user_prepared: PreparedStatement,
     delete_user_prepared: PreparedStatement,
+    update_user_prepared: PreparedStatement,
 }
 
 impl ScyllaUserService {
     pub async fn service() -> UserServiceServer<ScyllaUserService> {
 
         let read_user_prepared = db().await.prepare(
-            "SELECT * FROM user WHERE user_id = ?"
+            "SELECT * FROM dataservices.user WHERE user_id = ?"
         ).await.unwrap();
 
         let create_user_prepared = db().await.prepare(
-            "INSERT INTO user (user_id, username, public_key) VALUES (?, ?, ?)"
+            "INSERT INTO dataservices.user (user_id, username, public_key) VALUES (?, ?, ?)"
         ).await.unwrap();
 
         let delete_user_prepared = db().await.prepare(
-            "DELETE FROM user WHERE user_id = ?"
+            "DELETE FROM dataservices.user WHERE user_id = ?"
+        ).await.unwrap();
+
+        let update_user_prepared = db().await.prepare(
+            "UPDATE dataservices.user SET username = ?, opt_avatar_asset_id = ? WHERE user_id = ?"
         ).await.unwrap();
 
         UserServiceServer::new(Self {
             read_user_prepared,
             create_user_prepared,
             delete_user_prepared,
+            update_user_prepared,
         })
     }
 
@@ -107,8 +114,13 @@ impl ScyllaUserService {
         let user_id: CqlTimeuuid = req_tuuid!(request, user_id)?;
 
         let unpacked = request.into_inner();
-        let username_opt = unpacked.username;
-        let avatar_asset_id_opt = unpacked.avatar_asset_id;
+        let username = MaybeUnset::from_option(unpacked.username);
+        let avatar: MaybeUnset<Uuid> = MaybeUnset::from_option(unpacked.avatar_asset_id.map(|id| id.into()));
+
+        db().await.execute_unpaged(
+            &self.update_user_prepared,
+            (&username, &avatar, &user_id)
+        ).await?;
 
 
         todo!()
@@ -122,7 +134,7 @@ impl ScyllaUserService {
         let user_id: CqlTimeuuid = req_tuuid!(request, user_id)?;
 
         db().await.execute_unpaged(
-            self.delete_user_prepared,
+            &self.delete_user_prepared,
             (&user_id,)
         ).await?;
         Ok(Response::new(DeleteUserResponse {}))
