@@ -3,6 +3,7 @@ use crate::errors::{DSResult};
 use crate::helpers::gen_timeuuid;
 use crate::models::user::User;
 use crate::protos::{user_service};
+use crate::req_tuuid;
 
 use scylla::statement::prepared::PreparedStatement;
 use scylla::value::CqlTimeuuid;
@@ -20,6 +21,7 @@ use user_service::{DeleteUserRequest, DeleteUserResponse, ReadUserRequest, Updat
 pub struct ScyllaUserService {
     read_user_prepared: PreparedStatement,
     create_user_prepared: PreparedStatement,
+    delete_user_prepared: PreparedStatement,
 }
 
 impl ScyllaUserService {
@@ -33,9 +35,14 @@ impl ScyllaUserService {
             "INSERT INTO user (user_id, username, public_key) VALUES (?, ?, ?)"
         ).await.unwrap();
 
+        let delete_user_prepared = db().await.prepare(
+            "DELETE FROM user WHERE user_id = ?"
+        ).await.unwrap();
+
         UserServiceServer::new(Self {
             read_user_prepared,
             create_user_prepared,
+            delete_user_prepared,
         })
     }
 
@@ -44,15 +51,17 @@ impl ScyllaUserService {
         request: Request<ReadUserRequest>,
     ) -> DSResult<Response<ReadUserResponse>> {
 
-        let user_id: CqlTimeuuid = request.get_ref().user_id.map(|parts| parts.into()).ok_or(Status::invalid_argument("invalid user_id"))?;
-
+        let user_id: CqlTimeuuid = req_tuuid!(request, user_id)?;
 
         let res = db().await.execute_unpaged(
             &self.read_user_prepared, (&user_id,)
         ).await?;
 
         let row = res.into_rows_result()?.first_row::<User>()?;
-        let (_, username, public_key, avatar) = row.consume();
+
+        let username = row.username;
+        let public_key = row.public_key;
+        let avatar = row.opt_avatar_asset_id;
 
         Ok(Response::new(ReadUserResponse {
             user_id: Some(request.get_ref().user_id.unwrap()),
@@ -90,6 +99,35 @@ impl ScyllaUserService {
         }))
     }
 
+    async fn update_user_impl(
+        &self,
+        request: Request<UpdateUserRequest>,
+    ) -> DSResult<Response<ReadUserResponse>> {
+        
+        let user_id: CqlTimeuuid = req_tuuid!(request, user_id)?;
+
+        let unpacked = request.into_inner();
+        let username_opt = unpacked.username;
+        let avatar_asset_id_opt = unpacked.avatar_asset_id;
+
+
+        todo!()
+    }
+
+    async fn delete_user_impl(
+        &self,
+        request: Request<DeleteUserRequest>,
+    ) -> DSResult<Response<DeleteUserResponse>> {
+
+        let user_id: CqlTimeuuid = req_tuuid!(request, user_id)?;
+
+        db().await.execute_unpaged(
+            self.delete_user_prepared,
+            (&user_id,)
+        ).await?;
+        Ok(Response::new(DeleteUserResponse {}))
+    }
+
 
 }
 
@@ -116,9 +154,8 @@ impl UserService for ScyllaUserService {
         &self,
         request: Request<UpdateUserRequest>,
     ) -> Result<Response<ReadUserResponse>, Status> {
-        println!("Got a request: {:?}", request);
         
-        Ok(Response::new(todo!()))
+        Ok(self.update_user_impl(request).await?)
     }
 
     async fn delete_user(
@@ -127,7 +164,6 @@ impl UserService for ScyllaUserService {
     ) -> Result<Response<DeleteUserResponse>, Status> {
         println!("Got a request: {:?}", request);
 
-        let response = DeleteUserResponse {};
-        Ok(Response::new(response))
+        Ok(self.delete_user_impl(request).await?)
     }
 }
