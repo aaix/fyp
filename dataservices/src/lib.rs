@@ -8,6 +8,7 @@ pub mod user;
 pub mod db_conn;
 pub mod errors;
 pub mod helpers;
+pub mod macros;
 
 // generated
 pub mod models;
