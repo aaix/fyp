@@ -22,6 +22,7 @@ use uuid::Uuid;
 pub struct ScyllaUserService {
     read_user_prepared: PreparedStatement,
     create_user_prepared: PreparedStatement,
+    create_username_prepared: PreparedStatement,
     delete_user_prepared: PreparedStatement,
     update_user_prepared: PreparedStatement,
 }
@@ -31,6 +32,10 @@ impl ScyllaUserService {
 
         let read_user_prepared = db().await.prepare(
             "SELECT * FROM dataservices.user WHERE user_id = ?"
+        ).await.unwrap();
+
+        let create_username_prepared = db().await.prepare(
+            "INSERT INTO dataservices.user_by_username (username, user_id) VALUES (?, ?) IF NOT EXISTS"
         ).await.unwrap();
 
         let create_user_prepared = db().await.prepare(
@@ -48,6 +53,7 @@ impl ScyllaUserService {
         UserServiceServer::new(Self {
             read_user_prepared,
             create_user_prepared,
+            create_username_prepared,
             delete_user_prepared,
             update_user_prepared,
         })
@@ -91,6 +97,16 @@ impl ScyllaUserService {
         let public_key = parts.public_key;
 
 
+        let (applied, _, _) = db().await.execute_unpaged(
+            &self.create_username_prepared,
+            (&username, &user_id)
+        ).await?.into_rows_result()?.first_row::<(bool, Option<&str>, Option<CqlTimeuuid>)>()?;
+
+
+        if !applied {
+            return Err(Status::invalid_argument("Username already exists").into());
+        }
+
         db().await.execute_unpaged(
             &self.create_user_prepared,
             (&user_id, &username, &public_key)
@@ -114,8 +130,15 @@ impl ScyllaUserService {
         let user_id: CqlTimeuuid = req_tuuid!(request, user_id)?;
 
         let unpacked = request.into_inner();
+
+        if unpacked.username.is_some() {
+            return Err(Status::unimplemented("Username updates not supported yet").into());
+        }
+
         let username = MaybeUnset::from_option(unpacked.username);
         let avatar: MaybeUnset<Uuid> = MaybeUnset::from_option(unpacked.avatar_asset_id.map(|id| id.into()));
+
+
 
         db().await.execute_unpaged(
             &self.update_user_prepared,

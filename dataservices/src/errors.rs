@@ -1,4 +1,4 @@
-use scylla::errors::{ExecutionError, FirstRowError, IntoRowsResultError};
+use scylla::errors::{ExecutionError, FirstRowError, IntoRowsResultError, SingleRowError};
 use tonic::Status;
 
 pub struct DSStatus(Status);
@@ -42,6 +42,15 @@ impl From<ExecutionError> for DSStatus {
         match value {
             BadQuery(_) | EmptyPlan | PrepareError(_) => Status::internal("statement exec fail"),
             _ => Status::unavailable("statement exec failed")
+        }.into()
+    }
+}
+
+impl From<SingleRowError> for DSStatus {
+    fn from(value: SingleRowError) -> Self {
+        eprintln!("SingleRowError: {:?}", value);
+        return match value {
+            _ => Status::internal("deserialise single row fail")
         }.into()
     }
 }

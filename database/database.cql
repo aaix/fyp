@@ -1,6 +1,6 @@
 -- ScyllaDB database schema
 
-CREATE KEYSPACE IF NOT EXISTS dataservices WITH REPLICATION = {
+CREATE KEYSPACE dataservices WITH REPLICATION = {
     'class' : 'NetworkTopologyStrategy',
     -- datacenters
     'datacenter1' : 1
@@ -13,7 +13,12 @@ CREATE TABLE dataservices.user (
     opt_avatar_asset_id UUID, -- foreign key: asset.asset_id
     PRIMARY KEY (user_id),
 );
-CREATE INDEX user_by_username ON dataservices.user (username);
+
+CREATE TABLE user_by_username (
+    username TEXT,
+    user_id TIMEUUID, -- foreign key: user.user_id
+    PRIMARY KEY (username)
+);
 
 -- should probably limit number of devices as public_key isnt indexed
 CREATE TABLE dataservices.user_device (
