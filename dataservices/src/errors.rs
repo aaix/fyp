@@ -20,6 +20,7 @@ impl From<Status> for DSStatus {
 
 impl From<FirstRowError> for DSStatus {
     fn from(value: FirstRowError) -> Self {
+        eprintln!("FirstRowError: {:?}", value);
         return match value {
             FirstRowError::RowsEmpty => Status::not_found("no row found"),
             _ => Status::internal("deserialise data fail")
@@ -28,13 +29,15 @@ impl From<FirstRowError> for DSStatus {
 }
 
 impl From<IntoRowsResultError> for DSStatus {
-    fn from(_value: IntoRowsResultError) -> Self {
+    fn from(value: IntoRowsResultError) -> Self {
+        eprint!("IntoRowsResultError: {:?}", value);
         return Status::internal("deserialise rows failure").into()
     }
 }
 
 impl From<ExecutionError> for DSStatus {
     fn from(value: ExecutionError) -> Self {
+        eprint!("ExecutionError: {:?}", value);
         use ExecutionError::*;
         match value {
             BadQuery(_) | EmptyPlan | PrepareError(_) => Status::internal("statement exec fail"),
