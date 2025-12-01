@@ -10,11 +10,11 @@ CREATE TABLE dataservices.user (
     user_id TIMEUUID,
     username TEXT, -- probably needs to be queryable so users can find users
     public_key BLOB, -- rsa public key
-    opt_avatar_asset_id UUID, -- foreign key: asset.asset_id
+    opt_avatar_asset_id TIMEUUID, -- foreign key: asset.asset_id
     PRIMARY KEY (user_id),
 );
 
-CREATE TABLE user_by_username (
+CREATE TABLE dataservices.user_by_username (
     username TEXT,
     user_id TIMEUUID, -- foreign key: user.user_id
     PRIMARY KEY (username)
@@ -82,7 +82,7 @@ CREATE TABLE dataservices.message (
 
 CREATE TABLE dataservices.message_attachment (
     message_id TIMEUUID, -- foreign key: message.message_id
-    asset_id UUID, -- foreign key: asset.asset_id
+    asset_id TIMEUUID, -- foreign key: asset.asset_id
     PRIMARY KEY (message_id, asset_id)
 );
 
@@ -132,6 +132,6 @@ CREATE TABLE dataservices.temporary_post (
 
 CREATE TABLE dataservices.multiuse_post_attachment ( -- used for temporary & permanent posts
     multiuse_post_id TIMEUUID, -- foreign key: can be temp_post_id or post_id
-    asset_id UUID, -- foreign key: assets.asset_id
+    asset_id TIMEUUID, -- foreign key: assets.asset_id
     PRIMARY KEY (multiuse_post_id, asset_id)
 );
