@@ -11,6 +11,7 @@ service UserService {
     rpc UpdateUser (UpdateUserRequest) returns (ReadUserResponse);
     rpc ReadUser (ReadUserRequest) returns (ReadUserResponse);
     rpc DeleteUser (DeleteUserRequest) returns (DeleteUserResponse);
+    rpc CheckUsername (CheckUsernameRequest) returns (CheckUsernameResponse);
 
 
 }
@@ -40,6 +41,12 @@ message DeleteUserRequest {
 }
 
 message DeleteUserResponse {}
+
+message CheckUsernameRequest {
+    string username = 1;
+}
+
+message CheckUsernameResponse {}
 
 
 // User Device Management (TABLE: user_device)

@@ -2,6 +2,7 @@ use crate::db_conn::db;
 use crate::errors::{DSResult};
 use crate::helpers::gen_timeuuid;
 use crate::models::user::User;
+use crate::protos::user_service::{CheckUsernameRequest, CheckUsernameResponse};
 use crate::protos::{user_service};
 use crate::req_tuuid;
 
@@ -25,6 +26,7 @@ pub struct ScyllaUserService {
     create_username_prepared: PreparedStatement,
     delete_user_prepared: PreparedStatement,
     update_user_prepared: PreparedStatement,
+    check_username_prepared: PreparedStatement,
 }
 
 impl ScyllaUserService {
@@ -50,12 +52,17 @@ impl ScyllaUserService {
             "UPDATE dataservices.user SET username = ?, opt_avatar_asset_id = ? WHERE user_id = ?"
         ).await.unwrap();
 
+        let check_username_prepared = db().await.prepare(
+            "SELECT COUNT(user_id) FROM dataservices.user_by_username WHERE username = ?"
+        ).await.unwrap();
+
         UserServiceServer::new(Self {
             read_user_prepared,
             create_user_prepared,
             create_username_prepared,
             delete_user_prepared,
             update_user_prepared,
+            check_username_prepared,
         })
     }
 
@@ -104,7 +111,7 @@ impl ScyllaUserService {
 
 
         if !applied {
-            return Err(Status::invalid_argument("Username already exists").into());
+            return Err(Status::already_exists("Username already exists").into());
         }
 
         db().await.execute_unpaged(
@@ -163,7 +170,24 @@ impl ScyllaUserService {
         Ok(Response::new(DeleteUserResponse {}))
     }
 
+    async fn check_username_impl(
+        &self,
+        request: Request<CheckUsernameRequest>,
+    ) -> DSResult<Response<CheckUsernameResponse>> {
+        let username = &request.get_ref().username;
 
+        let rows = db().await.execute_unpaged(
+            &self.check_username_prepared,
+            (username,)
+        ).await?.into_rows_result()?.first_row::<(i64,)>()?.0;
+
+        if rows != 0 {
+            Err(Status::already_exists("username taken").into())
+        } else {
+            Ok(Response::new(CheckUsernameResponse {  }))
+        }
+
+    }
 }
 
 
@@ -201,4 +225,12 @@ impl UserService for ScyllaUserService {
 
         Ok(self.delete_user_impl(request).await?)
     }
+
+    async fn check_username(
+        &self,
+        request: Request<CheckUsernameRequest>,
+    ) -> Result<Response<CheckUsernameResponse>, Status> {
+        Ok(self.check_username_impl(request).await?)
+    }
+
 }
