@@ -12,6 +12,7 @@ async fn main() {
 
     Server::builder()
         .add_optional_service(ScyllaUserService::server().await)
+        .add_optional_service(ScyallaUserDeviceService::server().await)
         .serve(addr)
         .await.unwrap();
 }

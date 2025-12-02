@@ -88,7 +88,7 @@ message UpdateDeviceRequest {
     plib.pUUID user_id = 1;
     plib.pUUID device_id = 2;
     optional string device_name = 3;
-    optional string device_type = 4;
+    optional bytes device_public_key = 4;
     optional bytes encrypted_account_key = 5;
 }
 message DeleteDeviceRequest {

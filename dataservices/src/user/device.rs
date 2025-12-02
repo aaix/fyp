@@ -4,9 +4,13 @@ TABLE user_device
 
 use crate::db_conn::db;
 use crate::errors::DSResult;
+use crate::helpers::gen_timeuuid;
+use crate::models::user_device::UserDevice;
 use crate::protos::user_service::{self, CreateDeviceRequest, DeleteDeviceRequest, DeleteDeviceResponse, DeviceObjectResponse, ReadDevicesRequest, ReadDevicesResponse, UpdateDeviceRequest};
+use crate::req_tuuid;
 
 use scylla::statement::prepared::PreparedStatement;
+use scylla::value::{CqlTimeuuid, MaybeUnset};
 use tonic::{Request, Response, Status};
 use user_service::user_device_service_server::{UserDeviceService, UserDeviceServiceServer};
 
@@ -19,61 +23,152 @@ pub struct ScyallaUserDeviceService {
 }
 
 impl ScyallaUserDeviceService {
-    pub async fn service() -> UserDeviceServiceServer<Self> {
+    
+    pub async fn server() -> Option<UserDeviceServiceServer<Self>> {
+        let server = Self::new().await;
+        if let Err(e) = &server {
+            eprintln!("Error creating UserDeviceService server: {:?}", e);
+        };
+        server.ok()
+    }
+
+    pub async fn new() -> Result<UserDeviceServiceServer<Self>, Box<dyn std::error::Error>> {
 
         let create_device_prepared = db().await.prepare(
             "INSERT INTO dataservices.user_device \
             (user_id, device_id, device_name, device_public_key, encrypted_account_key) \
             VALUES (?, ?, ?, ?, ?)"
-        ).await.unwrap();
+        ).await?;
 
         let read_devices_prepared = db().await.prepare(
             "SELECT * FROM dataservices.user_device WHERE user_id = ?"
-        ).await.unwrap();
+        ).await?;
 
         let update_device_prepared = db().await.prepare(
             "UPDATE dataservices.user_device SET device_name = ?, device_public_key = ?, encrypted_account_key = ?\
             WHERE user_id = ? AND device_id = ?"
-        ).await.unwrap();
+        ).await?;
 
         let delete_device_prepared = db().await.prepare(
             "DELETE FROM dataservices.user_device WHERE user_id = ? AND device_id = ?"
-        ).await.unwrap();
+        ).await?;
 
-        UserDeviceServiceServer::new(Self {
+        Ok(UserDeviceServiceServer::new(Self {
             create_device_prepared,
             read_devices_prepared,
             update_device_prepared,
             delete_device_prepared,
-        })
+        }))
     }
 
     async fn create_device_impl(
         &self,
         request: Request<CreateDeviceRequest>
     ) -> DSResult<Response<DeviceObjectResponse>> {
-        todo!()
+
+        let device_id = gen_timeuuid();
+
+        let user_id: CqlTimeuuid = req_tuuid!(request, user_id)?;
+        let owned = request.into_inner();
+        let device_name = owned.device_name;
+        let device_public_key = owned.public_key;
+        let encrypted_account_key = owned.encrypted_account_key;
+
+        db().await.execute_unpaged(
+            &self.create_device_prepared,
+            (
+                &user_id,
+                &device_id,
+                &device_name,
+                &device_public_key,
+                &encrypted_account_key,
+            )
+        ).await?;
+
+
+        Ok(Response::new(DeviceObjectResponse {
+            device_id: Some(device_id.into()),
+            user_id: Some(user_id.into()),
+            device_name,
+            device_public_key,
+            encrypted_account_key,
+        }))
     }
     
     async fn read_devices_impl(
         &self,
         request: Request<ReadDevicesRequest>
     ) -> DSResult<Response<ReadDevicesResponse>> {
-        todo!()
+        
+        let user_id: CqlTimeuuid = req_tuuid!(request, user_id)?;
+
+        // we dont need pagination as there is a device limit
+        let rows = db().await.execute_unpaged(
+            &self.read_devices_prepared, (&user_id,)
+        ).await?.into_rows_result()?;
+
+        let q = rows.rows::<UserDevice>()?;
+
+        let response = q.map(|d_opt| {
+            d_opt.map(|device|
+                DeviceObjectResponse {
+                    user_id: Some(device.user_id.into()),
+                    device_id: Some(device.device_id.into()),
+                    device_name: device.device_name,
+                    device_public_key: device.device_public_key,
+                    encrypted_account_key: device.encrypted_account_key,
+                })
+        }).collect::<Result<Vec<DeviceObjectResponse>, _>>()?;
+
+        
+        Ok(Response::new(ReadDevicesResponse {
+            device_count: response.len() as i32,
+            devices: response,
+
+        }))
     }
     
     async fn update_device_impl(
         &self,
         request: Request<UpdateDeviceRequest>
     ) -> DSResult<Response<DeviceObjectResponse>> {
-        todo!()
+
+
+        let user_id: CqlTimeuuid = req_tuuid!(request, user_id)?;
+        let device_id: CqlTimeuuid = req_tuuid!(request, device_id)?;
+
+        let owned = request.into_inner();
+
+        let device_name = MaybeUnset::from_option(owned.device_name);
+        let device_public_key = MaybeUnset::from_option(owned.device_public_key);
+        let encrypted_account_key = MaybeUnset::from_option(owned.encrypted_account_key);
+        
+        db().await.execute_unpaged(
+            &self.update_device_prepared,
+            (
+                &device_name,
+                &device_public_key,
+                &encrypted_account_key,
+                &user_id,
+                &device_id,
+            )
+        ).await?;
+        todo!("figure out what to return");
+
     }
 
     async fn delete_device_impl(
         &self,
         request: Request<DeleteDeviceRequest>
     ) -> DSResult<Response<DeleteDeviceResponse>> {
-        todo!()
+        let user_id: CqlTimeuuid = req_tuuid!(request, user_id)?;
+        let device_id: CqlTimeuuid = req_tuuid!(request, device_id)?;
+
+        db().await.execute_unpaged(
+            &self.delete_device_prepared,
+            (&user_id, &device_id)
+        ).await?;
+        Ok(Response::new(DeleteDeviceResponse {}))
     }
 
 }
