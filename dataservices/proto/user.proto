@@ -63,16 +63,15 @@ message CreateDeviceRequest {
     plib.pUUID user_id = 1;
     string device_name = 2;
     bytes public_key = 3;
-    bytes encrypted_account_private_key = 4;
+    bytes encrypted_account_key = 4;
 }
 
 message DeviceObjectResponse {
     plib.pUUID device_id = 1;
     plib.pUUID user_id = 2;
     string device_name = 3;
-    string device_type = 4;
     bytes device_public_key = 5;
-    bytes encrypted_account_private_key = 6;
+    bytes encrypted_account_key = 6;
 }
 
 
@@ -90,7 +89,7 @@ message UpdateDeviceRequest {
     plib.pUUID device_id = 2;
     optional string device_name = 3;
     optional string device_type = 4;
-    optional bytes encrypted_account_private_key = 5;
+    optional bytes encrypted_account_key = 5;
 }
 message DeleteDeviceRequest {
     plib.pUUID user_id = 1;

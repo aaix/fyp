@@ -1,4 +1,4 @@
-use scylla::errors::{ExecutionError, FirstRowError, IntoRowsResultError, SingleRowError};
+use scylla::errors::{DeserializationError, ExecutionError, FirstRowError, IntoRowsResultError, PagerExecutionError, RowsError, SingleRowError};
 use tonic::Status;
 
 pub struct DSStatus(Status);
@@ -52,5 +52,30 @@ impl From<SingleRowError> for DSStatus {
         return match value {
             _ => Status::internal("deserialise single row fail")
         }.into()
+    }
+}
+
+impl From<PagerExecutionError> for DSStatus {
+    fn from(value: PagerExecutionError) -> Self {
+        eprintln!("PagerExecutionError: {:?}", value);
+        return match value {
+            _ => Status::internal("paging execution fail")
+        }.into()
+    }
+}
+
+impl From<RowsError> for DSStatus {
+    fn from(value: RowsError) -> Self {
+        eprintln!("RowsError: {:?}", value);
+        return match value {
+            _ => Status::internal("rows deserialisation fail")
+        }.into()
+    }
+}
+
+impl From<DeserializationError> for DSStatus {
+    fn from(value: DeserializationError) -> Self {
+        eprintln!("DeserializationError: {:?}", value);
+        Status::internal("value deserialise fail").into()
     }
 }

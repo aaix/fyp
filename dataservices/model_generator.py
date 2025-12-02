@@ -123,7 +123,7 @@ class RustModelGenerator(ModelGenerator):
                 dependencies.add("use uuid;")
         lines.append("}")
 
-        return "\n".join(chain(header, dependencies, lines))
+        return "\n".join(chain(header, sorted(dependencies), lines))
 
 
 

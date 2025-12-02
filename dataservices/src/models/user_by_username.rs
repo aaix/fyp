@@ -3,10 +3,7 @@
 use scylla::DeserializeRow;
 use scylla::value;
 #[derive(Debug, DeserializeRow)]
-pub struct UserDevice {
+pub struct UserByUsername {
+    pub username: String,
     pub user_id: value::CqlTimeuuid,
-    pub device_id: value::CqlTimeuuid,
-    pub device_name: String,
-    pub device_public_key: Vec<u8>,
-    pub encrypted_account_key: Vec<u8>,
 }

@@ -27,7 +27,7 @@ CREATE TABLE dataservices.user_device (
     device_name TEXT,
     device_public_key BLOB, -- RSA public key for encrypting account key
     -- device will use its private key to decrypt this
-    encypted_account_key BLOB,
+    encrypted_account_key BLOB,
     PRIMARY KEY (user_id, device_id)
 );
 

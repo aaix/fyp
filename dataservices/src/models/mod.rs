@@ -1,4 +1,5 @@
 pub mod user;
+pub mod user_by_username;
 pub mod user_device;
 pub mod friendship;
 pub mod friendship_request;
