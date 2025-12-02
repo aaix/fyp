@@ -2,7 +2,7 @@ use tokio;
 use tonic::transport::Server;
 
 
-use dataservices::{helpers::gen_uuid, user::account::ScyllaUserService};
+use dataservices::{helpers::gen_uuid, user::{account::ScyllaUserService, device::ScyallaUserDeviceService}};
 
 #[tokio::main]
 async fn main() {
@@ -11,7 +11,7 @@ async fn main() {
     let addr = "[::1]:3114".parse().unwrap();
 
     Server::builder()
-        .add_service(ScyllaUserService::server().await)
+        .add_optional_service(ScyllaUserService::server().await)
         .serve(addr)
         .await.unwrap();
 }

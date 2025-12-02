@@ -30,40 +30,49 @@ pub struct ScyllaUserService {
 }
 
 impl ScyllaUserService {
-    pub async fn server() -> UserServiceServer<Self> {
+    
+    pub async fn server() -> Option<UserServiceServer<Self>> {
+        let server = Self::new().await;
+        if let Err(e) = &server {
+            eprintln!("Error creating UserService server: {:?}", e);
+        };
+        server.ok()
+    }
+
+    pub async fn new() -> Result<UserServiceServer<ScyllaUserService>, Box<dyn std::error::Error>> {
 
         let read_user_prepared = db().await.prepare(
             "SELECT * FROM dataservices.user WHERE user_id = ?"
-        ).await.unwrap();
+        ).await?;
 
         let create_username_prepared = db().await.prepare(
             "INSERT INTO dataservices.user_by_username (username, user_id) VALUES (?, ?) IF NOT EXISTS"
-        ).await.unwrap();
+        ).await?;
 
         let create_user_prepared = db().await.prepare(
             "INSERT INTO dataservices.user (user_id, username, public_key) VALUES (?, ?, ?)"
-        ).await.unwrap();
+        ).await?;
 
         let delete_user_prepared = db().await.prepare(
             "DELETE FROM dataservices.user WHERE user_id = ?"
-        ).await.unwrap();
+        ).await?;
 
         let update_user_prepared = db().await.prepare(
             "UPDATE dataservices.user SET username = ?, opt_avatar_asset_id = ? WHERE user_id = ?"
-        ).await.unwrap();
+        ).await?;
 
         let check_username_prepared = db().await.prepare(
             "SELECT COUNT(user_id) FROM dataservices.user_by_username WHERE username = ?"
         ).await.unwrap();
 
-        UserServiceServer::new(Self {
+        Ok(UserServiceServer::new(Self {
             read_user_prepared,
             create_user_prepared,
             create_username_prepared,
             delete_user_prepared,
             update_user_prepared,
             check_username_prepared,
-        })
+        }))
     }
 
     async fn read_user_impl(
