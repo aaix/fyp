@@ -65,7 +65,7 @@ CREATE TABLE dataservices.message_channel_member (
     channel_id UUID, -- foreign key: message_channel.channel_id
     member__user_id TIMEUUID, -- foreign key: user.user_id
     joined_at TIMESTAMP,
-    encrypyed_shared_key BLOB, -- shared key encrypted by account public key
+    encrypted_shared_key BLOB, -- shared key encrypted by account public key
     PRIMARY KEY (channel_id, member__user_id),
 );
 CREATE INDEX message_channel_by_member ON dataservices.message_channel_member (member__user_id);
