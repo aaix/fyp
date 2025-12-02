@@ -22,7 +22,7 @@ CREATE TABLE dataservices.user_by_username (
 
 -- should probably limit number of devices as public_key isnt indexed
 CREATE TABLE dataservices.user_device (
-    user_id UUID, -- foreign key: user.user_id
+    user_id TIMEUUID, -- foreign key: user.user_id
     device_id TIMEUUID,
     device_name TEXT,
     device_public_key BLOB, -- RSA public key for encrypting account key

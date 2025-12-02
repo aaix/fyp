@@ -30,7 +30,7 @@ pub struct ScyllaUserService {
 }
 
 impl ScyllaUserService {
-    pub async fn service() -> UserServiceServer<ScyllaUserService> {
+    pub async fn server() -> UserServiceServer<Self> {
 
         let read_user_prepared = db().await.prepare(
             "SELECT * FROM dataservices.user WHERE user_id = ?"
