@@ -35,11 +35,13 @@ impl ScyllaUserService {
         let server = Self::new().await;
         if let Err(e) = &server {
             eprintln!("Error creating UserService server: {:?}", e);
-        };
-        server.ok()
+            None
+        } else {
+            Some(UserServiceServer::new(server.unwrap()))
+        }
     }
 
-    pub async fn new() -> Result<UserServiceServer<ScyllaUserService>, Box<dyn std::error::Error>> {
+    pub async fn new() -> Result<ScyllaUserService, Box<dyn std::error::Error>> {
 
         let read_user_prepared = db().await.prepare(
             "SELECT * FROM dataservices.user WHERE user_id = ?"
@@ -65,14 +67,14 @@ impl ScyllaUserService {
             "SELECT COUNT(user_id) FROM dataservices.user_by_username WHERE username = ?"
         ).await.unwrap();
 
-        Ok(UserServiceServer::new(Self {
+        Ok(Self {
             read_user_prepared,
             create_user_prepared,
             create_username_prepared,
             delete_user_prepared,
             update_user_prepared,
             check_username_prepared,
-        }))
+        })
     }
 
     async fn read_user_impl(
