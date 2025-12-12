@@ -5,10 +5,32 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AZ7</title>
     <link rel="stylesheet" href="styles.css">
-</head>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?icon_names=account_box,chat,home&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" /></head>
 <body>
-    <div id="root-container">
-        <div class="center-in-container center-content">hi<br>🙂</div>
+    <div id="root-container" class="container">
+
+        <div id="main-app" class="container">
+            <div id="topbar-container" class="container">
+                <img class ="logo" src="./logo.png">
+            </div>
+        </div>
+        <div id="bottombar-container" class="container">
+            <div id="home-button-container" class="bb-button-container">
+                <button id="home-button" class="bb-button icon-container">
+                    <span class="material-symbols-outlined">home</span>
+                </button>
+            </div>
+            <div id="chat-button-container" class="bb-button-container">
+                <button id="chat-button" class="bb-button icon-container">
+                    <span class="material-symbols-outlined">chat</span>
+                </button>
+            </div>
+            <div id="account-button-container" class="bb-button-container">
+                <button id="account-button" class="bb-button icon-container">
+                    <span class="material-symbols-outlined">account_box</span>
+                </button>
+            </div>
+        </div>
     </div>
 </body>
 </html>
