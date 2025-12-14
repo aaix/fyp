@@ -1,2 +1,4 @@
 dataservices/target/
 database/data
+api/.venv
+*__pycache__

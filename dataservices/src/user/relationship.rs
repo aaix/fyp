@@ -30,7 +30,5 @@ impl ScyllaUserRelationshipService {
     }
 }
 
-#[async_trait]
-impl UserRelationshipService for ScyllaUserRelationshipService {
-    
-}
+//#[async_trait]
+//impl UserRelationshipService for ScyllaUserRelationshipService {    }
