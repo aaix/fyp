@@ -76,7 +76,7 @@ CREATE TABLE dataservices.message (
     message_id TIMEUUID,
     message_type INT,
     opt_last_edited TIMESTAMP,
-    opt_content TEXT,
+    opt_content BLOB,
     PRIMARY KEY ((channel_id, bucket), message_id)
 ) WITH CLUSTERING ORDER BY (message_id DESC);
 
