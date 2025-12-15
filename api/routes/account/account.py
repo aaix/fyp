@@ -7,7 +7,7 @@ from grpc import StatusCode
 
 from api import ApiErrExc
 from api.utils import Base64Input, Base64Output
-from api.responses.errors import BadRequest, ERROR_ALREADY_EXISTS
+from api.responses.errors import BadRequest, ERROR_ALREADY_EXISTS, ERROR_INVALID_KEY
 from api.grpc import user_pb2_grpc
 from api.grpc import user_pb2
 from api.utils import puuid_str
@@ -36,6 +36,10 @@ class SignupResponse(BaseModel):
 
 @AccountRouter.post("/signup")
 async def signup(request: Request, body: SignupBody) -> SignupResponse:
+
+    if len(body.public_key) == 0:
+        raise ApiErrExc(BadRequest("incorrect key length", api_error_code=ERROR_INVALID_KEY))
+
     try:
         res: user_pb2.ReadUserResponse = await grpcuser.CreateUser(user_pb2.CreateUserRequest(
             username=body.username,
