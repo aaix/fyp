@@ -1,6 +1,5 @@
-from fastapi import Request
+from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.responses import Response
 from joserfc.errors import DecodeError
 
 from collections.abc import Callable, Awaitable

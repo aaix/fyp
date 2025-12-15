@@ -5,6 +5,13 @@ from typing import Any, Mapping
 
 from api.responses.status_codes import ERROR_UNKNOWN
 
+
+class ApiErrExc(Exception):
+    def __init__(self, res: ErrorResponse):
+        super().__init__()
+        self.res = res
+
+
 class ApiResponse(JSONResponse): ...
 class SuccessResponse(ApiResponse):
     def render(self, content: object) -> bytes:
@@ -18,8 +25,9 @@ class ErrorResponse(ApiResponse):
     API_CODE = ERROR_UNKNOWN
     HTTP_CODE = 0
 
-    def __init__(self, message: str, api_error_code: int | None = None, headers: Mapping[str, str] | None = None, media_type: str | None = None, background: BackgroundTask | None = None) -> None:
+    def __init__(self, message: str, structure: object = None, api_error_code: int | None = None, headers: Mapping[str, str] | None = None, media_type: str | None = None, background: BackgroundTask | None = None) -> None:
         self.custom_code = api_error_code
+        self.custom_structure = structure
         assert self.HTTP_CODE
         super().__init__(message, self.HTTP_CODE, headers, media_type, background)
     def render(self, content: Any) -> bytes:
@@ -27,7 +35,8 @@ class ErrorResponse(ApiResponse):
             "success": False,
             "data": {
                 "code": self.custom_code or self.API_CODE,
-                "message": content
+                "message": content,
+                "structure": self.custom_structure
             }
         })
     
