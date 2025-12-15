@@ -130,7 +130,7 @@ impl ScyllaUserService {
 
         db().await.execute_unpaged(
             &self.create_user_prepared,
-            (&user_id, &username, &email, &public_key)
+            (&user_id, &email, &username, &public_key)
         ).await?;
 
 
