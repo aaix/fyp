@@ -23,11 +23,13 @@ message ReadUserResponse {
     optional plib.pUUID avatar_asset_id = 2;
     bytes public_key = 3;
     string username = 4;
+    string email = 5;
 }
 
 message CreateUserRequest {
     string username = 1;
-    bytes public_key = 2;
+    string email = 2;
+    bytes public_key = 3;
 }
 
 message UpdateUserRequest {

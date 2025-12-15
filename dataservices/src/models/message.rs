@@ -10,5 +10,5 @@ pub struct Message {
     pub message_id: value::CqlTimeuuid,
     pub message_type: i32,
     pub opt_last_edited: Option<value::CqlTimestamp>,
-    pub opt_content: Option<String>,
+    pub opt_content: Option<Vec<u8>>,
 }

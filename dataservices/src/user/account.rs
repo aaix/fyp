@@ -52,7 +52,7 @@ impl ScyllaUserService {
         ).await?;
 
         let create_user_prepared = db().await.prepare(
-            "INSERT INTO dataservices.user (user_id, username, public_key) VALUES (?, ?, ?)"
+            "INSERT INTO dataservices.user (user_id, email, username, public_key) VALUES (?, ?, ?, ?)"
         ).await?;
 
         let delete_user_prepared = db().await.prepare(
@@ -93,12 +93,14 @@ impl ScyllaUserService {
         let username = row.username;
         let public_key = row.public_key;
         let avatar = row.opt_avatar_asset_id;
+        let email = row.email;
 
         Ok(Response::new(ReadUserResponse {
             user_id: Some(request.get_ref().user_id.unwrap()),
             avatar_asset_id: avatar.map(|asset_id| asset_id.into()),
             public_key,
             username,
+            email,
         }))
     }
 
@@ -113,6 +115,7 @@ impl ScyllaUserService {
         let parts = request.into_inner();
         let username = parts.username;
         let public_key = parts.public_key;
+        let email = parts.email;
 
 
         let (applied, _, _) = db().await.execute_unpaged(
@@ -127,7 +130,7 @@ impl ScyllaUserService {
 
         db().await.execute_unpaged(
             &self.create_user_prepared,
-            (&user_id, &username, &public_key)
+            (&user_id, &username, &email, &public_key)
         ).await?;
 
 
@@ -136,6 +139,7 @@ impl ScyllaUserService {
             user_id: Some(user_id.into()),
             avatar_asset_id: None,
             public_key: public_key,
+            email: email,
             username: username,
         }))
     }

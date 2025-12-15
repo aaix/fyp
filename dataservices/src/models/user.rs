@@ -6,6 +6,7 @@ use scylla::value;
 pub struct User {
     pub user_id: value::CqlTimeuuid,
     pub username: String,
+    pub email: String,
     pub public_key: Vec<u8>,
     pub opt_avatar_asset_id: Option<value::CqlTimeuuid>,
 }
