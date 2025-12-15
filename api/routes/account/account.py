@@ -1,11 +1,12 @@
 from fastapi import APIRouter, Request
-from pydantic import BaseModel, Field, Base64Bytes
+from pydantic import BaseModel, Field
 
 import grpc
 from grpc import RpcError
 from grpc import StatusCode
 
 from api import ApiErrExc
+from api.utils import Base64Input, Base64Output
 from api.responses.errors import BadRequest, ERROR_ALREADY_EXISTS
 from api.grpc import user_pb2_grpc
 from api.grpc import user_pb2
@@ -22,15 +23,15 @@ grpcuser = user_pb2_grpc.UserServiceStub(channel)
 class SignupBody(BaseModel):
     username: Annotated[str, Field(max_length=16, min_length=3)]
     email: Annotated[str, Field(min_length=6, max_length=64)]
-    public_key: Base64Bytes
+    public_key: Base64Input
 
 
 class SignupResponse(BaseModel):
     user_id: str
     username: str
     email: str
-    public_key: Base64Bytes
-    avatar_asset_id: str
+    public_key: Base64Output
+    avatar_asset_id: str | None
 
 
 @AccountRouter.post("/signup")
