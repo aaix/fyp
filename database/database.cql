@@ -9,6 +9,7 @@ CREATE KEYSPACE dataservices WITH REPLICATION = {
 CREATE TABLE dataservices.user (
     user_id TIMEUUID,
     username TEXT, -- probably needs to be queryable so users can find users
+    email TEXT,
     public_key BLOB, -- rsa public key
     opt_avatar_asset_id TIMEUUID, -- foreign key: asset.asset_id
     PRIMARY KEY (user_id),

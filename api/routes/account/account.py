@@ -8,9 +8,8 @@ AccountRouter = APIRouter()
 
 class SignupBody(BaseModel):
     username: Annotated[str, Field(max_length=16, min_length=3)]
-    email: str
+    email: Annotated[str, Field(min_length=6, max_length=64)]
     public_key: Base64Bytes
-
 
 
 
