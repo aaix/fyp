@@ -1,6 +1,6 @@
 
 networks:
-  scylla-network:
+  shared-network:
     driver: bridge
     ipam:
       driver: default
@@ -15,9 +15,32 @@ x-scylla-base: &scylla-base
 
 
 services:
+  dataservices-0:
+    networks:
+      shared-network:
+        ipv4_address: 172.31.0.10
+    image: az-dataservices:latest
+    environment:
+      - SCYLLA_URI=172.31.0.2
+    depends_on:
+      scylla-seed:
+        condition: service_healthy
+      
+  
+  api-0:
+    networks:
+      shared-network:
+        ipv4_address: 172.31.0.20
+    image: az-api:latest
+    environment:
+      - DATASERVICES=172.31.0.10:3114
+    depends_on:
+      - dataservices-0
+
+
   scylla-seed:
     networks:
-      scylla-network:
+      shared-network:
         ipv4_address: 172.31.0.2
       
     image: az-scylla:latest
@@ -40,7 +63,7 @@ services:
         source: ./database/main.yaml
         target: /etc/scylla/scylla.yaml
     networks:
-      scylla-network:
+      shared-network:
           ipv4_address: 172.31.0.3
 
   scylla-node2:
@@ -53,7 +76,7 @@ services:
         source: ./database/main.yaml
         target: /etc/scylla/scylla.yaml
     networks:
-      scylla-network:
+      shared-network:
           ipv4_address: 172.31.0.4
 
   scylla-node3:
@@ -66,7 +89,7 @@ services:
         source: ./database/main.yaml
         target: /etc/scylla/scylla.yaml
     networks:
-      scylla-network:
+      shared-network:
           ipv4_address: 172.31.0.5
 
   scylla-node4:
@@ -79,5 +102,5 @@ services:
         source: ./database/main.yaml
         target: /etc/scylla/scylla.yaml
     networks:
-      scylla-network:
+      shared-network:
           ipv4_address: 172.31.0.6
