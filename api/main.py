@@ -13,6 +13,7 @@ from api.routes.account.account import AccountRouter
 
 # middlewares
 middlewares = ( # outer
+    Middleware(middleware.HeaderValidationMiddleware),
     Middleware(middleware.JWTMiddleware), 
 ) # inner
 

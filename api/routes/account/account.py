@@ -1,38 +1,24 @@
 from fastapi import APIRouter, Request
-from pydantic import BaseModel, Field
 
 import grpc
 from grpc import RpcError
 from grpc import StatusCode
 
 from api import ApiErrExc
-from api.utils import Base64Input, Base64Output
 from api.responses.errors import BadRequest, ERROR_ALREADY_EXISTS, ERROR_INVALID_KEY
 from api.grpc import user_pb2_grpc
 from api.grpc import user_pb2
 from api.utils import puuid_str
+from api.discovery import DiscoveryManager
+from api.routes.account.models import *
 
-from typing import Annotated
+discovery = DiscoveryManager()
+
 
 AccountRouter = APIRouter()
 
-channel = grpc.aio.insecure_channel('localhost:3114')
+channel = grpc.aio.insecure_channel(discovery.discover_dataservices())
 grpcuser = user_pb2_grpc.UserServiceStub(channel)
-
-
-class SignupBody(BaseModel):
-    username: Annotated[str, Field(max_length=16, min_length=3)]
-    email: Annotated[str, Field(min_length=6, max_length=64)]
-    public_key: Base64Input
-
-
-class SignupResponse(BaseModel):
-    user_id: str
-    username: str
-    email: str
-    public_key: Base64Output
-    avatar_asset_id: str | None
-
 
 @AccountRouter.post("/signup")
 async def signup(request: Request, body: SignupBody) -> SignupResponse:
@@ -52,7 +38,7 @@ async def signup(request: Request, body: SignupBody) -> SignupResponse:
         else:
             raise e
 
-    
+
     return SignupResponse(
         user_id=puuid_str(res.user_id),
         username=res.username,

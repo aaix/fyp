@@ -8,3 +8,7 @@ class Unauthorized(ErrorResponse):
 class BadRequest(ErrorResponse):
     API_CODE = ERROR_BAD_REQUEST
     HTTP_CODE = 400
+
+class UnsupportedMediaType(ErrorResponse):
+    API_CODE = ERROR_BAD_REQUEST
+    HTTP_CODE = 415
