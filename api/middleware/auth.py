@@ -9,6 +9,7 @@ from json import JSONDecodeError
 from api.models import Session
 from api.responses import errors
 from api.crypto.session import decode_jose_session
+from api.logger import log
 
 
 
@@ -23,13 +24,13 @@ class JWTMiddleware(BaseHTTPMiddleware):
         try:
             raw = decode_jose_session(token)
         except DecodeError as e:
-            print(e)
-            return errors.Unauthorized("Garbage authorization", errors.ERROR_GARBAGE_SESSION)
+            log(e)
+            return errors.Unauthorized("Garbage authorization", api_error_code=errors.ERROR_GARBAGE_SESSION)
 
         try:
             session = Session.from_encode(raw)
         except TypeError, JSONDecodeError:
-            return errors.Unauthorized("Invalid session", errors.ERROR_INVALID_SESSION)
+            return errors.Unauthorized("Invalid session", api_error_code=errors.ERROR_INVALID_SESSION)
         
         request.state.session = session
         return await call_next(request)

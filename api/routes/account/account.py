@@ -5,16 +5,18 @@ from grpc import RpcError
 from grpc import StatusCode
 
 from api import ApiErrExc
-from api.responses.errors import BadRequest, ERROR_ALREADY_EXISTS, ERROR_INVALID_KEY
+from api.crypto.models import PEMPublicKey
+from api.responses.errors import BadRequest, ERROR_ALREADY_EXISTS
 from api.grpc import user_pb2_grpc
 from api.grpc import user_pb2
 from api.utils import puuid_str, unwrap
 from api.discovery import DiscoveryManager
 from api.routes.account.models import *
 
+from typing import cast
+
 discovery = DiscoveryManager()
 
-from typing import cast
 
 AccountRouter = APIRouter()
 
@@ -24,14 +26,12 @@ grpcuser = user_pb2_grpc.UserServiceStub(channel)
 @AccountRouter.post("/signup")
 async def signup(request: Request, body: SignupBody) -> SignupResponse:
 
-    if len(body.public_key) == 0:
-        raise ApiErrExc(BadRequest("incorrect key length", api_error_code=ERROR_INVALID_KEY))
 
     try:
         res = cast(user_pb2.ReadUserResponse, await grpcuser.CreateUser(user_pb2.CreateUserRequest(
             username=body.username,
             email=body.email,
-            public_key=body.public_key
+            public_key=body.public_key.to_db()
         )))
     except RpcError as e:
         if e.code() == StatusCode.ALREADY_EXISTS:
@@ -44,6 +44,6 @@ async def signup(request: Request, body: SignupBody) -> SignupResponse:
         user_id=puuid_str(res.user_id) or unwrap(),
         username=res.username,
         email=res.email,
-        public_key=res.public_key,
+        public_key=PEMPublicKey.from_bytes(res.public_key),
         avatar_asset_id=puuid_str(res.avatar_asset_id)
     )

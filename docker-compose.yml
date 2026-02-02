@@ -33,7 +33,7 @@ services:
         ipv4_address: 172.31.0.20
     image: az-api:latest
     environment:
-      - DATASERVICES=172.31.0.10:3114
+      - DATASERVICES_URI=172.31.0.10:3114
     depends_on:
       - dataservices-0
 

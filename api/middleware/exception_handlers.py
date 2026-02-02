@@ -10,4 +10,4 @@ def api_err_exc_error_handler(request: Request, exc: Exception) -> Response:
 
 def request_validation_error_handler(request: Request, exc: Exception) -> Response:
     assert isinstance(exc, RequestValidationError)
-    return BadRequest("Invalid request data", exc.errors())
+    return BadRequest("Invalid request data", structure=exc.errors())

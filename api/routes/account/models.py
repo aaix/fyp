@@ -1,42 +1,15 @@
-from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
-from pydantic import BaseModel, EncoderProtocol, Field
 
-from pydantic_core import CoreSchema, core_schema
+from pydantic import BaseModel, Field
 
-from pydantic import GetCoreSchemaHandler, TypeAdapter
+from api.crypto.models import PEMPublicKey
 
-
-from typing import Annotated, Any
-
-from api.utils import Base64Input, Base64Output
+from typing import Annotated
 
 
 __all__ = (
     "SignupBody",
     "SignupResponse",
 )
-
-
-class PEMPublicKey(RSAPublicKey):
-    """
-    Validate a field is in PEM format
-    """
-
-    def __get_pydantic_core_schema__(
-        cls, source_type: Any, handler: GetCoreSchemaHandler
-    ) -> CoreSchema:
-        return core_schema.no_info_after_validator_function(cls, handler(str))
-
-
-    @classmethod
-    def _pydantic_validate(cls, v):
-        if not isinstance(v, bytes):
-            raise TypeError('Expected bytes')
-        key = serialization.load_pem_public_key(v)
-        if not isinstance(key, RSAPublicKey):
-            raise TypeError("Incorrect key type")
-        return key
 
 
 

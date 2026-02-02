@@ -1,7 +1,5 @@
 #!/bin/bash
 
 docker compose down
-docker build ./database -t az-scylla:latest
-docker build ./api -t az-api:latest
-docker build ./dataservices -t az-dataservices:latest
+bash ./build.bash
 docker compose up -d
