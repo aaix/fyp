@@ -1,16 +1,22 @@
 from api.grpc.plib_pb2 import pUUID
+from api.responses import errors, ApiErrExc
 
 from pydantic import EncodedBytes, EncoderProtocol 
 
 import base64
 
-from typing import Annotated
+from typing import Annotated, Never
 
 __all__ = (
     "puuid_int",
     "puuid_str",
     "Base64Input",
+    "unwrap",
 )
+
+def unwrap() -> Never:
+    raise ApiErrExc(errors.InternalServerError("Illegal state occured"))
+
 
 def puuid_int(uuid: pUUID) -> int | None:
     if uuid.id_low + uuid.id_high == 0:
