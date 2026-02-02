@@ -8,7 +8,7 @@ use dataservices::{helpers::gen_uuid, user::{account::ScyllaUserService, device:
 async fn main() {
     println!("Hello, world!");
     gen_uuid();
-    let addr = "[::1]:3114".parse().unwrap();
+    let addr = "0.0.0.0:3114".parse().unwrap();
 
     Server::builder()
         .add_optional_service(ScyllaUserService::server().await)
