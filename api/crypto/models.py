@@ -19,14 +19,25 @@ class PEMPublicKey:
     def __get_pydantic_core_schema__(
         cls, source_type: Any, handler: GetCoreSchemaHandler
     ) -> CoreSchema:
-        return core_schema.no_info_after_validator_function(cls.from_bytes, handler(str))
+        return core_schema.union_schema(
+            choices=[
+                core_schema.is_instance_schema(cls),
+                core_schema.no_info_after_validator_function(
+                    cls.from_bytes,
+                    handler(bytes),
+                ),
+            ],
+            serialization=core_schema.plain_serializer_function_ser_schema(
+                lambda v: v.to_bytes(),
+                return_schema=handler(bytes),
+            )
+        )
 
-    def to_db(self) -> bytes:
+    def to_bytes(self) -> bytes:
         return self.__inner.public_bytes(
             encoding=serialization.Encoding.PEM,
             format=serialization.PublicFormat.SubjectPublicKeyInfo
         )
-
 
     @classmethod
     def from_bytes(cls, v: bytes | str):

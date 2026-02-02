@@ -7,6 +7,7 @@ from grpc import StatusCode
 from api import ApiErrExc
 from api.crypto.models import PEMPublicKey
 from api.responses.errors import BadRequest, ERROR_ALREADY_EXISTS
+from api.grpc.lazy import LazyGRPC
 from api.grpcgen import user_pb2_grpc
 from api.grpcgen import user_pb2
 from api.utils import puuid_str, unwrap
@@ -20,18 +21,17 @@ discovery = DiscoveryManager()
 
 AccountRouter = APIRouter()
 
-channel = grpc.aio.insecure_channel(discovery.discover_dataservices())
-grpcuser = user_pb2_grpc.UserServiceStub(channel)
+grpcuser = LazyGRPC(discovery.discover_dataservices(), user_pb2_grpc.UserServiceStub)
 
 @AccountRouter.post("/signup")
 async def signup(request: Request, body: SignupBody) -> SignupResponse:
 
 
     try:
-        res = cast(user_pb2.ReadUserResponse, await grpcuser.CreateUser(user_pb2.CreateUserRequest(
+        res = cast(user_pb2.ReadUserResponse, await grpcuser.stub.CreateUser(user_pb2.CreateUserRequest(
             username=body.username,
             email=body.email,
-            public_key=body.public_key.to_db()
+            public_key=body.public_key.to_bytes()
         )))
     except RpcError as e:
         if e.code() == StatusCode.ALREADY_EXISTS:
