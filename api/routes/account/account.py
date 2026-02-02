@@ -7,8 +7,8 @@ from grpc import StatusCode
 from api import ApiErrExc
 from api.crypto.models import PEMPublicKey
 from api.responses.errors import BadRequest, ERROR_ALREADY_EXISTS
-from api.grpc import user_pb2_grpc
-from api.grpc import user_pb2
+from api.grpcgen import user_pb2_grpc
+from api.grpcgen import user_pb2
 from api.utils import puuid_str, unwrap
 from api.discovery import DiscoveryManager
 from api.routes.account.models import *
