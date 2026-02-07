@@ -22,7 +22,7 @@ class KeyStore {
             };
 
             request.onsuccess = function(event) {
-                console.log("IndexedDB opened successfully");
+                console.log("[KeyStore] IndexedDB opened successfully");
                 resolve(event.target.result);
             };
             request.onerror = function(event) {
@@ -64,7 +64,11 @@ class KeyStore {
 
     async genKey() {
         return {
-            key: await window.crypto.subtle.generateKey("Ed25519", false, ["sign", "verify"]),
+            key: await window.crypto.subtle.generateKey(
+                {name:"RSA-OAEP", modulusLength:4096, publicExponent:new Uint8Array([0x01, 0x00, 0x01]), hash:"SHA-256"},
+                false,
+                ["encrypt", "decrypt", "wrapKey", "unwrapKey"]
+            ),
             id: crypto.randomUUID()
         };
     }
