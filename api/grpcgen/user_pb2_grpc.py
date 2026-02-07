@@ -51,6 +51,11 @@ class UserServiceStub(object):
                 request_serializer=user__pb2.ReadUserRequest.SerializeToString,
                 response_deserializer=user__pb2.ReadUserResponse.FromString,
                 _registered_method=True)
+        self.ReadUserByUsername = channel.unary_unary(
+                '/dataservices.userproto.UserService/ReadUserByUsername',
+                request_serializer=user__pb2.ReadUserByUsernameRequest.SerializeToString,
+                response_deserializer=user__pb2.ReadUserResponse.FromString,
+                _registered_method=True)
         self.DeleteUser = channel.unary_unary(
                 '/dataservices.userproto.UserService/DeleteUser',
                 request_serializer=user__pb2.DeleteUserRequest.SerializeToString,
@@ -58,7 +63,7 @@ class UserServiceStub(object):
                 _registered_method=True)
         self.CheckUsername = channel.unary_unary(
                 '/dataservices.userproto.UserService/CheckUsername',
-                request_serializer=user__pb2.CheckUsernameRequest.SerializeToString,
+                request_serializer=user__pb2.ReadUserByUsernameRequest.SerializeToString,
                 response_deserializer=user__pb2.CheckUsernameResponse.FromString,
                 _registered_method=True)
 
@@ -81,6 +86,12 @@ class UserServiceServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def ReadUser(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ReadUserByUsername(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -116,6 +127,11 @@ def add_UserServiceServicer_to_server(servicer, server):
                     request_deserializer=user__pb2.ReadUserRequest.FromString,
                     response_serializer=user__pb2.ReadUserResponse.SerializeToString,
             ),
+            'ReadUserByUsername': grpc.unary_unary_rpc_method_handler(
+                    servicer.ReadUserByUsername,
+                    request_deserializer=user__pb2.ReadUserByUsernameRequest.FromString,
+                    response_serializer=user__pb2.ReadUserResponse.SerializeToString,
+            ),
             'DeleteUser': grpc.unary_unary_rpc_method_handler(
                     servicer.DeleteUser,
                     request_deserializer=user__pb2.DeleteUserRequest.FromString,
@@ -123,7 +139,7 @@ def add_UserServiceServicer_to_server(servicer, server):
             ),
             'CheckUsername': grpc.unary_unary_rpc_method_handler(
                     servicer.CheckUsername,
-                    request_deserializer=user__pb2.CheckUsernameRequest.FromString,
+                    request_deserializer=user__pb2.ReadUserByUsernameRequest.FromString,
                     response_serializer=user__pb2.CheckUsernameResponse.SerializeToString,
             ),
     }
@@ -221,6 +237,33 @@ class UserService(object):
             _registered_method=True)
 
     @staticmethod
+    def ReadUserByUsername(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/dataservices.userproto.UserService/ReadUserByUsername',
+            user__pb2.ReadUserByUsernameRequest.SerializeToString,
+            user__pb2.ReadUserResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
     def DeleteUser(request,
             target,
             options=(),
@@ -262,7 +305,7 @@ class UserService(object):
             request,
             target,
             '/dataservices.userproto.UserService/CheckUsername',
-            user__pb2.CheckUsernameRequest.SerializeToString,
+            user__pb2.ReadUserByUsernameRequest.SerializeToString,
             user__pb2.CheckUsernameResponse.FromString,
             options,
             channel_credentials,

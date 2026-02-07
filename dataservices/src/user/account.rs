@@ -2,10 +2,11 @@ use crate::db_conn::db;
 use crate::errors::{DSResult};
 use crate::helpers::gen_timeuuid;
 use crate::models::user::User;
-use crate::protos::user_service::{CheckUsernameRequest, CheckUsernameResponse};
+use crate::protos::user_service::{CheckUsernameRequest, CheckUsernameResponse, ReadUserByUsernameRequest};
 use crate::protos::{user_service};
 use crate::req_tuuid;
 
+use scylla::errors::FirstRowError;
 use scylla::statement::prepared::PreparedStatement;
 use scylla::value::{CqlTimeuuid, MaybeUnset};
 use tonic::{Request, Response, Status};
@@ -26,7 +27,7 @@ pub struct ScyllaUserService {
     create_username_prepared: PreparedStatement,
     delete_user_prepared: PreparedStatement,
     update_user_prepared: PreparedStatement,
-    check_username_prepared: PreparedStatement,
+    fetch_user_id_by_username_prepared: PreparedStatement,
 }
 
 impl ScyllaUserService {
@@ -63,8 +64,8 @@ impl ScyllaUserService {
             "UPDATE dataservices.user SET username = ?, opt_avatar_asset_id = ? WHERE user_id = ?"
         ).await?;
 
-        let check_username_prepared = db().await.prepare(
-            "SELECT COUNT(user_id) FROM dataservices.user_by_username WHERE username = ?"
+        let fetch_user_id_by_username_prepared = db().await.prepare(
+            "SELECT user_id FROM dataservices.user_by_username WHERE username = ?"
         ).await.unwrap();
 
         Ok(Self {
@@ -73,16 +74,14 @@ impl ScyllaUserService {
             create_username_prepared,
             delete_user_prepared,
             update_user_prepared,
-            check_username_prepared,
+            fetch_user_id_by_username_prepared,
         })
     }
 
-    async fn read_user_impl(
+    async fn _read_user_reuse(
         &self,
-        request: Request<ReadUserRequest>,
+        user_id: CqlTimeuuid,
     ) -> DSResult<Response<ReadUserResponse>> {
-
-        let user_id: CqlTimeuuid = req_tuuid!(request, user_id)?;
 
         let res = db().await.execute_unpaged(
             &self.read_user_prepared, (&user_id,)
@@ -96,12 +95,23 @@ impl ScyllaUserService {
         let email = row.email;
 
         Ok(Response::new(ReadUserResponse {
-            user_id: Some(request.get_ref().user_id.unwrap()),
+            user_id: Some(user_id.into()),
             avatar_asset_id: avatar.map(|asset_id| asset_id.into()),
             public_key,
             username,
             email,
         }))
+    }
+
+
+    async fn read_user_impl(
+        &self,
+        request: Request<ReadUserRequest>,
+    ) -> DSResult<Response<ReadUserResponse>> {
+
+        let user_id: CqlTimeuuid = req_tuuid!(request, user_id)?;
+
+        Ok(self._read_user_reuse(user_id).await?)
     }
 
     async fn create_user_impl(
@@ -192,15 +202,41 @@ impl ScyllaUserService {
         let username = &request.get_ref().username;
 
         let rows = db().await.execute_unpaged(
-            &self.check_username_prepared,
+            &self.fetch_user_id_by_username_prepared,
             (username,)
-        ).await?.into_rows_result()?.first_row::<(i64,)>()?.0;
+        ).await?.into_rows_result()?.rows_num();
 
         if rows != 0 {
             Err(Status::already_exists("username taken").into())
         } else {
             Ok(Response::new(CheckUsernameResponse {  }))
         }
+
+    }
+
+    async fn read_user_by_username_impl(
+        &self,
+        request: Request<ReadUserByUsernameRequest>,
+    ) -> DSResult<Response<ReadUserResponse>> {
+
+        let username = &request.get_ref().username;
+
+
+        let user_id = match db().await.execute_unpaged(
+            &self.fetch_user_id_by_username_prepared,
+            (username,)
+        ).await?.into_rows_result()?.first_row::<(CqlTimeuuid,)>() {
+            Ok(user_id) => user_id.0,
+            Err(e) => {
+                match e {
+                    FirstRowError::RowsEmpty => return Err(Status::not_found("no user_id with username").into()),
+                    _ => Err(e)?,
+                }
+            },
+        };
+
+
+        Ok(self._read_user_reuse(user_id).await?)
 
     }
 }
@@ -246,6 +282,13 @@ impl UserService for ScyllaUserService {
         request: Request<CheckUsernameRequest>,
     ) -> Result<Response<CheckUsernameResponse>, Status> {
         Ok(self.check_username_impl(request).await?)
+    }
+
+    async fn read_user_by_username(
+        &self,
+        request: Request<ReadUserByUsernameRequest>,
+    ) -> Result<Response<ReadUserResponse>, Status> {
+        Ok(self.read_user_by_username_impl(request).await?)
     }
 
 }

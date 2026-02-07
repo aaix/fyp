@@ -13,6 +13,12 @@ class ReadUserRequest(_message.Message):
     user_id: _plib_pb2.pUUID
     def __init__(self, user_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ...) -> None: ...
 
+class ReadUserByUsernameRequest(_message.Message):
+    __slots__ = ("username",)
+    USERNAME_FIELD_NUMBER: _ClassVar[int]
+    username: str
+    def __init__(self, username: _Optional[str] = ...) -> None: ...
+
 class ReadUserResponse(_message.Message):
     __slots__ = ("user_id", "avatar_asset_id", "public_key", "username", "email")
     USER_ID_FIELD_NUMBER: _ClassVar[int]
@@ -56,12 +62,6 @@ class DeleteUserRequest(_message.Message):
 class DeleteUserResponse(_message.Message):
     __slots__ = ()
     def __init__(self) -> None: ...
-
-class CheckUsernameRequest(_message.Message):
-    __slots__ = ("username",)
-    USERNAME_FIELD_NUMBER: _ClassVar[int]
-    username: str
-    def __init__(self, username: _Optional[str] = ...) -> None: ...
 
 class CheckUsernameResponse(_message.Message):
     __slots__ = ()

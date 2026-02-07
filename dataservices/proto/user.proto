@@ -10,14 +10,20 @@ service UserService {
     rpc CreateUser (CreateUserRequest) returns (ReadUserResponse);
     rpc UpdateUser (UpdateUserRequest) returns (ReadUserResponse);
     rpc ReadUser (ReadUserRequest) returns (ReadUserResponse);
+    rpc ReadUserByUsername (ReadUserByUsernameRequest) returns (ReadUserResponse);
     rpc DeleteUser (DeleteUserRequest) returns (DeleteUserResponse);
-    rpc CheckUsername (CheckUsernameRequest) returns (CheckUsernameResponse);
+    rpc CheckUsername (ReadUserByUsernameRequest) returns (CheckUsernameResponse);
 
 
 }
 message ReadUserRequest {
     plib.pUUID user_id = 1;
 }
+
+message ReadUserByUsernameRequest {
+    string username = 1;
+}
+
 message ReadUserResponse {
     plib.pUUID user_id = 1;
     optional plib.pUUID avatar_asset_id = 2;
@@ -44,9 +50,6 @@ message DeleteUserRequest {
 
 message DeleteUserResponse {}
 
-message CheckUsernameRequest {
-    string username = 1;
-}
 
 message CheckUsernameResponse {}
 
