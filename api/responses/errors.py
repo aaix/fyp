@@ -16,3 +16,7 @@ class BadRequest(ErrorResponse):
 class UnsupportedMediaType(ErrorResponse):
     API_CODE = ERROR_BAD_REQUEST
     HTTP_CODE = 415
+
+class NotFound(ErrorResponse):
+    API_CODE = ERROR_NOT_FOUND
+    HTTP_CODE = 404

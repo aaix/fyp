@@ -1,0 +1,22 @@
+
+from pydantic import BaseModel, Field
+
+from api.utils import Base64Output
+
+from typing import Annotated
+
+
+__all__ = (
+    "LoginBody",
+    "LoginResponse"
+)
+
+
+
+class LoginBody(BaseModel):
+    username: str
+
+
+class LoginResponse(BaseModel):
+    encrypted_session: Base64Output
+
