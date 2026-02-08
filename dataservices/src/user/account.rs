@@ -2,7 +2,7 @@ use crate::db_conn::db;
 use crate::errors::{DSResult};
 use crate::helpers::gen_timeuuid;
 use crate::models::user::User;
-use crate::protos::user_service::{CheckUsernameRequest, CheckUsernameResponse, ReadUserByUsernameRequest};
+use crate::protos::user_service::{CheckUsernameResponse, ReadUserByUsernameRequest};
 use crate::protos::{user_service};
 use crate::req_tuuid;
 
@@ -197,7 +197,7 @@ impl ScyllaUserService {
 
     async fn check_username_impl(
         &self,
-        request: Request<CheckUsernameRequest>,
+        request: Request<ReadUserByUsernameRequest>,
     ) -> DSResult<Response<CheckUsernameResponse>> {
         let username = &request.get_ref().username;
 
@@ -279,7 +279,7 @@ impl UserService for ScyllaUserService {
 
     async fn check_username(
         &self,
-        request: Request<CheckUsernameRequest>,
+        request: Request<ReadUserByUsernameRequest>,
     ) -> Result<Response<CheckUsernameResponse>, Status> {
         Ok(self.check_username_impl(request).await?)
     }
