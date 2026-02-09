@@ -1,5 +1,7 @@
 const KEYSTORE_VERSION = 2;
 
+import {genRSAKey, decryptB64} from "./keyhandler.mjs";
+
 class KeyStore {
     constructor() {
         this.promise = new Promise((resolve, reject) => {
@@ -64,14 +66,36 @@ class KeyStore {
 
     async genKey() {
         return {
-            key: await window.crypto.subtle.generateKey(
-                {name:"RSA-OAEP", modulusLength:4096, publicExponent:new Uint8Array([0x01, 0x00, 0x01]), hash:"SHA-256"},
-                false,
-                ["encrypt", "decrypt", "wrapKey", "unwrapKey"]
-            ),
+            key: await genRSAKey(["encrypt", "decrypt", "wrapKey", "unwrapKey"]),
             id: crypto.randomUUID()
         };
     }
 }
 
 window.keyStore = new KeyStore();
+
+
+export class Session {
+    async login(username) {
+
+        localStorage.removeItem("session");
+
+        const res = await apiPOST("session/login", {username: username});
+
+        if (!res.success) {
+            return res.error.code;
+        }
+
+        const encrypted_session = res.data.encrypted_session;
+        
+        // decrypt the base64-encoded encrypted session key
+        const key = (await window.keyStore.getKeys())[0].key.privateKey;
+        const decrypted_session = await decryptB64(encrypted_session, key);
+        // convert to string
+        const session_str = new TextDecoder().decode(decrypted_session);
+
+        console.log("[Session] Login successful, session:", session_str);
+        localStorage.setItem("session", session_str);
+        return true;
+    }
+}

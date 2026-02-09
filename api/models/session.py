@@ -6,7 +6,7 @@ from typing import Self
 
 from datetime import datetime, UTC
 
-from api.responses import ApiErrExc
+from api.responses import ErrorResponse
 from api.responses.errors import Unauthorized
 from api.responses.status_codes import ERROR_SESSION_EXPIRED
 
@@ -37,7 +37,7 @@ class Session:
             user_id=user_id,
         )
 
-    def validate(self):
-        if self.issued + CONF_SESSION_DURATION > _timenow():
-            raise ApiErrExc(Unauthorized("Session expired", api_error_code=ERROR_SESSION_EXPIRED))
+    def validate(self) -> None | ErrorResponse:
+        if self.issued + CONF_SESSION_DURATION < _timenow():
+            return Unauthorized("Session expired", api_error_code=ERROR_SESSION_EXPIRED)
 

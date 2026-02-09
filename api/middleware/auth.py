@@ -31,8 +31,7 @@ class JWTMiddleware(BaseHTTPMiddleware):
 
         try:
             raw = decode_jose_session(token)
-        except DecodeError as e:
-            log(e)
+        except DecodeError:
             return errors.Unauthorized("Garbage authorization", api_error_code=errors.ERROR_GARBAGE_SESSION)
 
         try:
@@ -40,7 +39,8 @@ class JWTMiddleware(BaseHTTPMiddleware):
         except TypeError, JSONDecodeError:
             return errors.Unauthorized("Invalid session", api_error_code=errors.ERROR_INVALID_SESSION)
         
-        session.validate()
+        if err := session.validate():
+            return err
         
         request.state.session = session
         return await call_next(request)
