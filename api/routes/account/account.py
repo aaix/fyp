@@ -4,14 +4,13 @@ import grpc
 from grpc import RpcError
 from grpc import StatusCode
 
+from api import *
 from api import ApiErrExc
 from api.crypto.models import PEMPublicKey
-from api.responses.errors import BadRequest, ERROR_ALREADY_EXISTS
 from api.grpc.lazy import LazyGRPC
 from api.grpcgen import user_pb2_grpc
 from api.grpcgen import user_pb2
 from api.utils import puuid_str, unwrap
-from api.discovery import DiscoveryManager
 from api.routes.account.models import *
 
 from typing import cast
@@ -35,7 +34,7 @@ async def signup(request: Request, body: SignupBody) -> SignupResponse:
         )))
     except RpcError as e:
         if e.code() == StatusCode.ALREADY_EXISTS:
-            raise ApiErrExc(BadRequest("username already exists", api_error_code=ERROR_ALREADY_EXISTS))
+            raise ApiErrExc(errors.BadRequest("username already exists", api_error_code=errors.ERROR_ALREADY_EXISTS))
         else:
             raise e
 

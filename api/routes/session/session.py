@@ -2,17 +2,14 @@ from fastapi import APIRouter, Request
 from grpc import RpcError, StatusCode
 
 
+from api import *
 from api.crypto import session as session_crypto
 from api.grpc.lazy import LazyGRPC
 from api.grpcgen import user_pb2_grpc
 from api.grpcgen import user_pb2
-from api.discovery import DiscoveryManager
-from api.middleware.auth import SessionParam
 from api.models.session import Session
-from api.responses import ApiErrExc
-from api.responses.errors import *
 from api.routes.session.models import *
-from api.logger import log
+
 
 from typing import cast
 
@@ -34,7 +31,7 @@ async def login(request: Request, body: LoginBody) -> LoginResponse:
         )))
     except RpcError as e:
         if e.code() == StatusCode.NOT_FOUND:
-            raise ApiErrExc(NotFound("no such user exists", api_error_code=ERROR_NO_SUCH_USER))
+            raise ApiErrExc(errors.NotFound("no such user exists", api_error_code=errors.ERROR_NO_SUCH_USER))
         else:
             raise e
 
