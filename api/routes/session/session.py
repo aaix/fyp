@@ -41,11 +41,7 @@ async def login(request: Request, body: LoginBody) -> LoginResponse:
     user_id = puuid_str(user.user_id) or unwrap()
 
     session = Session.new(user_id=user_id)
-    
-    log(session.to_encode())
-
     token = session_crypto.encode_jose_session(session.to_encode())
-    log(token)
 
     return LoginResponse(
         encrypted_session=session_crypto.encrypt_session_with_key(token, user.public_key)
