@@ -6,6 +6,11 @@ from typing import Self
 
 from datetime import datetime, UTC
 
+from api.responses import ApiErrExc
+from api.responses.errors import Unauthorized
+from api.responses.status_codes import ERROR_SESSION_EXPIRED
+
+CONF_SESSION_DURATION = 4 * 60 * 60 # 4 hours
 
 def _timenow() -> float:
     return datetime.now(UTC).timestamp()
@@ -31,4 +36,8 @@ class Session:
             version=0,
             user_id=user_id,
         )
+
+    def validate(self):
+        if self.issued + CONF_SESSION_DURATION > _timenow():
+            raise ApiErrExc(Unauthorized("Session expired", api_error_code=ERROR_SESSION_EXPIRED))
 

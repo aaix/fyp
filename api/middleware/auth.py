@@ -32,5 +32,7 @@ class JWTMiddleware(BaseHTTPMiddleware):
         except TypeError, JSONDecodeError:
             return errors.Unauthorized("Invalid session", api_error_code=errors.ERROR_INVALID_SESSION)
         
+        session.validate()
+        
         request.state.session = session
         return await call_next(request)
