@@ -7,6 +7,7 @@ from api.grpc.lazy import LazyGRPC
 from api.grpcgen import user_pb2_grpc
 from api.grpcgen import user_pb2
 from api.discovery import DiscoveryManager
+from api.middleware.auth import SessionParam
 from api.models.session import Session
 from api.responses import ApiErrExc
 from api.responses.errors import *
@@ -50,3 +51,7 @@ async def login(request: Request, body: LoginBody) -> LoginResponse:
         encrypted_session=session_crypto.encrypt_session_with_key(token, user.public_key)
     )
     
+@SessionRouter.get("renew")
+async def renew(request: Request, s: SessionParam):
+    log(f"Session is {s}")
+    return

@@ -1,4 +1,7 @@
-from fastapi import Request, Response
+from typing import Annotated
+from fastapi import Depends, Request, Response
+from annotated_doc import Doc
+
 from starlette.middleware.base import BaseHTTPMiddleware
 from joserfc.errors import DecodeError
 
@@ -7,11 +10,16 @@ from collections.abc import Callable, Awaitable
 from json import JSONDecodeError
 
 from api.models import Session
-from api.responses import errors
+from api.responses import ApiErrExc, errors
 from api.crypto.session import decode_jose_session
 from api.logger import log
 
 
+
+__all__ = (
+    "JWTMiddleware",
+    "SessionParam",
+)
 
 
 class JWTMiddleware(BaseHTTPMiddleware):
@@ -36,3 +44,17 @@ class JWTMiddleware(BaseHTTPMiddleware):
         
         request.state.session = session
         return await call_next(request)
+
+def raise_for_session(request: Request) -> Session:
+    if not (session := request.state.session):
+        raise ApiErrExc(errors.Forbidden(
+            "Authentication required for this endpoint",
+            api_error_code=errors.ERROR_AUTH_REQUIRED
+        ))
+    return session
+
+SessionParam = Annotated[
+    Session,
+    Depends(raise_for_session),
+    Doc("Annotated param to require authentication and provide the session")
+]
