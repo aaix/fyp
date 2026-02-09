@@ -22,12 +22,16 @@ middlewares = ( # outer
         CORSMiddleware, 
         allow_origins=["http://localhost:5500"],
         allow_methods=["*"],
+        allow_headers=["Authorization"],
     ),
     Middleware(middlewares.HeaderValidationMiddleware),
     Middleware(middlewares.JWTMiddleware), 
 ) # inner
 
-app = FastAPI(middleware=middlewares, default_response_class=SuccessResponse)
+app = FastAPI(
+    middleware=middlewares,
+    default_response_class=SuccessResponse,
+)
 
 # routers
 app.include_router(AccountRouter, prefix="/account")
@@ -36,6 +40,8 @@ app.include_router(SessionRouter, prefix="/session")
 # exception handlers
 app.add_exception_handler(RequestValidationError, exception_handlers.request_validation_error_handler)
 app.add_exception_handler(ApiErrExc, exception_handlers.api_err_exc_error_handler)
+app.add_exception_handler(Exception, exception_handlers.unhandled_exception_handler)
+app.add_exception_handler(404, exception_handlers.not_found_exception_handler)
 
 @app.get("/")
 async def root() -> dict[Literal["hello"], Literal["world"]]:
