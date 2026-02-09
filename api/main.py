@@ -2,12 +2,14 @@
 
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError 
+from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware import Middleware
 
 from typing import Literal
 
-import api.middleware as middleware
+import api.middleware as middlewares
 from api import  ApiErrExc
+from api.responses import SuccessResponse
 from api.middleware import exception_handlers
 
 # routers
@@ -16,11 +18,16 @@ from api.routes.session.session import SessionRouter
 
 # middlewares
 middlewares = ( # outer
-    Middleware(middleware.HeaderValidationMiddleware),
-    Middleware(middleware.JWTMiddleware), 
+    Middleware(
+        CORSMiddleware, 
+        allow_origins=["http://localhost:5500"],
+        allow_methods=["*"],
+    ),
+    Middleware(middlewares.HeaderValidationMiddleware),
+    Middleware(middlewares.JWTMiddleware), 
 ) # inner
 
-app = FastAPI(middleware=middlewares)
+app = FastAPI(middleware=middlewares, default_response_class=SuccessResponse)
 
 # routers
 app.include_router(AccountRouter, prefix="/account")
