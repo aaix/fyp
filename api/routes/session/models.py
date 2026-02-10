@@ -1,7 +1,6 @@
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Base64Bytes
 
-from api.utils import Base64Output
 
 from typing import Annotated
 
@@ -18,5 +17,5 @@ class LoginBody(BaseModel):
 
 
 class LoginResponse(BaseModel):
-    encrypted_session: Base64Output
+    encrypted_session: Base64Bytes
 

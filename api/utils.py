@@ -10,7 +10,7 @@ from typing import Annotated, Never
 __all__ = (
     "puuid_int",
     "puuid_str",
-    "Base64Input",
+#     "Base64Input",
     "unwrap",
 )
 
@@ -31,8 +31,8 @@ def puuid_str(uuid: pUUID) -> str | None:
 class Base64InputEncoder(EncoderProtocol):
     """Helper for base64 str inputs decoding to bytes"""
     @classmethod
-    def encode(cls, value: bytes) -> str: # type: ignore
-        return base64.b64encode(value).decode('ascii')
+    def encode(cls, value: bytes) -> bytes:
+        return base64.b64encode(value)
 
     @classmethod
     def decode(cls, data: bytes) -> bytes:
@@ -50,6 +50,6 @@ class Base64OutputEncoder(Base64InputEncoder):
         return data
 
 
-Base64Input = Annotated[bytes, EncodedBytes(encoder=Base64InputEncoder)]
-Base64Output = Annotated[bytes, EncodedBytes(encoder=Base64OutputEncoder)]
+# Base64Input = Annotated[bytes, EncodedBytes(encoder=Base64InputEncoder)]
+# Base64Output = Annotated[bytes, EncodedBytes(encoder=Base64OutputEncoder)]
 
