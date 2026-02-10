@@ -43,6 +43,12 @@ async def signup(request: Request, body: SignupBody) -> SignupResponse:
         user_id=puuid_str(res.user_id) or unwrap(),
         username=res.username,
         email=res.email,
-        public_key=PEMPublicKey.from_bytes(res.public_key),
+        public_key=body.public_key,
         avatar_asset_id=puuid_str(res.avatar_asset_id)
     )
+
+@AccountRouter.get("/devicehandshake/{device_id}")
+async def device_key_handshake(r: Request, s: SessionParam, device_id: str): ...
+
+@AccountRouter.post("/device")
+async def new_device(r: Request, s: SessionParam, body: NewDeviceBody) -> DeviceResponse: ...
