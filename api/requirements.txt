@@ -1,5 +1,5 @@
 fastapi[standard] == 0.124.2
 joserfc==1.6.0
 grpcio==1.76.0
-cryptography==46.0.3
+cryptography==46.0.5
 protobuf==6.33.5
