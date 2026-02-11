@@ -11,6 +11,7 @@ __all__ = (
     "SignupResponse",
     "NewDeviceBody",
     "DeviceResponse",
+    "DeviceKeyResponse",
 )
 
 
@@ -38,4 +39,7 @@ class DeviceResponse(BaseModel):
     device_id: str
     device_name: str
     device_public_key: PEMPublicKey
+    encrypted_account_key: Base64Bytes
+
+class DeviceKeyResponse(BaseModel):
     encrypted_account_key: Base64Bytes

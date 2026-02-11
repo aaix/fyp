@@ -28,6 +28,13 @@ def puuid_str(uuid: pUUID) -> str | None:
         return f"{int_id:X}"
     return None
 
+def str_puuid(uuid: str) -> pUUID:
+    data = int(uuid, 16)
+    return pUUID(
+        id_high=data >> 64
+        id_low=data & 1 << 64
+    )
+
 class Base64InputEncoder(EncoderProtocol):
     """Helper for base64 str inputs decoding to bytes"""
     @classmethod
