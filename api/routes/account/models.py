@@ -1,9 +1,12 @@
 
-from pydantic import Base64Bytes, BaseModel, Field
+from pydantic import BaseModel, Field
 
 from api.crypto.models import PEMPublicKey
+from api.grpcgen.user_pb2 import DeviceObjectResponse
 
 from typing import Annotated
+
+from api.utils import Base64Input, Base64Output, puuid_str, unwrap
 
 
 __all__ = (
@@ -19,7 +22,8 @@ __all__ = (
 class SignupBody(BaseModel):
     username: Annotated[str, Field(max_length=16, min_length=3)]
     email: Annotated[str, Field(min_length=6, max_length=64)]
-    public_key: PEMPublicKey
+    account_public_key: PEMPublicKey
+    device: NewDeviceBody
 
 
 class SignupResponse(BaseModel):
@@ -28,18 +32,32 @@ class SignupResponse(BaseModel):
     email: str
     public_key: PEMPublicKey
     avatar_asset_id: str | None
+    device: DeviceResponse
 
 class NewDeviceBody(BaseModel):
     name: Annotated[str, Field(min_length=2, max_length=32)]
     public_key: PEMPublicKey
-    encrypted_private_key: Base64Bytes
+    encrypted_private_key: Base64Input
 
 class DeviceResponse(BaseModel):
     user_id: str
     device_id: str
     device_name: str
     device_public_key: PEMPublicKey
-    encrypted_account_key: Base64Bytes
+    encrypted_account_key: Base64Output
+
+    @classmethod
+    def from_rpc(cls, res: DeviceObjectResponse,
+        user_id: str | None = None,
+        public_key: PEMPublicKey | None = None,
+    ):
+        return cls(
+            user_id=user_id or puuid_str(res.user_id) or unwrap(),
+            device_id=puuid_str(res.device_id) or unwrap(),
+            device_name=res.device_name,
+            device_public_key=public_key or PEMPublicKey.from_bytes(res.device_public_key),
+            encrypted_account_key=res.encrypted_account_key,
+        )
 
 class DeviceKeyResponse(BaseModel):
-    encrypted_account_key: Base64Bytes
+    encrypted_account_key: Base64Output

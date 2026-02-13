@@ -1,6 +1,9 @@
 const KEYSTORE_VERSION = 2;
 
-import {genRSAKey, decryptB64} from "./keyhandler.mjs";
+import {genRSAKey, decryptB64, exportAsPem, RSAWrapRSAwithSym, RSAunwrapRSAwithSym} from "./keyhandler.mjs";
+import API from "./api.mjs"
+import {blobToB64} from "./utils.mjs"
+
 
 class KeyStore {
     constructor() {
@@ -70,17 +73,31 @@ class KeyStore {
             id: crypto.randomUUID()
         };
     }
+
+    async getDefaultKey() {
+        let key = (await this.getKeys())[0];
+        if (key) {
+            return key;
+        }
+        key = await this.genKey();
+        await this.putKey(key);
+
+        return key;
+        
+    }
 }
 
-window.keyStore = new KeyStore();
+export const keyStore = new KeyStore();
 
 
 export class Session {
+
+
     async login(username) {
 
         localStorage.removeItem("session");
 
-        const res = await apiPOST("session/login", {username: username});
+        const res = await API.POST("session/login", {username: username});
 
         if (!res.success) {
             return res.error.code;
@@ -89,7 +106,6 @@ export class Session {
         const encrypted_session = res.data.encrypted_session;
         
         // decrypt the base64-encoded encrypted session key
-        const key = (await window.keyStore.getKeys())[0].key.privateKey;
         const decrypted_session = await decryptB64(encrypted_session, key);
         // convert to string
         const session_str = new TextDecoder().decode(decrypted_session);
@@ -97,5 +113,37 @@ export class Session {
         console.log("[Session] Login successful, session:", session_str);
         localStorage.setItem("session", session_str);
         return true;
+    }
+
+    async signup(username, email) {
+        localStorage.removeItem("session");
+
+        const device_key = await keyStore.getDefaultKey();
+
+        const account_key = await genRSAKey(["encrypt", "decrypt", "wrapKey", "unwrapKey"], true);
+
+        const encrypted_account_key = await blobToB64(await RSAWrapRSAwithSym(device_key.key.publicKey, account_key.privateKey));
+
+        const dpk = await exportAsPem(device_key.key.publicKey);
+        const apk = await exportAsPem(account_key.publicKey);
+
+        const res = await API.POST("account/signup",
+            {
+                username:username, email:email, account_public_key: apk,
+                device: {
+                    name:"device1",
+                    public_key: dpk,
+                    encrypted_private_key: encrypted_account_key
+                }
+            }
+        );
+
+
+        if (!res.success) {
+            return res.error
+        }
+
+        return res;
+        
     }
 }

@@ -1,8 +1,8 @@
 
-from pydantic import BaseModel, Base64Bytes
+from pydantic import BaseModel
 
 
-from typing import Annotated
+from api.utils import Base64Output
 
 
 __all__ = (
@@ -17,5 +17,5 @@ class LoginBody(BaseModel):
 
 
 class LoginResponse(BaseModel):
-    encrypted_session: Base64Bytes
+    encrypted_session: Base64Output
 

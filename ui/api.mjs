@@ -55,22 +55,27 @@ async function _api (uri, method, body=undefined) {
 
 }
 
-async function apiGET(uri) {
-    return await _api(uri, method="GET")
+
+const API = {
+    async GET(uri) {
+        return await _api(uri, "GET");
+    },
+
+    async PATCH(uri, body) {
+        return await _api(uri, "PATCH", body);
+    },
+
+    async POST(uri, body) {
+        return await _api(uri, "POST", body);
+    },
+
+    async DELETE(uri, body) {
+        return await _api(uri, "DELETE", body);
+    },
+
+    async PUT(uri, body) {
+        return await _api(uri, "PUT", body);
+    },
 }
 
-async function apiPATCH(uri, body) {
-    return await _api(uri, method="PATCH", body)
-}
-
-async function apiPOST(uri, body) {
-    return await _api(uri, method="POST", body)
-}
-
-async function apiDELETE(uri, body) {
-    return await _api(uri, method="DELETE", body)
-}
-
-async function apiPUT(uri, body) {
-    return await _api(uri, method="PUT", body)
-}
+export default API;
