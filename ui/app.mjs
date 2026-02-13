@@ -93,6 +93,16 @@ export const keyStore = new KeyStore();
 export class Session {
 
 
+    async doAccountKeyHandshake() {
+        const device_key = (await keyStore.getDefaultKey()).key;
+        const device_id = localStorage.getItem("device");
+
+        const res = await API.GET(`account/devicehandshake/{device_id}`);
+
+
+    }
+
+
     async login(username) {
 
         localStorage.removeItem("session");
@@ -142,6 +152,9 @@ export class Session {
         if (!res.success) {
             return res.error
         }
+
+        const device_id = res.data.device.device_id;
+        localStorage.setItem("device", device_id);
 
         return res;
         
