@@ -11,6 +11,8 @@ from api.crypto.models import PEMPublicKey
 from api.grpc.lazy import LazyGRPC
 from api.grpcgen import user_pb2_grpc
 from api.grpcgen import user_pb2
+from api.grpcgen.plib_pb2 import pUUID
+from api.models.common import Username
 from api.models.session import Session
 from api.utils import id_compare, puuid_str, str_puuid, unwrap, uuid_puuid
 from api.routes.account.models import *
@@ -25,6 +27,12 @@ AccountRouter = APIRouter()
 
 grpcuser = LazyGRPC(discovery.discover_dataservices(), user_pb2_grpc.UserServiceStub)
 grpcdevice = LazyGRPC(discovery.discover_dataservices(), user_pb2_grpc.UserDeviceServiceStub)
+
+async def read_devices(user_id: str | pUUID, count_only=False) -> user_pb2.ReadDevicesResponse:
+    return cast(user_pb2.ReadDevicesResponse, await grpcdevice.stub.ReadDevices(user_pb2.ReadDevicesRequest(
+        user_id=user_id if isinstance(user_id, pUUID) else str_puuid(user_id),
+        count_only=count_only,
+    )))
 
 @AccountRouter.post("/signup")
 async def signup(r: Request, body: SignupBody) -> SignupResponse:
@@ -62,11 +70,20 @@ async def signup(r: Request, body: SignupBody) -> SignupResponse:
         device=device
     )
 
-@AccountRouter.get("/devicehandshake/{device_id}")
-async def device_key_handshake(r: Request, s: SessionParam, device_id: UUID) -> DeviceKeyResponse:
-    res = cast(user_pb2.ReadDevicesResponse, await grpcdevice.stub.ReadDevices(user_pb2.ReadDevicesRequest(
-        user_id=str_puuid(s.user_id)
-    )))
+@AccountRouter.get("/devicehandshake/{username}/{device_id}")
+async def device_key_handshake(r: Request, username: Username, device_id: UUID) -> DeviceKeyResponse:
+
+    try:
+        user = cast(user_pb2.ReadUserResponse, await grpcuser.stub.ReadUserByUsername(user_pb2.ReadUserByUsernameRequest(
+            username=username
+        )))
+    except RpcError as e:
+        if e.code() == StatusCode.NOT_FOUND:
+            raise ApiErrExc(errors.NotFound("no such user exists", api_error_code=errors.ERROR_NO_SUCH_USER))
+        else:
+            raise e
+
+    res = await read_devices(user.user_id)
 
     for device in res.devices:
         if id_compare(device.device_id, device_id):
@@ -75,16 +92,15 @@ async def device_key_handshake(r: Request, s: SessionParam, device_id: UUID) -> 
         raise ApiErrExc(errors.NotFound("No such device"))
 
     return DeviceKeyResponse(
-        encrypted_account_key=device.encrypted_account_key
+        encrypted_account_key=device.encrypted_account_key,
+        account_public_key=PEMPublicKey.from_bytes(user.public_key)
     )
 
 
 @AccountRouter.get("/devices")
 async def get_all_devices(r: Request, s: SessionParam) -> list[DeviceResponse]:
 
-    res = cast(user_pb2.ReadDevicesResponse, await grpcdevice.stub.ReadDevices(user_pb2.ReadDevicesRequest(
-        user_id=str_puuid(s.user_id),
-    )))
+    res = await read_devices(s.user_id)
 
     devices = []
     for device in res.devices:
@@ -96,10 +112,7 @@ async def get_all_devices(r: Request, s: SessionParam) -> list[DeviceResponse]:
 @AccountRouter.post("/device")
 async def new_device(r: Request, s: SessionParam, body: NewDeviceBody) -> DeviceResponse:
 
-    res = cast(user_pb2.ReadDevicesResponse, await grpcdevice.stub.ReadDevices(user_pb2.ReadDevicesRequest(
-        user_id=str_puuid(s.user_id),
-        count_only=True,
-    )))
+    res = await read_devices(s.user_id, count_only=True)
 
     if res.device_count >= CONF_USER_MAX_DEVICES:
         raise ApiErrExc(errors.BadRequest("Device limit reached", api_error_code=errors.ERROR_LIMIT_REACHED))
@@ -120,10 +133,7 @@ async def new_device(r: Request, s: SessionParam, body: NewDeviceBody) -> Device
 @AccountRouter.delete("/device/{device_id}")
 async def delete_device(r: Request, s: SessionParam, device_id: UUID) -> None:
 
-    res = cast(user_pb2.ReadDevicesResponse, await grpcdevice.stub.ReadDevices(user_pb2.ReadDevicesRequest(
-        user_id=str_puuid(s.user_id),
-        count_only=True,
-    )))
+    res = await read_devices(s.user_id, count_only=True)
 
     if res.device_count <= 1:
         raise ApiErrExc(errors.BadRequest("Unable to delete a users only device", api_error_code=errors.ERROR_LIMIT_REACHED))

@@ -1,8 +1,8 @@
 const KEYSTORE_VERSION = 2;
 
-import {genRSAKey, decryptB64, exportAsPem, RSAWrapRSAwithSym, RSAunwrapRSAwithSym} from "./keyhandler.mjs";
+import {genRSAKey, decryptB64, exportAsPem, RSAWrapRSAwithSym, RSAunwrapRSAwithSym, importFromPem} from "./keyhandler.mjs";
 import API from "./api.mjs"
-import {blobToB64} from "./utils.mjs"
+import {blobToB64, B64toUint8Array} from "./utils.mjs"
 
 
 class KeyStore {
@@ -70,7 +70,8 @@ class KeyStore {
     async genKey() {
         return {
             key: await genRSAKey(["encrypt", "decrypt", "wrapKey", "unwrapKey"]),
-            id: crypto.randomUUID()
+            id: crypto.randomUUID(),
+            device_id: null
         };
     }
 
@@ -93,17 +94,38 @@ export const keyStore = new KeyStore();
 export class Session {
 
 
-    async doAccountKeyHandshake() {
-        const device_key = (await keyStore.getDefaultKey()).key;
-        const device_id = localStorage.getItem("device");
+    async doAccountKeyHandshake(username) {
+        const device_key = await keyStore.getDefaultKey();
+        const device_id = device_key.device_id;
 
-        const res = await API.GET(`account/devicehandshake/{device_id}`);
+        if (!device_id || !username) {
+            throw new Error("Insufficient params for handshake");
+        }
+
+        const res = await API.GET(`account/devicehandshake/${username}/${device_id}`);
+
+        if (!res.success) {
+            return res.error
+        }
+        const encrypted_account_key = res.data.encrypted_account_key;
+        const public_key = await importFromPem( res.data.account_public_key);
+
+
+        
+        const key = await RSAunwrapRSAwithSym(device_key.key.privateKey, (await B64toUint8Array(encrypted_account_key)).buffer);
+
+        this.accKey = {privateKey: key, publicKey: public_key}
 
 
     }
 
 
     async login(username) {
+
+        const key = this.accKey;
+        if (!key) {
+            throw new Error("Account key handshake incomplete");
+        }
 
         localStorage.removeItem("session");
 
@@ -116,11 +138,11 @@ export class Session {
         const encrypted_session = res.data.encrypted_session;
         
         // decrypt the base64-encoded encrypted session key
-        const decrypted_session = await decryptB64(encrypted_session, key);
+        const decrypted_session = await decryptB64(encrypted_session, key.privateKey);
         // convert to string
         const session_str = new TextDecoder().decode(decrypted_session);
 
-        console.log("[Session] Login successful, session:", session_str);
+        console.log("[Session] Login successful");
         localStorage.setItem("session", session_str);
         return true;
     }
@@ -154,7 +176,7 @@ export class Session {
         }
 
         const device_id = res.data.device.device_id;
-        localStorage.setItem("device", device_id);
+        keyStore.putKey({...device_key, device_id: res.data.device.device_id});
 
         return res;
         

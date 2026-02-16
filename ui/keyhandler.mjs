@@ -57,6 +57,7 @@ export async function genRSAKey(features=["encrypt", "decrypt"], exportable=fals
     );
 }
 
+
 export async function decryptB64(encrypted_b64, key) {
     const encrypted = Uint8Array.from(atob(encrypted_b64), c => c.charCodeAt(0));
     return await window.crypto.subtle.decrypt({name:"RSA-OAEP"}, key, encrypted);
@@ -68,6 +69,21 @@ export async function exportAsPem(key) {
     const b64 = btoa(String.fromCharCode(...new Uint8Array(spki)));
     const pem = `-----BEGIN PUBLIC KEY-----\n${b64.match(/.{1,64}/g).join("\n")}\n-----END PUBLIC KEY-----`;
     return pem;
+}
+
+// gemini generated
+export async function importFromPem(pem) {
+    const b64 = pem.replace(/-----(BEGIN|END) PUBLIC KEY-----|\s/g, "");
+    const binaryDer = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+
+    // not gemini generated
+    return await window.crypto.subtle.importKey(
+        "spki",
+        binaryDer.buffer,
+        { name: "RSA-OAEP", hash: "SHA-256" },
+        true,
+        ["encrypt", "wrapKey"]
+    );
 }
 
 
@@ -116,8 +132,8 @@ export async function RSAunwrapRSAwithSym(wrapper_private, buffer) {
         private_wrapped,
         sym,
         {name:"AES-GCM", length:256, iv: iv},
-        {name:"RSA-OAEP", hash:"SHA-512"},
-        false,
+        {name:"RSA-OAEP", hash:"SHA-256"},
+        true,
         ["decrypt", "unwrapKey"]
     )
 

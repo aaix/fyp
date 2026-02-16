@@ -6,6 +6,7 @@ from api.grpcgen.user_pb2 import DeviceObjectResponse
 
 from typing import Annotated
 
+from api.models.common import Username
 from api.utils import Base64Input, Base64Output, puuid_str, unwrap
 
 
@@ -20,7 +21,7 @@ __all__ = (
 
 
 class SignupBody(BaseModel):
-    username: Annotated[str, Field(max_length=16, min_length=3)]
+    username: Username
     email: Annotated[str, Field(min_length=6, max_length=64)]
     account_public_key: PEMPublicKey
     device: NewDeviceBody
@@ -61,3 +62,4 @@ class DeviceResponse(BaseModel):
 
 class DeviceKeyResponse(BaseModel):
     encrypted_account_key: Base64Output
+    account_public_key: PEMPublicKey
