@@ -1,5 +1,5 @@
-const BASE_URI = "http://172.31.0.20:8000";
-
+//const BASE_URI = "http://172.31.0.20:8000";
+const BASE_URI = "/api";
 
 
 
@@ -23,18 +23,23 @@ class APIResponse {
     }
 }
 
+const defaultOptions = {
+    useSession: true,
+}
 
-async function _api (uri, method, body=undefined) {
+
+async function _api (uri, method, body=undefined, options={}) {
 
     body = (method != "GET" && method != "HEAD") ?  JSON.stringify(body) : undefined;
 
     const authorization = localStorage.getItem("session");
+    const options = {...defaultOptions, ...options};
 
     const headers = {
         "content-type":"application/json"
     };
 
-    if (authorization) {
+    if (authorization && options.useSession) {
         headers["authorization"] = authorization;
     };
 
@@ -58,7 +63,7 @@ async function _api (uri, method, body=undefined) {
 
 const API = {
     async GET(uri) {
-        return await _api(uri, "GET");
+        return await _api(uri, "GET", undefined);
     },
 
     async PATCH(uri, body) {
