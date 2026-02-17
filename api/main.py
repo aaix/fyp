@@ -1,5 +1,6 @@
 
 
+import ssl
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError 
 from fastapi.middleware.cors import CORSMiddleware
@@ -11,10 +12,13 @@ import api.middleware as middlewares
 from api import  ApiErrExc
 from api.responses import SuccessResponse
 from api.middleware import exception_handlers
+from api.discovery import DiscoveryManager
 
 # routers
 from api.routes.account.account import AccountRouter
 from api.routes.session.session import SessionRouter
+
+discovery = DiscoveryManager()
 
 # middlewares
 middlewares = ( # outer
@@ -27,6 +31,11 @@ middlewares = ( # outer
     Middleware(middlewares.HeaderValidationMiddleware),
     Middleware(middlewares.JWTMiddleware), 
 ) # inner
+
+ssl_context = None
+if discovery.is_prod():
+    ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+    ssl_context.load_cert_chain("/az7/api/certs/cert.pem", keyfile="/az7/api/certs/key.pem")
 
 app = FastAPI(
     middleware=middlewares,
