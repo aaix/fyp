@@ -39,7 +39,7 @@ services:
       - "443:8000"
     volumes:
       - ./certs/cert.pem:/az7/api/certs/cert.pem:ro
-      - ./certs/key.pem:/az7/api/certs/key.pem:
+      - ./certs/key.pem:/az7/api/certs/key.pem:ro
 
 
   scylla-seed:
