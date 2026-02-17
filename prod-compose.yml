@@ -34,7 +34,7 @@ services:
     image: az-api:latest
     environment:
       - DATASERVICES_URI=172.31.0.10:311
-      - APP_MODE=prod
+      - DEPLOYMENT_MODE=prod
     ports:
       - "443:8000"
     volumes:
