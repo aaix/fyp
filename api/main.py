@@ -34,12 +34,14 @@ middlewares = ( # outer
 
 ssl_context = None
 if discovery.is_prod():
+    print("Using ssl context")
     ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
     ssl_context.load_cert_chain("/az7/api/certs/cert.pem", keyfile="/az7/api/certs/key.pem")
 
 app = FastAPI(
     middleware=middlewares,
     default_response_class=SuccessResponse,
+    ssl_context=ssl_context
 )
 
 # routers
