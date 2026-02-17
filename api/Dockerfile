@@ -8,4 +8,6 @@ RUN python3 -m pip install -r /az7/api/requirements.txt
 
 COPY . /az7/api/
 
-ENTRYPOINT [ "python3", "-m", "fastapi", "run", "/az7/api/main.py" ]
+RUN chmod +x /az7/api/entrypoint.sh
+
+ENTRYPOINT [ "/az7/api/entrypoint.sh" ]
