@@ -33,7 +33,7 @@ async function _api (uri, method, body=undefined, options={}) {
     body = (method != "GET" && method != "HEAD") ?  JSON.stringify(body) : undefined;
 
     const authorization = localStorage.getItem("session");
-    const options = {...defaultOptions, ...options};
+    options = {...defaultOptions, ...options};
 
     const headers = {
         "content-type":"application/json"
