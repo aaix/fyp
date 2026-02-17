@@ -50,7 +50,7 @@ services:
     image: az-scylla:latest
     volumes:
       - type: bind
-        source: ./database/data/scylla0/
+        source: /db/scylla0/
         target: /var/lib/scylla
       - type: bind
         source: ./database/main.yaml
@@ -61,7 +61,7 @@ services:
     <<: *scylla-base
     volumes:
       - type: bind
-        source: ./database/data/scylla1/
+        source: /db/scylla1/
         target: /var/lib/scylla
       - type: bind
         source: ./database/main.yaml
@@ -74,7 +74,7 @@ services:
     <<: *scylla-base
     volumes:
       - type: bind
-        source: ./database/data/scylla2/
+        source: /db/scylla2/
         target: /var/lib/scylla
       - type: bind
         source: ./database/main.yaml
@@ -87,7 +87,7 @@ services:
     <<: *scylla-base
     volumes:
       - type: bind
-        source: ./database/data/scylla3/
+        source: /db/scylla3/
         target: /var/lib/scylla
       - type: bind
         source: ./database/main.yaml
@@ -100,7 +100,7 @@ services:
     <<: *scylla-base
     volumes:
       - type: bind
-        source: ./database/data/scylla4/
+        source: /db/scylla4/
         target: /var/lib/scylla
       - type: bind
         source: ./database/main.yaml
