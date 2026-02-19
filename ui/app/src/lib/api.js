@@ -48,7 +48,7 @@ async function _api(uri, method, body = undefined, options = {}) {
   try {
     return new APIResponse(response.status, await response.json(), response.headers)
   } catch (e) {
-    return new APIResponse(response.status, await response.text(), response.headers)
+    return new APIResponse(response.status, null, response.headers)
   }
 }
 
