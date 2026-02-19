@@ -36,7 +36,7 @@ services:
       - DATASERVICES_URI=172.31.0.10:311
       - DEPLOYMENT_MODE=prod
     ports:
-      - "443:8000"
+      - "80:80"
     volumes:
       - ./certs/cert.pem:/az7/api/certs/cert.pem:ro
       - ./certs/key.pem:/az7/api/certs/key.pem:ro
