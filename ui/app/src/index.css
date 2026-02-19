@@ -1,0 +1,58 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap');
+
+:root {
+  font-family: 'DM Sans', system-ui, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  /* Dark theme - light pink + purple */
+  --text-primary: #f4f4f5;
+  --text-muted: #c4b5d4;
+  --accent: #c084fc;
+  --accent-hover: #a78bfa;
+  --accent-focus: rgba(192, 132, 252, 0.25);
+  --card-bg: #1e1b24;
+  --card-border: #2d2a35;
+  --tab-active-bg: rgba(244, 182, 212, 0.12);
+  --input-bg: #16141b;
+  --input-border: #3d3847;
+  --input-border-hover: #5c5468;
+  --bg: #151218;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --text-primary: #2d1b36;
+    --text-muted: #6b5b73;
+    --accent: #a855f7;
+    --accent-hover: #9333ea;
+    --accent-focus: rgba(168, 85, 247, 0.2);
+    --card-bg: #ffffff;
+    --card-border: #ede9f0;
+    --tab-active-bg: rgba(244, 182, 212, 0.2);
+    --input-bg: #fdf4ff;
+    --input-border: #e9d5ff;
+    --input-border-hover: #d8b4fe;
+    --bg: #faf5ff;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text-primary);
+}
+
+#root {
+  min-height: 100vh;
+}
