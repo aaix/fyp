@@ -33,7 +33,7 @@ services:
         ipv4_address: 172.31.0.20
     image: az-api:latest
     environment:
-      - DATASERVICES_URI=172.31.0.10:311
+      - DATASERVICES_URI=172.31.0.10:3114
       - DEPLOYMENT_MODE=prod
     ports:
       - "80:80"
