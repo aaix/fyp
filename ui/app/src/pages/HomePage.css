@@ -1,0 +1,45 @@
+.home-page {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.home-header {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--card-border);
+  flex-shrink: 0;
+}
+
+.home-title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.home-feed {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.post-skeleton {
+  background: var(--card-bg);
+  border-radius: 12px;
+  border: 1px solid var(--card-border);
+  min-height: 320px;
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+.post-skeleton-1 { min-height: 280px; }
+.post-skeleton-2 { min-height: 400px; }
+.post-skeleton-3 { min-height: 340px; }
+
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
