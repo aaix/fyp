@@ -27,7 +27,7 @@ export default function AuthPage({ onLogin }) {
     try {
       if (mode === 'signup') {
         const res = await session.signup(formData.username, formData.email)
-        if (res?.error || res?.message) {
+        if (!res.success || res?.error || res?.message) {
           setError(res.message || res.error?.message || 'Signup failed')
           return
         }
