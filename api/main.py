@@ -41,7 +41,6 @@ if discovery.is_prod():
 app = FastAPI(
     middleware=middlewares,
     default_response_class=SuccessResponse,
-    ssl_context=ssl_context
 )
 
 # routers
