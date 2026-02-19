@@ -22,6 +22,7 @@
   --input-border: #3d3847;
   --input-border-hover: #5c5468;
   --bg: #151218;
+  --bottom-nav-height: 64px;
 }
 
 @media (prefers-color-scheme: light) {
