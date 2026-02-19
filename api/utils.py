@@ -37,7 +37,7 @@ def int_puuid(data: int) -> pUUID:
 def puuid_str(uuid: pUUID) -> str | None:
     """Convert pUUID to str"""
     if int_id := puuid_int(uuid):
-        return f"{int_id:X}"
+        return f"{int_id:032x}"
     return None
 
 def str_puuid(uuid: str) -> pUUID:
