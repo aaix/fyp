@@ -24,7 +24,7 @@ discovery = DiscoveryManager()
 middlewares = ( # outer
     Middleware(
         CORSMiddleware, 
-        allow_origins=["http://localhost:5500"],
+        allow_origins=["http://localhost:5500", "http://localhost:5173"],
         allow_methods=["*"],
         allow_headers=["Authorization"],
     ),
@@ -32,11 +32,6 @@ middlewares = ( # outer
     Middleware(middlewares.JWTMiddleware), 
 ) # inner
 
-ssl_context = None
-if discovery.is_prod():
-    print("Using ssl context")
-    ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-    ssl_context.load_cert_chain("/az7/api/certs/cert.pem", keyfile="/az7/api/certs/key.pem")
 
 app = FastAPI(
     middleware=middlewares,

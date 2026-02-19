@@ -36,6 +36,10 @@ services:
       - DATASERVICES_URI=172.31.0.10:3114
     depends_on:
       - dataservices-0
+    volumes:
+      - type: bind
+        source: ./api/
+        target: /az7/api/
 
 
   scylla-seed:

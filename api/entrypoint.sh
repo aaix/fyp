@@ -7,5 +7,7 @@ if [ "$MODE" = "prod" ]; then
     exec python3 -m fastapi run /az7/api/main.py \
         --port 443
 else
-    exec python3 -m fastapi dev /az7/api/main.py
+    exec python3 -m fastapi dev /az7/api/main.py \
+        --port 8000 \
+        --host 0.0.0.0
 fi
