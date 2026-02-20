@@ -16,7 +16,8 @@ class APIResponse {
     this.headers = headers
 
     this.data = this.success ? body.data : null
-    this.error = !this.success ? body : null
+    this.error = !this.success ? body.data : null
+    console.log(`[APIResponse]`, JSON.stringify(this));
   }
 }
 
@@ -53,6 +54,7 @@ async function _api(uri, method, body = undefined, options = {}) {
   try {
     return new APIResponse(response.status, await response.json(), response.headers)
   } catch (e) {
+    console.error(`[API] Failed to parse response body for ${method} ${uri}:`, e)
     return new APIResponse(response.status, {}, response.headers)
   }
 }

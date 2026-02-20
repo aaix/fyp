@@ -1,4 +1,9 @@
 {
     "liveServer.settings.root": "/ui/",
-    "python.analysis.typeCheckingMode": "standard"
+    "python.analysis.typeCheckingMode": "standard",
+    "files.watcherExclude": {
+        "**/.venv/*": true,
+        "**/node_modules/*": true,
+        "**/target/*": true
+    }
 }

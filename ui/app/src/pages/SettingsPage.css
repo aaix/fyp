@@ -147,7 +147,14 @@
 }
 
 .device-row-main {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
   width: 100%;
+}
+
+.device-row-trigger {
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -160,9 +167,10 @@
   color: inherit;
   font: inherit;
   text-align: left;
+  min-width: 0;
 }
 
-.device-row-main:hover {
+.device-row-trigger:hover {
   background: rgba(148, 163, 184, 0.08);
 }
 
@@ -185,6 +193,30 @@
 .device-created-at {
   font-size: 0.78rem;
   color: var(--text-muted);
+}
+
+.device-delete-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.device-delete-btn:hover {
+  background: rgba(185, 28, 28, 0.12);
+  color: #b91c1c;
+}
+
+.device-delete-btn .material-symbols-outlined {
+  font-size: 1.2rem;
 }
 
 .device-expand-icon {
@@ -224,4 +256,89 @@
 
 .settings-tile-placeholder {
   opacity: 0.7;
+}
+
+/* Delete device modal */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
+  padding: 1.5rem;
+  max-width: 360px;
+  width: 100%;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+.modal-title {
+  margin: 0 0 0.5rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.modal-body {
+  margin: 0 0 1rem;
+  font-size: 0.9375rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+.modal-body strong {
+  color: var(--text-primary);
+}
+
+.modal-error {
+  margin-bottom: 0.75rem;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
+
+.modal-btn {
+  padding: 0.5rem 1rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  font-family: inherit;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s, opacity 0.2s;
+}
+
+.modal-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.modal-btn-cancel {
+  background: var(--card-bg);
+  color: var(--text-primary);
+  border: 1px solid var(--card-border);
+}
+
+.modal-btn-cancel:hover:not(:disabled) {
+  background: rgba(148, 163, 184, 0.1);
+}
+
+.modal-btn-danger {
+  background: #b91c1c;
+  color: white;
+}
+
+.modal-btn-danger:hover:not(:disabled) {
+  background: #991b1b;
 }

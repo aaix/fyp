@@ -196,21 +196,14 @@ export class DeviceManager {
   async getDevices() {
     const res = await API.GET("account/devices");
 
-    if (!res.success) {
-      throw new Error(res.error);
-    }
+    return res;
 
-    return res.data;
 
   }
 
   async deleteDevice(device_id) {
     const res = await API.DELETE(`account/device/${device_id}`);
     
-    if (!res.success) {
-      throw new Error(res.error);
-    }
-
-    return true;
+    return res;
   }
 }

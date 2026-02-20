@@ -15,33 +15,77 @@ function normalizeDevice(apiDevice) {
   }
 }
 
+function fetchDevices(setDevices, setDevicesLoading, setDevicesError) {
+  setDevicesLoading(true)
+  setDevicesError(null)
+  deviceManager
+    .getDevices()
+    .then((res) => {
+      if (res.success) {
+        const data = res.data
+
+        const list = Array.isArray(data) ? data : data?.devices ?? []
+
+        setDevices(list.map(normalizeDevice))
+      } else {
+        setDevicesError(res.error?.message ?? 'Failed to load devices')
+        setDevices([])
+      }
+    })
+    .finally(() => setDevicesLoading(false))
+}
+
 export default function SettingsPage() {
   const [devices, setDevices] = useState([])
   const [expandedDeviceId, setExpandedDeviceId] = useState(null)
   const [devicesLoading, setDevicesLoading] = useState(true)
   const [devicesError, setDevicesError] = useState(null)
+  const [deviceToDelete, setDeviceToDelete] = useState(null)
+  const [deleteLoading, setDeleteLoading] = useState(false)
+  const [deleteError, setDeleteError] = useState(null)
 
   useEffect(() => {
     let cancelled = false
     setDevicesLoading(true)
     setDevicesError(null)
-    deviceManager
-      .getDevices()
-      .then((data) => {
-        if (cancelled) return
-        const list = Array.isArray(data) ? data : data?.devices ?? []
-        setDevices(list.map(normalizeDevice))
-      })
-      .catch((err) => {
-        if (cancelled) return
-        setDevicesError(err?.message ?? 'Failed to load devices')
-        setDevices([])
-      })
-      .finally(() => {
-        if (!cancelled) setDevicesLoading(false)
-      })
+    fetchDevices(
+      (devices) => { if (!cancelled) setDevices(devices) },
+      (loading) => { if (!cancelled) setDevicesLoading(loading) },
+      (error) => { if (!cancelled) setDevicesError(error) },
+    )
     return () => { cancelled = true }
   }, [])
+
+  const openDeleteModal = (device, e) => {
+    e?.stopPropagation?.()
+    setDeviceToDelete(device)
+    setDeleteError(null)
+  }
+
+  const closeDeleteModal = () => {
+    if (!deleteLoading) {
+      setDeviceToDelete(null)
+      setDeleteError(null)
+    }
+  }
+
+  const confirmDeleteDevice = async () => {
+    if (!deviceToDelete || deleteLoading) return
+    setDeleteLoading(true)
+    setDeleteError(null)
+    try {
+      const res = await deviceManager.deleteDevice(deviceToDelete.id);
+      if (!res.success) {
+        setDeleteError(res.error?.message ?? 'Failed to remove device')
+        return
+      }
+      setDeviceToDelete(null)
+      fetchDevices(setDevices, setDevicesLoading, setDevicesError)
+    
+    } finally {
+      setDeleteLoading(false)
+    }
+  }
 
   const handleDeviceClick = (deviceId) => {
     setExpandedDeviceId((current) => (current === deviceId ? null : deviceId))
@@ -86,27 +130,40 @@ export default function SettingsPage() {
                         expandedDeviceId === device.id ? 'device-row-expanded' : ''
                       }`}
                     >
-                      <button
-                        type="button"
-                        className="device-row-main"
-                        onClick={() => handleDeviceClick(device.id)}
-                      >
-                        <div className="device-row-text">
-                          <span className="device-name">{device.name}</span>
-                          <span className="device-created-at">
-                            Added {device.createdAt ?? '—'}
+                      <div className="device-row-main">
+                        <button
+                          type="button"
+                          className="device-row-trigger"
+                          onClick={() => handleDeviceClick(device.id)}
+                        >
+                          <div className="device-row-text">
+                            <span className="device-name">{device.name}</span>
+                            <span className="device-created-at">
+                              Added {device.createdAt ?? '—'}
+                            </span>
+                          </div>
+                          <span className="material-symbols-outlined device-expand-icon" aria-hidden>
+                            {expandedDeviceId === device.id ? 'expand_less' : 'chevron_right'}
                           </span>
-                        </div>
-                        <span className="material-symbols-outlined device-expand-icon" aria-hidden>
-                          {expandedDeviceId === device.id ? 'expand_less' : 'chevron_right'}
-                        </span>
-                      </button>
+                        </button>
+                        <button
+                          type="button"
+                          className="device-delete-btn"
+                          onClick={() => openDeleteModal(device)}
+                          title="Remove device"
+                          aria-label={`Remove ${device.name}`}
+                        >
+                          <span className="material-symbols-outlined" aria-hidden>delete</span>
+                        </button>
+                      </div>
                       {expandedDeviceId === device.id && (
                         <div className="device-public-key">
                           <span className="device-public-key-label">Public key</span>
-                          <code className="device-public-key-value">
-                            {device.publicKey ?? 'Not available'}
-                          </code>
+                          <pre>
+                            <code className="device-public-key-value">
+                              {device.publicKey ?? 'Not available'}
+                            </code>
+                          </pre>
                         </div>
                       )}
                     </li>
@@ -133,6 +190,45 @@ export default function SettingsPage() {
           </section>
         </div>
       </main>
+
+      {deviceToDelete && (
+        <div
+          className="modal-backdrop"
+          onClick={closeDeleteModal}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-device-title"
+        >
+          <div
+            className="modal-content"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 id="delete-device-title" className="modal-title">Remove device?</h2>
+            <p className="modal-body">
+              This will revoke access for <strong>{deviceToDelete.name}</strong>. You can add it again later.
+            </p>
+            {deleteError && <p className="settings-error modal-error">{deleteError}</p>}
+            <div className="modal-actions">
+              <button
+                type="button"
+                className="modal-btn modal-btn-cancel"
+                onClick={closeDeleteModal}
+                disabled={deleteLoading}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="modal-btn modal-btn-danger"
+                onClick={confirmDeleteDevice}
+                disabled={deleteLoading}
+              >
+                {deleteLoading ? 'Removing…' : 'Remove'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
