@@ -9,6 +9,10 @@
   padding: 1rem 1.25rem;
   border-bottom: 1px solid var(--card-border);
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
 }
 
 .account-title {
@@ -16,6 +20,27 @@
   font-size: 1.5rem;
   font-weight: 700;
   color: var(--text-primary);
+}
+
+.account-settings-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  color: var(--text-primary);
+  text-decoration: none;
+  transition: background 0.2s, color 0.2s;
+}
+
+.account-settings-link:hover {
+  background: var(--card-bg);
+  color: var(--accent);
+}
+
+.account-settings-link .material-symbols-outlined {
+  font-size: 1.5rem;
 }
 
 .account-content {
@@ -26,25 +51,65 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1.5rem;
 }
 
-.profile-skeleton {
+.profile-avatar {
   width: 96px;
   height: 96px;
   border-radius: 50%;
   background: var(--card-bg);
   border: 2px solid var(--card-border);
   animation: skeleton-pulse 1.5s ease-in-out infinite;
+  flex-shrink: 0;
 }
 
-.profile-details-skeleton {
+.profile-userid {
+  margin: 0.75rem 0 0;
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.profile-stats {
+  display: flex;
+  gap: 1.5rem;
+  margin-top: 0.5rem;
+}
+
+.profile-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.125rem;
+}
+
+.profile-stat-value {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.profile-stat-label {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+.profile-posts {
   width: 100%;
-  max-width: 280px;
-  height: 120px;
-  border-radius: 12px;
+  margin-top: 1.5rem;
+}
+
+.profile-posts-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+}
+
+.profile-post-tile {
+  aspect-ratio: 1;
   background: var(--card-bg);
   border: 1px solid var(--card-border);
+  border-radius: 4px;
   animation: skeleton-pulse 1.5s ease-in-out infinite;
 }
 
