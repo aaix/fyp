@@ -119,6 +119,12 @@
   color: var(--text-muted);
 }
 
+.settings-error {
+  margin: 0.1rem 0 0;
+  font-size: 0.9rem;
+  color: #b91c1c;
+}
+
 .devices-list {
   list-style: none;
   padding: 0;
@@ -203,7 +209,7 @@
 
 .device-public-key-value {
   display: block;
-  max-height: 5.5rem;
+  max-height: 12rem;
   overflow: auto;
   padding: 0.4rem 0.45rem;
   border-radius: 8px;

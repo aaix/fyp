@@ -1,10 +1,47 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { DeviceManager } from '../lib/session.js'
+import { timeFromUUIDv1 } from '../lib/utils.js'
 import './SettingsPage.css'
+
+const deviceManager = new DeviceManager()
+
+function normalizeDevice(apiDevice) {
+  return {
+    id: apiDevice.device_id,
+    name: apiDevice.device_name ?? 'Unnamed device',
+    createdAt: timeFromUUIDv1(apiDevice.device_id).toLocaleString(),
+    publicKey: apiDevice.device_public_key,
+  }
+}
 
 export default function SettingsPage() {
   const [devices, setDevices] = useState([])
   const [expandedDeviceId, setExpandedDeviceId] = useState(null)
+  const [devicesLoading, setDevicesLoading] = useState(true)
+  const [devicesError, setDevicesError] = useState(null)
+
+  useEffect(() => {
+    let cancelled = false
+    setDevicesLoading(true)
+    setDevicesError(null)
+    deviceManager
+      .getDevices()
+      .then((data) => {
+        if (cancelled) return
+        const list = Array.isArray(data) ? data : data?.devices ?? []
+        setDevices(list.map(normalizeDevice))
+      })
+      .catch((err) => {
+        if (cancelled) return
+        setDevicesError(err?.message ?? 'Failed to load devices')
+        setDevices([])
+      })
+      .finally(() => {
+        if (!cancelled) setDevicesLoading(false)
+      })
+    return () => { cancelled = true }
+  }, [])
 
   const handleDeviceClick = (deviceId) => {
     setExpandedDeviceId((current) => (current === deviceId ? null : deviceId))
@@ -34,7 +71,11 @@ export default function SettingsPage() {
               <span className="settings-tile-chip">Security</span>
             </header>
             <div className="settings-tile-body">
-              {devices.length === 0 ? (
+              {devicesLoading ? (
+                <p className="settings-empty">Loading devices…</p>
+              ) : devicesError ? (
+                <p className="settings-error">{devicesError}</p>
+              ) : devices.length === 0 ? (
                 <p className="settings-empty">No devices added yet.</p>
               ) : (
                 <ul className="devices-list">

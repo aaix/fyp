@@ -12,3 +12,20 @@ export async function blobToB64(blob) {
 export async function B64toUint8Array(b64_string) {
   return Uint8Array.from(atob(b64_string), (c) => c.charCodeAt(0))
 }
+
+
+export function timeFromUUIDv1(uuid) {
+
+  const UUID_EPOCH = Date.UTC(1582, 9, 15);
+
+  const hex = uuid.replace(/-/g, '');
+  const timeLow = parseInt(hex.slice(0, 8), 16);
+  const timeMid = parseInt(hex.slice(8, 12), 16);
+  const timeHigh = parseInt(hex.slice(12, 16), 16) & 0x0fff; // clear version bits
+  
+  const timestamp = (BigInt(timeHigh) << 48n) | (BigInt(timeMid) << 32n) | BigInt(timeLow);
+  const unixTimestamp = Number(timestamp / 10000n) + UUID_EPOCH;
+
+
+  return new Date(unixTimestamp);
+}

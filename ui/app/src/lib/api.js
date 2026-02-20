@@ -45,6 +45,11 @@ async function _api(uri, method, body = undefined, options = {}) {
     headers: headers,
   })
 
+  if (response.status === 401 && options.useSession) {
+    localStorage.removeItem('session');
+    window.location.href = '/login';
+  }
+
   try {
     return new APIResponse(response.status, await response.json(), response.headers)
   } catch (e) {
