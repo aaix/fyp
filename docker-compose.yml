@@ -36,7 +36,12 @@ services:
       - DATASERVICES_URI=172.31.0.10:3114
     depends_on:
       - dataservices-0
-
+    deploy:
+      resources:
+        # container has been crashing the host so its memory is limited
+        limits:
+          memory: 1024M
+          cpus: '2'
 
 
   scylla-seed:
