@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from api.grpcgen.plib_pb2 import pUUID
+from dataservicesgrpc.py.grpcgen.plib_pb2 import pUUID
 from api.responses import errors, ApiErrExc
 
 from pydantic import EncodedBytes, EncoderProtocol 

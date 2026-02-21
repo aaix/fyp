@@ -8,10 +8,10 @@ from grpc import StatusCode
 from api import *
 from api import ApiErrExc
 from api.crypto.models import PEMPublicKey
-from api.grpc.lazy import LazyGRPC
-from api.grpcgen import user_pb2_grpc
-from api.grpcgen import user_pb2
-from api.grpcgen.plib_pb2 import pUUID
+from dataservicesgrpc.py.grpc.lazy import LazyGRPC
+from dataservicesgrpc.py.grpcgen import user_pb2_grpc
+from dataservicesgrpc.py.grpcgen import user_pb2
+from dataservicesgrpc.py.grpcgen.plib_pb2 import pUUID
 from api.models.common import Username
 from api.models.session import Session
 from api.utils import id_compare, puuid_str, str_puuid, unwrap, uuid_puuid

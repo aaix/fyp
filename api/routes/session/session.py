@@ -4,9 +4,9 @@ from grpc import RpcError, StatusCode
 
 from api import *
 from api.crypto import session as session_crypto
-from api.grpc.lazy import LazyGRPC
-from api.grpcgen import user_pb2_grpc
-from api.grpcgen import user_pb2
+from dataservicesgrpc.py.grpc.lazy import LazyGRPC
+from dataservicesgrpc.py.grpcgen import user_pb2_grpc
+from dataservicesgrpc.py.grpcgen import user_pb2
 from api.models.session import Session
 from api.routes.session.models import *
 

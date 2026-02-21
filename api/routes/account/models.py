@@ -2,7 +2,7 @@
 from pydantic import BaseModel, Field
 
 from api.crypto.models import PEMPublicKey
-from api.grpcgen.user_pb2 import DeviceObjectResponse
+from dataservicesgrpc.py.grpcgen.user_pb2 import DeviceObjectResponse
 
 from typing import Annotated
 

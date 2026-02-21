@@ -1,3 +1,6 @@
+#!/bin/bash
+
 docker build ./database -t az-scylla:latest
-docker build ./api -t az-api:latest
+. ./api/dockerbuild.sh
+
 docker build ./dataservices -t az-dataservices:latest
