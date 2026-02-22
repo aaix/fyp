@@ -1,3 +1,5 @@
+const USER_CONTENT_BASE = "https://usercontent.az7.chat"
+
 export async function blobToB64(blob) {
   const dataUrl = await new Promise((resolve, reject) => {
     const reader = new FileReader()
@@ -28,4 +30,29 @@ export function timeFromUUIDv1(uuid) {
 
 
   return new Date(unixTimestamp);
+}
+
+export function userContentUrl(bucket, asset_id, extension) {
+  return `${USER_CONTENT_BASE}/${bucket}/${asset_id}.${extension}`
+}
+
+export function getAvatarUrl(user) {
+  if (!user.avatar_asset_id) {
+    return getDefaultAvatarUrl(user.user_id);
+  }
+
+  return userContentUrl(user.user_id, user.avatar_asset_id, "webp");
+
+}
+
+export function getDefaultAvatarUrl(user_id) {
+  let v = 0;
+  for (let char of user_id) {
+    v += parseInt(char);
+    v |= 0xF;
+  }
+
+  v %= 4;
+
+  return `icon${v}.png`
 }

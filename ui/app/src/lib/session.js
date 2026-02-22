@@ -189,6 +189,10 @@ export class Session {
 
     return res
   }
+
+  async getCurrentAccount() {
+    return await API.GET("account/@me");
+  }
 }
 
 

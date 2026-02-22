@@ -33,14 +33,8 @@
   border-radius: 12px;
   border: 1px solid var(--card-border);
   min-height: 320px;
-  animation: skeleton-pulse 1.5s ease-in-out infinite;
 }
 
 .post-skeleton-1 { min-height: 280px; }
 .post-skeleton-2 { min-height: 400px; }
 .post-skeleton-3 { min-height: 340px; }
-
-@keyframes skeleton-pulse {
-  0%, 100% { opacity: 0.6; }
-  50% { opacity: 1; }
-}
