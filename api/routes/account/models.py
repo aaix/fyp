@@ -16,6 +16,7 @@ __all__ = (
     "NewDeviceBody",
     "DeviceResponse",
     "DeviceKeyResponse",
+    "AccountResponse",
 )
 
 
@@ -63,3 +64,10 @@ class DeviceResponse(BaseModel):
 class DeviceKeyResponse(BaseModel):
     encrypted_account_key: Base64Output
     account_public_key: PEMPublicKey
+
+class AccountResponse(BaseModel):
+    user_id: str
+    avatar_asset_id: str | None
+    public_key: PEMPublicKey
+    username: str
+    email: str
