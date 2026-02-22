@@ -143,3 +143,18 @@ async def delete_device(r: Request, s: SessionParam, device_id: UUID) -> None:
         user_id=str_puuid(s.user_id),
         device_id=uuid_puuid(device_id)
     )))
+
+
+@AccountRouter.get("/@me")
+async def my_account(s: SessionParam) -> AccountResponse:
+    res = cast(user_pb2.ReadUserResponse, await grpcuser.stub.ReadUser(user_pb2.ReadUserRequest(
+        user_id=str_puuid(s.user_id)
+    )))
+
+    return AccountResponse(
+        user_id=s.user_id,
+        avatar_asset_id=puuid_str(res.avatar_asset_id),
+        public_key=PEMPublicKey.from_bytes(res.public_key),
+        username=res.username,
+        email=res.email,
+    )
