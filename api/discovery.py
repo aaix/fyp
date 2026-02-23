@@ -1,8 +1,8 @@
-from os import environ
+from typing import Self
 
+from os import environ
 from threading import Lock
 
-from typing import Self
 
 class DiscoveryManager:
     __discovery_manager = None

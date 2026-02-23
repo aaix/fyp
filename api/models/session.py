@@ -1,9 +1,8 @@
+from typing import Self
+
 import json
 from dataclasses import dataclass, asdict
 from io import BytesIO
-
-from typing import Self
-
 from datetime import datetime, UTC
 
 from api.responses import ErrorResponse

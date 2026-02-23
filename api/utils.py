@@ -1,7 +1,7 @@
+from typing import Never
 
 from api.responses import errors, ApiErrExc
 
-from typing import Annotated, Never
 
 __all__ = (
     "unwrap",

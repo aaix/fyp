@@ -1,19 +1,18 @@
+from typing import cast
+
 from fastapi import APIRouter, Request
 from grpc import RpcError, StatusCode
 
 
 from api import *
-from shared.py.crypto import session as session_crypto
-from shared.py.grpc.lazy import LazyGRPC
-from shared.py.grpcgen import user_pb2_grpc
-from shared.py.grpcgen import user_pb2
 from api.models.session import Session
 from api.routes.session.models import *
 from api.utils import unwrap
 
-
-from typing import cast
-
+from shared.py.crypto import session as session_crypto
+from shared.py.grpc.lazy import LazyGRPC
+from shared.py.grpcgen import user_pb2_grpc
+from shared.py.grpcgen import user_pb2
 from shared.py.grpc.id import puuid_str
 
 discovery = DiscoveryManager()

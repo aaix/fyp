@@ -1,17 +1,16 @@
+from typing import Annotated
 
 from pydantic import BaseModel, Field
 
-from shared.py.pydantic.pem import PEMPublicKey
 from api.models.common import Username
 from api.utils import unwrap
-
-from typing import Annotated
-
 
 
 from shared.py.pydantic.base64 import Base64Input, Base64Output
 from shared.py.grpc.id import puuid_str
 from shared.py.grpcgen.user_pb2 import DeviceObjectResponse
+from shared.py.pydantic.pem import PEMPublicKey
+
 
 
 

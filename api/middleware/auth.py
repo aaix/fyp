@@ -1,18 +1,20 @@
 from typing import Annotated
-from fastapi import Depends, Request, Response
+
+from collections.abc import Callable, Awaitable
+from json import JSONDecodeError
 from annotated_doc import Doc
 
+
+from fastapi import Depends, Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 from joserfc.errors import DecodeError
 
-from collections.abc import Callable, Awaitable
-
-from json import JSONDecodeError
 
 from api.models import Session
 from api.responses import ApiErrExc, errors
+
 from shared.py.crypto.session import decode_jose_session
-from api.logger import log
+
 
 
 

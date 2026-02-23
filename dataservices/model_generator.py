@@ -1,7 +1,6 @@
 from itertools import chain
 
 
-
 cql_statements: list[list[str]] = []
 
 with open("../database/database.cql", "r") as f:

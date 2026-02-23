@@ -1,9 +1,10 @@
+from typing import Literal
+
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError 
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware import Middleware
 
-from typing import Literal
 
 import api.middleware as middlewares
 from api import  ApiErrExc
