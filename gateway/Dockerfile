@@ -6,7 +6,7 @@ COPY ./requirements.txt /az7/gateway/
 
 RUN python3 -m pip install -r /az7/gateway/requirements.txt
 
-COPY --from=dataservicesgrpc . /az7/dataservicesgrpc/
+COPY --from=shared . /az7/shared/
 
 COPY . /az7/gateway/
 

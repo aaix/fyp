@@ -1,1 +1,1 @@
-docker build --build-context dataservicesgrpc=./dataservicesgrpc/ ./gateway -t az-gateway:latest
+docker build --build-context shared=./shared/ ./gateway -t az-gateway:latest
