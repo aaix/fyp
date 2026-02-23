@@ -1,6 +1,8 @@
+from typing import Annotated
+
+
 import base64
 
-from typing import Annotated
 
 from pydantic import EncodedBytes, EncoderProtocol 
 

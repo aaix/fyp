@@ -1,6 +1,8 @@
+import typing
+
 import grpc
 
-import typing
+
 
 class _GRPCStub(typing.Protocol):
     def __init__(self, channel): ...
