@@ -3,7 +3,7 @@ from grpc import RpcError, StatusCode
 
 
 from api import *
-from api.crypto import session as session_crypto
+from shared.py.crypto import session as session_crypto
 from shared.py.grpc.lazy import LazyGRPC
 from shared.py.grpcgen import user_pb2_grpc
 from shared.py.grpcgen import user_pb2

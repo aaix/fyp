@@ -11,7 +11,7 @@ from json import JSONDecodeError
 
 from api.models import Session
 from api.responses import ApiErrExc, errors
-from api.crypto.session import decode_jose_session
+from shared.py.crypto.session import decode_jose_session
 from api.logger import log
 
 
