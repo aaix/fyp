@@ -2,12 +2,17 @@
 from pydantic import BaseModel, Field
 
 from api.crypto.models import PEMPublicKey
-from dataservicesgrpc.py.grpcgen.user_pb2 import DeviceObjectResponse
+from api.models.common import Username
+from api.utils import unwrap
 
 from typing import Annotated
 
-from api.models.common import Username
-from api.utils import Base64Input, Base64Output, puuid_str, unwrap
+
+
+from shared.py.pydantic.base64 import Base64Input, Base64Output
+from shared.py.grpc.id import puuid_str
+from shared.py.grpcgen.user_pb2 import DeviceObjectResponse
+
 
 
 __all__ = (

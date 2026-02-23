@@ -4,16 +4,17 @@ from grpc import RpcError, StatusCode
 
 from api import *
 from api.crypto import session as session_crypto
-from dataservicesgrpc.py.grpc.lazy import LazyGRPC
-from dataservicesgrpc.py.grpcgen import user_pb2_grpc
-from dataservicesgrpc.py.grpcgen import user_pb2
+from shared.py.grpc.lazy import LazyGRPC
+from shared.py.grpcgen import user_pb2_grpc
+from shared.py.grpcgen import user_pb2
 from api.models.session import Session
 from api.routes.session.models import *
+from api.utils import unwrap
 
 
 from typing import cast
 
-from api.utils import puuid_str, unwrap
+from shared.py.grpc.id import puuid_str
 
 discovery = DiscoveryManager()
 

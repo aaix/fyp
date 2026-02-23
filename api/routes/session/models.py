@@ -2,7 +2,7 @@
 from pydantic import BaseModel
 
 
-from api.utils import Base64Output
+from shared.py.pydantic.base64 import Base64Output
 
 
 __all__ = (

@@ -1,1 +1,1 @@
-docker build --build-context dataservicesgrpc=./dataservicesgrpc/ ./api -t az-api:latest
+docker build --build-context shared=./shared/ ./api -t az-api:latest
