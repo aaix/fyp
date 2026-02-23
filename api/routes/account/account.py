@@ -7,7 +7,7 @@ from grpc import StatusCode
 
 from api import *
 from api import ApiErrExc
-from api.crypto.models import PEMPublicKey
+from shared.py.pydantic.pem import PEMPublicKey
 from shared.py.grpc.lazy import LazyGRPC
 from shared.py.grpcgen import user_pb2_grpc
 from shared.py.grpcgen import user_pb2

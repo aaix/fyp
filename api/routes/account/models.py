@@ -1,7 +1,7 @@
 
 from pydantic import BaseModel, Field
 
-from api.crypto.models import PEMPublicKey
+from shared.py.pydantic.pem import PEMPublicKey
 from api.models.common import Username
 from api.utils import unwrap
 
