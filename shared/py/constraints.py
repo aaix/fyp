@@ -1,0 +1,13 @@
+from typing import Final
+__all__ = (
+    "USERNAME_MAX_LENGTH",
+    "USERNAME_MIN_LENGTH",
+    "DEVICE_NAME_MAX_LENGTH",
+    "DEVICE_NAME_MIN_LENGTH",
+)
+
+USERNAME_MAX_LENGTH: Final[int] = 24
+USERNAME_MIN_LENGTH: Final[int] = 2
+
+DEVICE_NAME_MAX_LENGTH: Final[int] = 32
+DEVICE_NAME_MIN_LENGTH: Final[int] = 1

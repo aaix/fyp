@@ -6,6 +6,7 @@ from api.models.common import Username
 from api.utils import unwrap
 
 
+from shared.py.constraints import DEVICE_NAME_MAX_LENGTH, DEVICE_NAME_MIN_LENGTH
 from shared.py.pydantic.base64 import Base64Input, Base64Output
 from shared.py.grpc.id import puuid_str
 from shared.py.grpcgen.user_pb2 import DeviceObjectResponse
@@ -41,7 +42,7 @@ class SignupResponse(BaseModel):
     device: DeviceResponse
 
 class NewDeviceBody(BaseModel):
-    name: Annotated[str, Field(min_length=2, max_length=32)]
+    name: Annotated[str, Field(min_length=DEVICE_NAME_MIN_LENGTH, max_length=DEVICE_NAME_MAX_LENGTH)]
     public_key: PEMPublicKey
     encrypted_private_key: Base64Input
 
