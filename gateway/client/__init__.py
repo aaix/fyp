@@ -4,6 +4,7 @@ import uuid
 from uuid import UUID
 import asyncio
 
+from grpc import RpcError, StatusCode
 from pydantic import ValidationError
 from websockets import ConnectionClosed, ServerConnection
 
@@ -16,7 +17,10 @@ from gateway.models.messages import BaseMessage, ClientAuth, ClientHello, NewDev
 
 
 from shared.py.discovery import DiscoveryManager
+from shared.py.grpc.device import read_devices
+from shared.py.grpc.id import id_compare
 from shared.py.grpc.lazy import LazyGRPC
+from shared.py.grpc.user import get_user
 from shared.py.grpcgen import user_pb2_grpc
 
 discovery = DiscoveryManager()
@@ -149,6 +153,28 @@ class GatewayClient:
                 unwrap()
 
     async def regular_handshake(self, clienthello: ClientHello) -> UUID:
+
+        user_id = clienthello.user_id
+        device_id = clienthello.device_id
+
+        try:
+            devices, user = await asyncio.gather(read_devices(grpcdevice, user_id), get_user(grpcuser, user_id))
+        except RpcError as e:
+            if e.code == StatusCode.NOT_FOUND:
+                await self.close(GatewayCloseCode.NOT_FOUND, "user not found")
+                raise HandshakeFailed(HandshakeFailed.Reason.BAD_PAYLOAD) from e
+            else:
+                raise
+        
+        for device in devices.devices:
+            if id_compare(device.device_id, device_id):
+                break
+        else:
+            await self.close(GatewayCloseCode.NOT_FOUND, "user not found")
+            raise HandshakeFailed(HandshakeFailed.Reason.BAD_PAYLOAD)
+        
+    
+
         serverhello = ServerHello(
             op="server_hello",
             device_challenge="test",
@@ -163,6 +189,8 @@ class GatewayClient:
         await self.send(sessioncomplete)
 
         self.handshake_complete = True
+
+        return user_id
 
     async def new_device_handshake(self, clienthello: NewDeviceClientHello) -> UUID: ...
         
