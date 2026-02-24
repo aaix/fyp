@@ -42,6 +42,16 @@ services:
         limits:
           memory: 1024M
           cpus: '2'
+  
+  gateway-0:
+    networks:
+      shared-network:
+        ipv4_address: 172.31.0.30
+    image: az-gateway:latest
+    environment:
+      - DATASERVICES_URI=172.31.0.10:3114
+    depends_on:
+      - dataservices-0
 
 
   scylla-seed:
