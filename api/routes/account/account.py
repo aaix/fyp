@@ -19,7 +19,7 @@ from shared.py.pydantic.common import Username
 from shared.py.grpc.lazy import LazyGRPC
 from shared.py.grpcgen import user_pb2_grpc
 from shared.py.grpcgen import user_pb2
-from shared.py.grpcgen.plib_pb2 import pUUID
+from shared.py.grpc.device import read_devices
 
 
 
@@ -32,11 +32,7 @@ AccountRouter = APIRouter()
 grpcuser = LazyGRPC(discovery.discover_dataservices(), user_pb2_grpc.UserServiceStub)
 grpcdevice = LazyGRPC(discovery.discover_dataservices(), user_pb2_grpc.UserDeviceServiceStub)
 
-async def read_devices(user_id: str | pUUID, count_only=False) -> user_pb2.ReadDevicesResponse:
-    return cast(user_pb2.ReadDevicesResponse, await grpcdevice.stub.ReadDevices(user_pb2.ReadDevicesRequest(
-        user_id=user_id if isinstance(user_id, pUUID) else str_puuid(user_id),
-        count_only=count_only,
-    )))
+
 
 @AccountRouter.post("/signup")
 async def signup(r: Request, body: SignupBody) -> SignupResponse:
@@ -87,7 +83,7 @@ async def device_key_handshake(r: Request, username: Username, device_id: UUID) 
         else:
             raise e
 
-    res = await read_devices(user.user_id)
+    res = await read_devices(grpcdevice, user.user_id)
 
     for device in res.devices:
         if id_compare(device.device_id, device_id):
@@ -104,7 +100,7 @@ async def device_key_handshake(r: Request, username: Username, device_id: UUID) 
 @AccountRouter.get("/devices")
 async def get_all_devices(r: Request, s: SessionParam) -> list[DeviceResponse]:
 
-    res = await read_devices(s.user_id)
+    res = await read_devices(grpcdevice, s.user_id)
 
     devices = []
     for device in res.devices:
@@ -116,7 +112,7 @@ async def get_all_devices(r: Request, s: SessionParam) -> list[DeviceResponse]:
 @AccountRouter.post("/device")
 async def new_device(r: Request, s: SessionParam, body: NewDeviceBody) -> DeviceResponse:
 
-    res = await read_devices(s.user_id, count_only=True)
+    res = await read_devices(grpcdevice, s.user_id, count_only=True)
 
     if res.device_count >= CONF_USER_MAX_DEVICES:
         raise ApiErrExc(errors.BadRequest("Device limit reached", api_error_code=errors.ERROR_LIMIT_REACHED))
@@ -137,7 +133,7 @@ async def new_device(r: Request, s: SessionParam, body: NewDeviceBody) -> Device
 @AccountRouter.delete("/device/{device_id}")
 async def delete_device(r: Request, s: SessionParam, device_id: UUID) -> None:
 
-    res = await read_devices(s.user_id, count_only=True)
+    res = await read_devices(grpcdevice, s.user_id, count_only=True)
 
     if res.device_count <= 1:
         raise ApiErrExc(errors.BadRequest("Unable to delete a users only device", api_error_code=errors.ERROR_LIMIT_REACHED))

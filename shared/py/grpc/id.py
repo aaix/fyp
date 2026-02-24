@@ -2,6 +2,8 @@ from uuid import UUID
 
 from shared.py.grpcgen.plib_pb2 import pUUID
 
+type id_t = str | pUUID | UUID
+
 def puuid_int(uuid: pUUID) -> int | None:
     """Convert pUUID to int"""
     if uuid.id_low + uuid.id_high == 0:
@@ -30,7 +32,7 @@ def str_puuid(uuid: str) -> pUUID:
 def uuid_puuid(uuid: UUID) -> pUUID:
     return int_puuid(uuid.int) # pyright: ignore[reportArgumentType]
 
-def id_compare(id1: str | pUUID | UUID, id2: str | pUUID | UUID) -> bool:
+def id_compare(id1: id_t, id2: id_t) -> bool:
     """Return if two ids are equivalent regardless of their "id" type"""
     id1_int = _id_int(id1)
     id2_int = _id_int(id2)
@@ -39,8 +41,14 @@ def id_compare(id1: str | pUUID | UUID, id2: str | pUUID | UUID) -> bool:
     
     return id1_int == id2_int
 
+def id_puuid(id1: id_t) -> pUUID | None:
+    if isinstance(id1, pUUID):
+        return id1
+    if not (id_int := _id_int(id1)):
+        return None
+    return int_puuid(id_int)
 
-def _id_int(id1: str | pUUID | UUID) -> int | None:
+def _id_int(id1: id_t) -> int | None:
     """Convert an "id" type to an integer"""
     if isinstance(id1, pUUID):
         return puuid_int(id1)
