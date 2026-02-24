@@ -9,17 +9,18 @@ from grpc import StatusCode
 from api import *
 from api import ApiErrExc
 
-from api.models.common import Username
 from api.models.session import Session
 from api.routes.account.models import *
 from api.utils import unwrap
 
 from shared.py.grpc.id import id_compare, puuid_str, str_puuid, uuid_puuid
 from shared.py.pydantic.pem import PEMPublicKey
+from shared.py.pydantic.common import Username
 from shared.py.grpc.lazy import LazyGRPC
 from shared.py.grpcgen import user_pb2_grpc
 from shared.py.grpcgen import user_pb2
 from shared.py.grpcgen.plib_pb2 import pUUID
+
 
 
 CONF_USER_MAX_DEVICES = 8
