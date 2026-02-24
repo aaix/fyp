@@ -7,10 +7,9 @@ from starlette.middleware import Middleware
 
 
 import api.middleware as middlewares
-from api import  ApiErrExc
+from api import *
 from api.responses import SuccessResponse
 from api.middleware import exception_handlers
-from api.discovery import DiscoveryManager
 
 # routers
 from api.routes.account.account import AccountRouter
