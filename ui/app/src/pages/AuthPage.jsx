@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Session } from '../lib/session.js'
+import { getCurrentSession } from '../lib/session.js'
 
 import '../App.css'
 
@@ -23,7 +23,7 @@ export default function AuthPage({ onLogin }) {
     setError(null)
     setLoading(true)
 
-    const session = new Session()
+    const session = getCurrentSession();
 
     try {
       if (mode === 'signup') {
@@ -44,7 +44,6 @@ export default function AuthPage({ onLogin }) {
         }
         const loginResult = await session.login(formData.username)
         if (loginResult === true) {
-          window.session = session
           onLogin()
         } else {
           setError(loginResult || 'Login failed')

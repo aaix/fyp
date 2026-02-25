@@ -7,15 +7,19 @@ from pydantic import BaseModel
 
 from shared.py.pydantic.base64 import Base64Output
 
-type Event_t = MessageEvent | ChannelUpdateEvent
+type Event_t = MessageEvent | ChannelUpdateEvent | HintEvent
 
-class Event(BaseModel):
+class BaseEvent(BaseModel):
     """Base class for business logic events sent from the gateway"""
     intent: Any
     
 
+class HintEvent(BaseEvent):
+    intent: Literal["hint"] = "hint"
+    message: Any
 
-class MessageEvent(Event):
+
+class MessageEvent(BaseEvent):
     intent: Literal["message"] = "message"
     channel_id: UUID
     author_id: UUID
@@ -23,7 +27,7 @@ class MessageEvent(Event):
 
 
 
-class ChannelUpdateEvent(Event):
+class ChannelUpdateEvent(BaseEvent):
     intent: Literal["channel_update"] = "channel_update"
     channel_id: UUID
     update_type: Type

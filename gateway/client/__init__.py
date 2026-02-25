@@ -5,14 +5,16 @@ from uuid import UUID
 import asyncio
 
 from grpc import RpcError, StatusCode
-from pydantic import ValidationError
-from websockets import ConnectionClosed, ServerConnection
+from pydantic import TypeAdapter, ValidationError
+from websockets import CloseCode, ConnectionClosed, ServerConnection
 
+from gateway.models import events
 import gateway.server
+from gateway.models.events import Event_t
 from gateway.models.closecodes import GatewayCloseCode
 from gateway.models.exceptions import HandshakeFailed
 from gateway.models.internalevent import InternalEvent
-from gateway.models.messages import BaseMessage, ClientAuth, ClientHello, NewDeviceClientHello, ServerHello, SessionComplete
+from gateway.models.messages import BaseMessage, ClientAuth, ClientHello, ClientMessage_T, EventMessage, NewDeviceClientHello, ServerHello, SessionComplete
 
 
 
@@ -40,21 +42,37 @@ class GatewayClient:
         self.handshake_complete = False
         self.client_seq: int = 0
         self.server_seq: int = 0
+        self.last_acked: int = 0
+
+
+        self.cleanup_lock = asyncio.Lock()
+        self.cleaned_up: bool = False
+
 
         # init after handshake
         self.user_id: UUID | None = None
     
+    def __repr__(self) -> str:
+        return f"<GatewayClient {self.user_id=} {self.id=}>"
+    
     def __hash__(self) -> int:
         return hash(self.id)
     
+    async def send_event(self, event: Event_t):
+        await self.send(EventMessage(
+            op="event",
+            d=event
+        ))
+
     async def send(self, msg: BaseMessage):
-        msg.seq = self.server_seq
         self.server_seq += 1
+        msg.seq = self.server_seq
 
         data = msg.model_dump_json()
         await self.ws.send(data, text=True)
     
-    async def shutdown(self): ...
+    async def shutdown(self):
+        await self.close(CloseCode.GOING_AWAY, "node shutting down")
 
 
     async def next(self) -> Iterable[InternalEvent | bytes]:
@@ -87,7 +105,9 @@ class GatewayClient:
         while self.open:
             try:
                 await self.run_once()
-            except ConnectionClosed:
+            except ConnectionClosed, asyncio.QueueShutDown:
+                return # safe error so just cleanup and leave
+            finally:
                 await self.cleanup()
 
 
@@ -95,11 +115,14 @@ class GatewayClient:
         return
 
     async def handle_incoming(self, d: bytes):
-        return
+        try:
+            clientmessage = TypeAdapter(ClientMessage_T).validate_json(d)
+        except ValidationError as e:
+            await self.send_event(events.HintEvent(message=e.errors(include_url=False, include_input=False)))
+            await self.close(GatewayCloseCode.MALFORMED_DATA, "could not determine clientmessage type")
 
     
     async def handle_close(self, exc: ConnectionClosed):
-        await self.controller.unregister(self)
         self.open = False
         if exc.sent:
             # we closed so we dont need to handle anything
@@ -107,13 +130,20 @@ class GatewayClient:
         if not (rcv := exc.rcvd):
             return
     
-    
 
     async def close(self, code: int, reason: str) -> None:
         await self.ws.close(code=code, reason=reason)
         await self.cleanup()
 
-    async def cleanup(self) -> None:...
+    async def cleanup(self) -> None:
+        async with self.cleanup_lock:
+            if self.cleaned_up:
+                return
+            self.cleaned_up = True
+
+        self.queue.shutdown()
+        await self.controller.unregister(self)
+
 
 
     async def handshake_get_next[T: BaseMessage](self, schema_or_schemas: Iterable[type[T]] | type[T]) -> T:
@@ -173,24 +203,22 @@ class GatewayClient:
         if not (device := find_device_by_id(devices, device_id)):
             raise HandshakeFailed(HandshakeFailed.Reason.BAD_PAYLOAD, "device not found")
         
-        device_challenge = challenge.create_challenge()
-        account_challenge = challenge.create_challenge()
+        device_challenge = challenge.create_challenge(device.device_public_key)
+        account_challenge = challenge.create_challenge(user.public_key)
 
         serverhello = ServerHello(
             op="server_hello",
-            device_challenge=device_challenge,
-            account_challenge=account_challenge,
+            device_challenge=device_challenge.ciphertext,
+            account_challenge=account_challenge.ciphertext,
         )
         await self.send(serverhello)
         clientauth = await self.handshake_get_next(ClientAuth)
 
         account_solved = challenge.verify_challenge(
-            device.device_public_key,
             clientauth.solved_device_challenge,
             device_challenge
         )
         device_solved = challenge.verify_challenge(
-            user.public_key,
             clientauth.solved_account_challenge,
             account_challenge
         )
@@ -204,6 +232,7 @@ class GatewayClient:
         )
         await self.send(sessioncomplete)
 
+        self.user_id = user_id
         self.handshake_complete = True
         return user_id
 

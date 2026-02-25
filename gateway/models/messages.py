@@ -18,34 +18,42 @@ from shared.py.pydantic.pem import PEMPublicKey
 class BaseMessage(BaseModel, ABC):
     """Base class for connection management messages"""
     op: Any
-    seq: None | int = None
+    seq: Any
 
+class ClientMessage(BaseMessage, ABC):
+    seq: int
+    ack: int | None = None
+
+class ServerMessage(BaseMessage, ABC):
+    seq: int | None = None # server doesnt need to specify a seq on model creation, only on serialise
+
+type ClientMessage_T = Annotated[ClientHello | ClientAuth | AddDeviceIntention | AddDeviceOK | SelectDeviceIntention,  Field(discriminator="op")]
 
 # for normal operations
-class ClientHello(BaseMessage):
+class ClientHello(ClientMessage):
     """Sent by a client connecting to identify"""
     op: Literal["client_hello"]
     user_id: UUID
     device_id: UUID
 
-class ServerHello(BaseMessage):
+class ServerHello(ServerMessage):
     """Sent by the server to an identifying client for a challenge"""
     op: Literal["server_hello"]
     ### The part the client needs to sign
     device_challenge: Base64Output
     account_challenge: Base64Output
 
-class ClientAuth(BaseMessage):
+class ClientAuth(ClientMessage):
     """Authenticates the client device"""
     op: Literal["client_auth"]
     solved_device_challenge: Base64Input
     solved_account_challenge: Base64Input
 
-class SessionComplete(BaseMessage):
+class SessionComplete(ServerMessage):
     """Confirms to the client the handshake is complete"""
     op: Literal["session_complete"]
 
-class ClientEvent(BaseMessage):
+class EventMessage(ServerMessage):
     """Base message for a business logic event"""
     op: Literal["event"]
     d: Event_t = Field(discriminator="intent")
@@ -63,28 +71,28 @@ class NewDeviceServerHello(BaseMessage):
     gateway_id: UUID
     code: int
 
-class AddDeviceIntention(BaseMessage):
+class AddDeviceIntention(ClientMessage):
     """Authenticated client signals to gateway that it is ready to add a new device"""
     op: Literal["add_device_intention"]
 
-class SelectDeviceIntention(BaseMessage):
+class SelectDeviceIntention(ClientMessage):
     """Selects the device by the code shared out of band"""
     op: Literal["select_device_intention"]
     code: int
 
-class AddDeviceRequest(BaseMessage):
+class AddDeviceRequest(ServerMessage):
     """Server shares new device info to authenticated device"""
     op: Literal["add_device_request"]
     device_name: DeviceName
     device_public_key: PEMPublicKey
     device_gateway_id: UUID
 
-class AddDeviceOK(BaseMessage):
+class AddDeviceOK(ClientMessage):
     """Authenticated client encrypts account key with device public key"""
     op: Literal["add_device_request"]
     encrypted_account_key: Base64Input
 
-class NewDeviceOk(BaseMessage):
+class NewDeviceOk(ServerMessage):
     """New device object to be returned to new device client"""
     op: Literal["new_device_ok"]
     device_id: str

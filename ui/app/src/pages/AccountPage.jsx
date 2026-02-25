@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Session } from '../lib/session.js'
+import { getCurrentSession } from '../lib/session.js'
 import './AccountPage.css'
 import { getAvatarUrl } from '../lib/utils.js'
 
@@ -18,7 +18,7 @@ export default function AccountPage() {
   const loadAccountInfo = async () => {
     try {
       setError(null)
-      const session = window.session || new Session()
+      const session = getCurrentSession()
       const res = await session.getCurrentAccount()
 
       if (!res?.success) {

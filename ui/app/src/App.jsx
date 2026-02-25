@@ -29,7 +29,10 @@ function App() {
     return <AuthPage onLogin={() => setLoggedIn()} />
   }
 
-  window.gateway = gatewayFactory();
+  gatewayFactory().then(async (gateway) => {
+    await gateway.handshake();
+    window.gateway = gateway;
+  })
 
   return (
     <Routes>

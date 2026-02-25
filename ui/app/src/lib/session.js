@@ -99,20 +99,48 @@ class KeyStore {
 
 export const keyStore = new KeyStore()
 
+
+export function getCurrentSession() {
+  if (getCurrentSession._session !== undefined) {
+    return getCurrentSession._session;
+  }
+  getCurrentSession._session = new Session()
+  return getCurrentSession._session;
+}
 export class Session {
+  constructor() {
+    this.session_key = localStorage.getItem("session_key");
+    this.user_id = localStorage.getItem("user_id");
+    this.accKey = null;
+    
+  }
+
+  clearSession() {
+    this.session_key = null;
+    this.user_id = null;
+    localStorage.removeItem("session_key");
+    localStorage.removeItem("user_id");
+  }
+
   async doAccountKeyHandshake(username) {
+    let resolve;
+    this._handshaking = new Promise((r) => resolve=r);
     const device_key = await keyStore.getDefaultKey()
     const device_id = device_key.device_id
 
-    if (!device_id || !username) {
+    if (!device_id || (!username && !this.user_id)) {
+      resolve();
       throw new Error('Insufficient params for handshake')
     }
 
+    const user_identifier = username ?? this.user_id;
+
     const res = await API.GET(
-      `account/devicehandshake/${username}/${device_id}`
+      `account/devicehandshake/${user_identifier}/${device_id}`
     )
 
     if (!res.success) {
+      resolve();
       return res.error
     }
     const encrypted_account_key = res.data.encrypted_account_key
@@ -124,15 +152,23 @@ export class Session {
     )
 
     this.accKey = { privateKey: key, publicKey: public_key }
+    resolve();
+  }
+
+  async getAccountKey() {
+    if (this.accKey === null) {
+      await this.doAccountKeyHandshake();
+    }
+    return this.accKey;
   }
 
   async login(username) {
-    const key = this.accKey
+    const key = await this.getAccountKey();
     if (!key) {
       throw new Error('Account key handshake incomplete')
     }
 
-    localStorage.removeItem('session')
+    this.clearSession();
 
     const res = await API.POST('session/login', { username })
 
@@ -148,12 +184,14 @@ export class Session {
     )
     const session_str = new TextDecoder().decode(decrypted_session)
 
-    localStorage.setItem('session', session_str)
+    localStorage.setItem('session', session_str);
+    localStorage.setItem('user_id', res.data.user_id);
+    this.user_id = res.data.user_id;
     return true
   }
 
   async signup(username, email) {
-    localStorage.removeItem('session')
+    this.clearSession();
 
     const device_key = await keyStore.getDefaultKey()
 
