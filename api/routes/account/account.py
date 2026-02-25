@@ -13,6 +13,7 @@ from api.models.session import Session
 from api.routes.account.models import *
 from api.utils import unwrap
 
+from shared.py.constraints import USER_MAX_NUM_DEVICES
 from shared.py.grpc.id import id_compare, puuid_str, str_puuid, uuid_puuid
 from shared.py.grpc.user import get_user, get_user_by_username
 from shared.py.pydantic.pem import PEMPublicKey
@@ -23,8 +24,6 @@ from shared.py.grpcgen import user_pb2
 from shared.py.grpc.device import create_device, read_devices
 
 
-
-CONF_USER_MAX_DEVICES = 8
 
 discovery = DiscoveryManager()
 
@@ -116,7 +115,7 @@ async def new_device(r: Request, s: SessionParam, body: NewDeviceBody) -> Device
 
     res = await read_devices(grpcdevice, s.user_id, count_only=True)
 
-    if res.device_count >= CONF_USER_MAX_DEVICES:
+    if res.device_count >= USER_MAX_NUM_DEVICES:
         raise ApiErrExc(errors.BadRequest("Device limit reached", api_error_code=errors.ERROR_LIMIT_REACHED))
 
     res = await create_device(
