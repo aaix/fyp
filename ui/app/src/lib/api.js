@@ -46,8 +46,7 @@ async function _api(uri, method, body = undefined, options = {}) {
 
   if (response.status === 401 && options.useSession) {
     localStorage.removeItem('session');
-    alert("Session is no longer valid, redirecting to login page");
-    window.location.href = '/login';
+    alert("Session is no longer valid, please login again");
   }
 
   try {
