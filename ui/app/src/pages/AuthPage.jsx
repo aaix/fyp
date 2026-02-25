@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { Session } from '../lib/session.js'
+import { gatewayFactory } from '../lib/gateway.js'
+
 import '../App.css'
 
 export default function AuthPage({ onLogin }) {
@@ -44,6 +46,7 @@ export default function AuthPage({ onLogin }) {
         const loginResult = await session.login(formData.username)
         if (loginResult === true) {
           window.session = session
+          window.gateway = gatewayFactory()
           onLogin()
         } else {
           setError(loginResult || 'Login failed')
