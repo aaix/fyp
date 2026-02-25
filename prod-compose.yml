@@ -33,6 +33,7 @@ services:
     image: az-gateway:latest
     environment:
       - DATASERVICES_URI=172.31.0.10:3114
+      - DEPLOYMENT_MODE=prod
     depends_on:
       - dataservices-0
     ports:
