@@ -1,4 +1,4 @@
-import { decryptB64 } from "./keyhandler";
+import { decryptB64, exportAsPem, importFromPem, RSAWrapRSAwithSym } from "./keyhandler";
 import { getCurrentSession } from "./session";
 import { keyStore } from "./session";
 import { B64toUint8Array, blobToB64 } from "./utils";
@@ -44,6 +44,22 @@ class Gateway {
         
     }
 
+    async reconnect() {
+        this.socket.close()
+        await new Promise((resolve) => {
+            const socket = new WebSocket(GATEWAY_URL);
+            socket.addEventListener("open", () => {
+                this.socket = socket;
+                this.handshake_complete = false;
+                this.handshake_started = false;
+                socket.addEventListener("message", (event) => {
+                    this.onMessage(event);
+                })
+                resolve();
+            })
+        })
+    }
+
     async send(data) {
         data.seq = ++this.client_seq;
         data.ack = this.server_seq;
@@ -62,6 +78,10 @@ class Gateway {
 
     async onClose(e) {
         console.log(`[Gateway] closed with ${e.code}: ${e.reason}`)
+        if (this.errCallback) {
+            this.errCallback(e);
+        }
+        await this.reconnect();
     }
 
     async handshake() {
@@ -103,6 +123,108 @@ class Gateway {
     async handler_session_complete(msg) {
         this.handshake_complete = true;
     }
+
+    async start_new_device_handshake(username, deviceName, otCallback, errCallback, successCallback) {
+        if (!deviceName || !otCallback || !errCallback || !successCallback) {
+            throw new Error("Insufficient parameters")
+        }
+
+        if (this.handshake_complete || this.handshake_started) {
+            throw new Error("A handshake has already been started");
+        }
+        this.handshake_started = true;
+        this.newDeviceOTCallback = otCallback;
+        this.newDeviceSuccessCallback = successCallback;
+        this.errCallback = errCallback;
+
+        const deviceKey = (await keyStore.getDefaultKey()).key;
+
+        const newDeviceHello = {
+            op: "new_device_hello",
+            username: username,
+            device_name: deviceName,
+            device_public_key: await exportAsPem(deviceKey.publicKey)
+        }
+
+        await this.send(newDeviceHello);
+
+    }
+
+    async handler_new_device_server_hello(msg) {
+        const oneTimeCode = msg.code;
+        const gatewayId = msg.gateway_id;
+
+        this.newDeviceOTCallback(oneTimeCode, gatewayId);
+
+    }
+
+    async handler_new_device_ok(msg) {
+        if (this.registerSuccessCallback) {
+            // we are the registering device
+            this.registerSuccessCallback(msg.device_name);
+        }
+        // we are making a new device
+
+        const currentKey = await keyStore.getDefaultKey();
+        await keyStore.putKey({ ...currentKey, device_id: msg.device_id });
+        this.newDeviceSuccessCallback();
+    }
+
+    async register_new_device(code, confirmCallback, errorCallback, successCallback) {
+
+        this.registerConfirmCallback = confirmCallback;
+        this.registerErrorCallback = errorCallback;
+        this.registerSuccessCallback = successCallback;
+
+        const selectdeviceintention = {
+            op: "select_device_intention",
+            code,
+        }
+        await this.send(selectdeviceintention)
+    }
+
+    async handler_add_device_request(msg) {
+        const device_name = msg.device_name;
+        const device_public_key_pem = msg.device_public_key;
+        const device_gateway_id = msg.device_gateway_id;
+
+        const device_public_key = await importFromPem(device_public_key_pem);
+
+
+        const confirmed = await this.registerConfirmCallback({
+            device_name,
+            device_gateway_id,
+        });
+
+        if (!confirmed) {
+            return await this.send({op:"select_device_cancel"})
+        }
+
+        const account_private_key = await getCurrentSession().doAccountKeyHandshake(null, true);
+
+        const encrypted_account_key = await blobToB64(
+            await RSAWrapRSAwithSym(device_public_key, account_private_key)
+        );
+
+        const adddeviceok = {
+            op: "add_device_ok",
+            encrypted_account_key,
+        }
+
+        await this.send(adddeviceok);
+                
+    }
+
+    async handler_select_device_intention_failure(msg) {
+        if (msg.failure_type == "not_found") {
+            this.registerErrorCallback("Code does not match")
+        } else if (msg.failure_type == "device_limit_reached") {
+            this.registerErrorCallback("User already has too many devices")
+        } else {
+            this.registerErrorCallback("Unknown error occured")
+        }
+    }
+
 
     async handler_event(msg) {
         const event = msg.d;

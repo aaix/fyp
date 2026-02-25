@@ -1,7 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { DeviceManager } from '../lib/session.js'
+import { gatewayFactory } from '../lib/gateway.js'
 import { timeFromUUIDv1 } from '../lib/utils.js'
+import ConfirmModal from '../components/ConfirmModal.jsx'
 import './SettingsPage.css'
 
 const deviceManager = new DeviceManager()
@@ -43,6 +45,13 @@ export default function SettingsPage() {
   const [deviceToDelete, setDeviceToDelete] = useState(null)
   const [deleteLoading, setDeleteLoading] = useState(false)
   const [deleteError, setDeleteError] = useState(null)
+  const [registerLoading, setRegisterLoading] = useState(false)
+  const [registerError, setRegisterError] = useState(null)
+  const [registerInfo, setRegisterInfo] = useState(null)
+  const [registerCode, setRegisterCode] = useState('')
+  const [registerCodeModalOpen, setRegisterCodeModalOpen] = useState(false)
+  const [registerConfirmDetails, setRegisterConfirmDetails] = useState(null)
+  const registerConfirmResolverRef = useRef(null)
 
   useEffect(() => {
     let cancelled = false
@@ -87,6 +96,52 @@ export default function SettingsPage() {
     }
   }
 
+  const startRegisterNewDeviceWithCode = async (code) => {
+    if (!code) return
+
+    setRegisterError(null)
+    setRegisterInfo(null)
+    setRegisterLoading(true)
+
+    try {
+      const gateway = await gatewayFactory()
+
+      const confirmCallback = ({ device_name, device_gateway_id }) => {
+        return new Promise((resolve) => {
+          registerConfirmResolverRef.current = resolve
+          setRegisterConfirmDetails({
+            deviceName: device_name,
+            deviceId: device_gateway_id,
+          })
+        })
+      }
+
+      const errorCallback = (message) => {
+        setRegisterError(message || 'Failed to register new device')
+        setRegisterLoading(false)
+      }
+
+      const successCallback = (deviceName) => {
+        setRegisterInfo(`Device "${deviceName}" has been added successfully.`)
+        setRegisterLoading(false)
+        fetchDevices(setDevices, setDevicesLoading, setDevicesError)
+      }
+
+      await gateway.register_new_device(code, confirmCallback, errorCallback, successCallback)
+    } catch (err) {
+      setRegisterError(err?.message || 'Failed to start device registration')
+      setRegisterLoading(false)
+    }
+  }
+
+  const handleRegisterNewDevice = () => {
+    if (registerLoading) return
+    setRegisterError(null)
+    setRegisterInfo(null)
+    setRegisterCode('')
+    setRegisterCodeModalOpen(true)
+  }
+
   const handleDeviceClick = (deviceId) => {
     setExpandedDeviceId((current) => (current === deviceId ? null : deviceId))
   }
@@ -112,9 +167,23 @@ export default function SettingsPage() {
                   <p className="settings-tile-subtitle">Manage where your account is trusted.</p>
                 </div>
               </div>
-              <span className="settings-tile-chip">Security</span>
+              <div className="settings-tile-actions">
+                <button
+                  type="button"
+                  className="settings-primary-btn"
+                  onClick={handleRegisterNewDevice}
+                  disabled={registerLoading}
+                >
+                  {registerLoading ? 'Registering…' : 'Register new device'}
+                </button>
+                <span className="settings-tile-chip">Security</span>
+              </div>
             </header>
             <div className="settings-tile-body">
+              {registerError && <p className="settings-error">{registerError}</p>}
+              {registerInfo && !registerError && (
+                <p className="settings-info">{registerInfo}</p>
+              )}
               {devicesLoading ? (
                 <p className="settings-empty">Loading devices…</p>
               ) : devicesError ? (
@@ -192,43 +261,100 @@ export default function SettingsPage() {
       </main>
 
       {deviceToDelete && (
-        <div
-          className="modal-backdrop"
-          onClick={closeDeleteModal}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="delete-device-title"
+        <ConfirmModal
+          open={!!deviceToDelete}
+          title="Remove device?"
+          confirmLabel={deleteLoading ? 'Removing…' : 'Remove'}
+          cancelLabel="Cancel"
+          confirmVariant="danger"
+          confirmDisabled={deleteLoading}
+          onConfirm={confirmDeleteDevice}
+          onCancel={closeDeleteModal}
+          labelledById="delete-device-title"
         >
-          <div
-            className="modal-content"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h2 id="delete-device-title" className="modal-title">Remove device?</h2>
-            <p className="modal-body">
-              This will revoke access for <strong>{deviceToDelete.name}</strong>. You can add it again later.
-            </p>
-            {deleteError && <p className="settings-error modal-error">{deleteError}</p>}
-            <div className="modal-actions">
-              <button
-                type="button"
-                className="modal-btn modal-btn-cancel"
-                onClick={closeDeleteModal}
-                disabled={deleteLoading}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                className="modal-btn modal-btn-danger"
-                onClick={confirmDeleteDevice}
-                disabled={deleteLoading}
-              >
-                {deleteLoading ? 'Removing…' : 'Remove'}
-              </button>
-            </div>
-          </div>
-        </div>
+          <p>
+            This will revoke access for <strong>{deviceToDelete.name}</strong>. You can add it again
+            later.
+          </p>
+          {deleteError && <p className="settings-error modal-error">{deleteError}</p>}
+        </ConfirmModal>
       )}
+
+      <ConfirmModal
+        open={!!registerConfirmDetails}
+        title="Confirm new device"
+        confirmLabel="Looks good"
+        cancelLabel="Cancel"
+        confirmVariant="primary"
+        onConfirm={() => {
+          if (registerConfirmResolverRef.current) {
+            registerConfirmResolverRef.current(true)
+            registerConfirmResolverRef.current = null
+          }
+          setRegisterConfirmDetails(null)
+        }}
+        onCancel={() => {
+          if (registerConfirmResolverRef.current) {
+            registerConfirmResolverRef.current(false)
+            registerConfirmResolverRef.current = null
+          }
+          setRegisterConfirmDetails(null)
+          setRegisterInfo('Device registration was cancelled.')
+        }}
+      >
+        {registerConfirmDetails && (
+          <div className="confirm-device-details">
+            <p>Please confirm this matches what you see on your other device:</p>
+            <dl>
+              <div className="confirm-device-row">
+                <dt>Device name</dt>
+                <dd>{registerConfirmDetails.deviceName}</dd>
+              </div>
+              <div className="confirm-device-row">
+                <dt>Device ID</dt>
+                <dd>{registerConfirmDetails.deviceId}</dd>
+              </div>
+            </dl>
+          </div>
+        )}
+      </ConfirmModal>
+
+      <ConfirmModal
+        open={registerCodeModalOpen}
+        title="Enter code from other device"
+        confirmLabel="Continue"
+        cancelLabel="Cancel"
+        confirmVariant="primary"
+        confirmDisabled={registerLoading}
+        onConfirm={() => {
+          const trimmed = registerCode.trim()
+          if (!trimmed) {
+            setRegisterError('Please enter the code shown on your other device.')
+            return
+          }
+          setRegisterCodeModalOpen(false)
+          startRegisterNewDeviceWithCode(trimmed)
+        }}
+        onCancel={() => {
+          if (registerLoading) return
+          setRegisterCodeModalOpen(false)
+        }}
+      >
+        <div className="input-modal-body">
+          <p>Enter the one-time code displayed on your other device to link this one.</p>
+          <label className="input-modal-label" htmlFor="register-code-input">
+            Code
+            <input
+              id="register-code-input"
+              type="text"
+              value={registerCode}
+              onChange={(e) => setRegisterCode(e.target.value)}
+              placeholder="e.g. 1234-5678"
+              autoComplete="one-time-code"
+            />
+          </label>
+        </div>
+      </ConfirmModal>
     </div>
   )
 }

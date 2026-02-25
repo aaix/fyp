@@ -122,7 +122,10 @@ export class Session {
     localStorage.removeItem("user_id");
   }
 
-  async doAccountKeyHandshake(username) {
+
+  
+  async doAccountKeyHandshake(username, extractable = false) {
+    // if extractable is set then an extractable key is returned 
     let resolve;
     this._handshaking = new Promise((r) => resolve=r);
     const device_key = await keyStore.getDefaultKey()
@@ -148,8 +151,14 @@ export class Session {
 
     const key = await RSAunwrapRSAwithSym(
       device_key.key.privateKey,
-      (await B64toUint8Array(encrypted_account_key)).buffer
+      (await B64toUint8Array(encrypted_account_key)).buffer,
+      extractable
     )
+
+    if (extractable) {
+      return key
+    }
+    
 
     this.accKey = { privateKey: key, publicKey: public_key }
     resolve();

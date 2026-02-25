@@ -17,7 +17,6 @@ class APIResponse {
 
     this.data = this.success ? body.data : null
     this.error = !this.success ? body.data : null
-    console.log(`[APIResponse]`, JSON.stringify(this));
   }
 }
 

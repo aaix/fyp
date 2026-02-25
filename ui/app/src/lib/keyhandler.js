@@ -111,7 +111,7 @@ export async function RSAWrapRSAwithSym(wrapper_key, private_key) {
   return combined
 }
 
-export async function RSAunwrapRSAwithSym(wrapper_private, buffer) {
+export async function RSAunwrapRSAwithSym(wrapper_private, buffer, extractable = false) {
   const { version, parts } = unwrapLengthPrefixed(buffer)
 
   const [sym_wrapped, iv, private_wrapped] = parts
@@ -132,7 +132,7 @@ export async function RSAunwrapRSAwithSym(wrapper_private, buffer) {
     sym,
     { name: 'AES-GCM', length: 256, iv: iv },
     { name: 'RSA-OAEP', hash: 'SHA-256' },
-    true,
+    extractable,
     ['decrypt', 'unwrapKey']
   )
 
