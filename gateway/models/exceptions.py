@@ -15,3 +15,4 @@ class HandshakeFailed(GatewayException):
         BAD_AUTH = 1
         TIME_OUT = 2
         BAD_PAYLOAD = 3
+        GOING_AWAY = 4

@@ -10,19 +10,25 @@ def puuid_int(uuid: pUUID) -> int | None:
         return None
     return (uuid.id_high << 64) | uuid.id_low
 
+def puuid_str(uuid: pUUID) -> str | None:
+    """Convert pUUID to str"""
+    if int_id := puuid_int(uuid):
+        return f"{int_id:032x}"
+    return None
+
+def puuid_uuid(puuid: pUUID) -> UUID | None:
+    id_int = puuid_int(puuid)
+    if not id_int:
+        return None
+    return UUID(int=id_int)
+
+
 def int_puuid(data: int) -> pUUID:
     """Convert an int to a pUUID"""
     return pUUID(
         id_high=data >> 64,
         id_low=data & ((1 << 64) - 1)
     )
-
-
-def puuid_str(uuid: pUUID) -> str | None:
-    """Convert pUUID to str"""
-    if int_id := puuid_int(uuid):
-        return f"{int_id:032x}"
-    return None
 
 def str_puuid(uuid: str) -> pUUID:
     """Convert str to pUUID"""

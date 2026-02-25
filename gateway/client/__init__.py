@@ -5,25 +5,29 @@ from uuid import UUID
 import asyncio
 
 from grpc import RpcError, StatusCode
-from pydantic import TypeAdapter, ValidationError
+from pydantic import ValidationError
 from websockets import CloseCode, ConnectionClosed, ServerConnection
 
+from gateway import log
 from gateway.models import events
 import gateway.server
 from gateway.models.events import Event_t
 from gateway.models.closecodes import GatewayCloseCode
 from gateway.models.exceptions import HandshakeFailed
 from gateway.models.internalevent import InternalEvent
-from gateway.models.messages import BaseMessage, ClientAuth, ClientHello, ClientMessage_T, EventMessage, NewDeviceClientHello, ServerHello, SessionComplete
+from gateway.models.messages import AddDeviceOK, AddDeviceRequest, BaseMessage, ClientAuth, ClientHello, ClientMessageAdapter, EventMessage, NewDeviceClientHello, NewDeviceOK, NewDeviceServerHello, SelectDeviceCancel, SelectDeviceIntention, SelectDeviceIntentionFailure, ServerHello, SessionComplete
 
 
 
+from gateway.utils import unwrap
+from shared.py.constraints import USER_MAX_NUM_DEVICES
 from shared.py.discovery import DiscoveryManager
-from shared.py.grpc.device import read_devices, find_device_by_id
+from shared.py.grpc.device import create_device, read_devices, find_device_by_id
+from shared.py.grpc.id import puuid_str, puuid_uuid
 from shared.py.grpc.lazy import LazyGRPC
-from shared.py.grpc.user import get_user
+from shared.py.grpc.user import get_user, get_user_by_username
 from shared.py.grpcgen import user_pb2_grpc
-from shared.py.crypto import challenge
+from shared.py.crypto import challenge, onetimecode
 
 discovery = DiscoveryManager()
 
@@ -44,6 +48,8 @@ class GatewayClient:
         self.server_seq: int = 0
         self.last_acked: int = 0
 
+        self.select_device_lock = asyncio.Lock()
+        self.selected_device: None | tuple[NewDeviceClientHello, asyncio.Future[NewDeviceOK]] = None
 
         self.cleanup_lock = asyncio.Lock()
         self.cleaned_up: bool = False
@@ -102,13 +108,13 @@ class GatewayClient:
 
     async def loop(self):
         """Runs forever"""
-        while self.open:
-            try:
+        try:
+            while self.open:
                 await self.run_once()
-            except ConnectionClosed, asyncio.QueueShutDown:
-                return # safe error so just cleanup and leave
-            finally:
-                await self.cleanup()
+        except ConnectionClosed, asyncio.QueueShutDown:
+            return # safe error so just cleanup and leave
+        finally:
+            await self.cleanup()
 
 
     async def handle_internal(self, e: InternalEvent):
@@ -116,10 +122,90 @@ class GatewayClient:
 
     async def handle_incoming(self, d: bytes):
         try:
-            clientmessage = TypeAdapter(ClientMessage_T).validate_json(d)
+            msg = ClientMessageAdapter.validate_json(d)
         except ValidationError as e:
             await self.send_event(events.HintEvent(message=e.errors(include_url=False, include_input=False)))
             await self.close(GatewayCloseCode.MALFORMED_DATA, "could not determine clientmessage type")
+            return
+        
+        match msg:
+            case SelectDeviceIntention():
+                return await self.handle_select_device_intention(msg)
+            case SelectDeviceCancel():
+                return await self.handle_select_device_cancel(msg)
+            case AddDeviceOK():
+                return await self.handle_add_device_ok(msg)
+            case _:
+                await self.send_event(events.HintEvent(message=f"msg type {msg.__class__.__name__} not yet implemented"))
+
+    async def handle_select_device_cancel(self, _sdc: SelectDeviceCancel):
+        """Refer to new device gateway handshake diagram"""
+        self.selected_device = None
+        try:
+            self.select_device_lock.release()
+        except RuntimeError:
+            pass
+
+    async def handle_select_device_intention(self, sdi: SelectDeviceIntention):
+        """Refer to new device gateway handshake diagram"""
+
+        # take lock so we only add 1 device at once
+        if self.select_device_lock.locked():
+            return await self.close(GatewayCloseCode.INVALID_STATE, "already selecting a device")
+        await self.select_device_lock.acquire()
+
+        if not (waiter := self.controller.get_new_device_waiter(self.user_id or unwrap(), sdi.code)):
+            return await self.send(SelectDeviceIntentionFailure(
+                op="select_device_intention_failure",
+                failure_type=SelectDeviceIntentionFailure.Type.NOT_FOUND
+            ))
+        
+        new_device_ch, future = waiter
+        self.selected_device = waiter
+
+        adddevicerequest = AddDeviceRequest(
+            op="add_device_request",
+            device_name=new_device_ch.device_name,
+            device_public_key=new_device_ch.device_public_key,
+        )
+
+        await self.send(adddevicerequest)
+    
+
+    async def handle_add_device_ok(self, adok: AddDeviceOK):
+        """Adds a new device"""
+        if not self.select_device_lock.locked() or not self.selected_device:
+            return await self.close(GatewayCloseCode.INVALID_STATE, "not currently selecting a device")
+        
+        new_device_ch, future = self.selected_device
+        
+
+        res = await read_devices(grpcdevice, self.user_id or unwrap(), count_only=True)
+
+        if res.device_count >= USER_MAX_NUM_DEVICES:
+            await self.send(SelectDeviceIntentionFailure(
+                op="select_device_intention_failure",
+                failure_type=SelectDeviceIntentionFailure.Type.DEVICE_LIMIT_REACHED)
+            )
+
+
+        res = await create_device(
+            grpcdevice,
+            user_id=self.user_id or unwrap(),
+            device_name=new_device_ch.device_name,
+            public_key=new_device_ch.device_public_key.to_bytes(),
+            encrypted_account_key=adok.encrypted_account_key,
+        )
+
+        ndok = NewDeviceOK.from_rpc(res, new_device_ch.device_public_key)
+
+        future.set_result(ndok)
+
+        await self.send(ndok)
+
+        self.selected_device = None
+        self.select_device_lock.release()
+
 
     
     async def handle_close(self, exc: ConnectionClosed):
@@ -182,7 +268,41 @@ class GatewayClient:
                 unwrap()
     
     async def new_device_handshake(self, clienthello: NewDeviceClientHello):
-        raise NotImplementedError()
+        username = clienthello.username
+
+        try:
+            user = await get_user_by_username(grpcuser, username)
+        except RpcError as e:
+            if e.code() != StatusCode.NOT_FOUND:
+                raise
+            raise HandshakeFailed(HandshakeFailed.Reason.BAD_AUTH, "no such user")
+
+        one_time_code = onetimecode.generate()
+
+        serverhello = NewDeviceServerHello(
+            op="new_device_server_hello",
+            gateway_id=self.id,
+            code=one_time_code,
+        )
+
+        await self.send(serverhello)
+
+
+        try:
+            ok = await self.controller.new_device_waiting(
+                clienthello,
+                puuid_uuid(user.user_id) or unwrap(),
+                one_time_code
+            )
+        except TimeoutError as e:
+            raise HandshakeFailed(HandshakeFailed.Reason.TIME_OUT, "Timed out waiting on other device") from e
+    
+        await self.send(ok)
+        
+        regular_clienthello = await self.handshake_get_next(ClientHello)
+        return await self.regular_handshake(regular_clienthello)
+
+        
 
     async def regular_handshake(self, clienthello: ClientHello) -> UUID:
 
@@ -196,7 +316,7 @@ class GatewayClient:
                 get_user(grpcuser, user_id)
             )
         except RpcError as e:
-            if e.code != StatusCode.NOT_FOUND:
+            if e.code() != StatusCode.NOT_FOUND:
                 raise
             raise HandshakeFailed(HandshakeFailed.Reason.BAD_PAYLOAD, "user not found") from e
 

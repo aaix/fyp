@@ -1,9 +1,9 @@
 from typing import Any
 
 import asyncio
-from asyncio import AbstractEventLoop, Future, Task
+from asyncio import AbstractEventLoop, Future, InvalidStateError, Task
 from collections import defaultdict
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from websockets import CloseCode, ConnectionClosed, ServerConnection
 
@@ -11,12 +11,16 @@ from gateway import log
 from gateway.client import GatewayClient
 from gateway.models.closecodes import GatewayCloseCode
 from gateway.models.exceptions import HandshakeFailed
+from gateway.models.messages import NewDeviceClientHello, NewDeviceOK
 
 
 class GatewayController:
     def __init__(self):
-        self.pending: dict[UUID, GatewayClient] = {}
-        self.by_user: defaultdict[UUID, set[GatewayClient]] = defaultdict(set)
+        self.id = uuid4()
+        self.__pending: dict[UUID, GatewayClient] = {}
+        self.__by_user: defaultdict[UUID, set[GatewayClient]] = defaultdict(set)
+
+        self.__new_device_waiters: dict[tuple[UUID, int], tuple[NewDeviceClientHello, Future[NewDeviceOK]]] = {}
     
     def shutdown(self, loop: AbstractEventLoop, server_future: Future[None]):
         server_future.set_result(None)
@@ -25,13 +29,24 @@ class GatewayController:
     async def shutdown_inner(self, loop: AbstractEventLoop):
         existing: list[Task[Any]] = []
         pending: list[Task[Any]] = []
-        for clients in self.by_user.values():
+        newdevice: list[Task[Any]] = []
+        for clients in self.__by_user.values():
             for client in clients:
                 existing.append(loop.create_task(client.shutdown()))
-        for client in self.pending.values():
+        for client in self.__pending.values():
             pending.append(loop.create_task(client.shutdown()))
+
+
+        exc = HandshakeFailed(HandshakeFailed.Reason.GOING_AWAY, "node shutting down")
+        futures_cancelled = 0
+        for (_, future)  in self.__new_device_waiters.values():
+            try:
+                future.set_exception(exc)
+            except InvalidStateError:
+                continue
+            futures_cancelled += 1
         
-        log(f"Shutting down {len(existing)=} {len(pending)=}")
+        log(f"Shutting down {len(existing)=} {len(pending)=}, cancelled {futures_cancelled} handshake waiters")
 
         await asyncio.gather(*existing, *pending, return_exceptions=True)
         log(f"Shut down all clients")
@@ -39,34 +54,45 @@ class GatewayController:
 
     async def accept_incoming(self, ws: ServerConnection) -> None:
         client = GatewayClient(self, ws)
-        self.pending[client.id] = client
+        self.__pending[client.id] = client
 
         try:
             user_id = await client.handshake()
         except HandshakeFailed as failure:
             log(f"Client {client.id} failed handshake due to {failure.reason.name}: {failure.message}")
-            await client.close(GatewayCloseCode.HANDSHAKE_FAILED, failure.message)
-            return
+            return await client.close(GatewayCloseCode.HANDSHAKE_FAILED, failure.message)
         except ConnectionClosed:
             return await client.close(CloseCode.GOING_AWAY, "closed during handshake")
         finally:
-            self.pending.pop(client.id)
+            self.__pending.pop(client.id, None)
 
-        self.by_user[user_id].add(client)
+        self.__by_user[user_id].add(client)
 
         await client.loop()
+    
+    def get_new_device_waiter(self, user_id: UUID, code: int) -> None | tuple[NewDeviceClientHello, Future[NewDeviceOK]]:
+        return self.__new_device_waiters.get((user_id, code))
 
+    async def new_device_waiting(self, request: NewDeviceClientHello, user_id: UUID, code: int, timeout=60) -> NewDeviceOK:
+        future = asyncio.Future()
+        key = (user_id, code)
+        self.__new_device_waiters[key] = (request, future)
+
+        try:
+            return await asyncio.wait_for(future, timeout=timeout)
+        finally:
+            self.__new_device_waiters.pop(key, None)
             
 
     async def unregister(self, client: GatewayClient):
-        self.pending.pop(client.id, None)
+        self.__pending.pop(client.id, None)
 
         if not client.user_id:
             return
 
-        self.by_user[client.user_id].discard(client)
+        self.__by_user[client.user_id].discard(client)
 
         # delete set if empty
-        if not len(self.by_user[client.user_id]):
-            self.by_user.pop(client.user_id, None)
+        if not len(self.__by_user[client.user_id]):
+            self.__by_user.pop(client.user_id, None)
 
