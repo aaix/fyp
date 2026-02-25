@@ -11,6 +11,7 @@ from api.utils import unwrap
 
 from shared.py.crypto import session as session_crypto
 from shared.py.grpc.lazy import LazyGRPC
+from shared.py.grpc.user import get_user_by_username
 from shared.py.grpcgen import user_pb2_grpc
 from shared.py.grpcgen import user_pb2
 from shared.py.grpc.id import puuid_str
@@ -26,9 +27,7 @@ grpcuser = LazyGRPC(discovery.discover_dataservices(), user_pb2_grpc.UserService
 @SessionRouter.post("/login")
 async def login(request: Request, body: LoginBody) -> LoginResponse:
     try:
-        user = cast(user_pb2.ReadUserResponse, await grpcuser.stub.ReadUserByUsername(user_pb2.ReadUserByUsernameRequest(
-            username=body.username
-        )))
+        user = await get_user_by_username(grpcuser, body.username)
     except RpcError as e:
         if e.code() == StatusCode.NOT_FOUND:
             raise ApiErrExc(errors.NotFound("no such user exists", api_error_code=errors.ERROR_NO_SUCH_USER))

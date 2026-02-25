@@ -14,7 +14,7 @@ from api.routes.account.models import *
 from api.utils import unwrap
 
 from shared.py.grpc.id import id_compare, puuid_str, str_puuid, uuid_puuid
-from shared.py.grpc.user import get_user
+from shared.py.grpc.user import get_user, get_user_by_username
 from shared.py.pydantic.pem import PEMPublicKey
 from shared.py.pydantic.common import Username
 from shared.py.grpc.lazy import LazyGRPC
@@ -76,9 +76,7 @@ async def device_key_handshake(r: Request, user_identifier: Username | UUID, dev
 
     try:
         if isinstance(user_identifier, str):
-            user = cast(user_pb2.ReadUserResponse, await grpcuser.stub.ReadUserByUsername(user_pb2.ReadUserByUsernameRequest(
-                username=user_identifier    
-            )))
+            user = await get_user_by_username(grpcuser, user_identifier)
         else:
             user = await get_user(grpcuser, user_identifier)
     except RpcError as e:
