@@ -7,6 +7,9 @@ import MessagesPage from './pages/MessagesPage.jsx'
 import AccountPage from './pages/AccountPage.jsx'
 import SettingsPage from './pages/SettingsPage.jsx'
 
+import { gatewayFactory } from './lib/gateway.js'
+
+
 function useAuth() {
   const [isLoggedIn, setIsLoggedIn] = useState(() => !!localStorage.getItem('session'))
 
@@ -25,6 +28,8 @@ function App() {
   if (!isLoggedIn) {
     return <AuthPage onLogin={() => setLoggedIn()} />
   }
+
+  window.gateway = gatewayFactory();
 
   return (
     <Routes>

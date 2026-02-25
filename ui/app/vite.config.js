@@ -11,6 +11,10 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, '')
       },
+      '/gateway': {
+        target: 'ws://172.31.0.30:80',
+        changeOrigin: true,
+      },
     },
   },
 })
