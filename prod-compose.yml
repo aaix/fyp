@@ -25,7 +25,18 @@ services:
     depends_on:
       scylla-seed:
         condition: service_healthy
-      
+
+  gateway-0:
+    networks:
+      shared-network:
+        ipv4_address: 172.31.0.30
+    image: az-gateway:latest
+    environment:
+      - DATASERVICES_URI=172.31.0.10:3114
+    depends_on:
+      - dataservices-0
+    ports:
+      - 8081:8081
   
   api-0:
     networks:
