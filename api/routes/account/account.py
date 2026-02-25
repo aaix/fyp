@@ -14,6 +14,7 @@ from api.routes.account.models import *
 from api.utils import unwrap
 
 from shared.py.grpc.id import id_compare, puuid_str, str_puuid, uuid_puuid
+from shared.py.grpc.user import get_user
 from shared.py.pydantic.pem import PEMPublicKey
 from shared.py.pydantic.common import Username
 from shared.py.grpc.lazy import LazyGRPC
@@ -70,13 +71,16 @@ async def signup(r: Request, body: SignupBody) -> SignupResponse:
         device=device
     )
 
-@AccountRouter.get("/devicehandshake/{username}/{device_id}")
-async def device_key_handshake(r: Request, username: Username, device_id: UUID) -> DeviceKeyResponse:
+@AccountRouter.get("/devicehandshake/{user_identifier}/{device_id}")
+async def device_key_handshake(r: Request, user_identifier: Username | UUID, device_id: UUID) -> DeviceKeyResponse:
 
     try:
-        user = cast(user_pb2.ReadUserResponse, await grpcuser.stub.ReadUserByUsername(user_pb2.ReadUserByUsernameRequest(
-            username=username
-        )))
+        if isinstance(user_identifier, str):
+            user = cast(user_pb2.ReadUserResponse, await grpcuser.stub.ReadUserByUsername(user_pb2.ReadUserByUsernameRequest(
+                username=user_identifier    
+            )))
+        else:
+            user = await get_user(grpcuser, user_identifier)
     except RpcError as e:
         if e.code() == StatusCode.NOT_FOUND:
             raise ApiErrExc(errors.NotFound("no such user exists", api_error_code=errors.ERROR_NO_SUCH_USER))
@@ -147,9 +151,7 @@ async def delete_device(r: Request, s: SessionParam, device_id: UUID) -> None:
 
 @AccountRouter.get("/@me")
 async def my_account(s: SessionParam) -> AccountResponse:
-    res = cast(user_pb2.ReadUserResponse, await grpcuser.stub.ReadUser(user_pb2.ReadUserRequest(
-        user_id=str_puuid(s.user_id)
-    )))
+    res = await get_user(grpcuser, s.user_id)
 
     return AccountResponse(
         user_id=s.user_id,
