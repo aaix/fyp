@@ -17,11 +17,11 @@ from gateway.models.messages import BaseMessage, ClientAuth, ClientHello, NewDev
 
 
 from shared.py.discovery import DiscoveryManager
-from shared.py.grpc.device import read_devices
-from shared.py.grpc.id import id_compare
+from shared.py.grpc.device import read_devices, find_device_by_id
 from shared.py.grpc.lazy import LazyGRPC
 from shared.py.grpc.user import get_user
 from shared.py.grpcgen import user_pb2_grpc
+from shared.py.crypto import challenge
 
 discovery = DiscoveryManager()
 
@@ -137,8 +137,7 @@ class GatewayClient:
         
         # if we made it then no model was validated correctly
         msg = f"Expected payload of type: {','.join(schema.__name__ for schema in schemas)}"
-        await self.close(GatewayCloseCode.MALFORMED_DATA, reason=msg)
-        raise HandshakeFailed(HandshakeFailed.Reason.BAD_PAYLOAD)
+        raise HandshakeFailed(HandshakeFailed.Reason.BAD_PAYLOAD, msg)
 
 
     async def handshake(self) -> UUID:
@@ -151,6 +150,9 @@ class GatewayClient:
                 return await self.new_device_handshake(clienthello)
             case _:
                 unwrap()
+    
+    async def new_device_handshake(self, clienthello: NewDeviceClientHello):
+        raise NotImplementedError()
 
     async def regular_handshake(self, clienthello: ClientHello) -> UUID:
 
@@ -158,30 +160,44 @@ class GatewayClient:
         device_id = clienthello.device_id
 
         try:
-            devices, user = await asyncio.gather(read_devices(grpcdevice, user_id), get_user(grpcuser, user_id))
+            # read device and user from grpc concurrently
+            devices, user = await asyncio.gather(
+                read_devices(grpcdevice, user_id),
+                get_user(grpcuser, user_id)
+            )
         except RpcError as e:
-            if e.code == StatusCode.NOT_FOUND:
-                await self.close(GatewayCloseCode.NOT_FOUND, "user not found")
-                raise HandshakeFailed(HandshakeFailed.Reason.BAD_PAYLOAD) from e
-            else:
+            if e.code != StatusCode.NOT_FOUND:
                 raise
+            raise HandshakeFailed(HandshakeFailed.Reason.BAD_PAYLOAD, "user not found") from e
+
+        if not (device := find_device_by_id(devices, device_id)):
+            raise HandshakeFailed(HandshakeFailed.Reason.BAD_PAYLOAD, "device not found")
         
-        for device in devices.devices:
-            if id_compare(device.device_id, device_id):
-                break
-        else:
-            await self.close(GatewayCloseCode.NOT_FOUND, "user not found")
-            raise HandshakeFailed(HandshakeFailed.Reason.BAD_PAYLOAD)
-        
-    
+        device_challenge = challenge.create_challenge()
+        account_challenge = challenge.create_challenge()
 
         serverhello = ServerHello(
             op="server_hello",
-            device_challenge="test",
-            account_challenge="test",
+            device_challenge=device_challenge,
+            account_challenge=account_challenge,
         )
         await self.send(serverhello)
         clientauth = await self.handshake_get_next(ClientAuth)
+
+        account_solved = challenge.verify_challenge(
+            device.device_public_key,
+            clientauth.solved_device_challenge,
+            device_challenge
+        )
+        device_solved = challenge.verify_challenge(
+            user.public_key,
+            clientauth.solved_account_challenge,
+            account_challenge
+        )
+
+        if not (device_solved and account_solved):
+            raise HandshakeFailed(HandshakeFailed.Reason.BAD_AUTH, "Incorrect challenge")
+
 
         sessioncomplete = SessionComplete(
             op="session_complete"
@@ -189,9 +205,7 @@ class GatewayClient:
         await self.send(sessioncomplete)
 
         self.handshake_complete = True
-
         return user_id
 
-    async def new_device_handshake(self, clienthello: NewDeviceClientHello) -> UUID: ...
         
 

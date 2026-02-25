@@ -5,6 +5,7 @@ from uuid import UUID
 from websockets import ServerConnection
 
 from gateway.client import GatewayClient
+from gateway.models.closecodes import GatewayCloseCode
 from gateway.models.exceptions import HandshakeFailed
 
 
@@ -38,7 +39,8 @@ class GatewayController:
         try:
             user_id = await client.handshake()
         except HandshakeFailed as failure:
-            print(f"Client {client.id} failed handshake due to {failure.reason.name}")
+            print(f"Client {client.id} failed handshake due to {failure.reason.name}: {failure.message}")
+            await client.close(GatewayCloseCode.HANDSHAKE_FAILED, failure.message)
             return
         finally:
             self.pending.pop(client.id)

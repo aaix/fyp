@@ -32,8 +32,8 @@ class ServerHello(BaseMessage):
     """Sent by the server to an identifying client for a challenge"""
     op: Literal["server_hello"]
     ### The part the client needs to sign
-    device_challenge: str
-    account_challenge: str
+    device_challenge: Base64Output
+    account_challenge: Base64Output
 
 class ClientAuth(BaseMessage):
     """Authenticates the client device"""

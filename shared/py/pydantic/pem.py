@@ -44,4 +44,8 @@ class PEMPublicKey:
         if not isinstance(key, RSAPublicKey):
             raise TypeError("Incorrect key type")
         return cls(key)
+    
+    @property
+    def inner(self):
+        return self.__inner
 

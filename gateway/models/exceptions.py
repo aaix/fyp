@@ -7,8 +7,9 @@ class InternalError(GatewayException):
 
 class HandshakeFailed(GatewayException):
     """Raised when a client handshake fails"""
-    def __init__(self, reason: Reason): 
+    def __init__(self, reason: Reason, message: str): 
         self.reason = reason
+        self.message = message
     
     class Reason(Enum):
         BAD_AUTH = 1
