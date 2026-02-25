@@ -132,9 +132,14 @@ export class Session {
     const device_key = await keyStore.getDefaultKey()
     const device_id = device_key.device_id
 
-    if (!device_id || (!username && !this.user_id)) {
+    if (!device_id) {
+      throw new Error("This device is not tied to any account");
+    }
+
+
+    if (!username && !this.user_id) {
       resolve();
-      throw new Error('Insufficient params for handshake')
+      throw new Error("Unable to determine user for handshake")
     }
 
     const user_identifier = username ?? this.user_id;
