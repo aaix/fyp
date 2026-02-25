@@ -20,7 +20,7 @@ from shared.py.pydantic.common import Username
 from shared.py.grpc.lazy import LazyGRPC
 from shared.py.grpcgen import user_pb2_grpc
 from shared.py.grpcgen import user_pb2
-from shared.py.grpc.device import read_devices
+from shared.py.grpc.device import create_device, read_devices
 
 
 
@@ -119,12 +119,13 @@ async def new_device(r: Request, s: SessionParam, body: NewDeviceBody) -> Device
     if res.device_count >= CONF_USER_MAX_DEVICES:
         raise ApiErrExc(errors.BadRequest("Device limit reached", api_error_code=errors.ERROR_LIMIT_REACHED))
 
-    res = cast(user_pb2.DeviceObjectResponse, await grpcdevice.stub.CreateDevice(user_pb2.CreateDeviceRequest(
-        user_id=str_puuid(s.user_id),
+    res = await create_device(
+        grpcdevice,
+        user_id=s.user_id,
         device_name=body.name,
         public_key=body.public_key.to_bytes(),
         encrypted_account_key=body.encrypted_private_key,
-    )))
+    )
 
     return DeviceResponse.from_rpc(
         res,
