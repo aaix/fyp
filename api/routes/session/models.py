@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from pydantic import BaseModel
 
 
@@ -17,4 +19,5 @@ class LoginBody(BaseModel):
 
 class LoginResponse(BaseModel):
     encrypted_session: Base64Output
+    user_id: str
 

@@ -41,7 +41,8 @@ async def login(request: Request, body: LoginBody) -> LoginResponse:
     token = session_crypto.encode_jose_session(session.to_encode())
 
     return LoginResponse(
-        encrypted_session=session_crypto.encrypt_session_with_key(token, user.public_key)
+        encrypted_session=session_crypto.encrypt_session_with_key(token, user.public_key),
+        user_id=session.user_id
     )
     
 @SessionRouter.get("/renew")
