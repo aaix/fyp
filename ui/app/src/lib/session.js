@@ -116,6 +116,7 @@ export class Session {
   }
 
   clearSession() {
+    console.error(`[Session] clearing session`);
     this.session_key = null;
     this.user_id = null;
     localStorage.removeItem("session_key");
@@ -193,7 +194,7 @@ export class Session {
     )
     const session_str = new TextDecoder().decode(decrypted_session)
 
-    localStorage.setItem('session', session_str);
+    localStorage.setItem('session_key', session_str);
     localStorage.setItem('user_id', res.data.user_id);
     this.user_id = res.data.user_id;
     return true

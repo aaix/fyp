@@ -55,10 +55,10 @@ export default function AuthPage({ onLogin }) {
           setLoading(false)
         }
 
-        const otCallback = (oneTimeCode, gatewayId) => {
+        const otCallback = (oneTimeCode, digest) => {
           setInfo(
             `On your other device, choose the option to add this device and enter the following one-time code: ${oneTimeCode}. ` +
-            `After entering the code, check that the gateway ID shown on your other device matches: ${gatewayId}.`
+            `After entering the code, check that the following matches on the other device: ${digest}.`
           )
         }
 
@@ -93,6 +93,7 @@ export default function AuthPage({ onLogin }) {
         }
       }
     } catch (err) {
+      console.error(err);
       setError(err.message || 'Something went wrong')
     } finally {
       setLoading(false)

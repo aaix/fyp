@@ -138,3 +138,10 @@ export async function RSAunwrapRSAwithSym(wrapper_private, buffer, extractable =
 
   return pk
 }
+
+export async function digestOf(buffer) {
+  return await crypto.subtle.digest(
+    "SHA-256",
+    buffer
+  )
+}

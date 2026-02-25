@@ -1,4 +1,3 @@
-// const BASE_URI = "http://172.31.0.20:8000";
 const BASE_URI = '/api'
 
 /**
@@ -28,7 +27,7 @@ async function _api(uri, method, body = undefined, options = {}) {
   body =
     method !== 'GET' && method !== 'HEAD' ? JSON.stringify(body) : undefined
 
-  const authorization = localStorage.getItem('session')
+  const authorization = localStorage.getItem("session_key");
   options = { ...defaultOptions, ...options }
 
   const headers = {
@@ -47,6 +46,7 @@ async function _api(uri, method, body = undefined, options = {}) {
 
   if (response.status === 401 && options.useSession) {
     localStorage.removeItem('session');
+    alert("Session is no longer valid, redirecting to login page");
     window.location.href = '/login';
   }
 

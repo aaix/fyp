@@ -106,12 +106,12 @@ export default function SettingsPage() {
     try {
       const gateway = await gatewayFactory()
 
-      const confirmCallback = ({ device_name, device_gateway_id }) => {
+      const confirmCallback = ({ device_name, digest }) => {
         return new Promise((resolve) => {
           registerConfirmResolverRef.current = resolve
           setRegisterConfirmDetails({
             deviceName: device_name,
-            deviceId: device_gateway_id,
+            digest: digest,
           })
         })
       }
@@ -311,8 +311,8 @@ export default function SettingsPage() {
                 <dd>{registerConfirmDetails.deviceName}</dd>
               </div>
               <div className="confirm-device-row">
-                <dt>Device ID</dt>
-                <dd>{registerConfirmDetails.deviceId}</dd>
+                <dt>Device digest</dt>
+                <dd>{registerConfirmDetails.digest}</dd>
               </div>
             </dl>
           </div>
@@ -349,7 +349,7 @@ export default function SettingsPage() {
               type="text"
               value={registerCode}
               onChange={(e) => setRegisterCode(e.target.value)}
-              placeholder="e.g. 1234-5678"
+              placeholder="e.g. 12345678"
               autoComplete="one-time-code"
             />
           </label>

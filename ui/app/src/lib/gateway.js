@@ -1,7 +1,7 @@
-import { decryptB64, exportAsPem, importFromPem, RSAWrapRSAwithSym } from "./keyhandler";
+import { decryptB64, digestOf, exportAsPem, importFromPem, RSAWrapRSAwithSym } from "./keyhandler";
 import { getCurrentSession } from "./session";
 import { keyStore } from "./session";
-import { B64toUint8Array, blobToB64 } from "./utils";
+import { B64toUint8Array, blobToB64, hexFromBuffer } from "./utils";
 
 const GATEWAY_URL = "/gateway";
 
@@ -33,6 +33,7 @@ class Gateway {
         this.socket = socket;
         this.handshake_complete = false;
         this.handshake_started = false;
+        this.adding_new_device = false;
         this.client_seq = 0;
         this.server_seq = 0;
         socket.addEventListener("close", (event) => {
@@ -81,6 +82,10 @@ class Gateway {
         if (this.errCallback) {
             this.errCallback(e);
         }
+
+        if (e.code == 4003 || e.code == 4005) { // handshake failed or unauthorized
+            getCurrentSession().clearSession();
+        }
         await this.reconnect();
     }
 
@@ -125,7 +130,7 @@ class Gateway {
     }
 
     async start_new_device_handshake(username, deviceName, otCallback, errCallback, successCallback) {
-        if (!deviceName || !otCallback || !errCallback || !successCallback) {
+        if (!username || !deviceName || !otCallback || !errCallback || !successCallback) {
             throw new Error("Insufficient parameters")
         }
 
@@ -152,16 +157,23 @@ class Gateway {
 
     async handler_new_device_server_hello(msg) {
         const oneTimeCode = msg.code;
-        const gatewayId = msg.gateway_id;
 
-        this.newDeviceOTCallback(oneTimeCode, gatewayId);
+        const deviceKey = (await keyStore.getDefaultKey()).key;
+        const device_public_key_pem = (await exportAsPem(deviceKey.publicKey)).trim();
+
+
+        const pub_digest = await digestOf(new TextEncoder().encode(device_public_key_pem).buffer);
+        const pub_digest_hex = await hexFromBuffer(pub_digest);
+
+        this.newDeviceOTCallback(oneTimeCode, pub_digest_hex);
 
     }
 
     async handler_new_device_ok(msg) {
-        if (this.registerSuccessCallback) {
+        if (this.adding_new_device === true) {
             // we are the registering device
             this.registerSuccessCallback(msg.device_name);
+            return;
         }
         // we are making a new device
 
@@ -171,6 +183,8 @@ class Gateway {
     }
 
     async register_new_device(code, confirmCallback, errorCallback, successCallback) {
+
+        this.adding_new_device = true;
 
         this.registerConfirmCallback = confirmCallback;
         this.registerErrorCallback = errorCallback;
@@ -185,18 +199,20 @@ class Gateway {
 
     async handler_add_device_request(msg) {
         const device_name = msg.device_name;
-        const device_public_key_pem = msg.device_public_key;
-        const device_gateway_id = msg.device_gateway_id;
+        const device_public_key_pem = msg.device_public_key.trim();
+        const pub_digest = await digestOf(new TextEncoder().encode(device_public_key_pem).buffer);
+        const pub_digest_hex = await hexFromBuffer(pub_digest);
 
         const device_public_key = await importFromPem(device_public_key_pem);
 
 
         const confirmed = await this.registerConfirmCallback({
             device_name,
-            device_gateway_id,
+            digest: pub_digest_hex,
         });
 
         if (!confirmed) {
+            this.adding_new_device = false;
             return await this.send({op:"select_device_cancel"})
         }
 

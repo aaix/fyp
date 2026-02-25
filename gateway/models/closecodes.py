@@ -6,3 +6,4 @@ class GatewayCloseCode(IntEnum):
     NOT_FOUND = 4001
     HANDSHAKE_FAILED = 4003
     INVALID_STATE = 4004
+    UNAUTHORIZED = 4005

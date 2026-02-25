@@ -70,7 +70,6 @@ class NewDeviceClientHello(ClientMessage):
 class NewDeviceServerHello(ServerMessage):
     """Hello to the new device requesting to be added"""
     op: Literal["new_device_server_hello"]
-    gateway_id: UUID
     code: int
 
 class SelectDeviceIntention(ClientMessage):

@@ -281,7 +281,6 @@ class GatewayClient:
 
         serverhello = NewDeviceServerHello(
             op="new_device_server_hello",
-            gateway_id=self.id,
             code=one_time_code,
         )
 
@@ -318,10 +317,10 @@ class GatewayClient:
         except RpcError as e:
             if e.code() != StatusCode.NOT_FOUND:
                 raise
-            raise HandshakeFailed(HandshakeFailed.Reason.BAD_PAYLOAD, "user not found") from e
+            raise HandshakeFailed(HandshakeFailed.Reason.BAD_AUTH, "user not found") from e
 
         if not (device := find_device_by_id(devices, device_id)):
-            raise HandshakeFailed(HandshakeFailed.Reason.BAD_PAYLOAD, "device not found")
+            raise HandshakeFailed(HandshakeFailed.Reason.BAD_AUTH, "device not found")
         
         device_challenge = challenge.create_challenge(device.device_public_key)
         account_challenge = challenge.create_challenge(user.public_key)

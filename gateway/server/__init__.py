@@ -60,7 +60,11 @@ class GatewayController:
             user_id = await client.handshake()
         except HandshakeFailed as failure:
             log(f"Client {client.id} failed handshake due to {failure.reason.name}: {failure.message}")
-            return await client.close(GatewayCloseCode.HANDSHAKE_FAILED, failure.message)
+            if failure.reason == HandshakeFailed.Reason.BAD_AUTH:
+                code = GatewayCloseCode.UNAUTHORIZED
+            else:
+                code = GatewayCloseCode.HANDSHAKE_FAILED
+            return await client.close(code, failure.message)
         except ConnectionClosed:
             return await client.close(CloseCode.GOING_AWAY, "closed during handshake")
         finally:

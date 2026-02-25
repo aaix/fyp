@@ -15,6 +15,12 @@ export async function B64toUint8Array(b64_string) {
   return Uint8Array.from(atob(b64_string), (c) => c.charCodeAt(0))
 }
 
+export async function hexFromBuffer(buffer) {
+  return [...new Uint8Array(buffer)]
+    .map(x => x.toString(16).padStart(2, '0'))
+    .join('');
+}
+
 
 export function timeFromUUIDv1(uuid) {
 
