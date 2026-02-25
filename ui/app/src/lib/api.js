@@ -59,24 +59,24 @@ async function _api(uri, method, body = undefined, options = {}) {
 }
 
 const API = {
-  async GET(uri) {
-    return await _api(uri, 'GET', undefined)
+  async GET(uri, options) {
+    return await _api(uri, 'GET', undefined, options)
   },
 
-  async PATCH(uri, body) {
-    return await _api(uri, 'PATCH', body)
+  async PATCH(uri, body, options) {
+    return await _api(uri, 'PATCH', body, options)
   },
 
-  async POST(uri, body) {
-    return await _api(uri, 'POST', body)
+  async POST(uri, body, options) {
+    return await _api(uri, 'POST', body, options)
   },
 
-  async DELETE(uri, body) {
-    return await _api(uri, 'DELETE', body)
+  async DELETE(uri, body, options) {
+    return await _api(uri, 'DELETE', body, options)
   },
 
-  async PUT(uri, body) {
-    return await _api(uri, 'PUT', body)
+  async PUT(uri, body, options) {
+    return await _api(uri, 'PUT', body, options)
   },
 }
 

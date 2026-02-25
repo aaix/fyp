@@ -140,7 +140,8 @@ export class Session {
     const user_identifier = username ?? this.user_id;
 
     const res = await API.GET(
-      `account/devicehandshake/${user_identifier}/${device_id}`
+      `account/devicehandshake/${user_identifier}/${device_id}`,
+      {useSession: false}
     )
 
     if (!res.success) {
@@ -180,7 +181,7 @@ export class Session {
 
     this.clearSession();
 
-    const res = await API.POST('session/login', { username })
+    const res = await API.POST('session/login', { username }, {useSession: false})
 
     if (!res.success) {
       return res.error.code
