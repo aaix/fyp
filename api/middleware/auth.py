@@ -49,7 +49,7 @@ class JWTMiddleware(BaseHTTPMiddleware):
 
 def raise_for_session(request: Request) -> Session:
     if not (session := request.state.session):
-        raise ApiErrExc(errors.Forbidden(
+        raise ApiErrExc(errors.Unauthorized(
             "Authentication required for this endpoint",
             api_error_code=errors.ERROR_AUTH_REQUIRED
         ))
