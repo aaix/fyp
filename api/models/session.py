@@ -1,9 +1,11 @@
-from typing import Self
+from typing import Self, cast
 
-import json
 from dataclasses import dataclass, asdict
 from io import BytesIO
 from datetime import datetime, UTC
+from uuid import UUID
+
+import msgpack
 
 from api.responses import ErrorResponse
 from api.responses.errors import Unauthorized
@@ -19,17 +21,26 @@ def _timenow() -> float:
 class Session:
     issued: float
     version: int
-    user_id: str
+    user_id: UUID
 
-    def to_encode(self) -> str:
-        return json.dumps(asdict(self))
+    def to_encode(self) -> bytes:
+        return cast(bytes, msgpack.packb({
+            "i": self.issued,
+            "u": self.user_id.bytes,
+            "v": self.version
+        }))
     
     @classmethod
     def from_encode(cls, b: bytes) -> Self:
-        return cls(**json.load(BytesIO(b)))
+        data = msgpack.unpackb(b)
+        return cls(
+            user_id=UUID(bytes=data["u"]),            issued=data["i"],
+            version=data["v"]
+        )
+
     
     @classmethod
-    def new(cls, user_id: str) -> Self:
+    def new(cls, user_id: UUID) -> Self:
         return cls(
             issued=_timenow(),
             version=0,

@@ -10,7 +10,7 @@ from cryptography.hazmat.primitives import hashes
 CONF_SIGN_KEY = jwk.generate_key("oct", 256)
 CONF_ENCRYPT_KEY = jwk.generate_key("oct", 256)
 
-def encode_jose_session(data: str) -> str:
+def encode_jose_session(data: bytes) -> str:
     token = jws.serialize_compact({"alg": "HS256"}, data, private_key=CONF_SIGN_KEY, algorithms=["HS256"])
     return jwe.encrypt_compact({"alg": "A256KW", "enc": "A256GCM"}, token, public_key=CONF_ENCRYPT_KEY, algorithms=["A256GCM", "A256KW"])
 

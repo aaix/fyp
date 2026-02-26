@@ -11,10 +11,11 @@ from api import ApiErrExc
 
 from api.models.session import Session
 from api.routes.account.models import *
+from api.routes.account.models import UpdateDeviceBody
 from api.utils import unwrap
 
 from shared.py.constraints import USER_MAX_NUM_DEVICES
-from shared.py.grpc.id import id_compare, puuid_str, str_puuid, uuid_puuid
+from shared.py.grpc.id import id_compare, puuid_uuid, id_t, uuid_puuid
 from shared.py.grpc.user import get_user, get_user_by_username
 from shared.py.pydantic.pem import PEMPublicKey
 from shared.py.pydantic.common import Username
@@ -48,26 +49,24 @@ async def signup(r: Request, body: SignupBody) -> SignupResponse:
             raise ApiErrExc(errors.BadRequest("username already exists", api_error_code=errors.ERROR_ALREADY_EXISTS))
         else:
             raise e
-    
-    session = Session.new(user_id=puuid_str(res.user_id) or unwrap())
-    
+
     try:
-        device = await new_device(r, session, body.device)
+        device = await _create_device(res.user_id, body.device)
     except Exception as e:
         cast(user_pb2.DeleteUserResponse, await grpcuser.stub.DeleteUser(user_pb2.DeleteUserRequest(
             user_id=res.user_id
         )))
-        raise ApiErrExc(errors.InternalServerError("Invalid transient state encountered during transaction"))
+        raise ApiErrExc(errors.InternalServerError("Invalid transient state encountered during transaction")) from e
 
 
 
     return SignupResponse(
-        user_id=puuid_str(res.user_id) or unwrap(),
+        user_id=puuid_uuid(res.user_id) or unwrap(),
         username=res.username,
         email=res.email,
         public_key=body.account_public_key,
-        avatar_asset_id=puuid_str(res.avatar_asset_id),
-        device=device
+        avatar_asset_id=puuid_uuid(res.avatar_asset_id),
+        device=DeviceResponse.from_rpc(device)
     )
 
 @AccountRouter.get("/devicehandshake/{user_identifier}/{device_id}")
@@ -98,6 +97,20 @@ async def device_key_handshake(r: Request, user_identifier: Username | UUID, dev
     )
 
 
+async def _create_device(user_id: id_t, body: NewDeviceBody) -> user_pb2.DeviceObjectResponse:
+    res = await read_devices(grpcdevice, user_id, count_only=True)
+
+    if res.device_count >= USER_MAX_NUM_DEVICES:
+        raise ApiErrExc(errors.BadRequest("Device limit reached", api_error_code=errors.ERROR_LIMIT_REACHED))
+
+    return await create_device(
+        grpcdevice,
+        user_id=user_id,
+        device_name=body.name,
+        public_key=body.public_key.to_bytes(),
+        encrypted_account_key=body.encrypted_private_key,
+    )
+
 @AccountRouter.get("/devices")
 async def get_all_devices(r: Request, s: SessionParam) -> list[DeviceResponse]:
 
@@ -113,24 +126,14 @@ async def get_all_devices(r: Request, s: SessionParam) -> list[DeviceResponse]:
 @AccountRouter.post("/device")
 async def new_device(r: Request, s: SessionParam, body: NewDeviceBody) -> DeviceResponse:
 
-    res = await read_devices(grpcdevice, s.user_id, count_only=True)
-
-    if res.device_count >= USER_MAX_NUM_DEVICES:
-        raise ApiErrExc(errors.BadRequest("Device limit reached", api_error_code=errors.ERROR_LIMIT_REACHED))
-
-    res = await create_device(
-        grpcdevice,
-        user_id=s.user_id,
-        device_name=body.name,
-        public_key=body.public_key.to_bytes(),
-        encrypted_account_key=body.encrypted_private_key,
-    )
+    res = await _create_device(user_id=s.user_id, body=body)
 
     return DeviceResponse.from_rpc(
         res,
         s.user_id,
         body.public_key
     )
+    
 
 @AccountRouter.delete("/device/{device_id}")
 async def delete_device(r: Request, s: SessionParam, device_id: UUID) -> None:
@@ -142,9 +145,13 @@ async def delete_device(r: Request, s: SessionParam, device_id: UUID) -> None:
 
     
     res = cast(user_pb2.DeleteDeviceResponse, await grpcdevice.stub.DeleteDevice(user_pb2.DeleteDeviceRequest(
-        user_id=str_puuid(s.user_id),
+        user_id=uuid_puuid(s.user_id),
         device_id=uuid_puuid(device_id)
     )))
+
+@AccountRouter.patch("/device/{device_id}")
+async def patch_device(s: SessionParam, device_id: UUID, body: UpdateDeviceBody) -> DeviceResponse: ...
+
 
 
 @AccountRouter.get("/@me")
@@ -153,7 +160,7 @@ async def my_account(s: SessionParam) -> AccountResponse:
 
     return AccountResponse(
         user_id=s.user_id,
-        avatar_asset_id=puuid_str(res.avatar_asset_id),
+        avatar_asset_id=puuid_uuid(res.avatar_asset_id),
         public_key=PEMPublicKey.from_bytes(res.public_key),
         username=res.username,
         email=res.email,

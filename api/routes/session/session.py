@@ -13,8 +13,7 @@ from shared.py.crypto import session as session_crypto
 from shared.py.grpc.lazy import LazyGRPC
 from shared.py.grpc.user import get_user_by_username
 from shared.py.grpcgen import user_pb2_grpc
-from shared.py.grpcgen import user_pb2
-from shared.py.grpc.id import puuid_str
+from shared.py.grpc.id import puuid_uuid
 
 discovery = DiscoveryManager()
 
@@ -25,7 +24,7 @@ grpcuser = LazyGRPC(discovery.discover_dataservices(), user_pb2_grpc.UserService
 
 
 @SessionRouter.post("/login")
-async def login(request: Request, body: LoginBody) -> LoginResponse:
+async def login(body: LoginBody) -> LoginResponse:
     try:
         user = await get_user_by_username(grpcuser, body.username)
     except RpcError as e:
@@ -34,7 +33,7 @@ async def login(request: Request, body: LoginBody) -> LoginResponse:
         else:
             raise e
 
-    user_id = puuid_str(user.user_id) or unwrap()
+    user_id = puuid_uuid(user.user_id) or unwrap()
 
     session = Session.new(user_id=user_id)
     token = session_crypto.encode_jose_session(session.to_encode())
