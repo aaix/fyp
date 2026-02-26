@@ -18,6 +18,7 @@ use user_service::user_device_service_server::{UserDeviceService, UserDeviceServ
 pub struct ScyallaUserDeviceService {
     create_device_prepared: PreparedStatement,
     read_devices_prepared: PreparedStatement,
+    read_device_prepared: PreparedStatement,
     update_device_prepared: PreparedStatement,
     delete_device_prepared: PreparedStatement,
 }
@@ -44,6 +45,10 @@ impl ScyallaUserDeviceService {
             "SELECT * FROM dataservices.user_device WHERE user_id = ?"
         ).await?;
 
+        let read_device_prepared = db().await.prepare(
+            "SELECT * FROM user_device WHERE user_id = ? AND device_id = ?"
+        ).await?;
+
         let update_device_prepared = db().await.prepare(
             "UPDATE dataservices.user_device SET device_name = ?, device_public_key = ?, encrypted_account_key = ?\
             WHERE user_id = ? AND device_id = ?"
@@ -56,10 +61,34 @@ impl ScyallaUserDeviceService {
         Ok(UserDeviceServiceServer::new(Self {
             create_device_prepared,
             read_devices_prepared,
+            read_device_prepared,
             update_device_prepared,
             delete_device_prepared,
         }))
     }
+
+    async fn _read_device(
+        &self,
+        user_id: CqlTimeuuid,
+        device_id: CqlTimeuuid
+    ) -> DSResult<DeviceObjectResponse> {
+
+        let res = db().await.execute_unpaged(
+            &self.read_device_prepared, (&user_id, device_id,)
+        ).await?;
+
+        let row = res.into_rows_result()?.first_row::<UserDevice>()?;
+
+        Ok(DeviceObjectResponse {
+            device_id: Some(row.device_id.into()),
+            user_id: Some(row.user_id.into()),
+            device_name: row.device_name,
+            device_public_key: row.device_public_key,
+            encrypted_account_key: row.encrypted_account_key,
+        })
+
+    }
+
 
     async fn create_device_impl(
         &self,
@@ -153,7 +182,8 @@ impl ScyallaUserDeviceService {
                 &device_id,
             )
         ).await?;
-        todo!("figure out what to return");
+        
+        Ok(Response::new(self._read_device(user_id, device_id).await?))
 
     }
 

@@ -48,8 +48,7 @@ class NewDeviceBody(BaseModel):
     encrypted_private_key: Base64Input
 
 class UpdateDeviceBody(BaseModel):
-    device_id: UUID
-    name: DeviceName
+    device_name: DeviceName
 
 class DeviceResponse(BaseModel):
     user_id: UUID

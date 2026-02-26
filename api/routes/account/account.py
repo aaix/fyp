@@ -150,7 +150,21 @@ async def delete_device(r: Request, s: SessionParam, device_id: UUID) -> None:
     )))
 
 @AccountRouter.patch("/device/{device_id}")
-async def patch_device(s: SessionParam, device_id: UUID, body: UpdateDeviceBody) -> DeviceResponse: ...
+async def patch_device(s: SessionParam, device_id: UUID, body: UpdateDeviceBody) -> DeviceResponse:
+    res = cast(user_pb2.DeviceObjectResponse, await grpcdevice.stub.UpdateDevice(user_pb2.UpdateDeviceRequest(
+        user_id=uuid_puuid(s.user_id),
+        device_id=uuid_puuid(device_id),
+        device_name=body.device_name
+    )))
+
+    return DeviceResponse(
+        user_id=puuid_uuid(res.user_id) or unwrap(),
+        device_id=puuid_uuid(res.device_id) or unwrap(),
+        device_name=res.device_name,
+        device_public_key=PEMPublicKey.from_bytes(res.device_public_key),
+        encrypted_account_key=res.encrypted_account_key,
+    )
+    
 
 
 
