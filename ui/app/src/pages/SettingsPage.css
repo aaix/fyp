@@ -107,12 +107,28 @@
   font-weight: 500;
   color: var(--accent);
   background: var(--tab-active-bg);
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .settings-tile-actions {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+@media (max-width: 480px) {
+  .settings-tile-header {
+    align-items: flex-start;
+  }
+
+  .settings-tile-actions {
+    width: 100%;
+    flex-direction: column-reverse;
+    align-items: flex-end;
+  }
 }
 
 .settings-primary-btn {
@@ -198,6 +214,13 @@
   width: 100%;
 }
 
+.device-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-left: 0.25rem;
+}
+
 .device-row-trigger {
   flex: 1;
   display: flex;
@@ -240,28 +263,33 @@
   color: var(--text-muted);
 }
 
-.device-delete-btn {
+.device-icon-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   padding: 0;
   border: none;
-  border-radius: 8px;
+  border-radius: 999px;
   background: transparent;
   color: var(--text-muted);
   cursor: pointer;
   transition: background 0.2s, color 0.2s;
 }
 
+.device-icon-btn .material-symbols-outlined {
+  font-size: 1.1rem;
+}
+
+.device-edit-btn:hover {
+  background: rgba(37, 99, 235, 0.12);
+  color: var(--accent);
+}
+
 .device-delete-btn:hover {
   background: rgba(185, 28, 28, 0.12);
   color: #b91c1c;
-}
-
-.device-delete-btn .material-symbols-outlined {
-  font-size: 1.2rem;
 }
 
 .device-expand-icon {

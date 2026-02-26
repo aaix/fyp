@@ -265,4 +265,10 @@ export class DeviceManager {
     
     return res;
   }
+
+  async updateDevice(device_id, device_name) {
+    const res = await API.PATCH(`account/device/${device_id}`, {device_name: device_name});
+
+    return res;
+  }
 }

@@ -45,6 +45,10 @@ export default function SettingsPage() {
   const [deviceToDelete, setDeviceToDelete] = useState(null)
   const [deleteLoading, setDeleteLoading] = useState(false)
   const [deleteError, setDeleteError] = useState(null)
+  const [deviceToEdit, setDeviceToEdit] = useState(null)
+  const [editDeviceName, setEditDeviceName] = useState('')
+  const [editLoading, setEditLoading] = useState(false)
+  const [editError, setEditError] = useState(null)
   const [registerLoading, setRegisterLoading] = useState(false)
   const [registerError, setRegisterError] = useState(null)
   const [registerInfo, setRegisterInfo] = useState(null)
@@ -93,6 +97,44 @@ export default function SettingsPage() {
     
     } finally {
       setDeleteLoading(false)
+    }
+  }
+
+  const openEditModal = (device, e) => {
+    e?.stopPropagation?.()
+    setDeviceToEdit(device)
+    setEditDeviceName(device.name ?? '')
+    setEditError(null)
+  }
+
+  const closeEditModal = () => {
+    if (!editLoading) {
+      setDeviceToEdit(null)
+      setEditDeviceName('')
+      setEditError(null)
+    }
+  }
+
+  const confirmEditDevice = async () => {
+    if (!deviceToEdit || editLoading) return
+    const trimmed = editDeviceName.trim()
+    if (!trimmed) {
+      setEditError('Device name cannot be empty.')
+      return
+    }
+    setEditLoading(true)
+    setEditError(null)
+    try {
+      const res = await deviceManager.updateDevice(deviceToEdit.id, trimmed)
+      if (!res.success) {
+        setEditError(res.error?.message ?? 'Failed to rename device')
+        return
+      }
+      setDeviceToEdit(null)
+      setEditDeviceName('')
+      fetchDevices(setDevices, setDevicesLoading, setDevicesError)
+    } finally {
+      setEditLoading(false)
     }
   }
 
@@ -215,15 +257,26 @@ export default function SettingsPage() {
                             {expandedDeviceId === device.id ? 'expand_less' : 'chevron_right'}
                           </span>
                         </button>
-                        <button
-                          type="button"
-                          className="device-delete-btn"
-                          onClick={() => openDeleteModal(device)}
-                          title="Remove device"
-                          aria-label={`Remove ${device.name}`}
-                        >
-                          <span className="material-symbols-outlined" aria-hidden>delete</span>
-                        </button>
+                        <div className="device-row-actions">
+                          <button
+                            type="button"
+                            className="device-icon-btn device-edit-btn"
+                            onClick={(e) => openEditModal(device, e)}
+                            title="Rename device"
+                            aria-label={`Rename ${device.name}`}
+                          >
+                            <span className="material-symbols-outlined" aria-hidden>edit</span>
+                          </button>
+                          <button
+                            type="button"
+                            className="device-icon-btn device-delete-btn"
+                            onClick={(e) => openDeleteModal(device, e)}
+                            title="Remove device"
+                            aria-label={`Remove ${device.name}`}
+                          >
+                            <span className="material-symbols-outlined" aria-hidden>delete</span>
+                          </button>
+                        </div>
                       </div>
                       {expandedDeviceId === device.id && (
                         <div className="device-public-key">
@@ -353,6 +406,32 @@ export default function SettingsPage() {
               autoComplete="one-time-code"
             />
           </label>
+        </div>
+      </ConfirmModal>
+
+      <ConfirmModal
+        open={!!deviceToEdit}
+        title="Rename device"
+        confirmLabel={editLoading ? 'Saving…' : 'Save'}
+        cancelLabel="Cancel"
+        confirmVariant="primary"
+        confirmDisabled={editLoading}
+        onConfirm={confirmEditDevice}
+        onCancel={closeEditModal}
+      >
+        <div className="input-modal-body">
+          <p>Choose a new name for this device.</p>
+          <label className="input-modal-label" htmlFor="edit-device-name-input">
+            Name
+            <input
+              id="edit-device-name-input"
+              type="text"
+              value={editDeviceName}
+              onChange={(e) => setEditDeviceName(e.target.value)}
+              placeholder="e.g. Alice’s laptop"
+            />
+          </label>
+          {editError && <p className="settings-error modal-error">{editError}</p>}
         </div>
       </ConfirmModal>
     </div>
