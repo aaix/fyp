@@ -16,6 +16,7 @@ RUN cargo chef cook --release --recipe-path recipe.json
 # builder stage
 FROM chef AS builder
 COPY --from=planner /app/recipe.json recipe.json
+RUN apt-get update && apt-get install -y protobuf-compiler gcc
 
 # precompiled dependencies
 COPY --from=cacher /app/target target
@@ -23,7 +24,6 @@ COPY --from=cacher /usr/local/cargo /usr/local/cargo
 COPY . .
 
 # compile time dependencies
-RUN apt-get update && apt-get install -y protobuf-compiler gcc
 RUN cargo build --release
 
 
