@@ -1,5 +1,3 @@
-from typing import cast
-
 from fastapi import APIRouter, Request
 from grpc import RpcError, StatusCode
 
