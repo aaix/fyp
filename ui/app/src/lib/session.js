@@ -133,6 +133,7 @@ export class Session {
     const device_id = device_key.device_id
 
     if (!device_id) {
+      resolve();
       throw new Error("This device is not tied to any account");
     }
 
