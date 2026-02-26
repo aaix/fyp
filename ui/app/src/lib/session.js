@@ -125,7 +125,7 @@ export class Session {
 
 
   
-  async doAccountKeyHandshake(username, extractable = false) {
+  async doAccountKeyHandshake(username_or_id, extractable = false) {
     // if extractable is set then an extractable key is returned 
     let resolve;
     this._handshaking = new Promise((r) => resolve=r);
@@ -137,12 +137,12 @@ export class Session {
     }
 
 
-    if (!username && !this.user_id) {
+    if (!username_or_id && !this.user_id) {
       resolve();
       throw new Error("Unable to determine user for handshake")
     }
 
-    const user_identifier = username ?? this.user_id;
+    const user_identifier = username_or_id ?? this.user_id;
 
     const res = await API.GET(
       `account/devicehandshake/${user_identifier}/${device_id}`,
@@ -171,9 +171,9 @@ export class Session {
     resolve();
   }
 
-  async getAccountKey() {
+  async getAccountKey(username_or_id) {
     if (this.accKey === null) {
-      await this.doAccountKeyHandshake();
+      await this.doAccountKeyHandshake(username_or_id);
     }
     return this.accKey;
   }

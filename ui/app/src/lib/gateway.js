@@ -89,24 +89,31 @@ class Gateway {
         await this.reconnect();
     }
 
-    async handshake() {
-        if (this.handshake_complete || this.handshake_started) {
+    async handshake(newdeviceok) {
+        if (!newdeviceok && (this.handshake_complete || this.handshake_started)) {
             return
         }
 
         this.handshake_started = true;
         const session = getCurrentSession();
+        let user_id;
+        if (newdeviceok) {
+            user_id = newdeviceok.user_id;
+        } else {
+            user_id = session.user_id;
+        }
+        this.user_id = user_id;
         const device_id = (await keyStore.getDefaultKey()).device_id;
         const clientHello = {
             op:"client_hello",
-            user_id: session.user_id,
+            user_id,
             device_id: device_id,
         }
         await this.send(clientHello);
     }
 
     async handler_server_hello(msg) {
-        const accKey = (await getCurrentSession().getAccountKey()).privateKey;
+        const accKey = (await getCurrentSession().getAccountKey(this.user_id)).privateKey;
         const deviceKey = (await keyStore.getDefaultKey()).key.privateKey;
 
 
@@ -180,6 +187,8 @@ class Gateway {
         const currentKey = await keyStore.getDefaultKey();
         await keyStore.putKey({ ...currentKey, device_id: msg.device_id });
         this.newDeviceSuccessCallback();
+
+        await this.handshake(msg);
     }
 
     async register_new_device(code, confirmCallback, errorCallback, successCallback) {
