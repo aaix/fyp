@@ -46,7 +46,7 @@ impl ScyallaUserDeviceService {
         ).await?;
 
         let read_device_prepared = db().await.prepare(
-            "SELECT * FROM user_device WHERE user_id = ? AND device_id = ?"
+            "SELECT * FROM dataservices.user_device WHERE user_id = ? AND device_id = ?"
         ).await?;
 
         let update_device_prepared = db().await.prepare(
