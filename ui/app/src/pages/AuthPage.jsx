@@ -109,7 +109,7 @@ export default function AuthPage({ onLogin }) {
             className={`auth-tab ${mode === 'login' ? 'active' : ''}`}
             onClick={() => setMode('login')}
           >
-            Log in
+            Continue on this device
           </button>
           <button
             type="button"
