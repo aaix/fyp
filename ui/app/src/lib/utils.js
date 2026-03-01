@@ -51,14 +51,21 @@ export function getAvatarUrl(user) {
 
 }
 
-export function getDefaultAvatarUrl(user_id) {
-  let v = 0;
-  for (let char of user_id) {
-    v += parseInt(char);
-    v |= 0xF;
-  }
+// from stack overflow
+function hashCode(str) {
+    let hash = 0;
+    for (let i = 0, len = str.length; i < len; i++) {
+        let chr = str.charCodeAt(i);
+        hash = (hash << 5) - hash + chr;
+        hash |= 0; // Convert to 32bit integer
+    }
+    return hash;
+}
 
-  v %= 4;
+
+
+export function getDefaultAvatarUrl(user_id) {
+  let v = hashCode(user_id) % 4;
 
   return `/icon${v}.png`
 }
