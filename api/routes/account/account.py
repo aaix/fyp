@@ -176,37 +176,4 @@ async def my_account(s: SessionParam) -> AccountResponse:
         email=res.email,
     )
 
-@AccountRouter.get("/userprofile/{user_id}")
-async def get_user_profile(s: SessionParam, user_id: UUID) -> UserProfileResponse:
-
-    with RpcErrHandler(StatusCode.NOT_FOUND, lambda: errors.NotFound("No such user")):
-        res = await get_user(grpcuser, user_id)
-    
-    return UserProfileResponse(
-        user=UserSearchResponse(
-            user_id=puuid_uuid(res.user_id) or unwrap(),
-            avatar_asset_id=puuid_uuid(res.avatar_asset_id),
-            public_key=PEMPublicKey.from_bytes(res.public_key),
-            username=res.username
-        )
-    )
-
-
-
-
-@AccountRouter.get("/search")
-async def search_users(s: SessionParam, q: UsernameSearchQuery) -> list[UserSearchResponse]:
-    res = cast(user_pb2.UsernameSearchResponse, await grpcuser.stub.UsernameSearcher(user_pb2.UsernameSearch(
-        query=f"{q}%",
-    )))
-
-    users: list[UserSearchResponse] = []
-
-    for user in res.users:
-        users.append(
-            UserSearchResponse.from_rpc(user)
-        )
-    
-    return users
-
 

@@ -14,6 +14,7 @@ from api.middleware import exception_handlers
 # routers
 from api.routes.account.account import AccountRouter
 from api.routes.session.session import SessionRouter
+from api.routes.user.user import UserRouter
 
 discovery = DiscoveryManager()
 
@@ -38,6 +39,7 @@ app = FastAPI(
 # routers
 app.include_router(AccountRouter, prefix="/account")
 app.include_router(SessionRouter, prefix="/session")
+app.include_router(UserRouter, prefix="/user")
 
 # exception handlers
 app.add_exception_handler(RequestValidationError, exception_handlers.request_validation_error_handler)

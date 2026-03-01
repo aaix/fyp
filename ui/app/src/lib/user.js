@@ -13,12 +13,12 @@ export function mapSearchResponseToUserList(data) {
 
 export class UserManager {
     async searchUsers(query) {
-        const res = await API.GET(`account/search?q=${encodeURIComponent(query)}`);
+        const res = await API.GET(`user/search?q=${encodeURIComponent(query)}`);
         return res;
     }
 
     async getUserProfile(user_id) {
-        const res = await API.GET(`account/userprofile/${user_id}`);
+        const res = await API.GET(`user/profile/${user_id}`);
 
         return res;
     }

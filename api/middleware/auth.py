@@ -55,6 +55,7 @@ def raise_for_session(request: Request) -> Session:
         ))
     return session
 
+# this cannot use the type keyword because fastapi will treat it as a query parameter
 SessionParam = Annotated[
     Session,
     Depends(raise_for_session),
