@@ -12,6 +12,10 @@ export default function BottomNav() {
         <span className="nav-icon material-symbols-outlined" aria-hidden>mail</span>
         <span>Messages</span>
       </NavLink>
+      <NavLink to="/search" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+        <span className="nav-icon material-symbols-outlined" aria-hidden>search</span>
+        <span>Search</span>
+      </NavLink>
       <NavLink to="/account" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
         <span className="nav-icon material-symbols-outlined" aria-hidden>person</span>
         <span>Account</span>

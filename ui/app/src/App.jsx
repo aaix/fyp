@@ -6,6 +6,8 @@ import HomePage from './pages/HomePage.jsx'
 import MessagesPage from './pages/MessagesPage.jsx'
 import AccountPage from './pages/AccountPage.jsx'
 import SettingsPage from './pages/SettingsPage.jsx'
+import SearchPage from './pages/SearchPage.jsx'
+import UserPage from './pages/UserPage.jsx'
 
 import { gatewayFactory } from './lib/gateway.js'
 
@@ -41,6 +43,8 @@ function App() {
         <Route path="/messages" element={<MessagesPage />} />
         <Route path="/account" element={<AccountPage />} />
         <Route path="/account/settings" element={<SettingsPage />} />
+        <Route path="/search" element={<SearchPage />} />
+        <Route path="/user/:userId" element={<UserPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
