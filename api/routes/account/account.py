@@ -3,15 +3,13 @@ from typing import cast
 from uuid import UUID
 
 from fastapi import APIRouter, Request
-from grpc import RpcError
 from grpc import StatusCode
 
 from api import *
 from api import ApiErrExc
 
-from api.models.session import Session
 from api.routes.account.models import *
-from api.utils import RpcErrHandler, unwrap
+from api.utils import RpcErrHandler, unwrap, UserNotFoundRpcHandler
 
 from shared.py.constraints import USER_MAX_NUM_DEVICES
 from shared.py.grpc.id import id_compare, puuid_uuid, id_t, uuid_puuid
@@ -37,17 +35,15 @@ grpcdevice = LazyGRPC(discovery.discover_dataservices(), user_pb2_grpc.UserDevic
 @AccountRouter.post("/signup")
 async def signup(r: Request, body: SignupBody) -> SignupResponse:
 
-    try:
+    with RpcErrHandler(
+        StatusCode.ALREADY_EXISTS,
+        lambda: errors.BadRequest("username already exists", api_error_code=errors.ERROR_ALREADY_EXISTS)
+    ):
         res = cast(user_pb2.ReadUserResponse, await grpcuser.stub.CreateUser(user_pb2.CreateUserRequest(
             username=body.username,
             email=body.email,
             public_key=body.account_public_key.to_bytes()
         )))
-    except RpcError as e:
-        if e.code() == StatusCode.ALREADY_EXISTS:
-            raise ApiErrExc(errors.BadRequest("username already exists", api_error_code=errors.ERROR_ALREADY_EXISTS))
-        else:
-            raise e
 
     try:
         device = await _create_device(res.user_id, body.device)
@@ -71,16 +67,11 @@ async def signup(r: Request, body: SignupBody) -> SignupResponse:
 @AccountRouter.get("/devicehandshake/{user_identifier}/{device_id}")
 async def device_key_handshake(r: Request, user_identifier: Username | UUID, device_id: UUID) -> DeviceKeyResponse:
 
-    try:
+    with UserNotFoundRpcHandler(user_identifier):
         if isinstance(user_identifier, str):
             user = await get_user_by_username(grpcuser, user_identifier)
         else:
             user = await get_user(grpcuser, user_identifier)
-    except RpcError as e:
-        if e.code() == StatusCode.NOT_FOUND:
-            raise ApiErrExc(errors.NotFound("no such user exists", api_error_code=errors.ERROR_NO_SUCH_USER))
-        else:
-            raise e
 
     res = await read_devices(grpcdevice, user.user_id)
 

@@ -8,7 +8,7 @@ from grpc import StatusCode
 from api import *
 
 from api.routes.user.models import *
-from api.utils import RpcErrHandler, unwrap
+from api.utils import UserNotFoundRpcHandler, unwrap
 
 from shared.py.grpc.id import puuid_uuid
 from shared.py.grpc.lazy import LazyGRPC
@@ -27,7 +27,7 @@ grpcuser = LazyGRPC(discovery.discover_dataservices(), user_pb2_grpc.UserService
 @UserRouter.get("/profile/{user_id}")
 async def get_user_profile(s: SessionParam, user_id: UUID) -> UserProfileResponse:
 
-    with RpcErrHandler(StatusCode.NOT_FOUND, lambda: errors.NotFound("No such user")):
+    with UserNotFoundRpcHandler(user_id):
         res = await get_user(grpcuser, user_id)
     
     return UserProfileResponse(

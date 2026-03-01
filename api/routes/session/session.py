@@ -5,7 +5,7 @@ from grpc import RpcError, StatusCode
 from api import *
 from api.models.session import Session
 from api.routes.session.models import *
-from api.utils import unwrap
+from api.utils import UserNotFoundRpcHandler, unwrap
 
 from shared.py.crypto import session as session_crypto
 from shared.py.grpc.lazy import LazyGRPC
@@ -23,13 +23,8 @@ grpcuser = LazyGRPC(discovery.discover_dataservices(), user_pb2_grpc.UserService
 
 @SessionRouter.post("/login")
 async def login(body: LoginBody) -> LoginResponse:
-    try:
+    with UserNotFoundRpcHandler(body.username):
         user = await get_user_by_username(grpcuser, body.username)
-    except RpcError as e:
-        if e.code() == StatusCode.NOT_FOUND:
-            raise ApiErrExc(errors.NotFound("no such user exists", api_error_code=errors.ERROR_NO_SUCH_USER))
-        else:
-            raise e
 
     user_id = puuid_uuid(user.user_id) or unwrap()
 
