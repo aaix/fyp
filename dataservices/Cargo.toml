@@ -12,5 +12,7 @@ prost = "0.14.1"
 uuid = { version = "1.18.1", features=["v1"] }
 mac_address = "1.1.8"
 
+futures = "0.3.32"
+
 [build-dependencies]
 tonic-prost-build = "*"

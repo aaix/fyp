@@ -2,9 +2,13 @@ use crate::db_conn::db;
 use crate::errors::{DSResult};
 use crate::helpers::gen_timeuuid;
 use crate::models::user::User;
-use crate::protos::user_service::{CheckUsernameResponse, ReadUserByUsernameRequest};
+use crate::protos::user_service::{CheckUsernameResponse, ReadUserByUsernameRequest, UsernameSearch, UsernameSearchResponse, UserSearchEntry};
 use crate::protos::{user_service};
 use crate::req_tuuid;
+
+use futures::stream::StreamExt;
+
+
 
 use scylla::errors::FirstRowError;
 use scylla::statement::prepared::PreparedStatement;
@@ -28,6 +32,8 @@ pub struct ScyllaUserService {
     delete_user_prepared: PreparedStatement,
     update_user_prepared: PreparedStatement,
     fetch_user_id_by_username_prepared: PreparedStatement,
+
+    username_searcher_prepared: PreparedStatement, 
 }
 
 impl ScyllaUserService {
@@ -66,7 +72,14 @@ impl ScyllaUserService {
 
         let fetch_user_id_by_username_prepared = db().await.prepare(
             "SELECT user_id FROM dataservices.user_by_username WHERE username = ?"
-        ).await.unwrap();
+        ).await?;
+
+        let mut username_searcher_prepared = db().await.prepare(
+            "SELECT user_id, opt_avatar_asset_id, public_key, username FROM dataservices.user WHERE username like ? LIMIT 25 ALLOW FILTERING"
+        ).await?;
+
+        username_searcher_prepared.set_page_size(25);
+
 
         Ok(Self {
             read_user_prepared,
@@ -75,6 +88,7 @@ impl ScyllaUserService {
             delete_user_prepared,
             update_user_prepared,
             fetch_user_id_by_username_prepared,
+            username_searcher_prepared,
         })
     }
 
@@ -239,6 +253,36 @@ impl ScyllaUserService {
         Ok(self._read_user_reuse(user_id).await?)
 
     }
+
+    async fn username_searcher_impl(
+        &self,
+        request: Request<UsernameSearch>,
+    ) -> DSResult<Response<UsernameSearchResponse>> {
+        // TODO: use elastisearch
+
+        let query = &request.get_ref().query;
+
+        // page here bc there may be many tombstones even though we limit to 25
+        let mut stream = db().await.execute_iter(self.username_searcher_prepared.clone(), (query,)).await?
+            .rows_stream::<(CqlTimeuuid, Option<CqlTimeuuid>, Vec<u8>, String)>()?;
+
+        // SELECT user_id, opt_avatar_asset_id, public_key, username
+
+        let mut users: Vec<UserSearchEntry> = Vec::with_capacity(25);
+
+        while let Some(next_row_res) = stream.next().await {
+            let (user_id, avatar, public_key, username) = next_row_res?;
+            users.push(UserSearchEntry {
+                user_id: Some(user_id.into()),
+                username,
+                opt_avatar_asset_id: avatar.map(|a| a.into()),
+                public_key,
+            });
+        }
+
+        Ok(Response::new(UsernameSearchResponse { users: users }))
+
+    }
 }
 
 
@@ -289,6 +333,14 @@ impl UserService for ScyllaUserService {
         request: Request<ReadUserByUsernameRequest>,
     ) -> Result<Response<ReadUserResponse>, Status> {
         Ok(self.read_user_by_username_impl(request).await?)
+    }
+
+    async fn username_searcher(
+        &self,
+        request: Request<UsernameSearch>,
+    ) -> Result<Response<UsernameSearchResponse>, Status> {
+
+        Ok(self.username_searcher_impl(request).await?)
     }
 
 }

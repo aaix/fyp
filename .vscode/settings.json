@@ -4,5 +4,6 @@
         "**/.venv/*": true,
         "**/node_modules/*": true,
         "**/target/*": true
-    }
+    },
+    "protobuf.diagnostics.documentationComments": false
 }

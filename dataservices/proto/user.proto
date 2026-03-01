@@ -14,6 +14,7 @@ service UserService {
     rpc DeleteUser (DeleteUserRequest) returns (DeleteUserResponse);
     rpc CheckUsername (ReadUserByUsernameRequest) returns (CheckUsernameResponse);
 
+    rpc UsernameSearcher (UsernameSearch) returns (UsernameSearchResponse);
 
 }
 message ReadUserRequest {
@@ -52,6 +53,22 @@ message DeleteUserResponse {}
 
 
 message CheckUsernameResponse {}
+
+message UsernameSearch {
+    string query = 1;
+}
+
+message UsernameSearchResponse {
+    repeated UserSearchEntry users = 1;
+}
+
+message UserSearchEntry {
+    plib.pUUID user_id = 1;
+    optional plib.pUUID opt_avatar_asset_id = 2;
+    string username = 3;
+    bytes public_key = 4;
+}
+
 
 
 // User Device Management (TABLE: user_device)
