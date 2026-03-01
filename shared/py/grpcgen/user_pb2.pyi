@@ -67,6 +67,30 @@ class CheckUsernameResponse(_message.Message):
     __slots__ = ()
     def __init__(self) -> None: ...
 
+class UsernameSearch(_message.Message):
+    __slots__ = ("query",)
+    QUERY_FIELD_NUMBER: _ClassVar[int]
+    query: str
+    def __init__(self, query: _Optional[str] = ...) -> None: ...
+
+class UsernameSearchResponse(_message.Message):
+    __slots__ = ("users",)
+    USERS_FIELD_NUMBER: _ClassVar[int]
+    users: _containers.RepeatedCompositeFieldContainer[UserSearchEntry]
+    def __init__(self, users: _Optional[_Iterable[_Union[UserSearchEntry, _Mapping]]] = ...) -> None: ...
+
+class UserSearchEntry(_message.Message):
+    __slots__ = ("user_id", "opt_avatar_asset_id", "username", "public_key")
+    USER_ID_FIELD_NUMBER: _ClassVar[int]
+    OPT_AVATAR_ASSET_ID_FIELD_NUMBER: _ClassVar[int]
+    USERNAME_FIELD_NUMBER: _ClassVar[int]
+    PUBLIC_KEY_FIELD_NUMBER: _ClassVar[int]
+    user_id: _plib_pb2.pUUID
+    opt_avatar_asset_id: _plib_pb2.pUUID
+    username: str
+    public_key: bytes
+    def __init__(self, user_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., opt_avatar_asset_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., username: _Optional[str] = ..., public_key: _Optional[bytes] = ...) -> None: ...
+
 class CreateDeviceRequest(_message.Message):
     __slots__ = ("user_id", "device_name", "public_key", "encrypted_account_key")
     USER_ID_FIELD_NUMBER: _ClassVar[int]
