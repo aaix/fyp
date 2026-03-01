@@ -25,6 +25,10 @@ __all__ = (
     "DeviceResponse",
     "DeviceKeyResponse",
     "AccountResponse",
+    "UpdateDeviceBody",
+    "UserProfileResponse",
+    "UsernameSearchQuery",
+    "UserSearchResponse",
 )
 
 
@@ -100,3 +104,7 @@ class UserSearchResponse(BaseModel):
         )
 
 type UsernameSearchQuery = Annotated[str, Query(max_length=USERNAME_MAX_LENGTH, min_length=2)]
+
+
+class UserProfileResponse(BaseModel):
+    user: UserSearchResponse

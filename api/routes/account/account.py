@@ -11,10 +11,7 @@ from api import ApiErrExc
 
 from api.models.session import Session
 from api.routes.account.models import *
-from api.routes.account.models import UpdateDeviceBody
-from api.routes.account.models import UserSearchResponse
-from api.routes.account.models import UsernameSearchQuery
-from api.utils import unwrap
+from api.utils import RpcErrHandler, unwrap
 
 from shared.py.constraints import USER_MAX_NUM_DEVICES
 from shared.py.grpc.id import id_compare, puuid_uuid, id_t, uuid_puuid
@@ -178,6 +175,24 @@ async def my_account(s: SessionParam) -> AccountResponse:
         username=res.username,
         email=res.email,
     )
+
+@AccountRouter.get("/userprofile/{user_id}")
+async def get_user_profile(s: SessionParam, user_id: UUID) -> UserProfileResponse:
+
+    with RpcErrHandler(StatusCode.NOT_FOUND, lambda: errors.NotFound("No such user")):
+        res = await get_user(grpcuser, user_id)
+    
+    return UserProfileResponse(
+        user=UserSearchResponse(
+            user_id=puuid_uuid(res.user_id) or unwrap(),
+            avatar_asset_id=puuid_uuid(res.avatar_asset_id),
+            public_key=PEMPublicKey.from_bytes(res.public_key),
+            username=res.username
+        )
+    )
+
+
+
 
 @AccountRouter.get("/search")
 async def search_users(s: SessionParam, q: UsernameSearchQuery) -> list[UserSearchResponse]:
