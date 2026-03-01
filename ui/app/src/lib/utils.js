@@ -60,5 +60,5 @@ export function getDefaultAvatarUrl(user_id) {
 
   v %= 4;
 
-  return `icon${v}.png`
+  return `/icon${v}.png`
 }
