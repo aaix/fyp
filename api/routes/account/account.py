@@ -118,7 +118,7 @@ async def get_all_devices(r: Request, s: SessionParam) -> list[DeviceResponse]:
 
     devices = []
     for device in res.devices:
-        devices.append(DeviceResponse.from_rpc(device, s.user_id))
+        devices.append(DeviceResponse.from_rpc(device, s.user_id, account_key=False))
     return devices
 
 

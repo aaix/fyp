@@ -55,19 +55,20 @@ class DeviceResponse(BaseModel):
     device_id: UUID
     device_name: str
     device_public_key: PEMPublicKey
-    encrypted_account_key: Base64Output
+    encrypted_account_key: Base64Output | None
 
     @classmethod
     def from_rpc(cls, res: DeviceObjectResponse,
         user_id: UUID | None = None,
         public_key: PEMPublicKey | None = None,
+        account_key: bool = True,
     ):
         return cls(
             user_id=user_id or puuid_uuid(res.user_id) or unwrap(),
             device_id=puuid_uuid(res.device_id) or unwrap(),
             device_name=res.device_name,
             device_public_key=public_key or PEMPublicKey.from_bytes(res.device_public_key),
-            encrypted_account_key=res.encrypted_account_key,
+            encrypted_account_key=res.encrypted_account_key if account_key else None,
         )
 
 class DeviceKeyResponse(BaseModel):
