@@ -12,6 +12,8 @@ from api import ApiErrExc
 from api.models.session import Session
 from api.routes.account.models import *
 from api.routes.account.models import UpdateDeviceBody
+from api.routes.account.models import UserSearchResponse
+from api.routes.account.models import UsernameSearchQuery
 from api.utils import unwrap
 
 from shared.py.constraints import USER_MAX_NUM_DEVICES
@@ -164,9 +166,6 @@ async def patch_device(s: SessionParam, device_id: UUID, body: UpdateDeviceBody)
         device_public_key=PEMPublicKey.from_bytes(res.device_public_key),
         encrypted_account_key=res.encrypted_account_key,
     )
-    
-
-
 
 @AccountRouter.get("/@me")
 async def my_account(s: SessionParam) -> AccountResponse:
@@ -179,3 +178,20 @@ async def my_account(s: SessionParam) -> AccountResponse:
         username=res.username,
         email=res.email,
     )
+
+@AccountRouter.get("/search")
+async def search_users(s: SessionParam, q: UsernameSearchQuery) -> list[UserSearchResponse]:
+    res = cast(user_pb2.UsernameSearchResponse, await grpcuser.stub.UsernameSearcher(user_pb2.UsernameSearch(
+        query=f"{q}%",
+    )))
+
+    users: list[UserSearchResponse] = []
+
+    for user in res.users:
+        users.append(
+            UserSearchResponse.from_rpc(user)
+        )
+    
+    return users
+
+
