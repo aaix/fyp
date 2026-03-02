@@ -123,7 +123,9 @@ message DeleteDeviceResponse {}
 
 
 service UserRelationshipService {
-    rpc CreateFriendshipInvite (CreateFriendshipInviteRequest) returns (FriendshipInviteResponse);
+    rpc CreateFriendshipInvite (FriendshipInviteRequest) returns (FriendshipInviteResponse);
+    rpc ReadFriendshipInvite (FriendshipInviteRequest) returns (FriendshipInviteResponse);
+
     rpc ReadRecvFriendshipInvites (ReadRecvFriendshipInvitesRequest) returns (ReadRecvFriendshipInviteResponse);
     rpc ReadSentFriendshipInvites (ReadSentFriendshipInvitesRequest) returns (ReadSentFriendshipInviteResponse);
     rpc DeleteFriendshipInvite (DeleteFriendshipInviteRequest) returns (DeleteFriendshipInviteResponse);
@@ -139,7 +141,7 @@ service UserRelationshipService {
 }
 
 // create friendship invite
-message CreateFriendshipInviteRequest {
+message FriendshipInviteRequest {
     plib.pUUID from_user_id = 1;
     plib.pUUID to_user_id = 2;
 }
