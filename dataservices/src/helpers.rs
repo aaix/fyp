@@ -1,5 +1,5 @@
-use std::sync::OnceLock;
-use scylla::value::CqlTimeuuid;
+use std::{sync::OnceLock, time::{SystemTime, UNIX_EPOCH}};
+use scylla::value::{CqlTimestamp, CqlTimeuuid};
 use mac_address::get_mac_address;
 
 
@@ -17,4 +17,9 @@ pub fn gen_timeuuid() -> CqlTimeuuid {
 
 pub fn gen_uuid() -> uuid::Uuid {
     uuid::Uuid::new_v4()
+}
+
+pub fn time_now() -> CqlTimestamp {
+    let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
+    return CqlTimestamp(now.as_millis() as i64);
 }

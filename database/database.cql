@@ -44,6 +44,8 @@ CREATE TABLE dataservices.friendship_request (
     recipient__user_id TIMEUUID, -- foreign key: user.user_id
     PRIMARY KEY (recipient__user_id, requester__user_id)-- users can look up their sent requests
 );
+
+-- TODO: dont use a secondary index here
 CREATE INDEX friendship_request_by_requester ON dataservices.friendship_request (requester__user_id);
 
 
