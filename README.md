@@ -10,6 +10,9 @@ The frontend is a vite+react static webapp currently deployed on cloudflare page
 ### Database
 A standard scyllaDB cluster - a noSQL database for the dataservices
 
+### Elasticsearch
+An elasticsearch cluster for powerful searching of things in the database (users etc)
+
 ### Object storage
 Cloudflare R2 is used (aws s3 compatible) for storing public & private assets (posts, images)
 a public bucket is for public user content (user profile pictures)
