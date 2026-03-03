@@ -7,6 +7,7 @@ from pydantic import BaseModel
 from api.utils import unwrap
 from shared.py.constraints import USERNAME_MAX_LENGTH
 from shared.py.grpc.id import puuid_uuid
+from shared.py.grpc.relationship import RelationshipType
 from shared.py.grpcgen import user_pb2
 from shared.py.pydantic.pem import PEMPublicKey
 
@@ -14,7 +15,9 @@ from shared.py.pydantic.pem import PEMPublicKey
 __all__ = (
     "UserSearchResponse",
     "UsernameSearchQuery",
-    "UserProfileResponse"
+    "UserProfileResponse",
+    "RelationshipsResponse",
+    "UserRelationshipResponse",
 )
 
 
@@ -38,3 +41,10 @@ type UsernameSearchQuery = Annotated[str, Query(max_length=USERNAME_MAX_LENGTH, 
 
 class UserProfileResponse(BaseModel):
     user: UserSearchResponse
+
+class UserRelationshipResponse(BaseModel):
+    peer_id: UUID
+    relationship: RelationshipType
+
+class RelationshipsResponse(BaseModel):
+    relationships: list[UserRelationshipResponse]

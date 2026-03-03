@@ -220,3 +220,7 @@ class RelationshipsResponse(_message.Message):
     RELATIONSHIPS_FIELD_NUMBER: _ClassVar[int]
     relationships: _containers.RepeatedCompositeFieldContainer[HalfRelationship]
     def __init__(self, relationships: _Optional[_Iterable[_Union[HalfRelationship, _Mapping]]] = ...) -> None: ...
+
+class DeleteRelationshipResponse(_message.Message):
+    __slots__ = ()
+    def __init__(self) -> None: ...

@@ -126,7 +126,7 @@ service UserRelationshipService {
 
     // users may have multiple relationships (e.g. they both blocked eachother)
     rpc ReadRelationship (ReadRelationshipRequest) returns (ReadRelationshipResponse);
-    rpc DeleteRelationship (CreateRelationshipRequest) returns (RelationshipObject);
+    rpc DeleteRelationship (CreateRelationshipRequest) returns (DeleteRelationshipResponse);
     // test a specific relationship type
     rpc TestRelationship (RelationshipObject) returns (RelationshipTestResponse);
 
@@ -174,3 +174,4 @@ message RelationshipsResponse {
     repeated HalfRelationship relationships = 1;
 }
 
+message DeleteRelationshipResponse {}

@@ -592,7 +592,7 @@ class UserRelationshipServiceStub(object):
         self.DeleteRelationship = channel.unary_unary(
                 '/dataservices.userproto.UserRelationshipService/DeleteRelationship',
                 request_serializer=user__pb2.CreateRelationshipRequest.SerializeToString,
-                response_deserializer=user__pb2.RelationshipObject.FromString,
+                response_deserializer=user__pb2.DeleteRelationshipResponse.FromString,
                 _registered_method=True)
         self.TestRelationship = channel.unary_unary(
                 '/dataservices.userproto.UserRelationshipService/TestRelationship',
@@ -660,7 +660,7 @@ def add_UserRelationshipServiceServicer_to_server(servicer, server):
             'DeleteRelationship': grpc.unary_unary_rpc_method_handler(
                     servicer.DeleteRelationship,
                     request_deserializer=user__pb2.CreateRelationshipRequest.FromString,
-                    response_serializer=user__pb2.RelationshipObject.SerializeToString,
+                    response_serializer=user__pb2.DeleteRelationshipResponse.SerializeToString,
             ),
             'TestRelationship': grpc.unary_unary_rpc_method_handler(
                     servicer.TestRelationship,
@@ -755,7 +755,7 @@ class UserRelationshipService(object):
             target,
             '/dataservices.userproto.UserRelationshipService/DeleteRelationship',
             user__pb2.CreateRelationshipRequest.SerializeToString,
-            user__pb2.RelationshipObject.FromString,
+            user__pb2.DeleteRelationshipResponse.FromString,
             options,
             channel_credentials,
             insecure,

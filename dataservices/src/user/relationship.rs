@@ -6,11 +6,10 @@ TABLE friendship_request
 TABLE blocked_user
 */
 
-use crate::{db_conn::db, errors::DSResult, helpers::time_now, models::relationship::Relationship, protos::user_service::{self, CreateRelationshipRequest, HalfRelationship, ReadRelationshipRequest, ReadRelationshipResponse, ReadRelationshipsRequest, RelationshipObject, RelationshipTestResponse, RelationshipsResponse}, req_tuuid};
+use crate::{db_conn::db, errors::DSResult, helpers::time_now, models::relationship::Relationship, protos::user_service::{self, CreateRelationshipRequest, HalfRelationship, ReadRelationshipRequest, ReadRelationshipResponse, ReadRelationshipsRequest, RelationshipObject, RelationshipTestResponse, RelationshipsResponse, DeleteRelationshipResponse}, req_tuuid};
 
 use futures::StreamExt;
-use scylla::{deserialize::row, statement::prepared::PreparedStatement, value::{CqlTimestamp, CqlTimeuuid}};
-use scylla::DeserializeRow;
+use scylla::{statement::prepared::PreparedStatement, value::CqlTimeuuid};
 use tonic::{Request, Response, Status, async_trait};
 use user_service::user_relationship_service_server::{UserRelationshipService, UserRelationshipServiceServer};
 
@@ -136,7 +135,7 @@ impl ScyllaUserRelationshipService {
     async fn delete_relationship_impl(
         &self,
         request: Request<CreateRelationshipRequest>,
-    ) -> DSResult<Response<RelationshipObject>> {
+    ) -> DSResult<Response<DeleteRelationshipResponse>> {
         let user_a: CqlTimeuuid = req_tuuid!(request, user_id_a)?;
         let user_b: CqlTimeuuid = req_tuuid!(request, user_id_b)?;
         let inner = request.get_ref();
@@ -155,11 +154,7 @@ impl ScyllaUserRelationshipService {
             )
             .await?;
 
-        Ok(Response::new(RelationshipObject {
-            user_id_a: Some(user_a.into()),
-            user_id_b: Some(user_b.into()),
-            relationship_type: a_to_b_type,
-        }))
+        Ok(Response::new(DeleteRelationshipResponse {}))
     }
 
     async fn test_relationship_impl(
@@ -244,7 +239,7 @@ impl UserRelationshipService for ScyllaUserRelationshipService {
         &self,
         request: Request<CreateRelationshipRequest>,
     ) -> Result<
-        Response<RelationshipObject>,
+        Response<DeleteRelationshipResponse>,
         Status,
     > {
         Ok(self.delete_relationship_impl(request).await?)
