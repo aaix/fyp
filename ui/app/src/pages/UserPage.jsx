@@ -1,18 +1,30 @@
 import { useParams, useLocation } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import ProfileView from '../components/ProfileView.jsx'
-import { userManager } from '../lib/user.js'
+import Button from '../components/Button.jsx'
+import { userManager, relationshipManager } from '../lib/user.js'
+import { getAvatarUrl } from '../lib/utils.js'
 
-/**
- * Map a search-result user (icon_url, username, user_id, public_key) to ProfileView profile shape.
- */
+const CURRENT_REQUESTING_PEER = 1
+const PEER_REQUESTING_CURRENT = 2
+const FRIENDS = 3
+
 function userToProfile(user) {
-  if (!user) return { username: '', iconUrl: null, followers: 0, following: 0 }
+  if (!user) return { username: '', iconUrl: null, friendsCount: 0 }
   return {
     username: user.username ?? '',
-    iconUrl: user.icon_url ?? null,
-    followers: user.followers ?? 0,
-    following: user.following ?? 0,
+    iconUrl: user.icon_url ?? (user.user_id ? getAvatarUrl(user) : null),
+    friendsCount: 0,
+  }
+}
+
+function profileFromApiResponse(res) {
+  const user = res?.data?.user ?? res?.data
+  if (!user) return { username: '', iconUrl: null, friendsCount: 0 }
+  return {
+    username: user.username ?? '',
+    iconUrl: getAvatarUrl(user),
+    friendsCount: 0,
   }
 }
 
@@ -22,8 +34,10 @@ export default function UserPage() {
   const stateUser = location.state?.user
 
   const [profile, setProfile] = useState(() => userToProfile(stateUser))
+  const [relationship, setRelationship] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [actionLoading, setActionLoading] = useState(false)
 
   useEffect(() => {
     if (!userId) return
@@ -34,19 +48,26 @@ export default function UserPage() {
         if (cancelled) return
         setLoading(true)
         setError(null)
-        const data = await userManager.getUserProfile(userId)
+        const [profileRes, relRes] = await Promise.all([
+          userManager.getUserProfile(userId),
+          relationshipManager.getRelationships(),
+        ])
         if (cancelled) return
-        if (data) {
-          setProfile({
-            username: data.username ?? '',
-            iconUrl: data.icon_url ?? null,
-            followers: data.followers ?? 0,
-            following: data.following ?? 0,
-          })
-          setError(null)
+
+        if (profileRes?.success && profileRes?.data) {
+          setProfile(profileFromApiResponse(profileRes))
+        } else if (profileRes?.data) {
+          setProfile(profileFromApiResponse(profileRes))
         } else {
           setError('User not found')
         }
+
+        const relList = relRes?.data?.relationships ?? []
+        const norm = (id) => String(id ?? '').toLowerCase()
+        const peerRels = relList.filter((r) => norm(r.peer_id) === norm(userId)).map((r) => Number(r.relationship))
+        // Prefer FRIENDS (3) > PEER_REQUESTING_CURRENT (2) > CURRENT_REQUESTING_PEER (1)
+        const best = peerRels.includes(FRIENDS) ? FRIENDS : peerRels.includes(PEER_REQUESTING_CURRENT) ? PEER_REQUESTING_CURRENT : peerRels.includes(CURRENT_REQUESTING_PEER) ? CURRENT_REQUESTING_PEER : null
+        setRelationship(best)
       } catch (e) {
         if (!cancelled) setError(e?.message ?? 'Could not load profile')
       } finally {
@@ -57,11 +78,59 @@ export default function UserPage() {
     return () => {
       cancelled = true
     }
-  }, [userId, stateUser])
+  }, [userId])
+
+  const handleFriendAction = async () => {
+    if (!userId || relationship === FRIENDS) return
+    setActionLoading(true)
+    try {
+      const res = await relationshipManager.friendUser(userId)
+      if (res?.success) {
+        setRelationship(res?.data?.relationship != null ? Number(res.data.relationship) : FRIENDS)
+      }
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  const isIncoming = relationship === PEER_REQUESTING_CURRENT
+  const isSent = relationship === CURRENT_REQUESTING_PEER
+  const isFriends = relationship === FRIENDS
+  const showSendOrAccept = relationship == null || isIncoming
+
+  const profileActions =
+    !loading && !error ? (
+      <div className="flex justify-center">
+        {showSendOrAccept && (
+          <Button
+            onClick={handleFriendAction}
+            disabled={actionLoading}
+            aria-label={isIncoming ? 'Accept friend request' : 'Send friend request'}
+          >
+            {isIncoming ? 'Accept' : 'Send friend request'}
+          </Button>
+        )}
+        {isSent && (
+          <Button variant="ghost" disabled className="cursor-default">
+            Requested
+          </Button>
+        )}
+        {isFriends && (
+          <span className="text-sm font-medium text-[color:var(--text-muted)]">
+            Friends
+          </span>
+        )}
+      </div>
+    ) : null
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <ProfileView profile={profile} loading={loading} error={error} />
+      <ProfileView
+        profile={profile}
+        loading={loading}
+        error={error}
+        actions={profileActions}
+      />
     </div>
   )
 }

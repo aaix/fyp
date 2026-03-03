@@ -8,6 +8,7 @@ import AccountPage from './pages/AccountPage.jsx'
 import SettingsPage from './pages/SettingsPage.jsx'
 import SearchPage from './pages/SearchPage.jsx'
 import UserPage from './pages/UserPage.jsx'
+import NotificationsPage from './pages/NotificationsPage.jsx'
 
 import { gatewayFactory } from './lib/gateway.js'
 
@@ -51,6 +52,7 @@ function App() {
         <Route path="/account" element={<AccountPage />} />
         <Route path="/account/settings" element={<SettingsPage />} />
         <Route path="/search" element={<SearchPage />} />
+        <Route path="/notifications" element={<NotificationsPage />} />
         <Route path="/user/:userId" element={<UserPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
