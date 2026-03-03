@@ -24,7 +24,7 @@ pub struct ScyllaUserRelationshipService {
 
 
 impl ScyllaUserRelationshipService {
-    pub async fn service() -> Option<UserRelationshipServiceServer<Self>> {
+    pub async fn server() -> Option<UserRelationshipServiceServer<Self>> {
         let server = Self::new().await;
         if let Err(e) = &server {
             eprintln!("Error creating UserRelationshipService server: {:?}", e);
