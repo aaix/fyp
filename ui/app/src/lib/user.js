@@ -25,3 +25,25 @@ export class UserManager {
 }
 
 export const userManager = new UserManager();
+
+export class RelationshipManager {
+    getRelationships() {
+        return API.GET("user/relationships");
+    }
+
+    blockUser(user_id) {
+        return API.PUT(`user/relationship/${user_id}/block`);
+    }
+    unblockUser(user_id) {
+        return API.DELETE(`user/relationship/${user_id}/block`);
+    }
+
+    friendUser(user_id) {
+        return API.PUT(`user/relationship/${user_id}/friend`);
+    }
+    unfriendUser(user_id) {
+        return API.DELETE(`user/relationship/${user_id}/friend`);
+    }
+}
+
+export const relationshipManager = new relationshipManager();
