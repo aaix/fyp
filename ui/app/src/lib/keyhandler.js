@@ -78,7 +78,6 @@ export async function importFromPem(pem) {
 }
 
 export async function RSAWrapRSAwithSym(wrapper_key, private_key) {
-  const version = 1
 
   const sym = await window.crypto.subtle.generateKey(
     { name: 'AES-GCM', length: 256 },
@@ -102,7 +101,7 @@ export async function RSAWrapRSAwithSym(wrapper_key, private_key) {
     { name: 'AES-GCM', iv: iv }
   )
 
-  const combined = lengthPrefixedBlob(version, [
+  const combined = lengthPrefixedBlob(1, [
     sym_wrapped,
     iv,
     private_wrapped,
@@ -112,7 +111,7 @@ export async function RSAWrapRSAwithSym(wrapper_key, private_key) {
 }
 
 export async function RSAunwrapRSAwithSym(wrapper_private, buffer, extractable = false) {
-  const { version, parts } = unwrapLengthPrefixed(buffer)
+  const { parts } = unwrapLengthPrefixed(buffer)
 
   const [sym_wrapped, iv, private_wrapped] = parts
 

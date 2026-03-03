@@ -10,7 +10,7 @@ export function gatewayFactory() {
     if (gatewayFactory._gatewayPromise !== undefined) {
         return gatewayFactory._gatewayPromise;
     }
-    gatewayFactory._gatewayPromise = new Promise((resolve, reject) => {
+    gatewayFactory._gatewayPromise = new Promise((resolve) => {
         let socket = new WebSocket(GATEWAY_URL);
 
         socket.addEventListener("open", () => {
@@ -132,7 +132,7 @@ class Gateway {
 
     }
 
-    async handler_session_complete(msg) {
+    async handler_session_complete() {
         this.handshake_complete = true;
     }
 

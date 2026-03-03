@@ -46,4 +46,4 @@ export class RelationshipManager {
     }
 }
 
-export const relationshipManager = new relationshipManager();
+export const relationshipManager = new RelationshipManager();
