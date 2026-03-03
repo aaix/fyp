@@ -3,8 +3,9 @@
 use scylla::DeserializeRow;
 use scylla::value;
 #[derive(Debug, DeserializeRow)]
-pub struct Friendship {
-    pub lower__user_id: value::CqlTimeuuid,
-    pub higher__user_id: value::CqlTimeuuid,
+pub struct Relationship {
+    pub user_id_a: value::CqlTimeuuid,
+    pub user_id_b: value::CqlTimeuuid,
     pub created_at: value::CqlTimestamp,
+    pub relationship_type: i32,
 }

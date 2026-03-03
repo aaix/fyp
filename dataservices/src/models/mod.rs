@@ -1,9 +1,7 @@
 pub mod user;
 pub mod user_by_username;
 pub mod user_device;
-pub mod friendship;
-pub mod friendship_request;
-pub mod blocked_user;
+pub mod relationship;
 pub mod message_channel;
 pub mod message_channel_member;
 pub mod message;

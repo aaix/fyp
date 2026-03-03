@@ -6,25 +6,23 @@ TABLE friendship_request
 TABLE blocked_user
 */
 
-use crate::{db_conn::db, errors::DSResult, helpers::time_now, models::{friendship::Friendship, friendship_request::FriendshipRequest}, protos::user_service::{self, BlockedUserObjectResponse, CreateBlockedUserRequest, CreateFriendshipRequest, DeleteBlockedUserRequest, DeleteBlockedUserResponse, DeleteFriendshipInviteRequest, DeleteFriendshipInviteResponse, DeleteFriendshipRequest, DeleteFriendshipResponse, FriendshipInviteObject, FriendshipInviteRequest, FriendshipInviteResponse, FriendshipObjectResponse, ReadBlockedUserRequest, ReadBlockedUsersRequest, ReadBlockedUsersResponse, ReadFriendshipsRequest, ReadFriendshipsResponse, ReadRecvFriendshipInviteResponse, ReadRecvFriendshipInvitesRequest, ReadSentFriendshipInviteResponse, ReadSentFriendshipInvitesRequest}, req_tuuid};
+use crate::{db_conn::db, errors::DSResult, helpers::time_now, models::relationship::Relationship, protos::user_service::{self, CreateRelationshipRequest, HalfRelationship, ReadRelationshipRequest, ReadRelationshipResponse, ReadRelationshipsRequest, RelationshipObject, RelationshipTestResponse, RelationshipsResponse}, req_tuuid};
 
 use futures::StreamExt;
-use scylla::{statement::prepared::PreparedStatement, value::{CqlTimestamp, CqlTimeuuid}};
+use scylla::{deserialize::row, statement::prepared::PreparedStatement, value::{CqlTimestamp, CqlTimeuuid}};
+use scylla::DeserializeRow;
 use tonic::{Request, Response, Status, async_trait};
 use user_service::user_relationship_service_server::{UserRelationshipService, UserRelationshipServiceServer};
 
 
 pub struct ScyllaUserRelationshipService {
-    // friend requests
-    create_friendship_invite_prepared: PreparedStatement,
-    read_friendship_invite_prepared: PreparedStatement,
-    read_recv_friendship_invites_prepared: PreparedStatement,
-    read_sent_friendship_invites_prepared: PreparedStatement,
-    delete_friendship_invite_prepared: PreparedStatement,
-    // friendships
-    create_friendship_prepared: PreparedStatement,
-    
+    // prepared statements for our CRUD operations
+    create_relationship_prepared: PreparedStatement,
+    read_relationship_prepared: PreparedStatement,
+    read_relationships_prepared: PreparedStatement,
+    delete_relationship_prepared: PreparedStatement,
 }
+
 
 impl ScyllaUserRelationshipService {
     pub async fn service() -> Option<UserRelationshipServiceServer<Self>> {
@@ -39,185 +37,177 @@ impl ScyllaUserRelationshipService {
 
     pub async fn new() -> Result<Self, Box<dyn std::error::Error>> {
 
-        let create_friendship_invite_prepared = db().await.prepare(
-            "INSERT INTO dataservices.friendship_request (requester__user_id , recipient__user_id) VALUES \
-            (?, ?)"
+        let create_relationship_prepared = db().await.prepare(
+            "BEGIN BATCH
+            INSERT INTO dataservices.relationship (user_id_a, user_id_b, created_at, relationship_type)
+            VALUES (?, ?, ?, ?);
+            INSERT INTO dataservices.relationship (user_id_a, user_id_b, created_at, relationship_type)
+            VALUES (?, ?, ?, ?);
+            APPLY BATCH"
         ).await?;
 
-        let read_friendship_invite_prepared = db().await.prepare(
-            "SELECT 1 FROM dataservices.friendship_request WHERE requester__user_id ? AND recipient__user_id = ?"
+        let read_relationship_prepared = db().await.prepare(
+            "SELECT * FROM dataservices.relationship WHERE user_id_a = ? AND user_id_b = ?"
         ).await?;
 
-        let read_recv_friendship_invites_prepared = db().await.prepare(
-            "SELECT requester__user_id FROM dataservices.friendship_request WHERE recipient__user_id = ?"
+        let read_relationships_prepared = db().await.prepare(
+            "SELECT * FROM dataservices.relationship WHERE user_id_a = ?"
         ).await?;
 
-        let read_sent_friendship_invites_prepared = db().await.prepare(
-            "SELECT recipient__user_id FROM dataservices.friendship_request WHERE requester__user_id = ?"
+        let delete_relationship_prepared = db().await.prepare(
+            "BEGIN BATCH
+            DELETE FROM dataservices.relationship WHERE user_id_a = ? AND user_id_b = ? AND relationship_type = ?;
+            DELETE FROM dataservices.relationship WHERE user_id_a = ? AND user_id_b = ? AND relationship_type = ?;
+            APPLY BATCH"
         ).await?;
-
-        let delete_friendship_invite_prepared = db().await.prepare(
-            "DELETE FROM dataservices.friendship_request WHERE requester__user_id = ? AND recipient__user_id = ?"
-        ).await?;
-
-        let create_friendship_prepared = db().await.prepare(
-            "INSERT INTO dataservices.friendship (lower__user_id, higher__user_id, created_at) VALUES (?, ?, ?)"
-        ).await?;
-
-        let read_friendships_prepared = db().await.prepare(
-            "SELECT * FROM dataservices.friendship WHERE "
-        )
 
         Ok(Self {
-            create_friendship_invite_prepared,
-            read_friendship_invite_prepared,
-            read_recv_friendship_invites_prepared,
-            read_sent_friendship_invites_prepared,
-            delete_friendship_invite_prepared,
-            create_friendship_prepared,
-            read_friendships_prepared,
+            create_relationship_prepared,
+            read_relationship_prepared,
+            read_relationships_prepared,
+            delete_relationship_prepared,
         })
     }
 }
 
 impl ScyllaUserRelationshipService {
-    async fn create_friendship_invite_impl(
+    async fn create_relationship_impl(
         &self,
-        request: Request<FriendshipInviteRequest>,
-    ) -> DSResult<Response<FriendshipInviteResponse>> {
-        
-        let requester_id: CqlTimeuuid = req_tuuid!(request, from_user_id)?;
-        let recipient_id: CqlTimeuuid = req_tuuid!(request, to_user_id)?;
-
-        db().await.execute_unpaged(&self.create_friendship_invite_prepared,
-            (requester_id, recipient_id)
-        ).await?;
-
-        Ok(Response::new(FriendshipInviteResponse {  }))
-    }
-
-
-    async fn read_friendship_invite_impl(
-        &self,
-        request: Request<FriendshipInviteRequest>,
-    ) -> DSResult<Response<FriendshipInviteResponse>> {
-        
-        let requester_id: CqlTimeuuid = req_tuuid!(request, from_user_id)?;
-        let recipient_id: CqlTimeuuid = req_tuuid!(request, to_user_id)?;
-
-        let rows = db().await.execute_unpaged(&self.read_friendship_invite_prepared,
-            (requester_id, recipient_id)
-        ).await?.into_rows_result()?.rows_num();
-
-        if rows > 0 {
-            Ok(Response::new(FriendshipInviteResponse {  }))
-        } else {
-            Err(Status::not_found("no request exists").into())
-        }
-    }
-
-    async fn read_recv_friendship_invites_impl(
-        &self,
-        request: Request<ReadRecvFriendshipInvitesRequest>
-    ) -> DSResult<Response<ReadRecvFriendshipInviteResponse>> {
-
-        let user_id: CqlTimeuuid = req_tuuid!(request, to_user_id)?;
-
-        let mut rows = db().await.execute_iter(
-            self.read_recv_friendship_invites_prepared.clone(),
-            (user_id,)
-        ).await?.rows_stream::<(CqlTimeuuid,)>()?;
-
-        let mut out: Vec<FriendshipInviteObject> = Vec::new();
-
-        while let Some(row_res) = rows.next().await {
-            let from_id = row_res?.0;
-
-            out.push(FriendshipInviteObject { user_id: Some(from_id.into()) })
-        }
-
-        Ok(Response::new(ReadRecvFriendshipInviteResponse { invites: out }))
-    }
-
-    async fn read_sent_friendship_invites_impl(
-        &self,
-        request: Request<ReadSentFriendshipInvitesRequest>
-    ) -> DSResult<Response<ReadSentFriendshipInviteResponse>> {
-
-        let user_id: CqlTimeuuid = req_tuuid!(request, from_user_id)?;
-
-        let mut rows = db().await.execute_iter(
-            self.read_sent_friendship_invites_prepared.clone(),
-            (user_id,)
-        ).await?.rows_stream::<(CqlTimeuuid,)>()?;
-
-        let mut out: Vec<FriendshipInviteObject> = Vec::new();
-
-        while let Some(row_res) = rows.next().await {
-            let from_id = row_res?.0;
-
-            out.push(FriendshipInviteObject { user_id: Some(from_id.into()) })
-        }
-
-        Ok(Response::new(ReadSentFriendshipInviteResponse { invites: out }))
-    }
-
-    async fn delete_friendship_invite_impl(
-        &self,
-        request: Request<DeleteFriendshipInviteRequest>,
-    ) -> DSResult<Response<DeleteFriendshipInviteResponse>> {
-
-        let from_id: CqlTimeuuid = req_tuuid!(request, from_user_id)?;
-        let to_id:CqlTimeuuid = req_tuuid!(request, to_user_id)?;
-
-
-        db().await.execute_unpaged(
-            &self.delete_friendship_invite_prepared,
-            (from_id, to_id)
-        ).await?;
-
-        Ok(Response::new(DeleteFriendshipInviteResponse {  }))
-
-    }
-
-    async fn create_friendship_impl(
-        &self,
-        request: Request<CreateFriendshipRequest>,
-    ) -> DSResult<Response<FriendshipObjectResponse>> {
-        let id_1: CqlTimeuuid = req_tuuid!(request, user_id_1)?;
-        let id_2: CqlTimeuuid = req_tuuid!(request, user_id_2)?;
-
-        let (lower, higher) = if id_1 < id_2 {(id_1, id_2)} else {(id_2, id_1)};
+        request: Request<CreateRelationshipRequest>,
+    ) -> DSResult<Response<RelationshipObject>> {
+        let user_a_id: CqlTimeuuid = req_tuuid!(request, user_id_a)?;
+        let user_b_id: CqlTimeuuid = req_tuuid!(request, user_id_b)?;
         let created_at = time_now();
+        let inner = request.get_ref();
 
+        let a_to_b_type = inner.a_to_b_type;
+        let b_to_a_type = inner.b_to_a_type;
 
+        // batch insert/upsert both directions
         db().await.execute_unpaged(
-            &self.create_friendship_prepared,
-            (lower, higher, created_at)
-        ).await?;
+            &self.create_relationship_prepared,
+            (
+                &user_a_id,
+                &user_b_id,
+                &created_at,
+                &a_to_b_type,
+                &user_b_id,
+                &user_a_id,
+                &created_at,
+                &b_to_a_type,
+            ),
+        )
+        .await?;
 
-
-        Ok(Response::new(FriendshipObjectResponse {
-            user_id_1: Some(lower.into()),
-            user_id_2: Some(higher.into()),
-            created_at: created_at.0
+        Ok(Response::new(RelationshipObject {
+            user_id_a: Some(user_a_id.into()),
+            user_id_b: Some(user_b_id.into()),
+            relationship_type: a_to_b_type,
         }))
     }
 
-    async fn read_friendships_impl(
+    async fn read_relationship_impl(
         &self,
-        request: Request<ReadFriendshipsRequest>,
-    ) -> DSResult<Response<ReadFriendshipsResponse>> {
+        request: Request<ReadRelationshipRequest>,
+    ) -> DSResult<Response<ReadRelationshipResponse>> {
+        let user_a: CqlTimeuuid = req_tuuid!(request, user_id_a)?;
+        let user_b: CqlTimeuuid = req_tuuid!(request, user_id_b)?;
+
+        let rows = db()
+            .await
+            .execute_unpaged(&self.read_relationship_prepared, (&user_a, &user_b))
+            .await?
+            .into_rows_result()?;
+
+        let q = rows.rows::<Relationship>()?;
+        let rels = q
+            .map(|row_res| {
+                row_res.map(|row| RelationshipObject {
+                    user_id_a: Some(row.user_id_a.into()),
+                    user_id_b: Some(row.user_id_b.into()),
+                    relationship_type: row.relationship_type,
+                })
+            })
+            .collect::<Result<Vec<RelationshipObject>, _>>()?;
+
+        Ok(Response::new(ReadRelationshipResponse { relationships: rels }))
+    }
+
+    async fn delete_relationship_impl(
+        &self,
+        request: Request<CreateRelationshipRequest>,
+    ) -> DSResult<Response<RelationshipObject>> {
+        let user_a: CqlTimeuuid = req_tuuid!(request, user_id_a)?;
+        let user_b: CqlTimeuuid = req_tuuid!(request, user_id_b)?;
+        let inner = request.get_ref();
+        let a_to_b_type = inner.a_to_b_type;
+        let b_to_a_type = inner.b_to_a_type;
+
+        db().await.execute_unpaged(&self.delete_relationship_prepared,
+                (
+                    &user_a,
+                    &user_b,
+                    &a_to_b_type,
+                    &user_b,
+                    &user_a,
+                    &b_to_a_type,
+                ),
+            )
+            .await?;
+
+        Ok(Response::new(RelationshipObject {
+            user_id_a: Some(user_a.into()),
+            user_id_b: Some(user_b.into()),
+            relationship_type: a_to_b_type,
+        }))
+    }
+
+    async fn test_relationship_impl(
+        &self,
+        request: Request<RelationshipObject>,
+    ) -> DSResult<Response<RelationshipTestResponse>> {
+        let user_a: CqlTimeuuid = req_tuuid!(request, user_id_a)?;
+        let user_b: CqlTimeuuid = req_tuuid!(request, user_id_b)?;
+        let inner = request.get_ref();
+        let relationship_type = inner.relationship_type;
+
+        let rows = db().await.execute_unpaged(
+            &self.read_relationship_prepared,
+            (&user_a, &user_b, &relationship_type)
+        ).await?.into_rows_result()?;
+
+        let exists = rows.rows_num() > 0;
+
         
+
+        Ok(Response::new(RelationshipTestResponse {exists}))
+    }
+
+    async fn read_relationships_impl(
+        &self,
+        request: Request<ReadRelationshipsRequest>,
+    ) -> DSResult<Response<RelationshipsResponse>> {
         let user_id: CqlTimeuuid = req_tuuid!(request, user_id)?;
 
-        let pager = db().await.execute_iter(
-            self.read_friendships_prepared.clone(),
+        let mut pager = db().await.execute_iter(
+            self.read_relationships_prepared.clone(),
             (user_id,)
-        ).await?.rows_stream::<Friendship>().await?;
+        ).await?.rows_stream::<Relationship>()?;
 
+
+        let mut relationships = Vec::new();
+
+        while let Some(row_res) = pager.next().await {
+            let row = row_res?;
+            relationships.push(HalfRelationship {
+                user_id_b: Some(row.user_id_b.into()),
+                relationship_type: row.relationship_type
+            })
+        }
+
+
+        Ok(Response::new(RelationshipsResponse { relationships }))
     }
-        
 }
 
 
@@ -226,112 +216,61 @@ impl ScyllaUserRelationshipService {
 
 #[async_trait]
 impl UserRelationshipService for ScyllaUserRelationshipService {
-    async fn create_friendship_invite(
+    async fn create_relationship(
         &self,
-        request: Request<FriendshipInviteRequest>,
-    ) -> Result<Response<FriendshipInviteResponse>, Status,> {
-        Ok(self.create_friendship_invite_impl(request).await?)
-    }
-
-    async fn read_friendship_invite(
-        &self,
-        request: Request<FriendshipInviteRequest>,
-    ) -> Result<Response<FriendshipInviteResponse>, Status,> {
-        Ok(self.read_friendship_invite_impl(request).await?)
-    }
-
-    async fn read_recv_friendship_invites(
-        &self,
-        request: Request<ReadRecvFriendshipInvitesRequest>,
+        request: Request<CreateRelationshipRequest>,
     ) -> Result<
-        Response<ReadRecvFriendshipInviteResponse>,
+        Response<RelationshipObject>,
         Status,
     > {
-        Ok(self.read_recv_friendship_invites_impl(request).await?)
+        Ok(self.create_relationship_impl(request).await?)
     }
 
-    async fn read_sent_friendship_invites(
+
+
+    /// users may have multiple relationships (e.g. they both blocked eachother)
+    async fn read_relationship(
         &self,
-        request: Request<ReadSentFriendshipInvitesRequest>,
+        request: Request<ReadRelationshipRequest>,
     ) -> Result<
-        Response<ReadSentFriendshipInviteResponse>,
+        Response<ReadRelationshipResponse>,
         Status,
     > {
-        Ok(self.read_sent_friendship_invites_impl(request).await?)
+        Ok(self.read_relationship_impl(request).await?)
+
     }
 
-    async fn delete_friendship_invite(
+    async fn delete_relationship(
         &self,
-        request: Request<DeleteFriendshipInviteRequest>,
+        request: Request<CreateRelationshipRequest>,
     ) -> Result<
-        Response<DeleteFriendshipInviteResponse>,
+        Response<RelationshipObject>,
         Status,
     > {
-        Ok(self.delete_friendship_invite_impl(request).await?)
+        Ok(self.delete_relationship_impl(request).await?)
+
+    }
+    /// test a specific relationship type
+    async fn test_relationship(
+        &self,
+        request: Request<RelationshipObject>,
+    ) -> Result<
+        Response<RelationshipTestResponse>,
+        Status,
+    > {
+        Ok(self.test_relationship_impl(request).await?)
+
+    }
+    /// read all of a users relationships with others
+    async fn read_relationships(
+        &self,
+        request: Request<ReadRelationshipsRequest>,
+    ) -> Result<
+        Response<RelationshipsResponse>,
+        Status,
+    > {
+        Ok(self.read_relationships_impl(request).await?)
+
     }
     
-    async fn create_friendship(
-        &self,
-        request: Request<CreateFriendshipRequest>,
-    ) -> Result<
-        Response<FriendshipObjectResponse>,
-        Status,
-    > {
-        Ok(self.create_friendship_impl(request).await?)
-    }
-
-    async fn read_friendships(
-        &self,
-        request: Request<ReadFriendshipsRequest>,
-    ) -> Result<
-        Response<ReadFriendshipsResponse>,
-        Status,
-    > {
-        Ok(self.read_friendships_impl(request).await?)
-    }
-    async fn delete_friendship(
-        &self,
-        request: Request<DeleteFriendshipRequest>,
-    ) -> Result<
-        Response<DeleteFriendshipResponse>,
-        Status,
-    > {
-        todo!()
-    }
-    async fn create_blocked_user(
-        &self,
-        request: Request<CreateBlockedUserRequest>,
-    ) -> Result<
-        Response<BlockedUserObjectResponse>,
-        Status,
-    > {
-        todo!()
-    }
-    async fn read_blocked_users(
-        &self,
-        request: Request<ReadBlockedUsersRequest>,
-    ) -> Result<
-        Response<ReadBlockedUsersResponse>,
-        Status,
-    > {
-        todo!()
-    }
-    async fn read_blocked_user(
-        &self,
-        request: tonic::Request<ReadBlockedUserRequest>,
-    ) -> Result<
-        Response<BlockedUserObjectResponse>,
-        Status,
-    > {
-        todo!()
-    }
-    async fn delete_blocked_user(
-        &self,
-        request: Request<DeleteBlockedUserRequest>,
-    ) -> Result<
-        Response<DeleteBlockedUserResponse>,
-        Status,
-    > {
-        todo!()
-    }
 }

@@ -32,29 +32,24 @@ CREATE TABLE dataservices.user_device (
     PRIMARY KEY (user_id, device_id)
 );
 
-CREATE TABLE dataservices.friendship (
-    lower__user_id TIMEUUID, -- foreign key: user.user_id
-    higher__user_id TIMEUUID, -- foreign key: user.user_id
+-- Will have 2 rows per relationship
+CREATE TABLE dataservices.relationship (
+    user_id_a TIMEUUID,
+    user_id_b TIMEUUID,
     created_at TIMESTAMP,
-    PRIMARY KEY (lower__user_id, higher__user_id)
+    relationship_type INT,
+    -- 0 reserved
+
+    -- 1 a requesting b
+    -- 2 b requesting a
+
+    -- 3 a friends with b
+
+    -- 5 b blocked a
+    -- 6 a blocked by b
+    PRIMARY KEY (user_id_a, user_id_b, relationship_type)
 );
 
-CREATE TABLE dataservices.friendship_request (
-    requester__user_id TIMEUUID, -- foreign key: user.user_id
-    recipient__user_id TIMEUUID, -- foreign key: user.user_id
-    PRIMARY KEY (recipient__user_id, requester__user_id)-- users can look up their sent requests
-);
-
--- TODO: dont use a secondary index here
-CREATE INDEX friendship_request_by_requester ON dataservices.friendship_request (requester__user_id);
-
-
-CREATE TABLE dataservices.blocked_user (
-    blocker__user_id TIMEUUID, -- foreign key: user.user_id
-    blocked__user_id TIMEUUID, -- foreign key: user.user_id
-    PRIMARY KEY (blocker__user_id, blocked__user_id),
-    -- no need for index on blocked because we always know both ids in an interaction
-);
 
 CREATE TABLE dataservices.message_channel (
     channel_id UUID,

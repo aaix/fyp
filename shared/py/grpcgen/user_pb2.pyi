@@ -159,160 +159,64 @@ class DeleteDeviceResponse(_message.Message):
     __slots__ = ()
     def __init__(self) -> None: ...
 
-class CreateFriendshipInviteRequest(_message.Message):
-    __slots__ = ("from_user_id", "to_user_id")
-    FROM_USER_ID_FIELD_NUMBER: _ClassVar[int]
-    TO_USER_ID_FIELD_NUMBER: _ClassVar[int]
-    from_user_id: _plib_pb2.pUUID
-    to_user_id: _plib_pb2.pUUID
-    def __init__(self, from_user_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., to_user_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ...) -> None: ...
+class CreateRelationshipRequest(_message.Message):
+    __slots__ = ("user_id_a", "user_id_b", "a_to_b_type", "b_to_a_type")
+    USER_ID_A_FIELD_NUMBER: _ClassVar[int]
+    USER_ID_B_FIELD_NUMBER: _ClassVar[int]
+    A_TO_B_TYPE_FIELD_NUMBER: _ClassVar[int]
+    B_TO_A_TYPE_FIELD_NUMBER: _ClassVar[int]
+    user_id_a: _plib_pb2.pUUID
+    user_id_b: _plib_pb2.pUUID
+    a_to_b_type: int
+    b_to_a_type: int
+    def __init__(self, user_id_a: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., user_id_b: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., a_to_b_type: _Optional[int] = ..., b_to_a_type: _Optional[int] = ...) -> None: ...
 
-class FriendshipInviteResponse(_message.Message):
-    __slots__ = ()
-    def __init__(self) -> None: ...
+class ReadRelationshipRequest(_message.Message):
+    __slots__ = ("user_id_a", "user_id_b")
+    USER_ID_A_FIELD_NUMBER: _ClassVar[int]
+    USER_ID_B_FIELD_NUMBER: _ClassVar[int]
+    user_id_a: _plib_pb2.pUUID
+    user_id_b: _plib_pb2.pUUID
+    def __init__(self, user_id_a: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., user_id_b: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ...) -> None: ...
 
-class FriendshipInviteObject(_message.Message):
+class RelationshipObject(_message.Message):
+    __slots__ = ("user_id_a", "user_id_b", "relationship_type")
+    USER_ID_A_FIELD_NUMBER: _ClassVar[int]
+    USER_ID_B_FIELD_NUMBER: _ClassVar[int]
+    RELATIONSHIP_TYPE_FIELD_NUMBER: _ClassVar[int]
+    user_id_a: _plib_pb2.pUUID
+    user_id_b: _plib_pb2.pUUID
+    relationship_type: int
+    def __init__(self, user_id_a: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., user_id_b: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., relationship_type: _Optional[int] = ...) -> None: ...
+
+class ReadRelationshipResponse(_message.Message):
+    __slots__ = ("relationships",)
+    RELATIONSHIPS_FIELD_NUMBER: _ClassVar[int]
+    relationships: _containers.RepeatedCompositeFieldContainer[RelationshipObject]
+    def __init__(self, relationships: _Optional[_Iterable[_Union[RelationshipObject, _Mapping]]] = ...) -> None: ...
+
+class RelationshipTestResponse(_message.Message):
+    __slots__ = ("exists",)
+    EXISTS_FIELD_NUMBER: _ClassVar[int]
+    exists: bool
+    def __init__(self, exists: bool = ...) -> None: ...
+
+class ReadRelationshipsRequest(_message.Message):
     __slots__ = ("user_id",)
     USER_ID_FIELD_NUMBER: _ClassVar[int]
     user_id: _plib_pb2.pUUID
     def __init__(self, user_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ...) -> None: ...
 
-class ReadRecvFriendshipInvitesRequest(_message.Message):
-    __slots__ = ("to_user_id",)
-    TO_USER_ID_FIELD_NUMBER: _ClassVar[int]
-    to_user_id: _plib_pb2.pUUID
-    def __init__(self, to_user_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ...) -> None: ...
+class HalfRelationship(_message.Message):
+    __slots__ = ("user_id_b", "relationship_type")
+    USER_ID_B_FIELD_NUMBER: _ClassVar[int]
+    RELATIONSHIP_TYPE_FIELD_NUMBER: _ClassVar[int]
+    user_id_b: _plib_pb2.pUUID
+    relationship_type: int
+    def __init__(self, user_id_b: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., relationship_type: _Optional[int] = ...) -> None: ...
 
-class ReadRecvFriendshipInviteResponse(_message.Message):
-    __slots__ = ("invites",)
-    INVITES_FIELD_NUMBER: _ClassVar[int]
-    invites: _containers.RepeatedCompositeFieldContainer[FriendshipInviteObject]
-    def __init__(self, invites: _Optional[_Iterable[_Union[FriendshipInviteObject, _Mapping]]] = ...) -> None: ...
-
-class ReadSentFriendshipInvitesRequest(_message.Message):
-    __slots__ = ("from_user_id",)
-    FROM_USER_ID_FIELD_NUMBER: _ClassVar[int]
-    from_user_id: _plib_pb2.pUUID
-    def __init__(self, from_user_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ...) -> None: ...
-
-class ReadSentFriendshipInviteResponse(_message.Message):
-    __slots__ = ("invites",)
-    INVITES_FIELD_NUMBER: _ClassVar[int]
-    invites: _containers.RepeatedCompositeFieldContainer[FriendshipInviteObject]
-    def __init__(self, invites: _Optional[_Iterable[_Union[FriendshipInviteObject, _Mapping]]] = ...) -> None: ...
-
-class DeleteFriendshipInviteRequest(_message.Message):
-    __slots__ = ("from_user_id", "to_user_id")
-    FROM_USER_ID_FIELD_NUMBER: _ClassVar[int]
-    TO_USER_ID_FIELD_NUMBER: _ClassVar[int]
-    from_user_id: _plib_pb2.pUUID
-    to_user_id: _plib_pb2.pUUID
-    def __init__(self, from_user_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., to_user_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ...) -> None: ...
-
-class DeleteFriendshipInviteResponse(_message.Message):
-    __slots__ = ()
-    def __init__(self) -> None: ...
-
-class CreateFriendshipRequest(_message.Message):
-    __slots__ = ("user_id_1", "user_id_2")
-    USER_ID_1_FIELD_NUMBER: _ClassVar[int]
-    USER_ID_2_FIELD_NUMBER: _ClassVar[int]
-    user_id_1: _plib_pb2.pUUID
-    user_id_2: _plib_pb2.pUUID
-    def __init__(self, user_id_1: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., user_id_2: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ...) -> None: ...
-
-class FriendshipObjectResponse(_message.Message):
-    __slots__ = ("user_id_1", "user_id_2", "created_at")
-    USER_ID_1_FIELD_NUMBER: _ClassVar[int]
-    USER_ID_2_FIELD_NUMBER: _ClassVar[int]
-    CREATED_AT_FIELD_NUMBER: _ClassVar[int]
-    user_id_1: _plib_pb2.pUUID
-    user_id_2: _plib_pb2.pUUID
-    created_at: int
-    def __init__(self, user_id_1: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., user_id_2: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., created_at: _Optional[int] = ...) -> None: ...
-
-class ReadFriendshipsRequest(_message.Message):
-    __slots__ = ("user_id",)
-    USER_ID_FIELD_NUMBER: _ClassVar[int]
-    user_id: _plib_pb2.pUUID
-    def __init__(self, user_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ...) -> None: ...
-
-class FriendshipsObjectResponse(_message.Message):
-    __slots__ = ("user_id", "created_at")
-    USER_ID_FIELD_NUMBER: _ClassVar[int]
-    CREATED_AT_FIELD_NUMBER: _ClassVar[int]
-    user_id: _plib_pb2.pUUID
-    created_at: int
-    def __init__(self, user_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., created_at: _Optional[int] = ...) -> None: ...
-
-class ReadFriendshipsResponse(_message.Message):
-    __slots__ = ("friendships",)
-    FRIENDSHIPS_FIELD_NUMBER: _ClassVar[int]
-    friendships: _containers.RepeatedCompositeFieldContainer[FriendshipsObjectResponse]
-    def __init__(self, friendships: _Optional[_Iterable[_Union[FriendshipsObjectResponse, _Mapping]]] = ...) -> None: ...
-
-class DeleteFriendshipRequest(_message.Message):
-    __slots__ = ("user_id_1", "user_id_2")
-    USER_ID_1_FIELD_NUMBER: _ClassVar[int]
-    USER_ID_2_FIELD_NUMBER: _ClassVar[int]
-    user_id_1: _plib_pb2.pUUID
-    user_id_2: _plib_pb2.pUUID
-    def __init__(self, user_id_1: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., user_id_2: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ...) -> None: ...
-
-class DeleteFriendshipResponse(_message.Message):
-    __slots__ = ()
-    def __init__(self) -> None: ...
-
-class CreateBlockedUserRequest(_message.Message):
-    __slots__ = ("blocker_user_id", "blocked_user_id")
-    BLOCKER_USER_ID_FIELD_NUMBER: _ClassVar[int]
-    BLOCKED_USER_ID_FIELD_NUMBER: _ClassVar[int]
-    blocker_user_id: _plib_pb2.pUUID
-    blocked_user_id: _plib_pb2.pUUID
-    def __init__(self, blocker_user_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., blocked_user_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ...) -> None: ...
-
-class BlockedUserObjectResponse(_message.Message):
-    __slots__ = ("blocker_user_id", "blocked_user_id")
-    BLOCKER_USER_ID_FIELD_NUMBER: _ClassVar[int]
-    BLOCKED_USER_ID_FIELD_NUMBER: _ClassVar[int]
-    blocker_user_id: _plib_pb2.pUUID
-    blocked_user_id: _plib_pb2.pUUID
-    def __init__(self, blocker_user_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., blocked_user_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ...) -> None: ...
-
-class ReadBlockedUsersRequest(_message.Message):
-    __slots__ = ("blocker_user_id",)
-    BLOCKER_USER_ID_FIELD_NUMBER: _ClassVar[int]
-    blocker_user_id: _plib_pb2.pUUID
-    def __init__(self, blocker_user_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ...) -> None: ...
-
-class BlockedUsersObjectResponse(_message.Message):
-    __slots__ = ("blocked_user_id",)
-    BLOCKED_USER_ID_FIELD_NUMBER: _ClassVar[int]
-    blocked_user_id: _plib_pb2.pUUID
-    def __init__(self, blocked_user_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ...) -> None: ...
-
-class ReadBlockedUsersResponse(_message.Message):
-    __slots__ = ("blocked_users",)
-    BLOCKED_USERS_FIELD_NUMBER: _ClassVar[int]
-    blocked_users: _containers.RepeatedCompositeFieldContainer[BlockedUsersObjectResponse]
-    def __init__(self, blocked_users: _Optional[_Iterable[_Union[BlockedUsersObjectResponse, _Mapping]]] = ...) -> None: ...
-
-class ReadBlockedUserRequest(_message.Message):
-    __slots__ = ("blocker_user_id", "blocked_user_id")
-    BLOCKER_USER_ID_FIELD_NUMBER: _ClassVar[int]
-    BLOCKED_USER_ID_FIELD_NUMBER: _ClassVar[int]
-    blocker_user_id: _plib_pb2.pUUID
-    blocked_user_id: _plib_pb2.pUUID
-    def __init__(self, blocker_user_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., blocked_user_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ...) -> None: ...
-
-class DeleteBlockedUserRequest(_message.Message):
-    __slots__ = ("blocker_user_id", "blocked_user_id")
-    BLOCKER_USER_ID_FIELD_NUMBER: _ClassVar[int]
-    BLOCKED_USER_ID_FIELD_NUMBER: _ClassVar[int]
-    blocker_user_id: _plib_pb2.pUUID
-    blocked_user_id: _plib_pb2.pUUID
-    def __init__(self, blocker_user_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., blocked_user_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ...) -> None: ...
-
-class DeleteBlockedUserResponse(_message.Message):
-    __slots__ = ()
-    def __init__(self) -> None: ...
+class RelationshipsResponse(_message.Message):
+    __slots__ = ("relationships",)
+    RELATIONSHIPS_FIELD_NUMBER: _ClassVar[int]
+    relationships: _containers.RepeatedCompositeFieldContainer[HalfRelationship]
+    def __init__(self, relationships: _Optional[_Iterable[_Union[HalfRelationship, _Mapping]]] = ...) -> None: ...

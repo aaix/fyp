@@ -569,8 +569,8 @@ class UserDeviceService(object):
 
 
 class UserRelationshipServiceStub(object):
-    """relationship management (TABLE: friendship, friendship_request, blocked_user)
-
+    """relationship management (TABLE: relationships)
+    duplicate table: each relationship will ahve 2 entries
     """
 
     def __init__(self, channel):
@@ -579,130 +579,67 @@ class UserRelationshipServiceStub(object):
         Args:
             channel: A grpc.Channel.
         """
-        self.CreateFriendshipInvite = channel.unary_unary(
-                '/dataservices.userproto.UserRelationshipService/CreateFriendshipInvite',
-                request_serializer=user__pb2.CreateFriendshipInviteRequest.SerializeToString,
-                response_deserializer=user__pb2.FriendshipInviteResponse.FromString,
+        self.CreateRelationship = channel.unary_unary(
+                '/dataservices.userproto.UserRelationshipService/CreateRelationship',
+                request_serializer=user__pb2.CreateRelationshipRequest.SerializeToString,
+                response_deserializer=user__pb2.RelationshipObject.FromString,
                 _registered_method=True)
-        self.ReadRecvFriendshipInvites = channel.unary_unary(
-                '/dataservices.userproto.UserRelationshipService/ReadRecvFriendshipInvites',
-                request_serializer=user__pb2.ReadRecvFriendshipInvitesRequest.SerializeToString,
-                response_deserializer=user__pb2.ReadRecvFriendshipInviteResponse.FromString,
+        self.ReadRelationship = channel.unary_unary(
+                '/dataservices.userproto.UserRelationshipService/ReadRelationship',
+                request_serializer=user__pb2.ReadRelationshipRequest.SerializeToString,
+                response_deserializer=user__pb2.ReadRelationshipResponse.FromString,
                 _registered_method=True)
-        self.ReadSentFriendshipInvites = channel.unary_unary(
-                '/dataservices.userproto.UserRelationshipService/ReadSentFriendshipInvites',
-                request_serializer=user__pb2.ReadSentFriendshipInvitesRequest.SerializeToString,
-                response_deserializer=user__pb2.ReadSentFriendshipInviteResponse.FromString,
+        self.DeleteRelationship = channel.unary_unary(
+                '/dataservices.userproto.UserRelationshipService/DeleteRelationship',
+                request_serializer=user__pb2.CreateRelationshipRequest.SerializeToString,
+                response_deserializer=user__pb2.RelationshipObject.FromString,
                 _registered_method=True)
-        self.DeleteFriendshipInvite = channel.unary_unary(
-                '/dataservices.userproto.UserRelationshipService/DeleteFriendshipInvite',
-                request_serializer=user__pb2.DeleteFriendshipInviteRequest.SerializeToString,
-                response_deserializer=user__pb2.DeleteFriendshipInviteResponse.FromString,
+        self.TestRelationship = channel.unary_unary(
+                '/dataservices.userproto.UserRelationshipService/TestRelationship',
+                request_serializer=user__pb2.RelationshipObject.SerializeToString,
+                response_deserializer=user__pb2.RelationshipTestResponse.FromString,
                 _registered_method=True)
-        self.CreateFriendship = channel.unary_unary(
-                '/dataservices.userproto.UserRelationshipService/CreateFriendship',
-                request_serializer=user__pb2.CreateFriendshipRequest.SerializeToString,
-                response_deserializer=user__pb2.FriendshipObjectResponse.FromString,
-                _registered_method=True)
-        self.ReadFriendships = channel.unary_unary(
-                '/dataservices.userproto.UserRelationshipService/ReadFriendships',
-                request_serializer=user__pb2.ReadFriendshipsRequest.SerializeToString,
-                response_deserializer=user__pb2.ReadFriendshipsResponse.FromString,
-                _registered_method=True)
-        self.DeleteFriendship = channel.unary_unary(
-                '/dataservices.userproto.UserRelationshipService/DeleteFriendship',
-                request_serializer=user__pb2.DeleteFriendshipRequest.SerializeToString,
-                response_deserializer=user__pb2.DeleteFriendshipResponse.FromString,
-                _registered_method=True)
-        self.CreateBlockedUser = channel.unary_unary(
-                '/dataservices.userproto.UserRelationshipService/CreateBlockedUser',
-                request_serializer=user__pb2.CreateBlockedUserRequest.SerializeToString,
-                response_deserializer=user__pb2.BlockedUserObjectResponse.FromString,
-                _registered_method=True)
-        self.ReadBlockedUsers = channel.unary_unary(
-                '/dataservices.userproto.UserRelationshipService/ReadBlockedUsers',
-                request_serializer=user__pb2.ReadBlockedUsersRequest.SerializeToString,
-                response_deserializer=user__pb2.ReadBlockedUsersResponse.FromString,
-                _registered_method=True)
-        self.ReadBlockedUser = channel.unary_unary(
-                '/dataservices.userproto.UserRelationshipService/ReadBlockedUser',
-                request_serializer=user__pb2.ReadBlockedUserRequest.SerializeToString,
-                response_deserializer=user__pb2.BlockedUserObjectResponse.FromString,
-                _registered_method=True)
-        self.DeleteBlockedUser = channel.unary_unary(
-                '/dataservices.userproto.UserRelationshipService/DeleteBlockedUser',
-                request_serializer=user__pb2.DeleteBlockedUserRequest.SerializeToString,
-                response_deserializer=user__pb2.DeleteBlockedUserResponse.FromString,
+        self.ReadRelationships = channel.unary_unary(
+                '/dataservices.userproto.UserRelationshipService/ReadRelationships',
+                request_serializer=user__pb2.ReadRelationshipsRequest.SerializeToString,
+                response_deserializer=user__pb2.RelationshipsResponse.FromString,
                 _registered_method=True)
 
 
 class UserRelationshipServiceServicer(object):
-    """relationship management (TABLE: friendship, friendship_request, blocked_user)
-
+    """relationship management (TABLE: relationships)
+    duplicate table: each relationship will ahve 2 entries
     """
 
-    def CreateFriendshipInvite(self, request, context):
+    def CreateRelationship(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def ReadRecvFriendshipInvites(self, request, context):
+    def ReadRelationship(self, request, context):
+        """users may have multiple relationships (e.g. they both blocked eachother)
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def DeleteRelationship(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def ReadSentFriendshipInvites(self, request, context):
-        """Missing associated documentation comment in .proto file."""
+    def TestRelationship(self, request, context):
+        """test a specific relationship type
+        """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def DeleteFriendshipInvite(self, request, context):
-        """Missing associated documentation comment in .proto file."""
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
-    def CreateFriendship(self, request, context):
-        """Missing associated documentation comment in .proto file."""
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
-    def ReadFriendships(self, request, context):
-        """Missing associated documentation comment in .proto file."""
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
-    def DeleteFriendship(self, request, context):
-        """Missing associated documentation comment in .proto file."""
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
-    def CreateBlockedUser(self, request, context):
-        """Missing associated documentation comment in .proto file."""
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
-    def ReadBlockedUsers(self, request, context):
-        """Missing associated documentation comment in .proto file."""
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
-    def ReadBlockedUser(self, request, context):
-        """Missing associated documentation comment in .proto file."""
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
-    def DeleteBlockedUser(self, request, context):
-        """Missing associated documentation comment in .proto file."""
+    def ReadRelationships(self, request, context):
+        """read all of a users relationships with others
+        """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
@@ -710,60 +647,30 @@ class UserRelationshipServiceServicer(object):
 
 def add_UserRelationshipServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
-            'CreateFriendshipInvite': grpc.unary_unary_rpc_method_handler(
-                    servicer.CreateFriendshipInvite,
-                    request_deserializer=user__pb2.CreateFriendshipInviteRequest.FromString,
-                    response_serializer=user__pb2.FriendshipInviteResponse.SerializeToString,
+            'CreateRelationship': grpc.unary_unary_rpc_method_handler(
+                    servicer.CreateRelationship,
+                    request_deserializer=user__pb2.CreateRelationshipRequest.FromString,
+                    response_serializer=user__pb2.RelationshipObject.SerializeToString,
             ),
-            'ReadRecvFriendshipInvites': grpc.unary_unary_rpc_method_handler(
-                    servicer.ReadRecvFriendshipInvites,
-                    request_deserializer=user__pb2.ReadRecvFriendshipInvitesRequest.FromString,
-                    response_serializer=user__pb2.ReadRecvFriendshipInviteResponse.SerializeToString,
+            'ReadRelationship': grpc.unary_unary_rpc_method_handler(
+                    servicer.ReadRelationship,
+                    request_deserializer=user__pb2.ReadRelationshipRequest.FromString,
+                    response_serializer=user__pb2.ReadRelationshipResponse.SerializeToString,
             ),
-            'ReadSentFriendshipInvites': grpc.unary_unary_rpc_method_handler(
-                    servicer.ReadSentFriendshipInvites,
-                    request_deserializer=user__pb2.ReadSentFriendshipInvitesRequest.FromString,
-                    response_serializer=user__pb2.ReadSentFriendshipInviteResponse.SerializeToString,
+            'DeleteRelationship': grpc.unary_unary_rpc_method_handler(
+                    servicer.DeleteRelationship,
+                    request_deserializer=user__pb2.CreateRelationshipRequest.FromString,
+                    response_serializer=user__pb2.RelationshipObject.SerializeToString,
             ),
-            'DeleteFriendshipInvite': grpc.unary_unary_rpc_method_handler(
-                    servicer.DeleteFriendshipInvite,
-                    request_deserializer=user__pb2.DeleteFriendshipInviteRequest.FromString,
-                    response_serializer=user__pb2.DeleteFriendshipInviteResponse.SerializeToString,
+            'TestRelationship': grpc.unary_unary_rpc_method_handler(
+                    servicer.TestRelationship,
+                    request_deserializer=user__pb2.RelationshipObject.FromString,
+                    response_serializer=user__pb2.RelationshipTestResponse.SerializeToString,
             ),
-            'CreateFriendship': grpc.unary_unary_rpc_method_handler(
-                    servicer.CreateFriendship,
-                    request_deserializer=user__pb2.CreateFriendshipRequest.FromString,
-                    response_serializer=user__pb2.FriendshipObjectResponse.SerializeToString,
-            ),
-            'ReadFriendships': grpc.unary_unary_rpc_method_handler(
-                    servicer.ReadFriendships,
-                    request_deserializer=user__pb2.ReadFriendshipsRequest.FromString,
-                    response_serializer=user__pb2.ReadFriendshipsResponse.SerializeToString,
-            ),
-            'DeleteFriendship': grpc.unary_unary_rpc_method_handler(
-                    servicer.DeleteFriendship,
-                    request_deserializer=user__pb2.DeleteFriendshipRequest.FromString,
-                    response_serializer=user__pb2.DeleteFriendshipResponse.SerializeToString,
-            ),
-            'CreateBlockedUser': grpc.unary_unary_rpc_method_handler(
-                    servicer.CreateBlockedUser,
-                    request_deserializer=user__pb2.CreateBlockedUserRequest.FromString,
-                    response_serializer=user__pb2.BlockedUserObjectResponse.SerializeToString,
-            ),
-            'ReadBlockedUsers': grpc.unary_unary_rpc_method_handler(
-                    servicer.ReadBlockedUsers,
-                    request_deserializer=user__pb2.ReadBlockedUsersRequest.FromString,
-                    response_serializer=user__pb2.ReadBlockedUsersResponse.SerializeToString,
-            ),
-            'ReadBlockedUser': grpc.unary_unary_rpc_method_handler(
-                    servicer.ReadBlockedUser,
-                    request_deserializer=user__pb2.ReadBlockedUserRequest.FromString,
-                    response_serializer=user__pb2.BlockedUserObjectResponse.SerializeToString,
-            ),
-            'DeleteBlockedUser': grpc.unary_unary_rpc_method_handler(
-                    servicer.DeleteBlockedUser,
-                    request_deserializer=user__pb2.DeleteBlockedUserRequest.FromString,
-                    response_serializer=user__pb2.DeleteBlockedUserResponse.SerializeToString,
+            'ReadRelationships': grpc.unary_unary_rpc_method_handler(
+                    servicer.ReadRelationships,
+                    request_deserializer=user__pb2.ReadRelationshipsRequest.FromString,
+                    response_serializer=user__pb2.RelationshipsResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -774,12 +681,12 @@ def add_UserRelationshipServiceServicer_to_server(servicer, server):
 
  # This class is part of an EXPERIMENTAL API.
 class UserRelationshipService(object):
-    """relationship management (TABLE: friendship, friendship_request, blocked_user)
-
+    """relationship management (TABLE: relationships)
+    duplicate table: each relationship will ahve 2 entries
     """
 
     @staticmethod
-    def CreateFriendshipInvite(request,
+    def CreateRelationship(request,
             target,
             options=(),
             channel_credentials=None,
@@ -792,9 +699,9 @@ class UserRelationshipService(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/dataservices.userproto.UserRelationshipService/CreateFriendshipInvite',
-            user__pb2.CreateFriendshipInviteRequest.SerializeToString,
-            user__pb2.FriendshipInviteResponse.FromString,
+            '/dataservices.userproto.UserRelationshipService/CreateRelationship',
+            user__pb2.CreateRelationshipRequest.SerializeToString,
+            user__pb2.RelationshipObject.FromString,
             options,
             channel_credentials,
             insecure,
@@ -806,7 +713,7 @@ class UserRelationshipService(object):
             _registered_method=True)
 
     @staticmethod
-    def ReadRecvFriendshipInvites(request,
+    def ReadRelationship(request,
             target,
             options=(),
             channel_credentials=None,
@@ -819,9 +726,9 @@ class UserRelationshipService(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/dataservices.userproto.UserRelationshipService/ReadRecvFriendshipInvites',
-            user__pb2.ReadRecvFriendshipInvitesRequest.SerializeToString,
-            user__pb2.ReadRecvFriendshipInviteResponse.FromString,
+            '/dataservices.userproto.UserRelationshipService/ReadRelationship',
+            user__pb2.ReadRelationshipRequest.SerializeToString,
+            user__pb2.ReadRelationshipResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -833,7 +740,7 @@ class UserRelationshipService(object):
             _registered_method=True)
 
     @staticmethod
-    def ReadSentFriendshipInvites(request,
+    def DeleteRelationship(request,
             target,
             options=(),
             channel_credentials=None,
@@ -846,9 +753,9 @@ class UserRelationshipService(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/dataservices.userproto.UserRelationshipService/ReadSentFriendshipInvites',
-            user__pb2.ReadSentFriendshipInvitesRequest.SerializeToString,
-            user__pb2.ReadSentFriendshipInviteResponse.FromString,
+            '/dataservices.userproto.UserRelationshipService/DeleteRelationship',
+            user__pb2.CreateRelationshipRequest.SerializeToString,
+            user__pb2.RelationshipObject.FromString,
             options,
             channel_credentials,
             insecure,
@@ -860,7 +767,7 @@ class UserRelationshipService(object):
             _registered_method=True)
 
     @staticmethod
-    def DeleteFriendshipInvite(request,
+    def TestRelationship(request,
             target,
             options=(),
             channel_credentials=None,
@@ -873,9 +780,9 @@ class UserRelationshipService(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/dataservices.userproto.UserRelationshipService/DeleteFriendshipInvite',
-            user__pb2.DeleteFriendshipInviteRequest.SerializeToString,
-            user__pb2.DeleteFriendshipInviteResponse.FromString,
+            '/dataservices.userproto.UserRelationshipService/TestRelationship',
+            user__pb2.RelationshipObject.SerializeToString,
+            user__pb2.RelationshipTestResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -887,7 +794,7 @@ class UserRelationshipService(object):
             _registered_method=True)
 
     @staticmethod
-    def CreateFriendship(request,
+    def ReadRelationships(request,
             target,
             options=(),
             channel_credentials=None,
@@ -900,171 +807,9 @@ class UserRelationshipService(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/dataservices.userproto.UserRelationshipService/CreateFriendship',
-            user__pb2.CreateFriendshipRequest.SerializeToString,
-            user__pb2.FriendshipObjectResponse.FromString,
-            options,
-            channel_credentials,
-            insecure,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-            _registered_method=True)
-
-    @staticmethod
-    def ReadFriendships(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(
-            request,
-            target,
-            '/dataservices.userproto.UserRelationshipService/ReadFriendships',
-            user__pb2.ReadFriendshipsRequest.SerializeToString,
-            user__pb2.ReadFriendshipsResponse.FromString,
-            options,
-            channel_credentials,
-            insecure,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-            _registered_method=True)
-
-    @staticmethod
-    def DeleteFriendship(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(
-            request,
-            target,
-            '/dataservices.userproto.UserRelationshipService/DeleteFriendship',
-            user__pb2.DeleteFriendshipRequest.SerializeToString,
-            user__pb2.DeleteFriendshipResponse.FromString,
-            options,
-            channel_credentials,
-            insecure,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-            _registered_method=True)
-
-    @staticmethod
-    def CreateBlockedUser(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(
-            request,
-            target,
-            '/dataservices.userproto.UserRelationshipService/CreateBlockedUser',
-            user__pb2.CreateBlockedUserRequest.SerializeToString,
-            user__pb2.BlockedUserObjectResponse.FromString,
-            options,
-            channel_credentials,
-            insecure,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-            _registered_method=True)
-
-    @staticmethod
-    def ReadBlockedUsers(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(
-            request,
-            target,
-            '/dataservices.userproto.UserRelationshipService/ReadBlockedUsers',
-            user__pb2.ReadBlockedUsersRequest.SerializeToString,
-            user__pb2.ReadBlockedUsersResponse.FromString,
-            options,
-            channel_credentials,
-            insecure,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-            _registered_method=True)
-
-    @staticmethod
-    def ReadBlockedUser(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(
-            request,
-            target,
-            '/dataservices.userproto.UserRelationshipService/ReadBlockedUser',
-            user__pb2.ReadBlockedUserRequest.SerializeToString,
-            user__pb2.BlockedUserObjectResponse.FromString,
-            options,
-            channel_credentials,
-            insecure,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-            _registered_method=True)
-
-    @staticmethod
-    def DeleteBlockedUser(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(
-            request,
-            target,
-            '/dataservices.userproto.UserRelationshipService/DeleteBlockedUser',
-            user__pb2.DeleteBlockedUserRequest.SerializeToString,
-            user__pb2.DeleteBlockedUserResponse.FromString,
+            '/dataservices.userproto.UserRelationshipService/ReadRelationships',
+            user__pb2.ReadRelationshipsRequest.SerializeToString,
+            user__pb2.RelationshipsResponse.FromString,
             options,
             channel_credentials,
             insecure,

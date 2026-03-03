@@ -119,137 +119,58 @@ message DeleteDeviceRequest {
 }
 message DeleteDeviceResponse {}
 
-// relationship management (TABLE: friendship, friendship_request, blocked_user)
-
-
+// relationship management (TABLE: relationships)
+// duplicate table: each relationship will ahve 2 entries
 service UserRelationshipService {
-    rpc CreateFriendshipInvite (FriendshipInviteRequest) returns (FriendshipInviteResponse);
-    rpc ReadFriendshipInvite (FriendshipInviteRequest) returns (FriendshipInviteResponse);
+    rpc CreateRelationship (CreateRelationshipRequest) returns (RelationshipObject);
 
-    rpc ReadRecvFriendshipInvites (ReadRecvFriendshipInvitesRequest) returns (ReadRecvFriendshipInviteResponse);
-    rpc ReadSentFriendshipInvites (ReadSentFriendshipInvitesRequest) returns (ReadSentFriendshipInviteResponse);
-    rpc DeleteFriendshipInvite (DeleteFriendshipInviteRequest) returns (DeleteFriendshipInviteResponse);
+    // users may have multiple relationships (e.g. they both blocked eachother)
+    rpc ReadRelationship (ReadRelationshipRequest) returns (ReadRelationshipResponse);
+    rpc DeleteRelationship (CreateRelationshipRequest) returns (RelationshipObject);
+    // test a specific relationship type
+    rpc TestRelationship (RelationshipObject) returns (RelationshipTestResponse);
 
-    rpc CreateFriendship (CreateFriendshipRequest) returns (FriendshipObjectResponse);
-    rpc ReadFriendships (ReadFriendshipsRequest) returns (ReadFriendshipsResponse);
-    rpc DeleteFriendship (DeleteFriendshipRequest) returns (DeleteFriendshipResponse);
+    // read all of a users relationships with others
+    rpc ReadRelationships (ReadRelationshipsRequest) returns (RelationshipsResponse);
 
-    rpc CreateBlockedUser (CreateBlockedUserRequest) returns (BlockedUserObjectResponse);
-    rpc ReadBlockedUsers (ReadBlockedUsersRequest) returns (ReadBlockedUsersResponse);
-    rpc ReadBlockedUser (ReadBlockedUserRequest) returns (BlockedUserObjectResponse);
-    rpc DeleteBlockedUser (DeleteBlockedUserRequest) returns (DeleteBlockedUserResponse);
 }
 
-// create friendship invite
-message FriendshipInviteRequest {
-    plib.pUUID from_user_id = 1;
-    plib.pUUID to_user_id = 2;
+message CreateRelationshipRequest {
+    dataservices.plib.pUUID user_id_a = 1;
+    dataservices.plib.pUUID user_id_b = 2;
+    int32 a_to_b_type = 3;
+    int32 b_to_a_type = 4;
 }
 
-message FriendshipInviteResponse {}
-
-message FriendshipInviteObject {
-    plib.pUUID user_id = 1;
+message ReadRelationshipRequest {
+    dataservices.plib.pUUID user_id_a = 1;
+    dataservices.plib.pUUID user_id_b = 2;
 }
 
-// read received friendship invites
-message ReadRecvFriendshipInvitesRequest {
-    plib.pUUID to_user_id = 1;
+message RelationshipObject {
+    dataservices.plib.pUUID user_id_a = 1;
+    dataservices.plib.pUUID user_id_b = 2;
+    int32 relationship_type = 3;
 }
 
-message ReadRecvFriendshipInviteResponse {
-    repeated FriendshipInviteObject invites = 1;
+message ReadRelationshipResponse {
+    repeated RelationshipObject relationships = 1;
 }
 
-// read sent friendship invites
-message ReadSentFriendshipInvitesRequest {
-    plib.pUUID from_user_id = 1;
+message RelationshipTestResponse {
+    bool exists = 1;
 }
 
-message ReadSentFriendshipInviteResponse {
-    repeated FriendshipInviteObject invites = 1;
+message ReadRelationshipsRequest {
+    dataservices.plib.pUUID user_id = 1;
 }
 
-// remove friendship invite (decline or revoke)
-message DeleteFriendshipInviteRequest {
-    plib.pUUID from_user_id = 1;
-    plib.pUUID to_user_id = 2;
+message HalfRelationship {
+    dataservices.plib.pUUID user_id_b = 1;
+    int32 relationship_type = 2;
 }
 
-message DeleteFriendshipInviteResponse {}
-
-// create friendship
-message CreateFriendshipRequest {
-    plib.pUUID user_id_1 = 1;
-    plib.pUUID user_id_2 = 2;
+message RelationshipsResponse {
+    repeated HalfRelationship relationships = 1;
 }
-
-message FriendshipObjectResponse {
-    plib.pUUID user_id_1 = 1;
-    plib.pUUID user_id_2 = 2;
-    int64 created_at = 3;
-}
-
-// read friendships
-
-message ReadFriendshipsRequest {
-    plib.pUUID user_id = 1;
-}
-
-message FriendshipsObjectResponse {
-    plib.pUUID user_id = 1;
-    int64 created_at = 2;
-}
-
-message ReadFriendshipsResponse {
-    repeated FriendshipsObjectResponse friendships = 1;
-}
-
-// delete friendship
-message DeleteFriendshipRequest {
-    plib.pUUID user_id_1 = 1;
-    plib.pUUID user_id_2 = 2;
-}
-message DeleteFriendshipResponse {}
-
-// create blocked user
-message CreateBlockedUserRequest {
-    plib.pUUID blocker_user_id = 1;
-    plib.pUUID blocked_user_id = 2;
-}
-
-message BlockedUserObjectResponse {
-    plib.pUUID blocker_user_id = 1;
-    plib.pUUID blocked_user_id = 2;
-}
-
-// read blocked users
-message ReadBlockedUsersRequest {
-    plib.pUUID blocker_user_id = 1;
-}
-
-message BlockedUsersObjectResponse {
-    plib.pUUID blocked_user_id = 2;
-}
-
-message ReadBlockedUsersResponse {
-    repeated BlockedUsersObjectResponse blocked_users = 1;
-}
-
-// read blocked user
-message ReadBlockedUserRequest {
-    plib.pUUID blocker_user_id = 1;
-    plib.pUUID blocked_user_id = 2;
-}
-
-// unblock blocked user
-message DeleteBlockedUserRequest {
-    plib.pUUID blocker_user_id = 1;
-    plib.pUUID blocked_user_id = 2;
-}
-message DeleteBlockedUserResponse {}
-
-
-
-
 
