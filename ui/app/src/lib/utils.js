@@ -65,7 +65,7 @@ function hashCode(str) {
 
 
 export function getDefaultAvatarUrl(user_id) {
-  let v = hashCode(user_id) % 4;
+  let v = Math.abs(hashCode(user_id)) % 4;
 
   return `/icon${v}.png`
 }
