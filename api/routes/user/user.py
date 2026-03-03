@@ -87,7 +87,14 @@ async def unfriend_user(s: SessionParam, user_id: UUID) -> None:
         peer = await get_user(grpcuser, user_id)
     
 
-    async with PeerRelationshipManager(grpcrelationship, s.user_id, peer.user_id, fetch_on_enter=False) as r:
+    async with PeerRelationshipManager(grpcrelationship, s.user_id, peer.user_id) as r:
+        if await r.is_peer_requesting():
+            await PeerRelationshipManager(grpcrelationship, peer.user_id, s.user_id).cancel_request_to_peer()
+            return   
+        if await r.is_current_requesting():
+            await r.cancel_request_to_peer()
+            return
+
         await r.unfriend()
 
 
