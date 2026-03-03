@@ -74,6 +74,8 @@ async def friend_user(s: SessionParam, user_id: UUID) -> UserRelationshipRespons
         
         if await r.is_peer_requesting():
             await r.set_friends()
+            # cancel their request to me
+            await PeerRelationshipManager(grpcrelationship, peer.user_id, s.user_id).cancel_request_to_peer()
             return UserRelationshipResponse(peer_id=peer_id, relationship=RelationshipType.FRIENDS)
 
         await r.request_other()
