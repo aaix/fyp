@@ -112,24 +112,25 @@ impl ScyllaUserRelationshipService {
         let user_a: CqlTimeuuid = req_tuuid!(request, user_id_a)?;
         let user_b: CqlTimeuuid = req_tuuid!(request, user_id_b)?;
 
-        let rows = db()
-            .await
-            .execute_unpaged(&self.read_relationship_prepared, (&user_a, &user_b))
-            .await?
-            .into_rows_result()?;
+        let mut pager = db().await.execute_iter(
+            self.read_relationship_prepared.clone(),
+            (&user_a, &user_b)
+        ).await?.rows_stream::<Relationship>()?;
 
-        let q = rows.rows::<Relationship>()?;
-        let rels = q
-            .map(|row_res| {
-                row_res.map(|row| RelationshipObject {
-                    user_id_a: Some(row.user_id_a.into()),
-                    user_id_b: Some(row.user_id_b.into()),
-                    relationship_type: row.relationship_type,
-                })
+        let mut out = Vec::new();
+
+        while let Some(row_res) = pager.next().await {
+            let row = row_res?;
+
+            out.push(RelationshipObject {
+                user_id_a: Some(row.user_id_a.into()),
+                user_id_b: Some(row.user_id_b.into()),
+                relationship_type: row.relationship_type
             })
-            .collect::<Result<Vec<RelationshipObject>, _>>()?;
 
-        Ok(Response::new(ReadRelationshipResponse { relationships: rels }))
+        }
+
+        Ok(Response::new(ReadRelationshipResponse { relationships: out }))
     }
 
     async fn delete_relationship_impl(
@@ -220,8 +221,6 @@ impl UserRelationshipService for ScyllaUserRelationshipService {
     > {
         Ok(self.create_relationship_impl(request).await?)
     }
-
-
 
     /// users may have multiple relationships (e.g. they both blocked eachother)
     async fn read_relationship(
