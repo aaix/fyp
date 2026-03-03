@@ -12,6 +12,7 @@ x-scylla-base: &scylla-base
   image: az-scylla:latest
   depends_on:
     - scylla-seed
+  stop_grace_period: 60s
 
 
 services:
