@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { getCurrentSession } from '../lib/session.js'
 import { gatewayFactory } from '../lib/gateway.js'
-
-import '../App.css'
+import Button from '../components/Button.jsx'
+import FormInput from '../components/FormInput.jsx'
+import Card from '../components/Card.jsx'
 
 export default function AuthPage({ onLogin }) {
   const [mode, setMode] = useState('login')
@@ -101,93 +102,106 @@ export default function AuthPage({ onLogin }) {
   }
 
   return (
-    <div className="auth-page">
-      <div className="auth-card">
-        <div className="auth-tabs">
+    <div className="flex min-h-screen items-center justify-center bg-[color:var(--bg)] px-4 py-8">
+      <Card className="w-full max-w-md overflow-hidden rounded-card">
+        <div className="flex border-b border-[color:var(--card-border)]">
           <button
             type="button"
-            className={`auth-tab ${mode === 'login' ? 'active' : ''}`}
+            className={`flex-1 px-6 py-3 text-sm font-medium transition-colors ${
+              mode === 'login'
+                ? 'bg-[color:var(--tab-active-bg)] text-[color:var(--accent)]'
+                : 'text-[color:var(--text-muted)] hover:text-[color:var(--text-primary)]'
+            }`}
             onClick={() => setMode('login')}
           >
             Continue on this device
           </button>
           <button
             type="button"
-            className={`auth-tab ${mode === 'signup' ? 'active' : ''}`}
+            className={`flex-1 px-6 py-3 text-sm font-medium transition-colors ${
+              mode === 'signup'
+                ? 'bg-[color:var(--tab-active-bg)] text-[color:var(--accent)]'
+                : 'text-[color:var(--text-muted)] hover:text-[color:var(--text-primary)]'
+            }`}
             onClick={() => setMode('signup')}
           >
             Sign up
           </button>
           <button
             type="button"
-            className={`auth-tab ${mode === 'otherDevice' ? 'active' : ''}`}
+            className={`flex-1 px-6 py-3 text-sm font-medium transition-colors ${
+              mode === 'otherDevice'
+                ? 'bg-[color:var(--tab-active-bg)] text-[color:var(--accent)]'
+                : 'text-[color:var(--text-muted)] hover:text-[color:var(--text-primary)]'
+            }`}
             onClick={() => setMode('otherDevice')}
           >
             Log in from other device
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="auth-form">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4 rounded-b-card p-6">
           {error && (
-            <div className="auth-error" role="alert">
+            <div
+              className="rounded-button border border-red-900/60 bg-red-900/10 px-3 py-2 text-sm text-red-700"
+              role="alert"
+            >
               {error}
             </div>
           )}
           {info && !error && (
-            <div className="auth-info" role="status">
+            <div
+              className="rounded-button border border-[color:var(--card-border)] bg-[color:var(--card-bg)] px-3 py-2 text-sm text-[color:var(--text-muted)]"
+              role="status"
+            >
               {info}
             </div>
           )}
-          <div className="form-group">
-            <label htmlFor="username">Username</label>
-            <input
-              id="username"
-              name="username"
-              type="text"
-              placeholder="Your username"
-              value={formData.username}
+          <FormInput
+            label="Username"
+            name="username"
+            placeholder="Your username"
+            value={formData.username}
+            onChange={handleChange}
+            autoComplete="username"
+            required
+            disabled={loading}
+          />
+          {mode === 'signup' && (
+            <FormInput
+              label="Email"
+              name="email"
+              type="email"
+              placeholder="you@example.com"
+              value={formData.email}
               onChange={handleChange}
-              autoComplete="username"
+              autoComplete="email"
               required
               disabled={loading}
             />
-          </div>
-          {mode === 'signup' && (
-            <div className="form-group">
-              <label htmlFor="email">Email</label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                placeholder="you@example.com"
-                value={formData.email}
-                onChange={handleChange}
-                autoComplete="email"
-                required
-                disabled={loading}
-              />
-            </div>
           )}
           {mode === 'otherDevice' && (
-            <div className="form-group">
-              <label htmlFor="deviceName">Device name</label>
-              <input
-                id="deviceName"
-                name="deviceName"
-                type="text"
-                placeholder="e.g. My Laptop"
-                value={formData.deviceName}
-                onChange={handleChange}
-                required
-                disabled={loading}
-              />
-            </div>
+            <FormInput
+              label="Device name"
+              name="deviceName"
+              placeholder="e.g. My Laptop"
+              value={formData.deviceName}
+              onChange={handleChange}
+              required
+              disabled={loading}
+            />
           )}
-          <button type="submit" className="auth-submit" disabled={loading}>
-            {loading ? 'Please wait...' : mode === 'login' ? 'Log in' : (mode === 'otherDevice' ? "Start registration" : "Create Account")}
-          </button>
+          <Button type="submit" className="mt-2 w-full" disabled={loading}>
+            {loading
+              ? 'Please wait...'
+              : mode === 'login'
+                ? 'Log in'
+                : mode === 'otherDevice'
+                  ? 'Start registration'
+                  : 'Create Account'}
+          </Button>
         </form>
-      </div>
+      </Card>
     </div>
   )
 }

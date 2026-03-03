@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { userManager, mapSearchResponseToUserList } from '../lib/user.js'
 import { useDebouncedValue } from '../lib/useDebounce.js'
-import './SearchPage.css'
+import PageContainer from '../components/PageContainer.jsx'
+import Button from '../components/Button.jsx'
 
 const SEARCH_DEBOUNCE_MS = 150
 const MIN_QUERY_LENGTH = 2
@@ -50,62 +51,74 @@ export default function SearchPage() {
   }
 
   return (
-    <div className="search-page">
-      <header className="search-header">
-        <h1 className="search-title">Search users</h1>
+    <PageContainer>
+      <header className="border-b border-[color:var(--card-border)] pb-3">
+        <h1 className="text-xl font-bold text-[color:var(--text-primary)]">Search users</h1>
       </header>
-      <form className="search-form" onSubmit={handleSubmit}>
+      <form
+        className="flex flex-shrink-0 gap-2 border-b border-[color:var(--card-border)] pb-3 pt-3"
+        onSubmit={handleSubmit}
+      >
         <input
           type="search"
-          className="search-input"
+          className="flex-1 rounded-button border border-[color:var(--card-border)] bg-[color:var(--card-bg)] px-3 py-2 text-sm text-[color:var(--text-primary)] outline-none placeholder:text-[color:var(--text-muted)]"
           placeholder="Search by username..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           aria-label="Search by username"
           minLength={2}
         />
-        <button type="submit" className="search-submit" disabled={loading}>
+        <Button
+          type="submit"
+          variant="ghost"
+          className="px-3 py-2 text-sm"
+          disabled={loading}
+        >
           {loading ? 'Searching…' : 'Search'}
-        </button>
+        </Button>
       </form>
-      <div className="search-results">
+      <div className="flex flex-1 flex-col overflow-y-auto pt-2">
         {loading && (
-          <ul className="search-user-list" role="list" aria-label="Loading">
+          <ul className="mt-1 space-y-1" role="list" aria-label="Loading">
             {Array.from({ length: 5 }, (_, i) => (
-              <li key={i} className="search-user-row search-user-row-skeleton">
-                <div className="search-user-avatar skeleton-pulse" />
-                <div className="search-user-username-skeleton skeleton-pulse" />
+              <li
+                key={i}
+                className="flex items-center gap-3 border-b border-[color:var(--card-border)] px-1 py-2"
+              >
+                <div className="h-11 w-11 rounded-full border border-[color:var(--card-border)] bg-[color:var(--card-bg)] skeleton-pulse" />
+                <div className="h-4 w-32 rounded bg-[color:var(--card-bg)] skeleton-pulse" />
               </li>
             ))}
           </ul>
         )}
         {!loading && searched && users.length === 0 && (
-          <p className="search-status">No users found.</p>
+          <p className="mt-3 text-sm text-[color:var(--text-muted)]">No users found.</p>
         )}
         {!loading && users.length > 0 && (
-          <ul className="search-user-list" role="list">
+          <ul className="mt-2 space-y-0.5" role="list">
             {users.map((user) => (
               <li key={user.user_id}>
                 <button
                   type="button"
-                  className="search-user-row"
+                  className="flex w-full items-center gap-3 border-b border-[color:var(--card-border)] px-1 py-2 text-left text-sm text-[color:var(--text-primary)] hover:bg-[color:var(--card-bg)]"
                   onClick={() => handleUserClick(user)}
                 >
-                  <div
-                    className="search-user-avatar"
-                    style={
-                      user.icon_url
-                        ? { backgroundImage: `url(${user.icon_url})`, backgroundSize: 'cover' }
-                        : undefined
-                    }
-                  />
-                  <span className="search-user-username">@{user.username}</span>
+                  {user.icon_url ? (
+                    <img
+                      src={user.icon_url}
+                      alt={user.username ? `${user.username}'s avatar` : 'User avatar'}
+                      className="h-11 w-11 flex-shrink-0 rounded-full border border-[color:var(--card-border)] object-cover"
+                    />
+                  ) : (
+                    <div className="h-11 w-11 flex-shrink-0 rounded-full border border-[color:var(--card-border)] bg-[color:var(--card-bg)]" />
+                  )}
+                  <span className="font-medium">@{user.username}</span>
                 </button>
               </li>
             ))}
           </ul>
         )}
       </div>
-    </div>
+    </PageContainer>
   )
 }

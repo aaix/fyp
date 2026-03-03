@@ -27,14 +27,21 @@ function useAuth() {
 function App() {
   const [isLoggedIn, setLoggedIn] = useAuth()
 
+  useEffect(() => {
+    let cancelled = false
+    gatewayFactory().then(async (gateway) => {
+      if (cancelled) return
+      await gateway.handshake()
+      window.gateway = gateway
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
   if (!isLoggedIn) {
     return <AuthPage onLogin={() => setLoggedIn()} />
   }
-
-  gatewayFactory().then(async (gateway) => {
-    await gateway.handshake();
-    window.gateway = gateway;
-  })
 
   return (
     <Routes>

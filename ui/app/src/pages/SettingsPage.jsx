@@ -4,7 +4,7 @@ import { DeviceManager } from '../lib/session.js'
 import { gatewayFactory } from '../lib/gateway.js'
 import { timeFromUUIDv1 } from '../lib/utils.js'
 import ConfirmModal from '../components/ConfirmModal.jsx'
-import './SettingsPage.css'
+import PageContainer from '../components/PageContainer.jsx'
 
 const deviceManager = new DeviceManager()
 
@@ -189,100 +189,131 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="settings-page">
-      <header className="settings-header">
-        <Link to="/account" className="settings-back" aria-label="Back to account">
-          <span className="material-symbols-outlined" aria-hidden>arrow_back</span>
+    <PageContainer>
+      <header className="flex items-center gap-3 border-b border-[color:var(--card-border)] pb-3">
+        <Link
+          to="/account"
+          className="flex h-10 w-10 items-center justify-center rounded-full text-[color:var(--text-primary)] no-underline transition-colors hover:bg-[color:var(--card-bg)] hover:text-[color:var(--accent)]"
+          aria-label="Back to account"
+        >
+          <span className="material-symbols-outlined text-xl" aria-hidden>
+            arrow_back
+          </span>
         </Link>
-        <h1 className="settings-title">Settings</h1>
+        <h1 className="m-0 text-xl font-bold text-[color:var(--text-primary)]">Settings</h1>
       </header>
-      <main className="settings-content">
-        <div className="settings-sections">
-          <section className="settings-tile" aria-label="Devices">
-            <header className="settings-tile-header">
-              <div className="settings-tile-title-group">
-                <span className="material-symbols-outlined settings-tile-icon" aria-hidden>
+      <main className="flex flex-1 flex-col overflow-y-auto pt-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <section
+            className="rounded-card border border-[color:var(--card-border)] bg-[color:var(--card-bg)] p-5 shadow-subtle"
+            aria-label="Devices"
+          >
+            <header className="mb-3 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <span className="material-symbols-outlined text-2xl text-[color:var(--accent)]" aria-hidden>
                   devices
                 </span>
                 <div>
-                  <h2 className="settings-tile-title">Devices</h2>
-                  <p className="settings-tile-subtitle">Manage where your account is trusted.</p>
+                  <h2 className="m-0 text-[1.05rem] font-semibold text-[color:var(--text-primary)]">
+                    Devices
+                  </h2>
+                  <p className="mt-[0.15rem] text-xs text-[color:var(--text-muted)]">
+                    Manage where your account is trusted.
+                  </p>
                 </div>
               </div>
-              <div className="settings-tile-actions">
+              <div className="flex flex-wrap items-center justify-end gap-2">
                 <button
                   type="button"
-                  className="settings-primary-btn"
+                  className="inline-flex items-center gap-1 rounded-pill bg-[color:var(--accent)] px-3 py-1.5 text-xs font-semibold text-white shadow-[0_10px_20px_rgba(15,23,42,0.18)] transition-transform transition-shadow hover:bg-[color:var(--accent-hover)] hover:shadow-[0_14px_28px_rgba(15,23,42,0.2)] disabled:cursor-not-allowed disabled:opacity-70 disabled:shadow-none"
                   onClick={handleRegisterNewDevice}
                   disabled={registerLoading}
                 >
                   {registerLoading ? 'Registering…' : 'Register new device'}
                 </button>
-                <span className="settings-tile-chip">Security</span>
+                <span className="rounded-pill bg-[color:var(--tab-active-bg)] px-2 py-0.5 text-[0.7rem] font-medium text-[color:var(--accent)]">
+                  Security
+                </span>
               </div>
             </header>
-            <div className="settings-tile-body">
-              {registerError && <p className="settings-error">{registerError}</p>}
+            <div className="mt-1 text-sm">
+              {registerError && (
+                <p className="text-sm text-red-600">{registerError}</p>
+              )}
               {registerInfo && !registerError && (
-                <p className="settings-info">{registerInfo}</p>
+                <p className="text-sm text-[color:var(--text-muted)]">{registerInfo}</p>
               )}
               {devicesLoading ? (
-                <p className="settings-empty">Loading devices…</p>
+                <p className="mt-1 text-sm text-[color:var(--text-muted)]">
+                  Loading devices…
+                </p>
               ) : devicesError ? (
-                <p className="settings-error">{devicesError}</p>
+                <p className="mt-1 text-sm text-red-600">{devicesError}</p>
               ) : devices.length === 0 ? (
-                <p className="settings-empty">No devices added yet.</p>
+                <p className="mt-1 text-sm text-[color:var(--text-muted)]">
+                  No devices added yet.
+                </p>
               ) : (
-                <ul className="devices-list">
+                <ul className="mt-2 flex flex-col gap-1.5">
                   {devices.map((device) => (
                     <li
                       key={device.id}
-                      className={`device-row ${
-                        expandedDeviceId === device.id ? 'device-row-expanded' : ''
+                      className={`rounded-[12px] border border-transparent transition-colors ${
+                        expandedDeviceId === device.id
+                          ? 'border-[color:var(--card-border)] bg-[rgba(148,163,184,0.04)]'
+                          : ''
                       }`}
                     >
-                      <div className="device-row-main">
+                      <div className="flex w-full items-center gap-1">
                         <button
                           type="button"
-                          className="device-row-trigger"
+                          className="flex min-w-0 flex-1 items-center justify-between gap-3 rounded-[12px] px-2.5 py-2 text-left text-sm text-[color:var(--text-primary)] transition-colors hover:bg-[rgba(148,163,184,0.08)]"
                           onClick={() => handleDeviceClick(device.id)}
                         >
-                          <div className="device-row-text">
-                            <span className="device-name">{device.name}</span>
-                            <span className="device-created-at">
+                          <div className="min-w-0">
+                            <span className="block truncate text-[0.95rem] font-medium">
+                              {device.name}
+                            </span>
+                            <span className="mt-0.5 block text-[0.78rem] text-[color:var(--text-muted)]">
                               Added {device.createdAt ?? '—'}
                             </span>
                           </div>
-                          <span className="material-symbols-outlined device-expand-icon" aria-hidden>
+                          <span className="material-symbols-outlined text-[1.35rem] text-[color:var(--text-muted)]" aria-hidden>
                             {expandedDeviceId === device.id ? 'expand_less' : 'chevron_right'}
                           </span>
                         </button>
-                        <div className="device-row-actions">
+                        <div className="mr-1 flex items-center gap-1">
                           <button
                             type="button"
-                            className="device-icon-btn device-edit-btn"
+                            className="flex h-7 w-7 items-center justify-center rounded-full text-[color:var(--text-muted)] transition-colors hover:bg-[rgba(37,99,235,0.12)] hover:text-[color:var(--accent)]"
                             onClick={(e) => openEditModal(device, e)}
                             title="Rename device"
                             aria-label={`Rename ${device.name}`}
                           >
-                            <span className="material-symbols-outlined" aria-hidden>edit</span>
+                            <span className="material-symbols-outlined text-sm" aria-hidden>
+                              edit
+                            </span>
                           </button>
                           <button
                             type="button"
-                            className="device-icon-btn device-delete-btn"
+                            className="flex h-7 w-7 items-center justify-center rounded-full text-[color:var(--text-muted)] transition-colors hover:bg-[rgba(185,28,28,0.12)] hover:text-red-700"
                             onClick={(e) => openDeleteModal(device, e)}
                             title="Remove device"
                             aria-label={`Remove ${device.name}`}
                           >
-                            <span className="material-symbols-outlined" aria-hidden>delete</span>
+                            <span className="material-symbols-outlined text-sm" aria-hidden>
+                              delete
+                            </span>
                           </button>
                         </div>
                       </div>
                       {expandedDeviceId === device.id && (
-                        <div className="device-public-key">
-                          <span className="device-public-key-label">Public key</span>
-                          <pre>
-                            <code className="device-public-key-value">
+                        <div className="flex flex-col gap-1 px-3 pb-3 pt-1.5">
+                          <span className="text-[0.78rem] uppercase tracking-[0.06em] text-[color:var(--text-muted)]">
+                            Public key
+                          </span>
+                          <pre className="max-h-48 overflow-auto rounded-lg bg-[rgba(15,23,42,0.85)] px-2 py-1.5 text-[0.76rem] leading-[1.35] text-slate-200">
+                            <code className="break-all font-mono">
                               {device.publicKey ?? 'Not available'}
                             </code>
                           </pre>
@@ -295,18 +326,21 @@ export default function SettingsPage() {
             </div>
           </section>
 
-          <section className="settings-tile settings-tile-placeholder" aria-label="Additional settings">
-            <header className="settings-tile-header">
-              <div className="settings-tile-title-group">
-                <span className="material-symbols-outlined settings-tile-icon" aria-hidden>
-                  tune
-                </span>
-                <div>
-                  <h2 className="settings-tile-title">More controls</h2>
-                  <p className="settings-tile-subtitle">
-                    Additional powerful settings will appear here.
-                  </p>
-                </div>
+          <section
+            className="rounded-card border border-[color:var(--card-border)] bg-[color:var(--card-bg)] p-5 opacity-70 shadow-subtle"
+            aria-label="Additional settings"
+          >
+            <header className="flex items-center gap-3">
+              <span className="material-symbols-outlined text-2xl text-[color:var(--accent)]" aria-hidden>
+                tune
+              </span>
+              <div>
+                <h2 className="m-0 text-[1.05rem] font-semibold text-[color:var(--text-primary)]">
+                  More controls
+                </h2>
+                <p className="mt-[0.15rem] text-xs text-[color:var(--text-muted)]">
+                  Additional powerful settings will appear here.
+                </p>
               </div>
             </header>
           </section>
@@ -329,7 +363,11 @@ export default function SettingsPage() {
             This will revoke access for <strong>{deviceToDelete.name}</strong>. You can add it again
             later.
           </p>
-          {deleteError && <p className="settings-error modal-error">{deleteError}</p>}
+          {deleteError && (
+            <p className="mt-2 text-sm text-red-600">
+              {deleteError}
+            </p>
+          )}
         </ConfirmModal>
       )}
 
@@ -356,16 +394,20 @@ export default function SettingsPage() {
         }}
       >
         {registerConfirmDetails && (
-          <div className="confirm-device-details">
+          <div className="flex flex-col gap-2 text-sm text-[color:var(--text-muted)]">
             <p>Please confirm this matches what you see on your other device:</p>
-            <dl>
-              <div className="confirm-device-row">
-                <dt>Device name</dt>
-                <dd>{registerConfirmDetails.deviceName}</dd>
+            <dl className="m-0">
+              <div className="flex justify-between gap-4">
+                <dt className="font-semibold text-[color:var(--text-primary)]">Device name</dt>
+                <dd className="m-0 break-all font-mono text-xs">
+                  {registerConfirmDetails.deviceName}
+                </dd>
               </div>
-              <div className="confirm-device-row">
-                <dt>Device digest</dt>
-                <dd>{registerConfirmDetails.digest}</dd>
+              <div className="mt-1 flex justify-between gap-4">
+                <dt className="font-semibold text-[color:var(--text-primary)]">Device digest</dt>
+                <dd className="m-0 break-all font-mono text-xs">
+                  {registerConfirmDetails.digest}
+                </dd>
               </div>
             </dl>
           </div>
@@ -393,9 +435,12 @@ export default function SettingsPage() {
           setRegisterCodeModalOpen(false)
         }}
       >
-        <div className="input-modal-body">
+        <div className="flex flex-col gap-3 text-sm text-[color:var(--text-muted)]">
           <p>Enter the one-time code displayed on your other device to link this one.</p>
-          <label className="input-modal-label" htmlFor="register-code-input">
+          <label
+            className="flex flex-col gap-1 text-sm text-[color:var(--text-primary)]"
+            htmlFor="register-code-input"
+          >
             Code
             <input
               id="register-code-input"
@@ -404,6 +449,7 @@ export default function SettingsPage() {
               onChange={(e) => setRegisterCode(e.target.value)}
               placeholder="e.g. 12345678"
               autoComplete="one-time-code"
+              className="rounded-button border border-[color:var(--input-border)] bg-[color:var(--input-bg)] px-3 py-2 text-sm text-[color:var(--text-primary)] outline-none transition-colors placeholder:text-[color:var(--text-muted)] hover:border-[color:var(--input-border-hover)] focus:border-[color:var(--accent)] focus:ring-2 focus:ring-[color:var(--accent-focus)]"
             />
           </label>
         </div>
@@ -419,9 +465,12 @@ export default function SettingsPage() {
         onConfirm={confirmEditDevice}
         onCancel={closeEditModal}
       >
-        <div className="input-modal-body">
+        <div className="flex flex-col gap-3 text-sm text-[color:var(--text-muted)]">
           <p>Choose a new name for this device.</p>
-          <label className="input-modal-label" htmlFor="edit-device-name-input">
+          <label
+            className="flex flex-col gap-1 text-sm text-[color:var(--text-primary)]"
+            htmlFor="edit-device-name-input"
+          >
             Name
             <input
               id="edit-device-name-input"
@@ -429,11 +478,16 @@ export default function SettingsPage() {
               value={editDeviceName}
               onChange={(e) => setEditDeviceName(e.target.value)}
               placeholder="e.g. Alice’s laptop"
+              className="rounded-button border border-[color:var(--input-border)] bg-[color:var(--input-bg)] px-3 py-2 text-sm text-[color:var(--text-primary)] outline-none transition-colors placeholder:text-[color:var(--text-muted)] hover:border-[color:var(--input-border-hover)] focus:border-[color:var(--accent)] focus:ring-2 focus:ring-[color:var(--accent-focus)]"
             />
           </label>
-          {editError && <p className="settings-error modal-error">{editError}</p>}
+          {editError && (
+            <p className="text-sm text-red-600">
+              {editError}
+            </p>
+          )}
         </div>
       </ConfirmModal>
-    </div>
+    </PageContainer>
   )
 }

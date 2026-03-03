@@ -2,7 +2,6 @@ import { useParams, useLocation } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import ProfileView from '../components/ProfileView.jsx'
 import { userManager } from '../lib/user.js'
-import './UserPage.css'
 
 /**
  * Map a search-result user (icon_url, username, user_id, public_key) to ProfileView profile shape.
@@ -23,26 +22,19 @@ export default function UserPage() {
   const stateUser = location.state?.user
 
   const [profile, setProfile] = useState(() => userToProfile(stateUser))
-  const [loading, setLoading] = useState(!stateUser)
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    if (stateUser) {
-      setProfile(userToProfile(stateUser))
-      setLoading(false)
-      setError(null)
-      return
-    }
-    if (!userId) {
-      setLoading(false)
-      setError('User not found')
-      return
-    }
+    if (!userId) return
+
     let cancelled = false
-    setLoading(true)
-    setError(null);
-    userManager.getUserProfile(userId)
-      .then((data) => {
+    ;(async () => {
+      try {
+        if (cancelled) return
+        setLoading(true)
+        setError(null)
+        const data = await userManager.getUserProfile(userId)
         if (cancelled) return
         if (data) {
           setProfile({
@@ -55,19 +47,21 @@ export default function UserPage() {
         } else {
           setError('User not found')
         }
-      })
-      .catch((e) => {
+      } catch (e) {
         if (!cancelled) setError(e?.message ?? 'Could not load profile')
-      })
-      .finally(() => {
+      } finally {
         if (!cancelled) setLoading(false)
-      })
-    return () => { cancelled = true }
+      }
+    })()
+
+    return () => {
+      cancelled = true
+    }
   }, [userId, stateUser])
 
   return (
-    <div className="user-page">
-      <ProfileView profile={profile} isOwnProfile={false} loading={loading} error={error} />
+    <div className="flex min-h-0 flex-1 flex-col">
+      <ProfileView profile={profile} loading={loading} error={error} />
     </div>
   )
 }

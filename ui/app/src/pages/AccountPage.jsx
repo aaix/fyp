@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { getCurrentSession } from '../lib/session.js'
 import { getAvatarUrl } from '../lib/utils.js'
 import ProfileView from '../components/ProfileView.jsx'
-import './AccountPage.css'
+import PageContainer from '../components/PageContainer.jsx'
 
 export default function AccountPage() {
   const [profile, setProfile] = useState({
@@ -43,18 +43,23 @@ export default function AccountPage() {
 
   useEffect(() => {
     loadAccountInfo()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   return (
-    <div className="account-page">
-      <header className="account-header">
-        <h1 className="account-title">My Profile</h1>
-        <Link to="/account/settings" className="account-settings-link" aria-label="Settings">
-          <span className="material-symbols-outlined" aria-hidden>settings</span>
+    <PageContainer>
+      <header className="flex items-center justify-between gap-3 border-b border-[color:var(--card-border)] pb-3">
+        <h1 className="m-0 text-xl font-bold text-[color:var(--text-primary)]">My Profile</h1>
+        <Link
+          to="/account/settings"
+          className="flex h-10 w-10 items-center justify-center rounded-full text-[color:var(--text-primary)] no-underline transition-colors hover:bg-[color:var(--card-bg)] hover:text-[color:var(--accent)]"
+          aria-label="Settings"
+        >
+          <span className="material-symbols-outlined text-xl" aria-hidden>
+            settings
+          </span>
         </Link>
       </header>
-      <ProfileView profile={profile} isOwnProfile loading={loading} error={error} />
-    </div>
+      <ProfileView profile={profile} loading={loading} error={error} />
+    </PageContainer>
   )
 }

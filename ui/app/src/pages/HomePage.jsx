@@ -1,16 +1,17 @@
-import './HomePage.css'
+import PageContainer from '../components/PageContainer.jsx'
+import Card from '../components/Card.jsx'
 
 export default function HomePage() {
   return (
-    <div className="home-page">
-      <header className="home-header">
-        <h1 className="home-title">Feed</h1>
+    <PageContainer>
+      <header className="border-b border-[color:var(--card-border)] pb-3">
+        <h1 className="text-xl font-bold text-[color:var(--text-primary)]">Feed</h1>
       </header>
-      <main className="home-feed">
-        <div className="post-skeleton post-skeleton-1 skeleton-pulse" />
-        <div className="post-skeleton post-skeleton-2 skeleton-pulse" />
-        <div className="post-skeleton post-skeleton-3 skeleton-pulse" />
+      <main className="flex flex-1 flex-col gap-4 overflow-y-auto pt-2">
+        <Card className="min-h-[280px] skeleton-pulse" />
+        <Card className="min-h-[400px] skeleton-pulse" />
+        <Card className="min-h-[340px] skeleton-pulse" />
       </main>
-    </div>
+    </PageContainer>
   )
 }

@@ -1,69 +1,93 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap');
+@import "tailwindcss";
 
-:root {
-  font-family: 'DM Sans', system-ui, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+@layer base {
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap');
 
-  /* Dark theme - light pink + purple */
-  --text-primary: #f4f4f5;
-  --text-muted: #c4b5d4;
-  --accent: #c084fc;
-  --accent-hover: #a78bfa;
-  --accent-focus: rgba(192, 132, 252, 0.25);
-  --card-bg: #1e1b24;
-  --card-border: #2d2a35;
-  --tab-active-bg: rgba(244, 182, 212, 0.12);
-  --input-bg: #16141b;
-  --input-border: #3d3847;
-  --input-border-hover: #5c5468;
-  --bg: #151218;
-  --bottom-nav-height: 64px;
-}
-
-@media (prefers-color-scheme: light) {
   :root {
-    --text-primary: #2d1b36;
-    --text-muted: #6b5b73;
-    --accent: #a855f7;
-    --accent-hover: #9333ea;
-    --accent-focus: rgba(168, 85, 247, 0.2);
-    --card-bg: #ffffff;
-    --card-border: #ede9f0;
-    --tab-active-bg: rgba(244, 182, 212, 0.2);
-    --input-bg: #fdf4ff;
-    --input-border: #e9d5ff;
-    --input-border-hover: #d8b4fe;
-    --bg: #faf5ff;
+    font-family: 'DM Sans', system-ui, sans-serif;
+    line-height: 1.5;
+    font-weight: 400;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+
+    /* Dark theme - light pink + purple */
+    --text-primary: #f4f4f5;
+    --text-muted: #c4b5d4;
+    --accent: #c084fc;
+    --accent-hover: #a78bfa;
+    --accent-focus: rgba(192, 132, 252, 0.25);
+    --card-bg: #1e1b24;
+    --card-border: #2d2a35;
+    --tab-active-bg: rgba(244, 182, 212, 0.12);
+    --input-bg: #16141b;
+    --input-border: #3d3847;
+    --input-border-hover: #5c5468;
+    --bg: #151218;
+    --bottom-nav-height: 64px;
+  }
+
+  @media (prefers-color-scheme: light) {
+    :root {
+      --text-primary: #2d1b36;
+      --text-muted: #6b5b73;
+      --accent: #a855f7;
+      --accent-hover: #9333ea;
+      --accent-focus: rgba(168, 85, 247, 0.2);
+      --card-bg: #ffffff;
+      --card-border: #ede9f0;
+      --tab-active-bg: rgba(244, 182, 212, 0.2);
+      --input-bg: #fdf4ff;
+      --input-border: #e9d5ff;
+      --input-border-hover: #d8b4fe;
+      --bg: #faf5ff;
+    }
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    min-width: 320px;
+    min-height: 100vh;
+    background: var(--bg);
+    color: var(--text-primary);
+  }
+
+  #root {
+    min-height: 100vh;
   }
 }
 
-* {
-  box-sizing: border-box;
+@layer utilities {
+  /* Reusable skeleton loading animation – add to elements, remove when loaded */
+  .skeleton-pulse {
+    animation: skeleton-pulse 1.5s ease-in-out infinite;
+  }
+
+  @keyframes skeleton-pulse {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+  }
 }
 
-body {
-  margin: 0;
-  min-width: 320px;
-  min-height: 100vh;
-  background: var(--bg);
-  color: var(--text-primary);
-}
+@layer components {
+  .rounded-card {
+    border-radius: 16px;
+  }
 
-#root {
-  min-height: 100vh;
-}
+  .rounded-cardSm {
+    border-radius: 12px;
+  }
 
-/* Reusable skeleton loading animation – add to elements, remove when loaded */
-.skeleton-pulse {
-  animation: skeleton-pulse 1.5s ease-in-out infinite;
-}
+  .rounded-button {
+    border-radius: 8px;
+  }
 
-@keyframes skeleton-pulse {
-  0%, 100% { opacity: 0.6; }
-  50% { opacity: 1; }
+  .rounded-pill {
+    border-radius: 999px;
+  }
 }
