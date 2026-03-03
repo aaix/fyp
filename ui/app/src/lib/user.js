@@ -27,6 +27,15 @@ export class UserManager {
 export const userManager = new UserManager();
 
 export class RelationshipManager {
+    CURRENT_REQUESTING_PEER = 1
+    PEER_REQUESTING_CURRENT = 2
+
+    FRIENDS = 3
+
+    PEER_BLOCKED_CURRENT = 5
+    CURRENT_BLOCKED_PEER = 6
+
+    
     getRelationships() {
         return API.GET("user/relationships");
     }
