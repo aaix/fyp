@@ -79,7 +79,7 @@ async def friend_user(s: SessionParam, user_id: UUID) -> UserRelationshipRespons
             return UserRelationshipResponse(peer_id=peer_id, relationship=RelationshipType.FRIENDS)
 
         await r.request_other()
-        return UserRelationshipResponse(peer_id=peer_id, relationship=RelationshipType.CURRENT_REQUESTING_PEER)
+    return UserRelationshipResponse(peer_id=peer_id, relationship=RelationshipType.CURRENT_REQUESTING_PEER)
 
 @UserRouter.delete("/relationship/{user_id}/friend")
 async def unfriend_user(s: SessionParam, user_id: UUID) -> None:

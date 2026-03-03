@@ -46,7 +46,7 @@ async def read_relationship(lazy: LazyGRPC[UserRelationshipServiceStub], user_id
     )))
 
 async def test_relationship(lazy: LazyGRPC[UserRelationshipServiceStub], user_id_a: id_t, user_id_b: id_t, relationship_type: RelationshipType) -> user_pb2.RelationshipTestResponse:
-    return cast(user_pb2.RelationshipTestResponse, await lazy.stub.ReadRelationship(user_pb2.RelationshipObject(
+    return cast(user_pb2.RelationshipTestResponse, await lazy.stub.TestRelationship(user_pb2.RelationshipObject(
         user_id_a=id_puuid(user_id_a),
         user_id_b=id_puuid(user_id_b),
         relationship_type=relationship_type.value
@@ -78,7 +78,7 @@ class PeerRelationshipManager:
         self.lazy: LazyGRPC[UserRelationshipServiceStub] = lazy
         self.current_id: id_t = current_user_id
         self.peer_id: id_t = peer_user_id
-        self.relationships: None | Iterable[user_pb2.RelationshipObject] = []
+        self.relationships: None | Iterable[user_pb2.RelationshipObject] = None
         self.fetch_on_enter: bool = fetch_on_enter
     
     async def __aenter__(self) -> Self:
