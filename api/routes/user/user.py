@@ -123,6 +123,8 @@ async def unblock_user(s: SessionParam, peer: UserParam) -> None:
 @UserRouter.get("/search")
 async def search_users(s: SessionParam, q: UsernameSearchQuery) -> list[UserSearchResponse]:
     q = q.replace('%','').replace('_','') # TEMP FIX before elasticsearch for listing all users
+    if not len(q) > 2:
+        raise ApiErrExc(errors.BadRequest("bad query"))
     res = cast(user_pb2.UsernameSearchResponse, await grpcuser.stub.UsernameSearcher(user_pb2.UsernameSearch(
         query=f"{q}%",
     )))
