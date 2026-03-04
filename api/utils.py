@@ -7,7 +7,7 @@ from uuid import UUID
 from grpc import RpcError, StatusCode
 
 from api.responses import ErrorResponse, errors, ApiErrExc
-from api.types import SupportsStr
+from api.types.extensions import SupportsStr
 
 
 __all__ = (
