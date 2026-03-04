@@ -10,7 +10,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from joserfc.errors import DecodeError
 
 
-from api.models import Session
+from api.types import Session
 from api.responses import ApiErrExc, errors
 
 from shared.py.crypto.session import decode_jose_session

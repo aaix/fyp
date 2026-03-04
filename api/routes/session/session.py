@@ -3,7 +3,7 @@ from grpc import RpcError, StatusCode
 
 
 from api import *
-from api.models.session import Session
+from api.types.session import Session
 from api.routes.session.models import *
 from api.utils import UserNotFoundRpcHandler, unwrap
 
