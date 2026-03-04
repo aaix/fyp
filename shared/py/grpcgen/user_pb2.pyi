@@ -103,6 +103,14 @@ class CreateDeviceRequest(_message.Message):
     encrypted_account_key: bytes
     def __init__(self, user_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., device_name: _Optional[str] = ..., public_key: _Optional[bytes] = ..., encrypted_account_key: _Optional[bytes] = ...) -> None: ...
 
+class ReadDeviceRequest(_message.Message):
+    __slots__ = ("device_id", "user_id")
+    DEVICE_ID_FIELD_NUMBER: _ClassVar[int]
+    USER_ID_FIELD_NUMBER: _ClassVar[int]
+    device_id: _plib_pb2.pUUID
+    user_id: _plib_pb2.pUUID
+    def __init__(self, device_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., user_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ...) -> None: ...
+
 class DeviceObjectResponse(_message.Message):
     __slots__ = ("device_id", "user_id", "device_name", "device_public_key", "encrypted_account_key")
     DEVICE_ID_FIELD_NUMBER: _ClassVar[int]

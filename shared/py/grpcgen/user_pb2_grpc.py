@@ -382,6 +382,11 @@ class UserDeviceServiceStub(object):
                 request_serializer=user__pb2.ReadDevicesRequest.SerializeToString,
                 response_deserializer=user__pb2.ReadDevicesResponse.FromString,
                 _registered_method=True)
+        self.ReadDevice = channel.unary_unary(
+                '/dataservices.userproto.UserDeviceService/ReadDevice',
+                request_serializer=user__pb2.ReadDeviceRequest.SerializeToString,
+                response_deserializer=user__pb2.DeviceObjectResponse.FromString,
+                _registered_method=True)
         self.UpdateDevice = channel.unary_unary(
                 '/dataservices.userproto.UserDeviceService/UpdateDevice',
                 request_serializer=user__pb2.UpdateDeviceRequest.SerializeToString,
@@ -411,6 +416,12 @@ class UserDeviceServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def ReadDevice(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def UpdateDevice(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -435,6 +446,11 @@ def add_UserDeviceServiceServicer_to_server(servicer, server):
                     servicer.ReadDevices,
                     request_deserializer=user__pb2.ReadDevicesRequest.FromString,
                     response_serializer=user__pb2.ReadDevicesResponse.SerializeToString,
+            ),
+            'ReadDevice': grpc.unary_unary_rpc_method_handler(
+                    servicer.ReadDevice,
+                    request_deserializer=user__pb2.ReadDeviceRequest.FromString,
+                    response_serializer=user__pb2.DeviceObjectResponse.SerializeToString,
             ),
             'UpdateDevice': grpc.unary_unary_rpc_method_handler(
                     servicer.UpdateDevice,
@@ -503,6 +519,33 @@ class UserDeviceService(object):
             '/dataservices.userproto.UserDeviceService/ReadDevices',
             user__pb2.ReadDevicesRequest.SerializeToString,
             user__pb2.ReadDevicesResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ReadDevice(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/dataservices.userproto.UserDeviceService/ReadDevice',
+            user__pb2.ReadDeviceRequest.SerializeToString,
+            user__pb2.DeviceObjectResponse.FromString,
             options,
             channel_credentials,
             insecure,

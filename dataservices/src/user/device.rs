@@ -6,7 +6,7 @@ use crate::db_conn::db;
 use crate::errors::DSResult;
 use crate::helpers::gen_timeuuid;
 use crate::models::user_device::UserDevice;
-use crate::protos::user_service::{self, CreateDeviceRequest, DeleteDeviceRequest, DeleteDeviceResponse, DeviceObjectResponse, ReadDevicesRequest, ReadDevicesResponse, UpdateDeviceRequest};
+use crate::protos::user_service::{self, CreateDeviceRequest, DeleteDeviceRequest, DeleteDeviceResponse, DeviceObjectResponse, ReadDeviceRequest, ReadDevicesRequest, ReadDevicesResponse, UpdateDeviceRequest};
 use crate::req_tuuid;
 
 use scylla::statement::prepared::PreparedStatement;
@@ -124,6 +124,17 @@ impl ScyallaUserDeviceService {
         }))
     }
     
+    async fn read_device_impl(
+        &self,
+        request: Request<ReadDeviceRequest>
+    ) -> DSResult<Response<DeviceObjectResponse>> {
+        let user_id: CqlTimeuuid = req_tuuid!(request, user_id)?;
+        let device_id: CqlTimeuuid = req_tuuid!(request, device_id)?;
+
+        Ok(Response::new(self._read_device(user_id, device_id).await?))
+    }
+
+
     async fn read_devices_impl(
         &self,
         request: Request<ReadDevicesRequest>
@@ -218,6 +229,14 @@ impl UserDeviceService for ScyallaUserDeviceService {
     ) -> Result<Response<ReadDevicesResponse>, Status> {
         Ok(self.read_devices_impl(request).await?)
     }
+
+    async fn read_device(
+        &self,
+        request: Request<ReadDeviceRequest>
+    ) -> Result<Response<DeviceObjectResponse>, Status> {
+        Ok(self.read_device_impl(request).await?)
+    }
+
     async fn update_device(
         &self,
         request: Request<UpdateDeviceRequest>
