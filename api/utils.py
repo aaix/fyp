@@ -45,20 +45,11 @@ class RpcErrHandler:
         
         return False # dont suppress other rpc errors
 
-class ResourceNotFoundRpcHandler[I: SupportsStr](RpcErrHandler):
-    """Generic special case for transforming rpc not found to a 404 api error"""
-    def __init__(self, resource_name: LiteralString, resource_id: I, api_err_code: int):
+
+class ResourceNotFoundRpcHandler(RpcErrHandler):
+    """Special case for mapping rpc not found to 404 user not found error"""
+    def __init__(self, resource_id: SupportsStr):
         super().__init__(
             StatusCode.NOT_FOUND,
-            lambda: errors.NotFound(f"{resource_name} {resource_id} not found", api_error_code=api_err_code)
-        )
-
-
-class UserNotFoundRpcHandler(ResourceNotFoundRpcHandler[UUID]):
-    """Special case for mapping rpc not found to 404 user not found error"""
-    def __init__(self, user_id: SupportsStr):
-        super().__init__(
-            "User",
-            user_id,
-            errors.ERROR_NO_SUCH_USER,
+            lambda: errors.NotFound(f"Resource {resource_id} not found", api_error_code=errors.ERROR_NO_SUCH_RESOURCE)
         )

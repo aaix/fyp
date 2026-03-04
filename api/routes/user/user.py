@@ -8,7 +8,8 @@ from grpc import StatusCode
 from api import *
 
 from api.routes.user.models import *
-from api.utils import UserNotFoundRpcHandler, unwrap
+from api.types.params import UserParam
+from api.utils import ResourceNotFoundRpcHandler, unwrap
 
 from shared.py.grpc.id import puuid_uuid
 from shared.py.grpc.lazy import LazyGRPC
@@ -27,17 +28,14 @@ grpcrelationship = LazyGRPC(discovery.discover_dataservices(), user_pb2_grpc.Use
 
 
 @UserRouter.get("/profile/{user_id}")
-async def get_user_profile(s: SessionParam, user_id: UUID) -> UserProfileResponse:
-
-    with UserNotFoundRpcHandler(user_id):
-        res = await get_user(grpcuser, user_id)
+async def get_user_profile(s: SessionParam, user: UserParam) -> UserProfileResponse:
     
     return UserProfileResponse(
         user=UserSearchResponse(
-            user_id=puuid_uuid(res.user_id) or unwrap(),
-            avatar_asset_id=puuid_uuid(res.avatar_asset_id),
-            public_key=PEMPublicKey.from_bytes(res.public_key),
-            username=res.username
+            user_id=puuid_uuid(user.user_id) or unwrap(),
+            avatar_asset_id=puuid_uuid(user.avatar_asset_id),
+            public_key=PEMPublicKey.from_bytes(user.public_key),
+            username=user.username
         )
     )
 
@@ -59,10 +57,8 @@ async def my_relationships(s:SessionParam) -> RelationshipsResponse:
 
 
 @UserRouter.put("/relationship/{user_id}/friend")
-async def friend_user(s: SessionParam, user_id: UUID) -> UserRelationshipResponse:
+async def friend_user(s: SessionParam, peer: UserParam) -> UserRelationshipResponse:
     
-    with UserNotFoundRpcHandler(user_id):
-        peer = await get_user(grpcuser, user_id)
     
     peer_id = puuid_uuid(peer.user_id) or unwrap()
 
@@ -82,11 +78,8 @@ async def friend_user(s: SessionParam, user_id: UUID) -> UserRelationshipRespons
     return UserRelationshipResponse(peer_id=peer_id, relationship=RelationshipType.CURRENT_REQUESTING_PEER)
 
 @UserRouter.delete("/relationship/{user_id}/friend")
-async def unfriend_user(s: SessionParam, user_id: UUID) -> None:
-    with UserNotFoundRpcHandler(user_id):
-        peer = await get_user(grpcuser, user_id)
+async def unfriend_user(s: SessionParam, peer: UserParam) -> None:
     
-
     async with PeerRelationshipManager(grpcrelationship, s.user_id, peer.user_id) as r:
         if await r.is_peer_requesting():
             await PeerRelationshipManager(grpcrelationship, peer.user_id, s.user_id).cancel_request_to_peer()
@@ -100,10 +93,7 @@ async def unfriend_user(s: SessionParam, user_id: UUID) -> None:
 
 
 @UserRouter.put("/relationship/{user_id}/block")
-async def block_user(s: SessionParam, user_id: UUID) -> UserRelationshipResponse:
-    
-    with UserNotFoundRpcHandler(user_id):
-        peer = await get_user(grpcuser, user_id)
+async def block_user(s: SessionParam, peer: UserParam) -> UserRelationshipResponse:
     
     peer_id = puuid_uuid(peer.user_id) or unwrap()
 
@@ -126,9 +116,8 @@ async def block_user(s: SessionParam, user_id: UUID) -> UserRelationshipResponse
 
 
 @UserRouter.delete("/relationship/{user_id}/block")
-async def unblock_user(s: SessionParam, user_id: UUID) -> None:
-    with UserNotFoundRpcHandler(user_id):
-        peer = await get_user(grpcuser, user_id)
+async def unblock_user(s: SessionParam, peer: UserParam) -> None:
+
 
     async with PeerRelationshipManager(grpcrelationship, s.user_id, peer.user_id) as r:
         await r.unblock()

@@ -9,7 +9,7 @@ from api import *
 from api import ApiErrExc
 
 from api.routes.account.models import *
-from api.utils import RpcErrHandler, unwrap, UserNotFoundRpcHandler
+from api.utils import RpcErrHandler, unwrap, ResourceNotFoundRpcHandler
 
 from shared.py.constraints import USER_MAX_NUM_DEVICES
 from shared.py.grpc.id import id_compare, puuid_uuid, id_t, uuid_puuid
@@ -67,7 +67,7 @@ async def signup(r: Request, body: SignupBody) -> SignupResponse:
 @AccountRouter.get("/devicehandshake/{user_identifier}/{device_id}")
 async def device_key_handshake(r: Request, user_identifier: Username | UUID, device_id: UUID) -> DeviceKeyResponse:
 
-    with UserNotFoundRpcHandler(user_identifier):
+    with ResourceNotFoundRpcHandler(user_identifier):
         if isinstance(user_identifier, str):
             user = await get_user_by_username(grpcuser, user_identifier)
         else:
