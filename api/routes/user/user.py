@@ -1,20 +1,17 @@
 from typing import cast
 
-from uuid import UUID
 
 from fastapi import APIRouter
-from grpc import StatusCode
 
 from api import *
 
 from api.routes.user.models import *
 from api.types.params import UserParam
-from api.utils import ResourceNotFoundRpcHandler, unwrap
+from api.utils import unwrap
 
 from shared.py.grpc.id import puuid_uuid
 from shared.py.grpc.lazy import LazyGRPC
 from shared.py.grpc.relationship import PeerRelationshipManager, RelationshipType, read_relationships
-from shared.py.grpc.user import get_user
 from shared.py.pydantic.pem import PEMPublicKey
 from shared.py.grpcgen import user_pb2, user_pb2_grpc
 
