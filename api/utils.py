@@ -2,6 +2,7 @@ from typing import Any, Literal, LiteralString, Never, overload
 
 
 from collections.abc import Callable
+from uuid import UUID
 
 from grpc import RpcError, StatusCode
 
@@ -44,16 +45,16 @@ class RpcErrHandler:
         
         return False # dont suppress other rpc errors
 
-class ResourceNotFoundRpcHandler(RpcErrHandler):
+class ResourceNotFoundRpcHandler[I: SupportsStr](RpcErrHandler):
     """Generic special case for transforming rpc not found to a 404 api error"""
-    def __init__(self, resource_name: LiteralString, resource_id: SupportsStr, api_err_code: int):
+    def __init__(self, resource_name: LiteralString, resource_id: I, api_err_code: int):
         super().__init__(
             StatusCode.NOT_FOUND,
             lambda: errors.NotFound(f"{resource_name} {resource_id} not found", api_error_code=api_err_code)
         )
 
 
-class UserNotFoundRpcHandler(ResourceNotFoundRpcHandler):
+class UserNotFoundRpcHandler(ResourceNotFoundRpcHandler[UUID]):
     """Special case for mapping rpc not found to 404 user not found error"""
     def __init__(self, user_id: SupportsStr):
         super().__init__(
