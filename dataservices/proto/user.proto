@@ -76,6 +76,7 @@ message UserSearchEntry {
 service UserDeviceService {
     rpc CreateDevice (CreateDeviceRequest) returns (DeviceObjectResponse);
     rpc ReadDevices (ReadDevicesRequest) returns (ReadDevicesResponse);
+    rpc ReadDevice (ReadDeviceRequest) returns (DeviceObjectResponse);
     rpc UpdateDevice (UpdateDeviceRequest) returns (DeviceObjectResponse);
     rpc DeleteDevice (DeleteDeviceRequest) returns (DeleteDeviceResponse);
 }
@@ -86,6 +87,11 @@ message CreateDeviceRequest {
     string device_name = 2;
     bytes public_key = 3;
     bytes encrypted_account_key = 4;
+}
+
+message ReadDeviceRequest {
+    plib.pUUID device_id = 1;
+    plib.pUUID user_id = 2;
 }
 
 message DeviceObjectResponse {
