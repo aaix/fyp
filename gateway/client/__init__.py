@@ -22,7 +22,7 @@ from gateway.models.messages import AddDeviceOK, AddDeviceRequest, BaseMessage, 
 from gateway.utils import unwrap
 from shared.py.constraints import USER_MAX_NUM_DEVICES
 from shared.py.discovery import DiscoveryManager
-from shared.py.grpc.device import create_device, read_devices, find_device_by_id
+from shared.py.grpc.device import create_device, get_device, read_devices
 from shared.py.grpc.id import puuid_str, puuid_uuid
 from shared.py.grpc.lazy import LazyGRPC
 from shared.py.grpc.user import get_user, get_user_by_username
@@ -310,8 +310,8 @@ class GatewayClient:
 
         try:
             # read device and user from grpc concurrently
-            devices, user = await asyncio.gather(
-                read_devices(grpcdevice, user_id),
+            device, user = await asyncio.gather(
+                get_device(grpcdevice, user_id, device_id),
                 get_user(grpcuser, user_id)
             )
         except RpcError as e:
@@ -319,9 +319,6 @@ class GatewayClient:
                 raise
             raise HandshakeFailed(HandshakeFailed.Reason.BAD_AUTH, "user not found") from e
 
-        if not (device := find_device_by_id(devices, device_id)):
-            raise HandshakeFailed(HandshakeFailed.Reason.BAD_AUTH, "device not found")
-        
         device_challenge = challenge.create_challenge(device.device_public_key)
         account_challenge = challenge.create_challenge(user.public_key)
 
