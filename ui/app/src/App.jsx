@@ -11,15 +11,34 @@ import UserPage from './pages/UserPage.jsx'
 import NotificationsPage from './pages/NotificationsPage.jsx'
 
 import { gatewayFactory } from './lib/gateway.js'
+import { getCurrentSession } from './lib/session.js'
 
 
 function useAuth() {
-  const [isLoggedIn, setIsLoggedIn] = useState(() => !!localStorage.getItem('session'))
+  const [isLoggedIn, setIsLoggedIn] = useState(null)
 
   useEffect(() => {
-    const check = () => setIsLoggedIn(!!localStorage.getItem('session'))
-    window.addEventListener('storage', check)
-    return () => window.removeEventListener('storage', check)
+    let cancelled = false
+
+    const checkCurrentAccount = async () => {
+      try {
+        const session = getCurrentSession()
+        const res = await session.getCurrentAccount()
+        if (cancelled) return
+        setIsLoggedIn(!!res?.success)
+      } catch (e) {
+        console.error(e)
+        if (!cancelled) {
+          setIsLoggedIn(false)
+        }
+      }
+    }
+
+    checkCurrentAccount()
+
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   return [isLoggedIn, () => setIsLoggedIn(true)]
@@ -29,6 +48,10 @@ function App() {
   const [isLoggedIn, setLoggedIn] = useAuth()
 
   useEffect(() => {
+    if (!isLoggedIn) {
+      return
+    }
+
     let cancelled = false
     gatewayFactory().then(async (gateway) => {
       if (cancelled) return
@@ -38,7 +61,11 @@ function App() {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [isLoggedIn])
+
+  if (isLoggedIn === null) {
+    return null
+  }
 
   if (!isLoggedIn) {
     return <AuthPage onLogin={() => setLoggedIn()} />
