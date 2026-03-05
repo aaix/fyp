@@ -14,5 +14,8 @@ mac_address = "1.1.8"
 
 futures = "0.3.32"
 
+tonic-tracing-opentelemetry = "0.32.1"
+init-tracing-opentelemetry = { version = "0.36.0", features = ["otlp", "tracing_subscriber_ext"]}
+
 [build-dependencies]
 tonic-prost-build = "*"

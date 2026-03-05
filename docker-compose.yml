@@ -35,6 +35,7 @@ services:
     image: az-dataservices:latest
     environment:
       - SCYLLA_URI=172.31.0.2
+      - OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://172.31.0.254:4317
     depends_on:
       scylla-seed:
         condition: service_healthy
