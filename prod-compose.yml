@@ -44,8 +44,9 @@ services:
         ipv4_address: 172.31.0.30
     image: europe-west2-docker.pkg.dev/fyp-25coc251/az7-backend/gateway:latest
     environment:
-      - DATASERVICES_URI=172.31.0.10:3114
-      - DEPLOYMENT_MODE=prod
+        DEPLOYMENT_MODE: prod
+        DATASERVICES_URI: "dataservices-0:3114"
+        OTEL_URI: "http://jaeger:4317"
     depends_on:
       - dataservices-0
     ports:
@@ -57,9 +58,11 @@ services:
         ipv4_address: 172.31.0.20
     image: europe-west2-docker.pkg.dev/fyp-25coc251/az7-backend/api:latest
     environment:
-      - DATASERVICES_URI=172.31.0.10:3114
-      - DEPLOYMENT_MODE=prod
-      - OTEL_URI=http://172.31.0.254:4317
+        DEPLOYMENT_MODE: prod
+        DATASERVICES_URI: "dataservices-0:3114"
+        OTEL_URI: "http://jaeger:4317"
+        SECRET_KEY_API_SESSION_SIGN: ${SECRET_KEY_API_SESSION_SIGN}
+        SECRET_KEY_API_SESSION_ENCRYPT: ${SECRET_KEY_API_SESSION_ENCRYPT}
     ports:
       - "80:80"
     volumes:
