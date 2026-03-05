@@ -2,15 +2,15 @@ from collections.abc import Callable, Awaitable
 
 
 from fastapi import Request, Response
-from starlette.middleware.base import BaseHTTPMiddleware
 
 
+from api.middleware import InstrumentedMiddleware
 from api.responses import errors
 
 
 
-class HeaderValidationMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
+class HeaderValidationMiddleware(InstrumentedMiddleware):
+    async def dispatch_traced(self, request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
 
         path = request.url.path
         if path.startswith("/docs") or path.startswith("/openapi.json") or path.startswith("/redoc"):

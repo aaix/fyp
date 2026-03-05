@@ -6,10 +6,10 @@ from annotated_doc import Doc
 
 
 from fastapi import Depends, Request, Response
-from starlette.middleware.base import BaseHTTPMiddleware
 from joserfc.errors import DecodeError
 
 
+from api.middleware import InstrumentedMiddleware
 from api.types import Session
 from api.responses import ApiErrExc, errors
 
@@ -24,8 +24,8 @@ __all__ = (
 )
 
 
-class JWTMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
+class JWTMiddleware(InstrumentedMiddleware):
+    async def dispatch_traced(self, request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
         if not (token := request.headers.get("Authorization")):
             request.state.session = None
             return await call_next(request)

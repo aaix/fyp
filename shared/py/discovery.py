@@ -24,5 +24,8 @@ class DiscoveryManager:
     def discover_dataservices(self) -> str:
         return environ["DATASERVICES_URI"]
     
+    def discover_otel(self) -> str:
+        return environ["OTEL_URI"]
+    
     def is_prod(self) -> bool:
         return environ.get("DEPLOYMENT_MODE", "dev") == "prod"

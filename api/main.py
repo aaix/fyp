@@ -6,7 +6,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware import Middleware
 
 
-import api.middleware as middlewares
+
+from api import tracing
+from api.middleware.auth import JWTMiddleware
+from api.middleware.misc import HeaderValidationMiddleware
+from api.middleware.tracing import TracingMiddleware
 from api import *
 from api.responses import SuccessResponse
 from api.middleware import exception_handlers
@@ -26,8 +30,9 @@ middlewares = ( # outer
         allow_methods=["*"],
         allow_headers=["Authorization"],
     ),
-    Middleware(middlewares.HeaderValidationMiddleware),
-    Middleware(middlewares.JWTMiddleware), 
+    Middleware(HeaderValidationMiddleware),
+    Middleware(JWTMiddleware),
+    Middleware(TracingMiddleware),
 ) # inner
 
 
@@ -50,4 +55,7 @@ app.add_exception_handler(404, exception_handlers.not_found_exception_handler)
 @app.get("/")
 async def root() -> dict[Literal["hello"], Literal["world"]]:
     return {"hello": "world"}
+
+tracing.instrument_fastapi_app(app)
+
 
