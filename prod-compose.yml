@@ -16,6 +16,16 @@ x-scylla-base: &scylla-base
 
 
 services:
+  jaeger:
+    networks:
+      shared-network:
+        ipv4_address: 172.31.0.254
+    image: jaegertracing/all-in-one
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    ports:
+      - 8080:16686
+
   dataservices-0:
     networks:
       shared-network:
@@ -23,6 +33,7 @@ services:
     image: az-dataservices:latest
     environment:
       - SCYLLA_URI=172.31.0.2
+      - OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://172.31.0.254:4317
     depends_on:
       scylla-seed:
         condition: service_healthy
@@ -48,6 +59,7 @@ services:
     environment:
       - DATASERVICES_URI=172.31.0.10:3114
       - DEPLOYMENT_MODE=prod
+      - OTEL_URI=http://172.31.0.254:4317
     ports:
       - "80:80"
     volumes:
