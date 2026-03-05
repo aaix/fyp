@@ -9,7 +9,7 @@ networks:
 
 
 x-scylla-base: &scylla-base
-  image: az-database:latest
+  image: europe-west2-docker.pkg.dev/fyp-25coc251/az7-backend/database:latest
   depends_on:
     - scylla-seed
   stop_grace_period: 120s
@@ -30,7 +30,7 @@ services:
     networks:
       shared-network:
         ipv4_address: 172.31.0.10
-    image: az-dataservices:latest
+    image: europe-west2-docker.pkg.dev/fyp-25coc251/az7-backend/dataservices:latest
     environment:
       - SCYLLA_URI=172.31.0.2
       - OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://172.31.0.254:4317
@@ -42,7 +42,7 @@ services:
     networks:
       shared-network:
         ipv4_address: 172.31.0.30
-    image: az-gateway:latest
+    image: europe-west2-docker.pkg.dev/fyp-25coc251/az7-backend/gateway:latest
     environment:
       - DATASERVICES_URI=172.31.0.10:3114
       - DEPLOYMENT_MODE=prod
@@ -55,7 +55,7 @@ services:
     networks:
       shared-network:
         ipv4_address: 172.31.0.20
-    image: az-api:latest
+    image: europe-west2-docker.pkg.dev/fyp-25coc251/az7-backend/api:latest
     environment:
       - DATASERVICES_URI=172.31.0.10:3114
       - DEPLOYMENT_MODE=prod
@@ -72,7 +72,7 @@ services:
       shared-network:
         ipv4_address: 172.31.0.2
       
-    image: az-database:latest
+    image: europe-west2-docker.pkg.dev/fyp-25coc251/az7-database/api:latest
     volumes:
       - type: bind
         source: /db/scylla0/
