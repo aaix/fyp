@@ -72,7 +72,7 @@ services:
       shared-network:
         ipv4_address: 172.31.0.2
       
-    image: europe-west2-docker.pkg.dev/fyp-25coc251/az7-database/api:latest
+    image: europe-west2-docker.pkg.dev/fyp-25coc251/az7-backend/database:latest
     volumes:
       - type: bind
         source: /db/scylla0/
