@@ -1,3 +1,5 @@
+import json
+
 from joserfc import jws, jwe, jwk
 
 from cryptography.hazmat.primitives.asymmetric import rsa
@@ -5,10 +7,13 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives import hashes
 
+from shared.py.discovery import DiscoveryManager
+
+discovery = DiscoveryManager()
 
 
-CONF_SIGN_KEY = jwk.generate_key("oct", 256)
-CONF_ENCRYPT_KEY = jwk.generate_key("oct", 256)
+CONF_SIGN_KEY = jwk.import_key(json.loads(discovery.find_key("API_SESSION_SIGN")))
+CONF_ENCRYPT_KEY = jwk.import_key(json.loads(discovery.find_key("API_SESSION_ENCRYPT")))
 
 def encode_jose_session(data: bytes) -> str:
     token = jws.serialize_compact({"alg": "HS256"}, data, private_key=CONF_SIGN_KEY, algorithms=["HS256"])

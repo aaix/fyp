@@ -19,8 +19,7 @@ services:
 
   jaeger:
     networks:
-      shared-network:
-        ipv4_address: 172.31.0.254
+      - shared-network
     image: jaegertracing/all-in-one
     environment:
       - COLLECTOR_OTLP_ENABLED=true
@@ -30,8 +29,7 @@ services:
 
   dataservices-0:
     networks:
-      shared-network:
-        ipv4_address: 172.31.0.10
+      - shared-network
     image: az-dataservices:latest
     environment:
       - SCYLLA_URI=172.31.0.2
@@ -43,14 +41,17 @@ services:
   
   api-0:
     networks:
-      shared-network:
-        ipv4_address: 172.31.0.20
+      - shared-network
     image: az-api:latest
     environment:
-      - DATASERVICES_URI=172.31.0.10:3114
-      - OTEL_URI=http://172.31.0.254:4317
+        DATASERVICES_URI: "dataservices-0:3114"
+        OTEL_URI: "http://jaeger:4317"
+        SECRET_KEY_API_SESSION_SIGN: ${SECRET_KEY_API_SESSION_SIGN}
+        SECRET_KEY_API_SESSION_ENCRYPT: ${SECRET_KEY_API_SESSION_ENCRYPT}
     depends_on:
       - dataservices-0
+    ports:
+      - 8000:8000
     deploy:
       resources:
         # container has been crashing the host so its memory is limited
@@ -60,13 +61,14 @@ services:
   
   gateway-0:
     networks:
-      shared-network:
-        ipv4_address: 172.31.0.30
+      - shared-network
     image: az-gateway:latest
     environment:
-      - DATASERVICES_URI=172.31.0.10:3114
+      - DATASERVICES_URI=dataservices-0:3114
     depends_on:
       - dataservices-0
+    ports:
+      - 8001:80
 
 
   scylla-seed:

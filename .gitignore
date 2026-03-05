@@ -2,3 +2,4 @@ dataservices/target/
 database/data
 api/.venv
 *__pycache__
+.env
