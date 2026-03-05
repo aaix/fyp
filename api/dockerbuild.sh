@@ -1,1 +1,2 @@
-docker build --build-context shared=./shared/ ./api -t az-api:latest
+TAG=${1:-latest}
+docker build --build-context shared=./shared/ ./api -t az-api:$TAG

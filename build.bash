@@ -1,6 +1,6 @@
 #!/bin/bash
 
-docker build ./database -t az-scylla:latest
+. ./database/dockerbuild.sh
 . ./api/dockerbuild.sh
 . ./gateway/dockerbuild.sh
 . ./dataservices/dockerbuild.sh
