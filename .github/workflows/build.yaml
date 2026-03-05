@@ -7,7 +7,7 @@ on:
     branches: [ "main" ]
 
 env:
-  PROJECT_ID: fyp-25COC251
+  PROJECT_ID: fyp-25coc251
   REGION: europe-west2
   REPOSITORY: az7-backend
 
