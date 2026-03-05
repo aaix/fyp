@@ -9,7 +9,7 @@ networks:
 
 
 x-scylla-base: &scylla-base
-  image: az-scylla:latest
+  image: az-database:latest
   depends_on:
     - scylla-seed
   stop_grace_period: 60s
@@ -74,7 +74,7 @@ services:
       shared-network:
         ipv4_address: 172.31.0.2
       
-    image: az-scylla:latest
+    image: az-database:latest
     volumes:
       - type: bind
         source: ./database/data/scylla0/

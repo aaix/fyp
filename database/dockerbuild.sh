@@ -1,2 +1,2 @@
 TAG=${1:-latest}
-docker build ./database -t az-scylla:$TAG
+docker build ./database -t az-database:$TAG
