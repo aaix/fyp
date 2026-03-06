@@ -20,6 +20,7 @@ from gateway.models.messages import *
 
 
 
+from gateway.tracing import tracer
 from gateway.utils import unwrap
 from shared.py.constraints import USER_MAX_NUM_DEVICES
 from shared.py.discovery import DiscoveryManager
@@ -72,6 +73,7 @@ class GatewayClient:
             d=event
         ))
 
+    @tracer.start_as_current_span("send msg")
     async def send(self, msg: BaseMessage):
         self.server_seq += 1
         msg.seq = self.server_seq
@@ -122,9 +124,11 @@ class GatewayClient:
     async def handle_internal(self, e: InternalEvent):
         return
 
+    @tracer.start_as_current_span("handle_incoming")
     async def handle_incoming(self, d: bytes):
         try:
-            msg = ClientMessageAdapter.validate_json(d)
+            with tracer.start_as_current_span("ClientMessageAdapter.validate_json"):
+                msg = ClientMessageAdapter.validate_json(d)
         except ValidationError as e:
             await self.send_event(events.HintEvent(message=e.errors(include_url=False, include_input=False)))
             await self.close(GatewayCloseCode.MALFORMED_DATA, "could not determine clientmessage type")
@@ -144,6 +148,7 @@ class GatewayClient:
 
     # New device stuff
 
+    @tracer.start_as_current_span("handle_select_device_cancel")
     async def handle_select_device_cancel(self, _sdc: SelectDeviceCancel):
         """Refer to new device gateway handshake diagram"""
         self.selected_device = None
@@ -152,6 +157,7 @@ class GatewayClient:
         except RuntimeError:
             pass
 
+    @tracer.start_as_current_span("handle_select_device_intention")
     async def handle_select_device_intention(self, sdi: SelectDeviceIntention):
         """Refer to new device gateway handshake diagram"""
 
@@ -177,6 +183,7 @@ class GatewayClient:
 
         await self.send(adddevicerequest)
 
+    @tracer.start_as_current_span("handle_add_device_ok")
     async def handle_add_device_ok(self, adok: AddDeviceOK):
         """Adds a new device"""
         if not self.select_device_lock.locked() or not self.selected_device:
@@ -213,6 +220,7 @@ class GatewayClient:
 
     # User bulk request
 
+    @tracer.start_as_current_span("handle_user_bulk_request")
     async def handle_user_bulk_request(self, ubr: UserBulkRequest):
         user_ids = ubr.user_ids
         res = await get_bulk_users(grpcuser, user_ids)
@@ -236,6 +244,7 @@ class GatewayClient:
         await self.ws.close(code=code, reason=reason)
         await self.cleanup()
 
+    @tracer.start_as_current_span("cleanup")
     async def cleanup(self) -> None:
         async with self.cleanup_lock:
             if self.cleaned_up:
@@ -247,6 +256,7 @@ class GatewayClient:
 
 
 
+    @tracer.start_as_current_span("handshake_get_next")
     async def handshake_get_next[T: BaseMessage](self, schema_or_schemas: Iterable[type[T]] | type[T]) -> T:
         """Get the next message from the client and fail if it is not of type[T]"""
         schemas = schema_or_schemas if isinstance(schema_or_schemas, Iterable) else (schema_or_schemas,)
@@ -271,6 +281,7 @@ class GatewayClient:
         raise HandshakeFailed(HandshakeFailed.Reason.BAD_PAYLOAD, msg)
 
 
+    @tracer.start_as_current_span("handshake")
     async def handshake(self) -> UUID:
         """Complete the handshake and return the user id"""
         clienthello = await self.handshake_get_next((ClientHello, NewDeviceClientHello))
@@ -282,6 +293,7 @@ class GatewayClient:
             case _:
                 unwrap()
     
+    @tracer.start_as_current_span("new_device_handshake")
     async def new_device_handshake(self, clienthello: NewDeviceClientHello):
         username = clienthello.username
 
@@ -317,7 +329,7 @@ class GatewayClient:
         return await self.regular_handshake(regular_clienthello)
 
         
-
+    @tracer.start_as_current_span("regular_handshake")
     async def regular_handshake(self, clienthello: ClientHello) -> UUID:
 
         user_id = clienthello.user_id

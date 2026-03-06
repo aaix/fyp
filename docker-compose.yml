@@ -33,7 +33,7 @@ services:
     image: az-dataservices:latest
     environment:
       - SCYLLA_URI=172.31.0.7
-      - OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://172.31.0.754:4317
+      - OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://jaeger:4317
     depends_on:
       scylla-seed:
         condition: service_healthy
@@ -64,7 +64,9 @@ services:
       - shared-network
     image: az-gateway:latest
     environment:
-      - DATASERVICES_URI=dataservices-0:3114
+        DATASERVICES_URI: "dataservices-0:3114"
+        OTEL_URI: "http://jaeger:4317"
+
     depends_on:
       - dataservices-0
     ports:
