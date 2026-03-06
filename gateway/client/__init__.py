@@ -5,6 +5,8 @@ from uuid import UUID
 import asyncio
 
 from grpc import RpcError, StatusCode
+from opentelemetry import trace
+from opentelemetry.trace import Span
 from pydantic import ValidationError
 from websockets import CloseCode, ConnectionClosed, ServerConnection
 
@@ -73,7 +75,7 @@ class GatewayClient:
             d=event
         ))
 
-    @tracer.start_as_current_span("send msg")
+    @tracer.start_as_current_span("Client.send")
     async def send(self, msg: BaseMessage):
         self.server_seq += 1
         msg.seq = self.server_seq
@@ -118,13 +120,14 @@ class GatewayClient:
         except ConnectionClosed, asyncio.QueueShutDown:
             return # safe error so just cleanup and leave
         finally:
-            await self.cleanup()
+            with tracer.start_as_current_span("Client.loop:cleanup"):
+                await self.cleanup()
 
 
     async def handle_internal(self, e: InternalEvent):
         return
 
-    @tracer.start_as_current_span("handle_incoming")
+    @tracer.start_as_current_span("Client.handle_incoming")
     async def handle_incoming(self, d: bytes):
         try:
             with tracer.start_as_current_span("ClientMessageAdapter.validate_json"):
@@ -148,7 +151,7 @@ class GatewayClient:
 
     # New device stuff
 
-    @tracer.start_as_current_span("handle_select_device_cancel")
+    @tracer.start_as_current_span("Client.handle_select_device_cancel")
     async def handle_select_device_cancel(self, _sdc: SelectDeviceCancel):
         """Refer to new device gateway handshake diagram"""
         self.selected_device = None
@@ -157,7 +160,7 @@ class GatewayClient:
         except RuntimeError:
             pass
 
-    @tracer.start_as_current_span("handle_select_device_intention")
+    @tracer.start_as_current_span("Client.handle_select_device_intention")
     async def handle_select_device_intention(self, sdi: SelectDeviceIntention):
         """Refer to new device gateway handshake diagram"""
 
@@ -167,6 +170,7 @@ class GatewayClient:
         await self.select_device_lock.acquire()
 
         if not (waiter := self.controller.get_new_device_waiter(self.user_id or unwrap(), sdi.code)):
+            self.select_device_lock.release()
             return await self.send(SelectDeviceIntentionFailure(
                 op="select_device_intention_failure",
                 failure_type=SelectDeviceIntentionFailure.Type.NOT_FOUND
@@ -183,7 +187,7 @@ class GatewayClient:
 
         await self.send(adddevicerequest)
 
-    @tracer.start_as_current_span("handle_add_device_ok")
+    @tracer.start_as_current_span("Client.handle_add_device_ok")
     async def handle_add_device_ok(self, adok: AddDeviceOK):
         """Adds a new device"""
         if not self.select_device_lock.locked() or not self.selected_device:
@@ -220,7 +224,7 @@ class GatewayClient:
 
     # User bulk request
 
-    @tracer.start_as_current_span("handle_user_bulk_request")
+    @tracer.start_as_current_span("Client.handle_user_bulk_request")
     async def handle_user_bulk_request(self, ubr: UserBulkRequest):
         user_ids = ubr.user_ids
         res = await get_bulk_users(grpcuser, user_ids)
@@ -240,11 +244,12 @@ class GatewayClient:
             return
     
 
+    @tracer.start_as_current_span("Client.close")
     async def close(self, code: int, reason: str) -> None:
         await self.ws.close(code=code, reason=reason)
         await self.cleanup()
 
-    @tracer.start_as_current_span("cleanup")
+    @tracer.start_as_current_span("Client.cleanup")
     async def cleanup(self) -> None:
         async with self.cleanup_lock:
             if self.cleaned_up:
@@ -253,10 +258,10 @@ class GatewayClient:
 
         self.queue.shutdown()
         await self.controller.unregister(self)
+        self.open = False
 
 
-
-    @tracer.start_as_current_span("handshake_get_next")
+    @tracer.start_as_current_span("Client.handshake_get_next")
     async def handshake_get_next[T: BaseMessage](self, schema_or_schemas: Iterable[type[T]] | type[T]) -> T:
         """Get the next message from the client and fail if it is not of type[T]"""
         schemas = schema_or_schemas if isinstance(schema_or_schemas, Iterable) else (schema_or_schemas,)
@@ -264,7 +269,10 @@ class GatewayClient:
         # this should not be called post handhshake, use the loop instead
         assert not self.handshake_complete
         # next should never return multiple events anyways
-        d, = await self.next()
+        try:
+            d, = await asyncio.wait_for(self.next(), timeout=60)
+        except TimeoutError as e:
+            raise HandshakeFailed(HandshakeFailed.Reason.TIME_OUT, "Timed out waiting for message") from e
         # if the handshake is not complete, we should not be registered with the controller
         # therefore we should not be polling any controller events
         assert isinstance(d, bytes)
@@ -281,7 +289,7 @@ class GatewayClient:
         raise HandshakeFailed(HandshakeFailed.Reason.BAD_PAYLOAD, msg)
 
 
-    @tracer.start_as_current_span("handshake")
+    @tracer.start_as_current_span("Client.handshake")
     async def handshake(self) -> UUID:
         """Complete the handshake and return the user id"""
         clienthello = await self.handshake_get_next((ClientHello, NewDeviceClientHello))
@@ -293,7 +301,7 @@ class GatewayClient:
             case _:
                 unwrap()
     
-    @tracer.start_as_current_span("new_device_handshake")
+    @tracer.start_as_current_span("Client.new_device_handshake")
     async def new_device_handshake(self, clienthello: NewDeviceClientHello):
         username = clienthello.username
 
@@ -329,7 +337,7 @@ class GatewayClient:
         return await self.regular_handshake(regular_clienthello)
 
         
-    @tracer.start_as_current_span("regular_handshake")
+    @tracer.start_as_current_span("Client.regular_handshake")
     async def regular_handshake(self, clienthello: ClientHello) -> UUID:
 
         user_id = clienthello.user_id

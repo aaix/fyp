@@ -12,6 +12,7 @@ from gateway.client import GatewayClient
 from gateway.models.closecodes import GatewayCloseCode
 from gateway.models.exceptions import HandshakeFailed
 from gateway.models.messages import NewDeviceClientHello, NewDeviceOK
+from gateway.tracing import tracer
 
 
 class GatewayController:
@@ -26,10 +27,10 @@ class GatewayController:
         server_future.set_result(None)
         loop.create_task(self.shutdown_inner(loop))
     
+    @tracer.start_as_current_span("Controller.shutdown_inner")
     async def shutdown_inner(self, loop: AbstractEventLoop):
         existing: list[Task[Any]] = []
         pending: list[Task[Any]] = []
-        newdevice: list[Task[Any]] = []
         for clients in self.__by_user.values():
             for client in clients:
                 existing.append(loop.create_task(client.shutdown()))
@@ -52,6 +53,7 @@ class GatewayController:
         log(f"Shut down all clients")
 
 
+    @tracer.start_as_current_span("Controller.accept_incoming")
     async def accept_incoming(self, ws: ServerConnection) -> None:
         client = GatewayClient(self, ws)
         self.__pending[client.id] = client
@@ -77,13 +79,16 @@ class GatewayController:
     def get_new_device_waiter(self, user_id: UUID, code: int) -> None | tuple[NewDeviceClientHello, Future[NewDeviceOK]]:
         return self.__new_device_waiters.get((user_id, code))
 
+    @tracer.start_as_current_span("Controller.new_device_waiting")
     async def new_device_waiting(self, request: NewDeviceClientHello, user_id: UUID, code: int, timeout=60) -> NewDeviceOK:
         future = asyncio.Future()
         key = (user_id, code)
         self.__new_device_waiters[key] = (request, future)
 
         try:
-            return await asyncio.wait_for(future, timeout=timeout)
+            with tracer.start_as_current_span("wait for future") as span:
+                span.set_attribute("az.gateway.new_device_waiting.params", str((user_id, code)))
+                return await asyncio.wait_for(future, timeout=timeout)
         finally:
             self.__new_device_waiters.pop(key, None)
             
