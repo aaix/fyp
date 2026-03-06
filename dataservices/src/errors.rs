@@ -5,6 +5,13 @@ pub struct DSStatus(Status);
 
 pub type DSResult<V> = Result<V, DSStatus>;
 
+impl Into<String> for DSStatus {
+    fn into(self) -> String {
+        format!("{}: {}", self.0.code(), self.0.message())
+    }
+}
+
+
 impl From<DSStatus> for Status {
     fn from(value: DSStatus) -> Self {
         return value.0;

@@ -1,5 +1,6 @@
 import API from "./api";
 import { getAvatarUrl } from "./utils.js";
+import { gatewayFactory } from "./gateway.js";
 
 
 // helper for ui
@@ -22,6 +23,13 @@ export class UserManager {
 
         return res;
     }
+    
+    async bulkRequestUsers(user_ids) {
+        const gateway = await gatewayFactory();
+        await gateway.bulk_request_users(user_ids);
+
+    }
+
 }
 
 export const userManager = new UserManager();

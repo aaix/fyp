@@ -1,4 +1,5 @@
 from typing import cast
+from collections.abc import Iterable
 
 from shared.py.grpc.id import id_t, id_puuid
 from shared.py.grpc.lazy import LazyGRPC
@@ -13,4 +14,9 @@ async def get_user(lazy: LazyGRPC[UserServiceStub], user_id: id_t) -> user_pb2.R
 async def get_user_by_username(lazy: LazyGRPC[UserServiceStub], username: str) -> user_pb2.ReadUserResponse:
     return cast(user_pb2.ReadUserResponse, await lazy.stub.ReadUserByUsername(user_pb2.ReadUserByUsernameRequest(
         username=username    
+    )))
+
+async def get_bulk_users(lazy: LazyGRPC[UserServiceStub], user_ids: Iterable[id_t]) -> user_pb2.BulkUserResponse:
+    return cast(user_pb2.BulkUserResponse, await lazy.stub.UserBulkReader(user_pb2.ReadUserBulkRequest(
+        user_ids=(puuid for puuid in (id_puuid(u_id) for u_id in user_ids) if puuid)
     )))

@@ -14,11 +14,17 @@ service UserService {
     rpc DeleteUser (DeleteUserRequest) returns (DeleteUserResponse);
     rpc CheckUsername (ReadUserByUsernameRequest) returns (CheckUsernameResponse);
 
-    rpc UsernameSearcher (UsernameSearch) returns (UsernameSearchResponse);
+    rpc UserBulkReader (ReadUserBulkRequest) returns (BulkUserResponse);
+
+    rpc UsernameSearcher (UsernameSearch) returns (BulkUserResponse);
 
 }
 message ReadUserRequest {
     plib.pUUID user_id = 1;
+}
+
+message ReadUserBulkRequest {
+    repeated dataservices.plib.pUUID user_ids = 1;
 }
 
 message ReadUserByUsernameRequest {
@@ -58,8 +64,14 @@ message UsernameSearch {
     string query = 1;
 }
 
-message UsernameSearchResponse {
+message BulkUserResponse {
     repeated UserSearchEntry users = 1;
+    repeated UserError errors = 2;
+}
+
+message UserError {
+    dataservices.plib.pUUID user_id = 1;
+    string error = 2;
 }
 
 message UserSearchEntry {

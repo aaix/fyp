@@ -10,12 +10,13 @@ from websockets import CloseCode, ConnectionClosed, ServerConnection
 
 from gateway import log
 from gateway.models import events
+from gateway.models.messages import BaseMessage
 import gateway.server
 from gateway.models.events import Event_t
 from gateway.models.closecodes import GatewayCloseCode
 from gateway.models.exceptions import HandshakeFailed
 from gateway.models.internalevent import InternalEvent
-from gateway.models.messages import AddDeviceOK, AddDeviceRequest, BaseMessage, ClientAuth, ClientHello, ClientMessageAdapter, EventMessage, NewDeviceClientHello, NewDeviceOK, NewDeviceServerHello, SelectDeviceCancel, SelectDeviceIntention, SelectDeviceIntentionFailure, ServerHello, SessionComplete
+from gateway.models.messages import *
 
 
 
@@ -25,9 +26,10 @@ from shared.py.discovery import DiscoveryManager
 from shared.py.grpc.device import create_device, get_device, read_devices
 from shared.py.grpc.id import puuid_str, puuid_uuid
 from shared.py.grpc.lazy import LazyGRPC
-from shared.py.grpc.user import get_user, get_user_by_username
+from shared.py.grpc.user import get_bulk_users, get_user, get_user_by_username
 from shared.py.grpcgen import user_pb2_grpc
 from shared.py.crypto import challenge, onetimecode
+from shared.py.pydantic.user import UserSearchResponse
 
 discovery = DiscoveryManager()
 
@@ -135,8 +137,12 @@ class GatewayClient:
                 return await self.handle_select_device_cancel(msg)
             case AddDeviceOK():
                 return await self.handle_add_device_ok(msg)
+            case UserBulkRequest():
+                return await self.handle_user_bulk_request(msg)
             case _:
                 await self.send_event(events.HintEvent(message=f"msg type {msg.__class__.__name__} not yet implemented"))
+
+    # New device stuff
 
     async def handle_select_device_cancel(self, _sdc: SelectDeviceCancel):
         """Refer to new device gateway handshake diagram"""
@@ -170,7 +176,6 @@ class GatewayClient:
         )
 
         await self.send(adddevicerequest)
-    
 
     async def handle_add_device_ok(self, adok: AddDeviceOK):
         """Adds a new device"""
@@ -206,8 +211,18 @@ class GatewayClient:
         self.selected_device = None
         self.select_device_lock.release()
 
+    # User bulk request
 
-    
+    async def handle_user_bulk_request(self, ubr: UserBulkRequest):
+        user_ids = ubr.user_ids
+        res = await get_bulk_users(grpcuser, user_ids)
+
+        await self.send_event(events.UsersEvent(
+            users=[UserSearchResponse.from_rpc(u) for u in res.users],
+            errors=[(puuid_uuid(e.user_id) or unwrap(), e.error) for e in res.errors]
+        ))
+
+
     async def handle_close(self, exc: ConnectionClosed):
         self.open = False
         if exc.sent:

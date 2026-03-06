@@ -1,6 +1,7 @@
 import { decryptB64, digestOf, exportAsPem, importFromPem, RSAWrapRSAwithSym } from "./keyhandler";
 import { getCurrentSession } from "./session";
 import { keyStore } from "./session";
+import { UserManager } from "./user";
 import { B64toUint8Array, blobToB64, hexFromBuffer } from "./utils";
 
 const GATEWAY_URL = "/gateway";
@@ -20,7 +21,76 @@ export function gatewayFactory() {
     })
     return gatewayFactory._gatewayPromise;
 }
- 
+
+class UserStore {
+    constructor() {
+        this.users = {}
+        this.waiters = {}
+    }
+
+    _addWaiter(user_id, resolver) {
+        const waiters = this.waiters[user_id];
+        if (waiters === undefined) {
+            this.waiters[user_id] = [resolver];
+        } else {
+            this.waiters.push(resolver);
+        }
+    }
+
+    _setWaiters(user_id, user) {
+        const waiters = this.waiters[user_id];
+        if (waiters === undefined) {
+            return
+        }
+        for (let resolve of waiters) {
+            resolve(user);
+        }
+    }
+
+    _removeWaiter(user_id, resolver) {
+        const waiters = this.waiters[user_id];
+        if (waiters === undefined) {
+            return
+        }
+
+        const index = waiters.indexOf(item);
+        if (index !== -1) {
+            waiters.splice(index, 1);
+            if (waiters.len() == 0) {
+                delete this.waiters[user_id];
+            }
+        }
+        
+    }
+
+    addUsers(users) {
+        for (let user of users) {
+            this.users[user.user_id] = user;
+        }
+    }
+
+
+    getUser(user_id) {
+        return this.users[user_id] ?? null;
+    }
+
+    waitUser(user_id, timeout=2000) {
+        return new Promise((resolve, reject) => {
+            const cached = this.getUser(user_id);
+            if (cached !== null) {
+                return cached
+            }
+
+            setTimeout(() => {
+                reject("Timeout occured");
+                this._removeWaiter(resolve);
+            }, timeout);
+            this._addWaiter(user_id, resolve);
+        });
+    }
+}
+
+
 /**
  * Gateway class for managing WebSocket communication.
  * Handles incoming messages from a WebSocket connection.
@@ -36,6 +106,7 @@ class Gateway {
         this.adding_new_device = false;
         this.client_seq = 0;
         this.server_seq = 0;
+        this.user_store = new UserStore();
         socket.addEventListener("close", (event) => {
             this.onClose(event);
         })
@@ -58,6 +129,13 @@ class Gateway {
                 })
                 resolve();
             })
+        })
+    }
+
+    async bulk_request_users(user_ids) {
+        await this.send({
+            op:"user_bulk_request",
+            user_ids
         })
     }
 
@@ -254,5 +332,15 @@ class Gateway {
     async handler_event(msg) {
         const event = msg.d;
         console.log(`[Gateway] Recieved event intent ${event.intent}`)
+
+        switch (event.intent) {
+            case 'user_event':
+                this.user_store.addUsers(event.users);
+                if (event.errors.len() > 0) {
+                    console.warn(event.errors);
+                }
+                break;
+            case _: 
+        }
     }
 }

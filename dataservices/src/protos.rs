@@ -3,6 +3,7 @@ pub mod plib {
 
     // impls
     use scylla::value::CqlTimeuuid;
+    use uuid::Uuid;
     impl From<uuid::Uuid> for PUuid {
         fn from(uuid: uuid::Uuid) -> Self {
             let (id_high, id_low) = uuid.as_u64_pair();
@@ -19,10 +20,23 @@ pub mod plib {
         }
     }
 
+    impl From<&PUuid> for uuid::Uuid {
+        fn from(puuid: &PUuid) -> Self {
+            uuid::Uuid::from_u64_pair(puuid.id_high, puuid.id_low)
+        }
+    }
+
     impl From<PUuid> for CqlTimeuuid {
         fn from(puuid: PUuid) -> Self {
             let uuid: uuid::Uuid = puuid.into();
             CqlTimeuuid::from(uuid)
+        }
+    }
+
+    impl From<&PUuid> for CqlTimeuuid {
+        fn from(value: &PUuid) -> Self {
+            let uid: uuid::Uuid = value.into();
+            CqlTimeuuid::from(uid)
         }
     }
 

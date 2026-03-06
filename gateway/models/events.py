@@ -6,8 +6,9 @@ from enum import Enum
 from pydantic import BaseModel
 
 from shared.py.pydantic.base64 import Base64Output
+from shared.py.pydantic.user import UserSearchResponse
 
-type Event_t = MessageEvent | ChannelUpdateEvent | HintEvent
+type Event_t = MessageEvent | ChannelUpdateEvent | HintEvent | UsersEvent
 
 class BaseEvent(BaseModel):
     """Base class for business logic events sent from the gateway"""
@@ -36,3 +37,9 @@ class ChannelUpdateEvent(BaseEvent):
         CHANNEL_CREATE = "create"
         CHANNEL_REMOVE = "remove"
         CHANNEL_MEMBER = "member"
+
+
+class UsersEvent(BaseEvent):
+    intent: Literal["user_event"] = "user_event"
+    users: list[UserSearchResponse]
+    errors: list[tuple[UUID, str]]

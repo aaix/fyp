@@ -1,16 +1,15 @@
 from typing import Annotated
 
-from fastapi.exceptions import RequestValidationError
-from pydantic import Field, AfterValidator
+from pydantic import Field, AfterValidator, ValidationError
 
 from shared.py.constraints import DEVICE_NAME_MAX_LENGTH, DEVICE_NAME_MIN_LENGTH, USERNAME_MAX_LENGTH, USERNAME_MIN_LENGTH
 
 
 def str_is_printable_no_whitespace(string: str) -> str:
     if not string.isprintable():
-        raise RequestValidationError("Unprintable character in input")
+        raise ValidationError("Unprintable character in input")
     if ' ' in string:
-        raise RequestValidationError("Input must not contain whitespace")
+        raise ValidationError("Input must not contain whitespace")
     return string
 
 

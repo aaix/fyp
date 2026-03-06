@@ -15,6 +15,24 @@ from shared.py.pydantic.common import DeviceName, Username
 from shared.py.pydantic.pem import PEMPublicKey
 
 
+__all__ = (
+    "ClientMessageAdapter",
+    "ClientMessage_T",
+    "UserBulkRequest",
+    "ClientHello",
+    "ClientAuth",
+    "AddDeviceOK",
+    "SelectDeviceIntention",
+    "SelectDeviceCancel",
+    "ServerHello",
+    "SessionComplete",
+    "EventMessage",
+    "NewDeviceServerHello",
+    "SelectDeviceIntentionFailure",
+    "NewDeviceClientHello",
+    "NewDeviceOK",
+    "AddDeviceRequest",
+)
 
 class BaseMessage(BaseModel, ABC):
     """Base class for connection management messages"""
@@ -28,7 +46,7 @@ class ClientMessage(BaseMessage, ABC):
 class ServerMessage(BaseMessage, ABC):
     seq: int | None = None # server doesnt need to specify a seq on model creation, only on serialise
 
-type ClientMessage_T = Annotated[ClientHello | ClientAuth | AddDeviceOK | SelectDeviceIntention | SelectDeviceCancel,  Field(discriminator="op")]
+type ClientMessage_T = Annotated[UserBulkRequest | ClientHello | ClientAuth | AddDeviceOK | SelectDeviceIntention | SelectDeviceCancel,  Field(discriminator="op")]
 ClientMessageAdapter: TypeAdapter[ClientMessage_T] = TypeAdapter(ClientMessage_T)
 
 # for normal operations
@@ -120,5 +138,9 @@ class NewDeviceOK(ServerMessage):
             device_public_key=public_key,
             encrypted_account_key=res.encrypted_account_key
         )
+
+class UserBulkRequest(ClientMessage):
+    op: Literal["user_bulk_request"]
+    user_ids: Annotated[list[UUID], Field(..., max_length=50)] 
 
 ClientMessageAdapter.rebuild()

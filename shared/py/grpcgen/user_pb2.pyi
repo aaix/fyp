@@ -13,6 +13,12 @@ class ReadUserRequest(_message.Message):
     user_id: _plib_pb2.pUUID
     def __init__(self, user_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ...) -> None: ...
 
+class ReadUserBulkRequest(_message.Message):
+    __slots__ = ("user_ids",)
+    USER_IDS_FIELD_NUMBER: _ClassVar[int]
+    user_ids: _containers.RepeatedCompositeFieldContainer[_plib_pb2.pUUID]
+    def __init__(self, user_ids: _Optional[_Iterable[_Union[_plib_pb2.pUUID, _Mapping]]] = ...) -> None: ...
+
 class ReadUserByUsernameRequest(_message.Message):
     __slots__ = ("username",)
     USERNAME_FIELD_NUMBER: _ClassVar[int]
@@ -73,11 +79,21 @@ class UsernameSearch(_message.Message):
     query: str
     def __init__(self, query: _Optional[str] = ...) -> None: ...
 
-class UsernameSearchResponse(_message.Message):
-    __slots__ = ("users",)
+class BulkUserResponse(_message.Message):
+    __slots__ = ("users", "errors")
     USERS_FIELD_NUMBER: _ClassVar[int]
+    ERRORS_FIELD_NUMBER: _ClassVar[int]
     users: _containers.RepeatedCompositeFieldContainer[UserSearchEntry]
-    def __init__(self, users: _Optional[_Iterable[_Union[UserSearchEntry, _Mapping]]] = ...) -> None: ...
+    errors: _containers.RepeatedCompositeFieldContainer[UserError]
+    def __init__(self, users: _Optional[_Iterable[_Union[UserSearchEntry, _Mapping]]] = ..., errors: _Optional[_Iterable[_Union[UserError, _Mapping]]] = ...) -> None: ...
+
+class UserError(_message.Message):
+    __slots__ = ("user_id", "error")
+    USER_ID_FIELD_NUMBER: _ClassVar[int]
+    ERROR_FIELD_NUMBER: _ClassVar[int]
+    user_id: _plib_pb2.pUUID
+    error: str
+    def __init__(self, user_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., error: _Optional[str] = ...) -> None: ...
 
 class UserSearchEntry(_message.Message):
     __slots__ = ("user_id", "opt_avatar_asset_id", "username", "public_key")

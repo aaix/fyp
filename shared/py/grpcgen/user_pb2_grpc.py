@@ -66,10 +66,15 @@ class UserServiceStub(object):
                 request_serializer=user__pb2.ReadUserByUsernameRequest.SerializeToString,
                 response_deserializer=user__pb2.CheckUsernameResponse.FromString,
                 _registered_method=True)
+        self.UserBulkReader = channel.unary_unary(
+                '/dataservices.userproto.UserService/UserBulkReader',
+                request_serializer=user__pb2.ReadUserBulkRequest.SerializeToString,
+                response_deserializer=user__pb2.BulkUserResponse.FromString,
+                _registered_method=True)
         self.UsernameSearcher = channel.unary_unary(
                 '/dataservices.userproto.UserService/UsernameSearcher',
                 request_serializer=user__pb2.UsernameSearch.SerializeToString,
-                response_deserializer=user__pb2.UsernameSearchResponse.FromString,
+                response_deserializer=user__pb2.BulkUserResponse.FromString,
                 _registered_method=True)
 
 
@@ -114,6 +119,12 @@ class UserServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def UserBulkReader(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def UsernameSearcher(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -153,10 +164,15 @@ def add_UserServiceServicer_to_server(servicer, server):
                     request_deserializer=user__pb2.ReadUserByUsernameRequest.FromString,
                     response_serializer=user__pb2.CheckUsernameResponse.SerializeToString,
             ),
+            'UserBulkReader': grpc.unary_unary_rpc_method_handler(
+                    servicer.UserBulkReader,
+                    request_deserializer=user__pb2.ReadUserBulkRequest.FromString,
+                    response_serializer=user__pb2.BulkUserResponse.SerializeToString,
+            ),
             'UsernameSearcher': grpc.unary_unary_rpc_method_handler(
                     servicer.UsernameSearcher,
                     request_deserializer=user__pb2.UsernameSearch.FromString,
-                    response_serializer=user__pb2.UsernameSearchResponse.SerializeToString,
+                    response_serializer=user__pb2.BulkUserResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -334,6 +350,33 @@ class UserService(object):
             _registered_method=True)
 
     @staticmethod
+    def UserBulkReader(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/dataservices.userproto.UserService/UserBulkReader',
+            user__pb2.ReadUserBulkRequest.SerializeToString,
+            user__pb2.BulkUserResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
     def UsernameSearcher(request,
             target,
             options=(),
@@ -349,7 +392,7 @@ class UserService(object):
             target,
             '/dataservices.userproto.UserService/UsernameSearcher',
             user__pb2.UsernameSearch.SerializeToString,
-            user__pb2.UsernameSearchResponse.FromString,
+            user__pb2.BulkUserResponse.FromString,
             options,
             channel_credentials,
             insecure,

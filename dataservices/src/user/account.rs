@@ -1,11 +1,12 @@
 use crate::db_conn::db;
 use crate::errors::{DSResult};
 use crate::helpers::gen_timeuuid;
-use crate::models::user::User;
-use crate::protos::user_service::{CheckUsernameResponse, ReadUserByUsernameRequest, UsernameSearch, UsernameSearchResponse, UserSearchEntry};
+use crate::models::user::{self, User};
+use crate::protos::user_service::{BulkUserResponse, CheckUsernameResponse, ReadUserBulkRequest, ReadUserByUsernameRequest, UserError, UserSearchEntry, UsernameSearch};
 use crate::protos::{user_service};
 use crate::req_tuuid;
 
+use futures::future;
 use futures::stream::StreamExt;
 
 
@@ -95,7 +96,7 @@ impl ScyllaUserService {
     async fn _read_user_reuse(
         &self,
         user_id: CqlTimeuuid,
-    ) -> DSResult<Response<ReadUserResponse>> {
+    ) -> DSResult<ReadUserResponse> {
 
         let res = db().await.execute_unpaged(
             &self.read_user_prepared, (&user_id,)
@@ -108,13 +109,13 @@ impl ScyllaUserService {
         let avatar = row.opt_avatar_asset_id;
         let email = row.email;
 
-        Ok(Response::new(ReadUserResponse {
+        Ok(ReadUserResponse {
             user_id: Some(user_id.into()),
             avatar_asset_id: avatar.map(|asset_id| asset_id.into()),
             public_key,
             username,
             email,
-        }))
+        })
     }
 
 
@@ -125,7 +126,7 @@ impl ScyllaUserService {
 
         let user_id: CqlTimeuuid = req_tuuid!(request, user_id)?;
 
-        Ok(self._read_user_reuse(user_id).await?)
+        Ok(Response::new(self._read_user_reuse(user_id).await?))
     }
 
     async fn create_user_impl(
@@ -250,14 +251,14 @@ impl ScyllaUserService {
         };
 
 
-        Ok(self._read_user_reuse(user_id).await?)
+        Ok(Response::new(self._read_user_reuse(user_id).await?))
 
     }
 
     async fn username_searcher_impl(
         &self,
         request: Request<UsernameSearch>,
-    ) -> DSResult<Response<UsernameSearchResponse>> {
+    ) -> DSResult<Response<BulkUserResponse>> {
         // TODO: use elastisearch
 
         let query = &request.get_ref().query;
@@ -280,8 +281,48 @@ impl ScyllaUserService {
             });
         }
 
-        Ok(Response::new(UsernameSearchResponse { users: users }))
+        Ok(Response::new(BulkUserResponse { users: users, errors: Vec::new() }))
 
+    }
+
+    async fn user_bulk_reader_impl(
+        &self,
+        request: Request<ReadUserBulkRequest>,
+    ) -> DSResult<Response<BulkUserResponse>> {
+        
+        let user_ids = request.into_inner().user_ids;
+
+
+        let futures = user_ids.into_iter().map(async |user_id| {
+            (user_id, self._read_user_reuse(user_id.into()).await)
+        });
+
+        let users = future::join_all(futures).await;
+
+        let mut errors: Vec<UserError> = Vec::new();
+        let mut ok: Vec<UserSearchEntry> = Vec::new();
+
+        for user_res in users {
+            match user_res.1 {
+                Ok(user) => ok.push(
+                    UserSearchEntry {
+                        opt_avatar_asset_id: user.avatar_asset_id,
+                        user_id: Some(user_res.0),
+                        username: user.username,
+                        public_key: user.public_key
+                    }
+                ),
+                Err(e) => errors.push(
+                    UserError {
+                        user_id: Some(user_res.0),
+                        error: e.into()
+                    }
+                ),
+            }
+        };
+
+
+        Ok(Response::new(BulkUserResponse { users: ok, errors: errors }))
     }
 }
 
@@ -338,9 +379,17 @@ impl UserService for ScyllaUserService {
     async fn username_searcher(
         &self,
         request: Request<UsernameSearch>,
-    ) -> Result<Response<UsernameSearchResponse>, Status> {
+    ) -> Result<Response<BulkUserResponse>, Status> {
 
         Ok(self.username_searcher_impl(request).await?)
+    }
+
+    async fn user_bulk_reader(
+        &self,
+        request: Request<ReadUserBulkRequest>,
+    ) -> Result<Response<BulkUserResponse>, Status> {
+
+        Ok(self.user_bulk_reader_impl(request).await?)
     }
 
 }
