@@ -53,27 +53,28 @@ class GatewayController:
         log(f"Shut down all clients")
 
 
-    @tracer.start_as_current_span("Controller.accept_incoming")
     async def accept_incoming(self, ws: ServerConnection) -> None:
-        client = GatewayClient(self, ws)
-        self.__pending[client.id] = client
+        with tracer.start_as_current_span("Controller.accept_incoming"):
+            client = GatewayClient(self, ws)
+            self.__pending[client.id] = client
 
-        try:
-            user_id = await client.handshake()
-        except HandshakeFailed as failure:
-            log(f"Client {client.id} failed handshake due to {failure.reason.name}: {failure.message}")
-            if failure.reason == HandshakeFailed.Reason.BAD_AUTH:
-                code = GatewayCloseCode.UNAUTHORIZED
-            else:
-                code = GatewayCloseCode.HANDSHAKE_FAILED
-            return await client.close(code, failure.message)
-        except ConnectionClosed:
-            return await client.close(CloseCode.GOING_AWAY, "closed during handshake")
-        finally:
-            self.__pending.pop(client.id, None)
+            try:
+                user_id = await client.handshake()
+            except HandshakeFailed as failure:
+                log(f"Client {client.id} failed handshake due to {failure.reason.name}: {failure.message}")
+                if failure.reason == HandshakeFailed.Reason.BAD_AUTH:
+                    code = GatewayCloseCode.UNAUTHORIZED
+                else:
+                    code = GatewayCloseCode.HANDSHAKE_FAILED
+                return await client.close(code, failure.message)
+            except ConnectionClosed:
+                return await client.close(CloseCode.GOING_AWAY, "closed during handshake")
+            finally:
+                self.__pending.pop(client.id, None)
 
-        self.__by_user[user_id].add(client)
+            self.__by_user[user_id].add(client)
 
+        # dont put the loop in the trace
         await client.loop()
     
     def get_new_device_waiter(self, user_id: UUID, code: int) -> None | tuple[NewDeviceClientHello, Future[NewDeviceOK]]:
