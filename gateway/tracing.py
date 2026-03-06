@@ -35,7 +35,7 @@ trace.set_tracer_provider(provider)
 
 print("tracer provider set")
 
-tracer = trace.get_tracer("api")
+tracer = trace.get_tracer("gateway")
 
 shared_grpc.start_instrumentation()
 
