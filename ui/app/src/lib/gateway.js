@@ -103,9 +103,6 @@ class UserStore {
         const fetch_set = new Set(user_ids);
 
         const to_fetch = fetch_set.difference(this.user_set);
-        console.log(to_fetch);
-        console.log(fetch_set);
-        console.log(this.user_set);
 
         if (to_fetch.size == 0) {
             return user_ids.map((u_id) => this.users[u_id]);
