@@ -18,16 +18,6 @@ function userToProfile(user) {
   }
 }
 
-function profileFromApiResponse(res) {
-  const user = res?.data?.user ?? res?.data
-  if (!user) return { username: '', iconUrl: null, friendsCount: 0 }
-  return {
-    username: user.username ?? '',
-    iconUrl: getAvatarUrl(user),
-    friendsCount: 0,
-  }
-}
-
 export default function UserPage() {
   const { userId } = useParams()
   const location = useLocation()
@@ -55,9 +45,19 @@ export default function UserPage() {
         if (cancelled) return
 
         if (profileRes?.success && profileRes?.data) {
-          setProfile(profileFromApiResponse(profileRes))
+          const user = profileRes.data?.user ?? profileRes.data
+          setProfile({
+            username: user?.username ?? '',
+            iconUrl: user ? getAvatarUrl(user) : null,
+            friendsCount: 0,
+          })
         } else if (profileRes?.data) {
-          setProfile(profileFromApiResponse(profileRes))
+          const user = profileRes.data?.user ?? profileRes.data
+          setProfile({
+            username: user?.username ?? '',
+            iconUrl: user ? getAvatarUrl(user) : null,
+            friendsCount: 0,
+          })
         } else {
           setError('User not found')
         }

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { relationshipManager, userManager } from '../lib/user.js'
 import { getAvatarUrl } from '../lib/utils.js'
+import { gatewayFactory } from '../lib/gateway.js'
 
 const FRIENDS = 3
 
@@ -41,25 +42,15 @@ export default function FriendsListModal({ open, onClose }) {
           return
         }
 
-        const profiles = await Promise.all(
-          friendPeerIds.map(async (peerId) => {
-            try {
-              const pr = await userManager.getUserProfile(peerId)
-              if (cancelled) return null
-              const user = pr?.data?.user ?? pr?.data ?? pr
-              return {
-                user_id: peerId,
-                username: user?.username ?? '',
-                icon_url: user ? getAvatarUrl(user) : null,
-              }
-            } catch {
-              return { user_id: peerId, username: '', icon_url: null }
-            }
-          })
-        )
 
+        const users = await userManager.fetchUsersBulk(friendPeerIds)
         if (cancelled) return
-        setList(profiles.filter(Boolean))
+        const profiles = users.map((user) => ({
+          user_id: user.user_id,
+          username: user?.username ?? '',
+          icon_url: user ? getAvatarUrl(user) : null,
+        }))
+        setList(profiles)
       } catch (e) {
         if (!cancelled) setError(e?.message ?? 'Could not load friends')
       } finally {

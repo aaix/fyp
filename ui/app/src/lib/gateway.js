@@ -8,10 +8,10 @@ const GATEWAY_URL = "/gateway";
 
 
 export function gatewayFactory() {
-    if (gatewayFactory._gatewayPromise !== undefined) {
-        return gatewayFactory._gatewayPromise;
+    if (window._gatewayPromise !== undefined) {
+        return window._gatewayPromise;
     }
-    gatewayFactory._gatewayPromise = new Promise((resolve) => {
+    window._gatewayPromise = new Promise((resolve) => {
         let socket = new WebSocket(GATEWAY_URL);
 
         socket.addEventListener("open", () => {
@@ -19,12 +19,13 @@ export function gatewayFactory() {
         })
 
     })
-    return gatewayFactory._gatewayPromise;
+    return window._gatewayPromise;
 }
 
 class UserStore {
     constructor() {
         this.users = {}
+        this.user_set = new Set();
         this.waiters = {}
     }
 
@@ -33,7 +34,7 @@ class UserStore {
         if (waiters === undefined) {
             this.waiters[user_id] = [resolver];
         } else {
-            this.waiters.push(resolver);
+            waiters.push(resolver);
         }
     }
 
@@ -53,19 +54,20 @@ class UserStore {
             return
         }
 
-        const index = waiters.indexOf(item);
+        const index = waiters.indexOf(resolver);
         if (index !== -1) {
             waiters.splice(index, 1);
-            if (waiters.len() == 0) {
+            if (waiters.length === 0) {
                 delete this.waiters[user_id];
             }
         }
-        
     }
 
     addUsers(users) {
         for (let user of users) {
             this.users[user.user_id] = user;
+            this.user_set.add(user.user_id);
+            this._setWaiters(user.user_id, user);
         }
     }
 
@@ -74,20 +76,52 @@ class UserStore {
         return this.users[user_id] ?? null;
     }
 
-    waitUser(user_id, timeout=2000) {
+    waitUser(user_id, timeout = 2000) {
         return new Promise((resolve, reject) => {
             const cached = this.getUser(user_id);
             if (cached !== null) {
-                return cached
+                resolve(cached);
+                return;
             }
 
-            setTimeout(() => {
-                reject("Timeout occured");
-                this._removeWaiter(resolve);
+            const resolver = (user) => {
+                clearTimeout(timer);
+                resolve(user);
+            };
+            const timer = setTimeout(() => {
+                reject(new Error("Timeout occurred"));
+                this._removeWaiter(user_id, resolver);
             }, timeout);
-            this._addWaiter(user_id, resolve);
+            this._addWaiter(user_id, resolver);
         });
     }
+
+    async getUsersBulk(user_ids, timeout = 2000) {
+        if (!user_ids || user_ids.length === 0) return [];
+        const gateway = await gatewayFactory();
+
+        const fetch_set = new Set(user_ids);
+
+        const to_fetch = fetch_set.difference(this.user_set);
+        console.log(to_fetch);
+        console.log(fetch_set);
+        console.log(this.user_set);
+
+        if (to_fetch.size == 0) {
+            return user_ids.map((u_id) => this.users[u_id]);
+        }
+
+
+        await gateway.bulk_request_users(user_ids);
+
+        const results = await Promise.allSettled(
+            user_ids.map((id) => gateway.user_store.waitUser(id, timeout))
+        );
+        return results
+            .filter((p) => p.status === "fulfilled")
+            .map((p) => p.value);
+    }
+
 }
 
 
@@ -102,6 +136,7 @@ class Gateway {
     constructor(socket) {
         this.socket = socket;
         this.handshake_complete = false;
+        this.handshake_promise = new Promise((resolve) => {this.handshake_promise_resolver = resolve});
         this.handshake_started = false;
         this.adding_new_device = false;
         this.client_seq = 0;
@@ -124,6 +159,7 @@ class Gateway {
                 this.socket = socket;
                 this.handshake_complete = false;
                 this.handshake_started = false;
+                this.handshake_promise = new Promise((resolve) => {this.handshake_promise_resolver = resolve});
                 socket.addEventListener("message", (event) => {
                     this.onMessage(event);
                 })
@@ -133,6 +169,10 @@ class Gateway {
     }
 
     async bulk_request_users(user_ids) {
+
+        await this.handshake_promise;
+
+
         await this.send({
             op:"user_bulk_request",
             user_ids
@@ -212,6 +252,7 @@ class Gateway {
 
     async handler_session_complete() {
         this.handshake_complete = true;
+        this.handshake_promise_resolver()
     }
 
     async start_new_device_handshake(username, deviceName, otCallback, errCallback, successCallback) {
@@ -270,6 +311,8 @@ class Gateway {
     }
 
     async register_new_device(code, confirmCallback, errorCallback, successCallback) {
+
+        await this.handshake_promise;
 
         this.adding_new_device = true;
 
@@ -336,7 +379,7 @@ class Gateway {
         switch (event.intent) {
             case 'user_event':
                 this.user_store.addUsers(event.users);
-                if (event.errors.len() > 0) {
+                if (event.errors.length > 0) {
                     console.warn(event.errors);
                 }
                 break;

@@ -7,15 +7,6 @@ import { getAvatarUrl } from '../lib/utils.js'
 const CURRENT_REQUESTING_PEER = 1
 const PEER_REQUESTING_CURRENT = 2
 
-function profileFromResponse(res) {
-  const user = res?.data?.user ?? res?.data ?? res
-  if (!user) return { username: '', iconUrl: null }
-  return {
-    username: user.username ?? '',
-    iconUrl: user?.user_id ? getAvatarUrl(user) : null,
-  }
-}
-
 export default function NotificationsPage() {
   const [incoming, setIncoming] = useState([])
   const [sent, setSent] = useState([])
@@ -35,26 +26,21 @@ export default function NotificationsPage() {
         .filter((r) => Number(r.relationship) === CURRENT_REQUESTING_PEER)
         .map((r) => r.peer_id)
 
-      const fetchProfiles = async (peerIds) => {
-        return Promise.all(
-          peerIds.map(async (peerId) => {
-            try {
-              const pr = await userManager.getUserProfile(peerId)
-              const { username, iconUrl } = profileFromResponse(pr)
-              return { peerId, username, iconUrl }
-            } catch {
-              return { peerId, username: '', iconUrl: null }
-            }
-          })
-        )
-      }
+      const allPeerIds = [...new Set([...incomingPeers, ...sentPeers])]
 
-      const [incomingList, sentList] = await Promise.all([
-        fetchProfiles(incomingPeers),
-        fetchProfiles(sentPeers),
-      ])
-      setIncoming(incomingList)
-      setSent(sentList)
+      const users = await userManager.fetchUsersBulk(allPeerIds)
+      const userById = Object.fromEntries(users.map((u) => [u.user_id, u]))
+
+      const toRow = (peerId) => {
+        const user = userById[peerId]
+        return {
+          peerId,
+          username: user?.username ?? '',
+          iconUrl: user ? getAvatarUrl(user) : null,
+        }
+      }
+      setIncoming(incomingPeers.map(toRow))
+      setSent(sentPeers.map(toRow))
     } finally {
       setLoading(false)
     }

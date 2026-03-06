@@ -23,11 +23,10 @@ export class UserManager {
 
         return res;
     }
-    
-    async bulkRequestUsers(user_ids) {
-        const gateway = await gatewayFactory();
-        await gateway.bulk_request_users(user_ids);
 
+    async fetchUsersBulk(user_ids) {
+        const gateway = await gatewayFactory();
+        return await gateway.user_store.getUsersBulk(user_ids);
     }
 
 }

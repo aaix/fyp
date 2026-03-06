@@ -32,8 +32,8 @@ services:
       - shared-network
     image: az-dataservices:latest
     environment:
-      - SCYLLA_URI=172.31.0.2
-      - OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://172.31.0.254:4317
+      - SCYLLA_URI=172.31.0.7
+      - OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://172.31.0.754:4317
     depends_on:
       scylla-seed:
         condition: service_healthy
@@ -74,7 +74,7 @@ services:
   scylla-seed:
     networks:
       shared-network:
-        ipv4_address: 172.31.0.2
+        ipv4_address: 172.31.0.7
       
     image: az-database:latest
     volumes:
