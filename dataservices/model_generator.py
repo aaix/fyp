@@ -90,6 +90,7 @@ class RustModelGenerator(ModelGenerator):
         "timeuuid": "value::CqlTimeuuid",
         "uuid": "uuid::Uuid",
         "timestamp": "value::CqlTimestamp",
+        "set<timeuuid>": "HashSet<value::CqlTimeuuid>",
     }
 
     @classmethod
@@ -118,8 +119,12 @@ class RustModelGenerator(ModelGenerator):
             # dependency tracking
             if rust_type.startswith("value::"):
                 dependencies.add("use scylla::value;")
-            if rust_type.startswith("uuid::"):
+
+            elif rust_type.startswith("uuid::"):
                 dependencies.add("use uuid;")
+
+            elif rust_type.startswith("HashSet"):
+                dependencies.add("use std::collections::HashSet;")
         lines.append("}")
 
         return "\n".join(chain(header, sorted(dependencies), lines))

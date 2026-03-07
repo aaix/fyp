@@ -55,11 +55,11 @@ CREATE TABLE dataservices.channel (
     channel_id TIMEUUID,
     channel_type INT,
     opt_channel_name TEXT, 
-    channel_members: set<TIMEUUID>,
-    opt_channel_icon_asset_id: UUID, 
+    channel_members set<TIMEUUID>,
+    opt_channel_icon_asset_id UUID, 
 
-    PRIMARY KEY (channel_id);
-)
+    PRIMARY KEY (channel_id)
+);
 
 -- denormalized form for optimum querying performance
 CREATE TABLE dataservices.user_channels (
