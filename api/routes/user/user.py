@@ -7,7 +7,7 @@ from api import *
 
 from api.routes.user.models import *
 from api.types.params import UserParam
-from api.utils import unwrap
+from api.utils import assert_user_isnt_self, unwrap
 
 from shared.py.grpc.id import puuid_uuid
 from shared.py.grpc.lazy import LazyGRPC
@@ -37,7 +37,7 @@ async def get_user_profile(s: SessionParam, user: UserParam) -> UserProfileRespo
     )
 
 @UserRouter.get("/relationships")
-async def my_relationships(s:SessionParam) -> RelationshipsResponse:
+async def my_relationships(s: SessionParam) -> RelationshipsResponse:
     
     res = await read_relationships(grpcrelationship, s.user_id)
 
@@ -56,6 +56,7 @@ async def my_relationships(s:SessionParam) -> RelationshipsResponse:
 @UserRouter.put("/relationship/{user_id}/friend")
 async def friend_user(s: SessionParam, peer: UserParam) -> UserRelationshipResponse:
     
+    assert_user_isnt_self(s, peer)
     
     peer_id = puuid_uuid(peer.user_id) or unwrap()
 
@@ -76,7 +77,9 @@ async def friend_user(s: SessionParam, peer: UserParam) -> UserRelationshipRespo
 
 @UserRouter.delete("/relationship/{user_id}/friend")
 async def unfriend_user(s: SessionParam, peer: UserParam) -> None:
-    
+    assert_user_isnt_self(s, peer)
+
+
     async with PeerRelationshipManager(grpcrelationship, s.user_id, peer.user_id) as r:
         if await r.is_peer_requesting():
             await PeerRelationshipManager(grpcrelationship, peer.user_id, s.user_id).cancel_request_to_peer()
@@ -91,8 +94,12 @@ async def unfriend_user(s: SessionParam, peer: UserParam) -> None:
 
 @UserRouter.put("/relationship/{user_id}/block")
 async def block_user(s: SessionParam, peer: UserParam) -> UserRelationshipResponse:
-    
+    assert_user_isnt_self(s, peer)
+
     peer_id = puuid_uuid(peer.user_id) or unwrap()
+
+    if peer_id == s.user_id:
+        raise ApiErrExc(errors.BadRequest("Cannot friend yourself", api_error_code=errors.ERROR_BAD_REQUEST))
 
     async with PeerRelationshipManager(grpcrelationship, s.user_id, peer.user_id) as r:
 
@@ -114,6 +121,7 @@ async def block_user(s: SessionParam, peer: UserParam) -> UserRelationshipRespon
 
 @UserRouter.delete("/relationship/{user_id}/block")
 async def unblock_user(s: SessionParam, peer: UserParam) -> None:
+    assert_user_isnt_self(s, peer)
 
 
     async with PeerRelationshipManager(grpcrelationship, s.user_id, peer.user_id) as r:
