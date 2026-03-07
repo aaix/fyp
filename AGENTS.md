@@ -21,10 +21,8 @@ This is a private social media platform with end-to-end encrypted messaging ("az
 ### Running the full stack
 
 1. **Docker must be running** (`sudo dockerd` if not already started).
-2. Ensure ScyllaDB data directories have open permissions: `sudo chmod -R 777 /workspace/database/data/`.
-3. Start services: `sudo docker compose up -d` from the workspace root. ScyllaDB (`scylla-seed`) must become healthy before `dataservices-0` will start.
-4. Apply the database schema (only needed on first run or after wiping data): `sudo docker exec workspace-scylla-seed-1 cqlsh -f /schema.cql`.
-5. Start the frontend dev server: `npm run dev` in `ui/app/`.
+2. Bootstrap local images + env + services with one command: `bash start.bash` from the workspace root.
+3. Start the frontend dev server: `npm run dev` in `ui/app/`.
 
 The Vite dev server proxies `/api` to the API container at `172.31.0.20:8000` and `/gateway` to the Gateway container at `172.31.0.30:80` (Docker compose network IPs).
 
@@ -32,8 +30,9 @@ The Vite dev server proxies `/api` to the API container at `172.31.0.20:8000` an
 
 - **Python 3.14 required**: The API and Gateway use PEP 649 (deferred annotation evaluation), so they cannot be imported/run locally with Python 3.12. Always run them in Docker. Local venvs (`api/.venv`, `gateway/.venv`) are useful only for IDE autocompletion—not for running the services.
 - **ScyllaDB startup is slow**: The seed node takes ~30-60 seconds to become healthy. The `dataservices-0` container depends on it and will wait automatically.
-- **ScyllaDB data directory permissions**: The bind-mount directories under `database/data/` must be writable by the ScyllaDB container user. If you get `PermissionError`, run `sudo chmod -R 777 /workspace/database/data/`.
-- **Docker images must be rebuilt** after code changes to backend services: `sudo docker build --build-context shared=./shared/ ./api -t az-api:latest` (similarly for gateway and dataservices). See `build.bash`.
+- **One-command bootstrap**: `start.bash` auto-creates `.env.cloud` from `.env.cloud.example`, sets Scylla data permissions, builds missing images, starts required services, and applies schema only when missing.
+- **Docker images must be rebuilt** after code changes to backend services: run `bash build.bash` (or `FORCE_IMAGE_BUILD=1 bash start.bash`).
+- **Compose profile note**: extra Scylla nodes use profile `full-cluster`; default startup only launches services required for UI work.
 - **No healthcheck on docker-compose**: The `scylla-seed` container has a healthcheck, but `dataservices-0`, `api-0`, and `gateway-0` do not. Check `sudo docker logs <container>` to verify they started.
 
 ### Standard commands
@@ -43,4 +42,5 @@ The Vite dev server proxies `/api` to the API container at `172.31.0.20:8000` an
 - **Dev server**: `npm run dev` in `ui/app/`
 - **Rust check**: `cargo check` in `dataservices/`
 - **Build all Docker images**: `bash build.bash` from workspace root
-- **Start all services**: `sudo docker compose up -d` from workspace root
+- **Bootstrap UI-ready services**: `bash start.bash` from workspace root
+- **Start full Scylla cluster (optional)**: `sudo docker compose --profile full-cluster up -d`

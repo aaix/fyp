@@ -3,3 +3,4 @@ database/data
 api/.venv
 *__pycache__
 .env
+.env.cloud
