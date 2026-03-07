@@ -60,7 +60,7 @@ function getTitleFromPathname(pathname) {
       return 'Notifications'
     default:
       if (pathname.startsWith('/user/')) {
-        return 'Profile'
+        return null
       }
       return 'App'
   }
@@ -91,7 +91,12 @@ function App() {
       return
     }
 
-    document.title = `az7 | ${getTitleFromPathname(location.pathname)}`
+    const routeTitle = getTitleFromPathname(location.pathname)
+    if (!routeTitle) {
+      return
+    }
+
+    document.title = `az7 | ${routeTitle}`
   }, [isLoggedIn, location.pathname])
 
   if (isLoggedIn === null) {

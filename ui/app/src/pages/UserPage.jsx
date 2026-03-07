@@ -81,9 +81,9 @@ export default function UserPage() {
   }, [userId])
 
   useEffect(() => {
-    const username = (profile.username || stateUser?.username || '').replace(/^@+/, '').trim()
+    const username = (profile.username || stateUser?.username || userId || '').replace(/^@+/, '').trim()
     document.title = `az7 | ${username ? `@${username}` : 'Profile'}`
-  }, [profile.username, stateUser?.username])
+  }, [profile.username, stateUser?.username, userId])
 
   const handleFriendAction = async () => {
     if (!userId || relationship === FRIENDS) return
