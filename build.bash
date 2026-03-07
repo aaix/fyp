@@ -1,6 +1,11 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-. ./database/dockerbuild.sh
-. ./api/dockerbuild.sh
-. ./gateway/dockerbuild.sh
-. ./dataservices/dockerbuild.sh
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+TAG="${1:-latest}"
+
+bash "${ROOT_DIR}/database/dockerbuild.sh" "${TAG}"
+bash "${ROOT_DIR}/api/dockerbuild.sh" "${TAG}"
+bash "${ROOT_DIR}/gateway/dockerbuild.sh" "${TAG}"
+bash "${ROOT_DIR}/dataservices/dockerbuild.sh" "${TAG}"

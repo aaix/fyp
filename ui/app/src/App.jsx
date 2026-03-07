@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import AuthPage from './pages/AuthPage.jsx'
 import AppLayout from './components/AppLayout.jsx'
 import HomePage from './pages/HomePage.jsx'
@@ -44,8 +44,31 @@ function useAuth() {
   return [isLoggedIn, () => setIsLoggedIn(true)]
 }
 
+function getTitleFromPathname(pathname) {
+  switch (pathname) {
+    case '/':
+      return 'Feed'
+    case '/messages':
+      return 'Messages'
+    case '/account':
+      return 'Account'
+    case '/account/settings':
+      return 'Settings'
+    case '/search':
+      return 'Search'
+    case '/notifications':
+      return 'Notifications'
+    default:
+      if (pathname.startsWith('/user/')) {
+        return null
+      }
+      return 'App'
+  }
+}
+
 function App() {
   const [isLoggedIn, setLoggedIn] = useAuth()
+  const location = useLocation()
 
   useEffect(() => {
     if (!isLoggedIn) {
@@ -62,6 +85,19 @@ function App() {
       cancelled = true
     }
   }, [isLoggedIn])
+
+  useEffect(() => {
+    if (!isLoggedIn) {
+      return
+    }
+
+    const routeTitle = getTitleFromPathname(location.pathname)
+    if (!routeTitle) {
+      return
+    }
+
+    document.title = `az7 | ${routeTitle}`
+  }, [isLoggedIn, location.pathname])
 
   if (isLoggedIn === null) {
     return null

@@ -52,12 +52,6 @@ services:
       - dataservices-0
     ports:
       - 8000:8000
-    deploy:
-      resources:
-        # container has been crashing the host so its memory is limited
-        limits:
-          memory: 1024M
-          cpus: '2'
   
   gateway-0:
     networks:
@@ -90,6 +84,8 @@ services:
 
   scylla-node1:
     <<: *scylla-base
+    profiles:
+      - full-cluster
     volumes:
       - type: bind
         source: ./database/data/scylla1/
@@ -103,6 +99,8 @@ services:
 
   scylla-node2:
     <<: *scylla-base
+    profiles:
+      - full-cluster
     volumes:
       - type: bind
         source: ./database/data/scylla2/
@@ -116,6 +114,8 @@ services:
 
   scylla-node3:
     <<: *scylla-base
+    profiles:
+      - full-cluster
     volumes:
       - type: bind
         source: ./database/data/scylla3/
@@ -129,6 +129,8 @@ services:
 
   scylla-node4:
     <<: *scylla-base
+    profiles:
+      - full-cluster
     volumes:
       - type: bind
         source: ./database/data/scylla4/
