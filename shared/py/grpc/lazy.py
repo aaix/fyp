@@ -27,7 +27,10 @@ class LazyGRPC[T: _GRPCStub]:
         
     @property
     def channel(self) -> grpc.aio.Channel:
-        return grpc.aio.insecure_channel(self.factory_uri)
+        if self._channel is None:
+            self._channel = grpc.aio.insecure_channel(self.factory_uri)
+            assert self._channel is not None
+        return self._channel
 
 
 
