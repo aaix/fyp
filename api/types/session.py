@@ -5,10 +5,13 @@ from uuid import UUID
 
 import msgpack
 
-from api.responses import ErrorResponse
-from api.responses.errors import Unauthorized
+from api.responses import ApiErrExc, ErrorResponse
+from api.responses import errors
 from api.responses.status_codes import ERROR_SESSION_EXPIRED
 from api.utils import now
+
+from shared.py.grpc.id import id_compare
+from shared.py.grpcgen import user_pb2
 
 CONF_SESSION_DURATION = 4 * 60 * 60 # 4 hours
 
@@ -46,5 +49,10 @@ class Session:
 
     def validate(self) -> None | ErrorResponse:
         if self.issued + CONF_SESSION_DURATION < now():
-            return Unauthorized("Session expired", api_error_code=ERROR_SESSION_EXPIRED)
+            return errors.Unauthorized("Session expired", api_error_code=ERROR_SESSION_EXPIRED)
+    
+    def assert_user_isnt_self(self, peer: user_pb2.ReadUserResponse):
+        if id_compare(self.user_id, peer.user_id):
+            raise ApiErrExc(errors.BadRequest("A request cannot target the current user", api_error_code=errors.ERROR_BAD_REQUEST))
+
 

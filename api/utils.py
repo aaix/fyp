@@ -1,4 +1,4 @@
-from typing import Any, Literal, LiteralString, Never, overload
+from typing import Any, Literal, Never, overload
 
 
 from collections.abc import Callable
@@ -6,7 +6,6 @@ from datetime import datetime, UTC
 
 from grpc import RpcError, StatusCode
 
-from api.middleware.auth import SessionParam
 from api.responses import ErrorResponse, errors, ApiErrExc
 from api.types.extensions import SupportsStr
 from shared.py.grpc.id import id_compare
@@ -25,9 +24,6 @@ def now() -> int:
     return int(datetime.now(UTC).timestamp())
 
 
-def assert_user_isnt_self(s: SessionParam, peer: user_pb2.ReadUserResponse):
-    if id_compare(s.user_id, peer.user_id):
-        raise ApiErrExc(errors.BadRequest("A request cannot target the current user", api_error_code=errors.ERROR_BAD_REQUEST))
 
 
 class RpcErrHandler:
