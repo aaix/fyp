@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package dataservices.channel;
+package dataservices.channelproto;
 
 import "plib.proto";
 

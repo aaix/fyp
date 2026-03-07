@@ -3,7 +3,6 @@ pub mod plib {
 
     // impls
     use scylla::value::CqlTimeuuid;
-    use uuid::Uuid;
     impl From<uuid::Uuid> for PUuid {
         fn from(uuid: uuid::Uuid) -> Self {
             let (id_high, id_low) = uuid.as_u64_pair();
@@ -50,5 +49,9 @@ pub mod plib {
 
 pub mod user_service {
     tonic::include_proto!("dataservices.userproto");
+}
+
+pub mod channel_service {
+    tonic::include_proto!("dataservices.channelproto");
 }
 
