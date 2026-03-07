@@ -32,7 +32,7 @@ export default function ProfileView({
   )
 
   return (
-    <main className="flex flex-1 flex-col items-center overflow-y-auto px-5 pb-[calc(1.5rem+var(--bottom-nav-height)+env(safe-area-inset-bottom))] pt-6">
+    <main className="flex flex-1 flex-col items-center overflow-y-auto px-5 pb-[calc(1.5rem+var(--bottom-nav-height)+env(safe-area-inset-bottom))] pt-6 md:px-8 md:pb-6">
       {iconUrl ? (
         <img
           src={iconUrl}

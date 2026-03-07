@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { getCurrentSession } from '../lib/session.js'
 import { gatewayFactory } from '../lib/gateway.js'
 import Button from '../components/Button.jsx'
@@ -15,6 +15,10 @@ export default function AuthPage({ onLogin }) {
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(false)
   const [info, setInfo] = useState(null)
+
+  useEffect(() => {
+    document.title = 'az7 | Sign in'
+  }, [])
 
   const handleChange = (e) => {
     const { name, value } = e.target

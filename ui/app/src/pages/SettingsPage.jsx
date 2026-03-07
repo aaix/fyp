@@ -225,7 +225,7 @@ export default function SettingsPage() {
               <div className="flex flex-wrap items-center justify-end gap-2">
                 <button
                   type="button"
-                  className="inline-flex items-center gap-1 rounded-pill bg-[color:var(--accent)] px-3 py-1.5 text-xs font-semibold text-white shadow-[0_10px_20px_rgba(15,23,42,0.18)] transition-transform transition-shadow hover:bg-[color:var(--accent-hover)] hover:shadow-[0_14px_28px_rgba(15,23,42,0.2)] disabled:cursor-not-allowed disabled:opacity-70 disabled:shadow-none"
+                  className="inline-flex items-center gap-1 rounded-pill bg-[color:var(--accent)] px-4 py-2 text-xs font-semibold text-white shadow-[0_10px_20px_rgba(15,23,42,0.18)] transition-transform transition-shadow hover:bg-[color:var(--accent-hover)] hover:shadow-[0_14px_28px_rgba(15,23,42,0.2)] disabled:cursor-not-allowed disabled:opacity-70 disabled:shadow-none"
                   onClick={handleRegisterNewDevice}
                   disabled={registerLoading}
                 >
@@ -285,23 +285,23 @@ export default function SettingsPage() {
                         <div className="mr-1 flex items-center gap-1">
                           <button
                             type="button"
-                            className="flex h-7 w-7 items-center justify-center rounded-full text-[color:var(--text-muted)] transition-colors hover:bg-[rgba(37,99,235,0.12)] hover:text-[color:var(--accent)]"
+                            className="flex h-9 w-9 items-center justify-center rounded-full text-[color:var(--text-muted)] transition-colors hover:bg-[rgba(37,99,235,0.12)] hover:text-[color:var(--accent)]"
                             onClick={(e) => openEditModal(device, e)}
                             title="Rename device"
                             aria-label={`Rename ${device.name}`}
                           >
-                            <span className="material-symbols-outlined text-sm" aria-hidden>
+                            <span className="material-symbols-outlined text-base" aria-hidden>
                               edit
                             </span>
                           </button>
                           <button
                             type="button"
-                            className="flex h-7 w-7 items-center justify-center rounded-full text-[color:var(--text-muted)] transition-colors hover:bg-[rgba(185,28,28,0.12)] hover:text-red-700"
+                            className="flex h-9 w-9 items-center justify-center rounded-full text-[color:var(--text-muted)] transition-colors hover:bg-[rgba(185,28,28,0.12)] hover:text-red-700"
                             onClick={(e) => openDeleteModal(device, e)}
                             title="Remove device"
                             aria-label={`Remove ${device.name}`}
                           >
-                            <span className="material-symbols-outlined text-sm" aria-hidden>
+                            <span className="material-symbols-outlined text-base" aria-hidden>
                               delete
                             </span>
                           </button>
