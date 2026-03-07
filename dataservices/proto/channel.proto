@@ -1,0 +1,87 @@
+syntax = "proto3";
+
+package dataservices.channel;
+
+import "plib.proto";
+
+
+service ChannelService {
+    rpc CreateChannel (CreateChannelRequest) returns (ChannelObjectResponse);
+    rpc ReadChannel (ReadChannelRequest) returns (ChannelObjectResponse);
+    rpc UpdateChannel (UpdateChannelRequest) returns (ChannelObjectResponse);
+    rpc DeleteChannel (ReadChannelRequest) returns (DeleteChannelResponse);
+
+    rpc AddChannelMembers (AddChannelMembersRequest) returns (AddChannelMembersResponse);
+    rpc RemoveChannelMembers (RemoveChannelMembersRequest) returns (RemoveChannelMembersResponse);
+    rpc UpdateChannelMember (UpdateChannelMemberRequest) returns (ChannelMemberObject);
+
+    rpc GetUserChannels (GetUserChannelsRequest) returns (UserChannelsResponse);
+
+}
+
+message CreateChannelRequest {
+    int32 channel_type = 1;
+    optional string opt_channel_name = 2;
+    optional dataservices.plib.pUUID channel_icon_asset_id = 3; 
+}
+
+message UpdateChannelRequest {
+    optional string opt_channel_name = 2;
+    optional dataservices.plib.pUUID channel_icon_asset_id = 3; 
+}
+
+message ReadChannelRequest {
+    dataservices.plib.pUUID channel_id = 1;
+}
+
+message DeleteChannelRequest {
+    dataservices.plib.pUUID channel_id = 1;
+}
+
+message DeleteChannelResponse {}
+
+message ChannelObjectResponse {
+    dataservices.plib.pUUID channel_id = 1;
+    int32 channel_type = 2;
+    optional string opt_channel_name = 3;
+    repeated dataservices.plib.pUUID channel_members = 4;
+    optional dataservices.plib.pUUID channel_icon_asset_id = 5;
+}
+
+message GetUserChannelsRequest {
+    dataservices.plib.pUUID user_id = 1;
+}
+
+message UserChannelsResponse {
+    repeated ChannelObjectResponse channels = 1;
+}
+
+message AddChannelMemberRequest {
+    dataservices.plib.pUUID user_id = 1;
+    dataservices.plib.pUUID channel_id = 2;
+    bytes encrypted_channel_key = 3;
+}
+
+message ChannelMemberObject {
+    dataservices.plib.pUUID user_id = 1;
+    dataservices.plib.pUUID channel_id = 2;
+    bytes encrypted_channel_key = 3;
+    int64 last_accessed = 4;
+}
+
+message AddChannelMembersRequest {
+    repeated AddChannelMemberRequest requests = 1;
+}
+
+message AddChannelMembersResponse {}
+
+message RemoveChannelMembersRequest {
+    repeated dataservices.plib.pUUID members = 1;
+}
+
+message RemoveChannelMembersResponse {}
+
+message UpdateChannelMemberRequest {
+    dataservices.plib.pUUID user_id = 1;
+    dataservices.plib.pUUID channel_id = 2;
+}

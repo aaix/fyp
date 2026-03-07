@@ -186,6 +186,7 @@ message ReadRelationshipsRequest {
 message HalfRelationship {
     dataservices.plib.pUUID user_id_b = 1;
     int32 relationship_type = 2;
+    int64 created_at = 3;
 }
 
 message RelationshipsResponse {

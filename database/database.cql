@@ -51,22 +51,33 @@ CREATE TABLE dataservices.relationship (
 );
 
 
-CREATE TABLE dataservices.message_channel (
-    channel_id UUID,
-    name TEXT,
-    channel_type INT, -- enum: 0 = direct message, 1 = group chat
-    owner__user_id TIMEUUID, -- foreign key: user.user_id
-    PRIMARY KEY (channel_id)
+CREATE TABLE dataservices.channel (
+    channel_id TIMEUUID,
+    channel_type INT,
+    opt_channel_name TEXT, 
+    channel_members: set<TIMEUUID>,
+    opt_channel_icon_asset_id: UUID, 
+
+    PRIMARY KEY (channel_id);
+)
+
+-- denormalized form for optimum querying performance
+CREATE TABLE dataservices.user_channels (
+    user_id TIMEUUID,
+    channel_id TIMEUUID,
+
+    encrypted_channel_key BLOB,
+
+    -- not a partition key otherwise would be able to be modified
+    -- therefore we cant sort it, we will have to limit it to server side
+    last_accessed TIMESTAMP,
+
+    opt_channel_name TEXT,
+    opt_channel_icon_asset_id TIMEUUID,
+
+    PRIMARY KEY (user_id, channel_id)
 );
 
-CREATE TABLE dataservices.message_channel_member (
-    channel_id UUID, -- foreign key: message_channel.channel_id
-    member__user_id TIMEUUID, -- foreign key: user.user_id
-    joined_at TIMESTAMP,
-    encrypted_shared_key BLOB, -- shared key encrypted by account public key
-    PRIMARY KEY (channel_id, member__user_id),
-);
-CREATE INDEX message_channel_by_member ON dataservices.message_channel_member (member__user_id);
 
 CREATE TABLE dataservices.message (
     channel_id UUID, -- foreign key: message_channel.channel_id
@@ -75,25 +86,15 @@ CREATE TABLE dataservices.message (
     message_type INT,
     opt_last_edited TIMESTAMP,
     opt_content BLOB,
+    opt_attachment_asset_id TIMEUUID,
+
+    -- we must know the bucket, however we can derive this from
+    -- the message timestamp
     PRIMARY KEY ((channel_id, bucket), message_id)
 ) WITH CLUSTERING ORDER BY (message_id DESC);
 
-CREATE TABLE dataservices.message_attachment (
-    message_id TIMEUUID, -- foreign key: message.message_id
-    asset_id TIMEUUID, -- foreign key: asset.asset_id
-    PRIMARY KEY (message_id, asset_id)
-);
 
--- storage path should be type/bucket_id/asset_id/file_name, we strip '-' from all UUID displays
--- e.g. avatar/0e0f41818ceb4e61bed9ba94ac7e170d/0e0f41818ceb4e61bed9ba94ac7e170d/avatar.png
-CREATE TABLE dataservices.asset (
-    asset_id TIMEUUID,
-    bucket_id UUID, -- potential foreign key: user.user_id or post.post_id
-    asset_type INT, -- enum: 0 = avatar, 1 = permanent post, 2 = temporary post, 3 = message attachment
-    content_type TEXT, -- MIME type
-    opt_file_name TEXT,
-    PRIMARY KEY (asset_id)
-);
+
 
 CREATE TABLE dataservices.post (
     post_id TIMEUUID,
@@ -104,7 +105,6 @@ CREATE TABLE dataservices.post (
     opt_comments INT, -- denormalized count of comments
     PRIMARY KEY (post_id),
 );
-CREATE INDEX post_by_author ON dataservices.post (author__user_id);
 
 
 CREATE TABLE dataservices.post_comment (
