@@ -267,6 +267,7 @@ dependencies = [
  "tonic-prost",
  "tonic-prost-build",
  "tonic-tracing-opentelemetry",
+ "tracing",
  "uuid",
 ]
 

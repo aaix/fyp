@@ -22,12 +22,13 @@ service ChannelService {
 message CreateChannelRequest {
     int32 channel_type = 1;
     optional string opt_channel_name = 2;
-    optional dataservices.plib.pUUID channel_icon_asset_id = 3; 
+    optional dataservices.plib.pUUID opt_channel_icon_asset_id = 3; 
 }
 
 message UpdateChannelRequest {
+    dataservices.plib.pUUID channel_id = 1;
     optional string opt_channel_name = 2;
-    optional dataservices.plib.pUUID channel_icon_asset_id = 3; 
+    optional dataservices.plib.pUUID opt_channel_icon_asset_id = 3; 
 }
 
 message ReadChannelRequest {
@@ -45,7 +46,7 @@ message ChannelObjectResponse {
     int32 channel_type = 2;
     optional string opt_channel_name = 3;
     repeated dataservices.plib.pUUID channel_members = 4;
-    optional dataservices.plib.pUUID channel_icon_asset_id = 5;
+    optional dataservices.plib.pUUID opt_channel_icon_asset_id = 5;
 }
 
 message GetUserChannelsRequest {
@@ -58,8 +59,7 @@ message UserChannelsResponse {
 
 message AddChannelMemberRequest {
     dataservices.plib.pUUID user_id = 1;
-    dataservices.plib.pUUID channel_id = 2;
-    bytes encrypted_channel_key = 3;
+    bytes encrypted_channel_key = 2;
 }
 
 message ChannelMemberObject {
@@ -70,7 +70,9 @@ message ChannelMemberObject {
 }
 
 message AddChannelMembersRequest {
-    repeated AddChannelMemberRequest requests = 1;
+    dataservices.plib.pUUID channel_id = 1;
+    CreateChannelRequest channel = 3;
+    repeated AddChannelMemberRequest requests = 2;
 }
 
 message AddChannelMembersResponse {}

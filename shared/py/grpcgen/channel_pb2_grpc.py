@@ -35,42 +35,42 @@ class ChannelServiceStub(object):
             channel: A grpc.Channel.
         """
         self.CreateChannel = channel.unary_unary(
-                '/dataservices.channel.ChannelService/CreateChannel',
+                '/dataservices.channelproto.ChannelService/CreateChannel',
                 request_serializer=channel__pb2.CreateChannelRequest.SerializeToString,
                 response_deserializer=channel__pb2.ChannelObjectResponse.FromString,
                 _registered_method=True)
         self.ReadChannel = channel.unary_unary(
-                '/dataservices.channel.ChannelService/ReadChannel',
+                '/dataservices.channelproto.ChannelService/ReadChannel',
                 request_serializer=channel__pb2.ReadChannelRequest.SerializeToString,
                 response_deserializer=channel__pb2.ChannelObjectResponse.FromString,
                 _registered_method=True)
         self.UpdateChannel = channel.unary_unary(
-                '/dataservices.channel.ChannelService/UpdateChannel',
+                '/dataservices.channelproto.ChannelService/UpdateChannel',
                 request_serializer=channel__pb2.UpdateChannelRequest.SerializeToString,
                 response_deserializer=channel__pb2.ChannelObjectResponse.FromString,
                 _registered_method=True)
         self.DeleteChannel = channel.unary_unary(
-                '/dataservices.channel.ChannelService/DeleteChannel',
+                '/dataservices.channelproto.ChannelService/DeleteChannel',
                 request_serializer=channel__pb2.ReadChannelRequest.SerializeToString,
                 response_deserializer=channel__pb2.DeleteChannelResponse.FromString,
                 _registered_method=True)
         self.AddChannelMembers = channel.unary_unary(
-                '/dataservices.channel.ChannelService/AddChannelMembers',
+                '/dataservices.channelproto.ChannelService/AddChannelMembers',
                 request_serializer=channel__pb2.AddChannelMembersRequest.SerializeToString,
                 response_deserializer=channel__pb2.AddChannelMembersResponse.FromString,
                 _registered_method=True)
         self.RemoveChannelMembers = channel.unary_unary(
-                '/dataservices.channel.ChannelService/RemoveChannelMembers',
+                '/dataservices.channelproto.ChannelService/RemoveChannelMembers',
                 request_serializer=channel__pb2.RemoveChannelMembersRequest.SerializeToString,
                 response_deserializer=channel__pb2.RemoveChannelMembersResponse.FromString,
                 _registered_method=True)
         self.UpdateChannelMember = channel.unary_unary(
-                '/dataservices.channel.ChannelService/UpdateChannelMember',
+                '/dataservices.channelproto.ChannelService/UpdateChannelMember',
                 request_serializer=channel__pb2.UpdateChannelMemberRequest.SerializeToString,
                 response_deserializer=channel__pb2.ChannelMemberObject.FromString,
                 _registered_method=True)
         self.GetUserChannels = channel.unary_unary(
-                '/dataservices.channel.ChannelService/GetUserChannels',
+                '/dataservices.channelproto.ChannelService/GetUserChannels',
                 request_serializer=channel__pb2.GetUserChannelsRequest.SerializeToString,
                 response_deserializer=channel__pb2.UserChannelsResponse.FromString,
                 _registered_method=True)
@@ -172,9 +172,9 @@ def add_ChannelServiceServicer_to_server(servicer, server):
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-            'dataservices.channel.ChannelService', rpc_method_handlers)
+            'dataservices.channelproto.ChannelService', rpc_method_handlers)
     server.add_generic_rpc_handlers((generic_handler,))
-    server.add_registered_method_handlers('dataservices.channel.ChannelService', rpc_method_handlers)
+    server.add_registered_method_handlers('dataservices.channelproto.ChannelService', rpc_method_handlers)
 
 
  # This class is part of an EXPERIMENTAL API.
@@ -195,7 +195,7 @@ class ChannelService(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/dataservices.channel.ChannelService/CreateChannel',
+            '/dataservices.channelproto.ChannelService/CreateChannel',
             channel__pb2.CreateChannelRequest.SerializeToString,
             channel__pb2.ChannelObjectResponse.FromString,
             options,
@@ -222,7 +222,7 @@ class ChannelService(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/dataservices.channel.ChannelService/ReadChannel',
+            '/dataservices.channelproto.ChannelService/ReadChannel',
             channel__pb2.ReadChannelRequest.SerializeToString,
             channel__pb2.ChannelObjectResponse.FromString,
             options,
@@ -249,7 +249,7 @@ class ChannelService(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/dataservices.channel.ChannelService/UpdateChannel',
+            '/dataservices.channelproto.ChannelService/UpdateChannel',
             channel__pb2.UpdateChannelRequest.SerializeToString,
             channel__pb2.ChannelObjectResponse.FromString,
             options,
@@ -276,7 +276,7 @@ class ChannelService(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/dataservices.channel.ChannelService/DeleteChannel',
+            '/dataservices.channelproto.ChannelService/DeleteChannel',
             channel__pb2.ReadChannelRequest.SerializeToString,
             channel__pb2.DeleteChannelResponse.FromString,
             options,
@@ -303,7 +303,7 @@ class ChannelService(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/dataservices.channel.ChannelService/AddChannelMembers',
+            '/dataservices.channelproto.ChannelService/AddChannelMembers',
             channel__pb2.AddChannelMembersRequest.SerializeToString,
             channel__pb2.AddChannelMembersResponse.FromString,
             options,
@@ -330,7 +330,7 @@ class ChannelService(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/dataservices.channel.ChannelService/RemoveChannelMembers',
+            '/dataservices.channelproto.ChannelService/RemoveChannelMembers',
             channel__pb2.RemoveChannelMembersRequest.SerializeToString,
             channel__pb2.RemoveChannelMembersResponse.FromString,
             options,
@@ -357,7 +357,7 @@ class ChannelService(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/dataservices.channel.ChannelService/UpdateChannelMember',
+            '/dataservices.channelproto.ChannelService/UpdateChannelMember',
             channel__pb2.UpdateChannelMemberRequest.SerializeToString,
             channel__pb2.ChannelMemberObject.FromString,
             options,
@@ -384,7 +384,7 @@ class ChannelService(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/dataservices.channel.ChannelService/GetUserChannels',
+            '/dataservices.channelproto.ChannelService/GetUserChannels',
             channel__pb2.GetUserChannelsRequest.SerializeToString,
             channel__pb2.UserChannelsResponse.FromString,
             options,

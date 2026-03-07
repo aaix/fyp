@@ -56,7 +56,7 @@ CREATE TABLE dataservices.channel (
     channel_type INT,
     opt_channel_name TEXT, 
     channel_members set<TIMEUUID>,
-    opt_channel_icon_asset_id UUID, 
+    opt_channel_icon_asset_id TIMEUUID, 
 
     PRIMARY KEY (channel_id)
 );

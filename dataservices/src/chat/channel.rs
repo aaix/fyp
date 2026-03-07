@@ -4,14 +4,27 @@ TABLE channel
 TABLE member
 */
 
-use tonic::async_trait;
+use std::collections::HashSet;
 
-use crate::protos::channel_service::{AddChannelMembersRequest, AddChannelMembersResponse, ChannelMemberObject, ChannelObjectResponse, CreateChannelRequest, DeleteChannelResponse, GetUserChannelsRequest, ReadChannelRequest, RemoveChannelMembersRequest, RemoveChannelMembersResponse, UpdateChannelMemberRequest, UpdateChannelRequest, UserChannelsResponse, channel_service_server::{ChannelService, ChannelServiceServer}};
+use futures::future::join_all;
+use scylla::{statement::prepared::PreparedStatement, value::{CqlTimeuuid, MaybeUnset}};
+use tonic::{Response, Status, async_trait};
+
+use crate::{db_conn::db, errors::DSResult, helpers::{gen_timeuuid, time_now}, models::channel::Channel, protos::channel_service::{AddChannelMembersRequest, AddChannelMembersResponse, ChannelMemberObject, ChannelObjectResponse, CreateChannelRequest, DeleteChannelResponse, GetUserChannelsRequest, ReadChannelRequest, RemoveChannelMembersRequest, RemoveChannelMembersResponse, UpdateChannelMemberRequest, UpdateChannelRequest, UserChannelsResponse, channel_service_server::{ChannelService, ChannelServiceServer}}, req_ref, req_tuuid};
 
 
 #[derive(Debug)]
 pub struct ScyllaChannelServiceServer {
+    create_channel_prepared: PreparedStatement,
+    read_channel_prepared: PreparedStatement,
+    update_channel_prepared: PreparedStatement,
+    delete_channel_prepared: PreparedStatement,
 
+    // for channel members
+    add_user_channel_prepared: PreparedStatement,
+    add_channel_members_prepared: PreparedStatement,
+    remove_channel_members_prepared: PreparedStatement,
+    delete_user_channel_prepared: PreparedStatement,
 }
 
 impl ScyllaChannelServiceServer {
@@ -28,8 +41,198 @@ impl ScyllaChannelServiceServer {
 
     pub async fn new() -> Result<ScyllaChannelServiceServer, Box<dyn std::error::Error>> {
 
-        Ok(Self {})
+        let create_channel_prepared = db().await.prepare(
+            "INSERT INTO dataservices.channel \
+                (channel_id, channel_type, opt_channel_name, channel_members, opt_channel_icon_asset_id) \
+                VALUES (?, ?, ?, ?, ?) \
+            "
+        ).await?;
+
+        let read_channel_prepared = db().await.prepare(
+            "SELECT * FROM dataservices.channel WHERE channel_id = ?"
+        ).await?;
+
+        let update_channel_prepared = db().await.prepare(
+            "UPDATE dataservices.channel SET opt_channel_name = ? AND opt_channel_icon_asset_id = ? \
+            WHERE channel_id = ?"
+        ).await?;
+
+        let delete_channel_prepared = db().await.prepare(
+            "DELETE FROM dataservices.channel WHERE channel_id = ?"
+        ).await?;
+
+        let add_user_channel_prepared = db().await.prepare(
+            "INSERT INTO dataservices.user_channels VALUES \
+            (user_id, channel_id, encrypted_channel_key, last_accessed, opt_channel_name, opt_channel_icon_asset_id)"
+        ).await?;
+
+        let add_channel_members_prepared = db().await.prepare(
+            "UPDATE dataservices.channel SET channel_members = channel_members + ? WHERE channel_id = ?"
+        ).await?;
+
+        let remove_channel_members_prepared = db().await.prepare(
+            "UPDATE dataservices.channel SET channel_members = channel_members - ? WHERE channel_id = ?"
+        ).await?;
+
+        let delete_user_channel_prepared = db().await.prepare(
+            "DELETE FROM dataservices.user_channels WHERE user_id = ? AND channel_id = ?"
+        ).await?;
+
+
+        Ok(Self {
+            create_channel_prepared,
+            read_channel_prepared,
+            update_channel_prepared,
+            delete_channel_prepared,
+
+            add_user_channel_prepared,
+            add_channel_members_prepared,
+            remove_channel_members_prepared,
+            delete_user_channel_prepared,
+
+        })
     }
+
+    async fn create_channel_impl(
+        &self,
+        request: tonic::Request<CreateChannelRequest>,
+    ) -> DSResult<tonic::Response<ChannelObjectResponse>> {
+
+        let owned = request.into_inner();
+
+        let channel_id = gen_timeuuid();
+        let members: HashSet<CqlTimeuuid> = HashSet::new();
+        let asset_id: Option<CqlTimeuuid> = owned.opt_channel_icon_asset_id.map(|u| u.into());
+
+        db().await.execute_unpaged(
+            &self.create_channel_prepared,
+            (channel_id, owned.channel_type, &owned.opt_channel_name, members, asset_id)
+        ).await?;
+
+
+        Ok(Response::new(ChannelObjectResponse {
+            channel_id: Some(channel_id.into()),
+            channel_type: owned.channel_type,
+            opt_channel_name: owned.opt_channel_name,
+            opt_channel_icon_asset_id: asset_id.map(|i| i.into()),
+            channel_members: Vec::new(),
+        }))
+    }
+
+    async fn _read_channel_reuse(&self, channel_id: CqlTimeuuid) -> DSResult<ChannelObjectResponse> {
+
+        let res = db().await.execute_unpaged(
+            &self.read_channel_prepared,
+            (channel_id,)
+        ).await?.into_rows_result()?.first_row::<Channel>()?;
+
+        Ok(ChannelObjectResponse {
+            channel_id: Some(res.channel_id.into()),
+            channel_type: res.channel_type,
+            opt_channel_name: res.opt_channel_name,
+            channel_members: res.channel_members.into_iter().map(Into::into).collect(),
+            opt_channel_icon_asset_id: res.opt_channel_icon_asset_id.map(|i| i.into()),
+        })
+    }
+
+    async fn read_channel_impl(
+        &self,
+        request: tonic::Request<ReadChannelRequest>,
+    ) -> DSResult<tonic::Response<ChannelObjectResponse>> {
+        let channel_id: CqlTimeuuid = req_tuuid!(request, channel_id)?;
+
+
+        Ok(Response::new(self._read_channel_reuse(channel_id).await?))
+
+    }
+
+    async fn update_channel_impl(
+        &self,
+        request: tonic::Request<UpdateChannelRequest>,
+    ) -> DSResult<tonic::Response<ChannelObjectResponse>> {
+        
+        let channel_id: CqlTimeuuid = req_tuuid!(request, channel_id)?;
+        let owned = request.into_inner();
+
+        let channel_name = MaybeUnset::from_option(owned.opt_channel_name);
+        let channel_icon: MaybeUnset<CqlTimeuuid> = MaybeUnset::from_option(owned.opt_channel_icon_asset_id.map(Into::into));
+
+        db().await.execute_unpaged(
+            &self.update_channel_prepared,
+            (
+                channel_name, channel_icon, channel_id
+            )
+        ).await?;
+
+        Ok(Response::new(self._read_channel_reuse(channel_id).await?))
+
+    }
+
+    async fn delete_channel_impl(
+        &self,
+        request: tonic::Request<ReadChannelRequest>,
+    ) -> DSResult<tonic::Response<DeleteChannelResponse>> { 
+        
+        let channel_id: CqlTimeuuid = req_tuuid!(request, channel_id)?;
+
+        db().await.execute_unpaged(
+            &self.delete_channel_prepared,
+            (channel_id,)
+        ).await?;
+
+        Ok(Response::new(DeleteChannelResponse {  }))
+
+    }
+
+    async fn add_channel_members_impl(
+        &self,
+        request: tonic::Request<AddChannelMembersRequest>,
+    ) -> DSResult<tonic::Response<AddChannelMembersResponse>> {
+
+        let channel_id: CqlTimeuuid = req_tuuid!(request, channel_id)?;
+        let channel = req_ref!(request, channel)?;
+
+        let inner = request.get_ref();
+
+        let member_ids = inner.requests.iter().filter_map(|r| {
+            r.user_id.map(Into::into)
+        }).collect::<Vec<CqlTimeuuid>>();
+
+        if member_ids.len() != inner.requests.len() {
+            return Err(Status::invalid_argument("member ids are not all Some").into());
+        }
+
+        let last_accessed = time_now();
+
+        db().await.execute_unpaged(
+            &self.add_channel_members_prepared,
+            (member_ids,)
+        ).await?;
+
+
+
+        let futures = inner.requests.iter().map(async |r| {
+            let user_id: CqlTimeuuid = r.user_id.unwrap().into();
+            db().await.execute_unpaged(
+                &self.add_user_channel_prepared,
+                (
+                    user_id,
+                    channel_id,
+                    &r.encrypted_channel_key,
+                    last_accessed,
+                    &channel.opt_channel_name,
+                    channel.opt_channel_icon_asset_id.map(Into::<CqlTimeuuid>::into)
+                )
+            ).await.map(|_| user_id)
+        });
+
+        let res = join_all(futures).await;
+
+        Ok(Response::new(AddChannelMembersResponse {}))
+
+
+    }
+    
 }
 
 #[async_trait]
@@ -41,7 +244,7 @@ impl ChannelService for ScyllaChannelServiceServer {
         tonic::Response<ChannelObjectResponse>,
         tonic::Status,
     > {
-        todo!()
+        Ok(self.create_channel_impl(request).await?)
     }
     async fn read_channel(
         &self,
@@ -49,28 +252,36 @@ impl ChannelService for ScyllaChannelServiceServer {
     ) -> std::result::Result<
         tonic::Response<ChannelObjectResponse>,
         tonic::Status,
-    > { todo!()}
+    > {
+        Ok(self.read_channel_impl(request).await?)
+    }
     async fn update_channel(
         &self,
         request: tonic::Request<UpdateChannelRequest>,
     ) -> std::result::Result<
         tonic::Response<ChannelObjectResponse>,
         tonic::Status,
-    > { todo!()}
+    > {
+        Ok(self.update_channel_impl(request).await?)
+    }
     async fn delete_channel(
         &self,
         request: tonic::Request<ReadChannelRequest>,
     ) -> std::result::Result<
         tonic::Response<DeleteChannelResponse>,
         tonic::Status,
-    > { todo!()}
+    > { 
+        Ok(self.delete_channel_impl(request).await?)
+    }
     async fn add_channel_members(
         &self,
         request: tonic::Request<AddChannelMembersRequest>,
     ) -> std::result::Result<
         tonic::Response<AddChannelMembersResponse>,
         tonic::Status,
-    > { todo!()}
+    > {
+        Ok(self.add_channel_members_impl(request).await?)
+    }
     async fn remove_channel_members(
         &self,
         request: tonic::Request<RemoveChannelMembersRequest>,
