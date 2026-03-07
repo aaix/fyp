@@ -1,13 +1,16 @@
-import { useParams, useLocation } from 'react-router-dom'
+import { useParams, useLocation, Navigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import ProfileView from '../components/ProfileView.jsx'
 import Button from '../components/Button.jsx'
 import { userManager, relationshipManager } from '../lib/user.js'
 import { getAvatarUrl } from '../lib/utils.js'
+import { getCurrentSession } from '../lib/session.js'
 
 const CURRENT_REQUESTING_PEER = 1
 const PEER_REQUESTING_CURRENT = 2
 const FRIENDS = 3
+const PEER_BLOCKED_CURRENT = 5
+const CURRENT_BLOCKED_PEER = 6
 
 function userToProfile(user) {
   if (!user) return { username: '', iconUrl: null, friendsCount: 0 }
@@ -18,13 +21,19 @@ function userToProfile(user) {
   }
 }
 
+function normId(id) {
+  return String(id ?? '').toLowerCase()
+}
+
 export default function UserPage() {
   const { userId } = useParams()
   const location = useLocation()
   const stateUser = location.state?.user
 
+  const [currentUserId, setCurrentUserId] = useState(null)
   const [profile, setProfile] = useState(() => userToProfile(stateUser))
   const [relationship, setRelationship] = useState(null)
+  const [blockRelationship, setBlockRelationship] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [actionLoading, setActionLoading] = useState(false)
@@ -38,11 +47,16 @@ export default function UserPage() {
         if (cancelled) return
         setLoading(true)
         setError(null)
-        const [profileRes, relRes] = await Promise.all([
+        const session = getCurrentSession()
+        const [profileRes, relRes, meRes] = await Promise.all([
           userManager.getUserProfile(userId),
           relationshipManager.getRelationships(),
+          session.getCurrentAccount(),
         ])
         if (cancelled) return
+
+        const meId = meRes?.data?.user_id ?? meRes?.data?.id ?? null
+        if (meId != null) setCurrentUserId(meId)
 
         if (profileRes?.success && profileRes?.data) {
           const user = profileRes.data?.user ?? profileRes.data
@@ -63,11 +77,12 @@ export default function UserPage() {
         }
 
         const relList = relRes?.data?.relationships ?? []
-        const norm = (id) => String(id ?? '').toLowerCase()
-        const peerRels = relList.filter((r) => norm(r.peer_id) === norm(userId)).map((r) => Number(r.relationship))
+        const peerRels = relList.filter((r) => normId(r.peer_id) === normId(userId)).map((r) => Number(r.relationship))
         // Prefer FRIENDS (3) > PEER_REQUESTING_CURRENT (2) > CURRENT_REQUESTING_PEER (1)
         const best = peerRels.includes(FRIENDS) ? FRIENDS : peerRels.includes(PEER_REQUESTING_CURRENT) ? PEER_REQUESTING_CURRENT : peerRels.includes(CURRENT_REQUESTING_PEER) ? CURRENT_REQUESTING_PEER : null
         setRelationship(best)
+        const blockBest = peerRels.includes(CURRENT_BLOCKED_PEER) ? CURRENT_BLOCKED_PEER : peerRels.includes(PEER_BLOCKED_CURRENT) ? PEER_BLOCKED_CURRENT : null
+        setBlockRelationship(blockBest)
       } catch (e) {
         if (!cancelled) setError(e?.message ?? 'Could not load profile')
       } finally {
@@ -98,14 +113,37 @@ export default function UserPage() {
     }
   }
 
+  const handleBlockAction = async () => {
+    if (!userId) return
+    setActionLoading(true)
+    try {
+      const isBlocked = blockRelationship === CURRENT_BLOCKED_PEER
+      const res = isBlocked
+        ? await relationshipManager.unblockUser(userId)
+        : await relationshipManager.blockUser(userId)
+      if (res?.success) {
+        setBlockRelationship(isBlocked ? null : CURRENT_BLOCKED_PEER)
+        setRelationship(null)
+      }
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  if (currentUserId != null && userId != null && normId(currentUserId) === normId(userId)) {
+    return <Navigate to="/account" replace />
+  }
+
   const isIncoming = relationship === PEER_REQUESTING_CURRENT
   const isSent = relationship === CURRENT_REQUESTING_PEER
   const isFriends = relationship === FRIENDS
   const showSendOrAccept = relationship == null || isIncoming
+  const isBlockedByMe = blockRelationship === CURRENT_BLOCKED_PEER
+  const isBlockedByThem = blockRelationship === PEER_BLOCKED_CURRENT
 
   const profileActions =
     !loading && !error ? (
-      <div className="flex justify-center">
+      <div className="flex justify-center flex-wrap gap-2">
         {showSendOrAccept && (
           <Button
             onClick={handleFriendAction}
@@ -123,6 +161,26 @@ export default function UserPage() {
         {isFriends && (
           <span className="text-sm font-medium text-[color:var(--text-muted)]">
             Friends
+          </span>
+        )}
+        {isBlockedByMe && (
+          <>
+            <Button variant="ghost" disabled className="cursor-default">
+              Blocked
+            </Button>
+            <Button variant="ghost" onClick={handleBlockAction} disabled={actionLoading} aria-label="Unblock user">
+              Unblock
+            </Button>
+          </>
+        )}
+        {!isBlockedByMe && !isBlockedByThem && (
+          <Button variant="ghost" onClick={handleBlockAction} disabled={actionLoading} aria-label="Block user">
+            Block
+          </Button>
+        )}
+        {isBlockedByThem && (
+          <span className="text-sm font-medium text-[color:var(--text-muted)]">
+            You are blocked
           </span>
         )}
       </div>
