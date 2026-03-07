@@ -32,6 +32,7 @@ class UserProfileResponse(BaseModel):
 class UserRelationshipResponse(BaseModel):
     peer_id: UUID
     relationship: RelationshipType
+    created_at: int
 
 class RelationshipsResponse(BaseModel):
     relationships: list[UserRelationshipResponse]

@@ -1,8 +1,6 @@
 from typing import Self, cast
 
-from dataclasses import dataclass, asdict
-from io import BytesIO
-from datetime import datetime, UTC
+from dataclasses import dataclass
 from uuid import UUID
 
 import msgpack
@@ -10,11 +8,10 @@ import msgpack
 from api.responses import ErrorResponse
 from api.responses.errors import Unauthorized
 from api.responses.status_codes import ERROR_SESSION_EXPIRED
+from api.utils import now
 
 CONF_SESSION_DURATION = 4 * 60 * 60 # 4 hours
 
-def _timenow() -> float:
-    return datetime.now(UTC).timestamp()
 
 
 @dataclass
@@ -42,12 +39,12 @@ class Session:
     @classmethod
     def new(cls, user_id: UUID) -> Self:
         return cls(
-            issued=_timenow(),
+            issued=now(),
             version=0,
             user_id=user_id,
         )
 
     def validate(self) -> None | ErrorResponse:
-        if self.issued + CONF_SESSION_DURATION < _timenow():
+        if self.issued + CONF_SESSION_DURATION < now():
             return Unauthorized("Session expired", api_error_code=ERROR_SESSION_EXPIRED)
 

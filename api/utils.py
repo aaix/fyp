@@ -2,7 +2,7 @@ from typing import Any, Literal, LiteralString, Never, overload
 
 
 from collections.abc import Callable
-from uuid import UUID
+from datetime import datetime, UTC
 
 from grpc import RpcError, StatusCode
 
@@ -19,6 +19,11 @@ __all__ = (
 
 def unwrap() -> Never:
     raise ApiErrExc(errors.InternalServerError("Illegal state occured"))
+
+def now() -> int:
+    """Return the current unix timestamp in ms"""
+    return int(datetime.now(UTC).timestamp())
+
 
 def assert_user_isnt_self(s: SessionParam, peer: user_pb2.ReadUserResponse):
     if id_compare(s.user_id, peer.user_id):

@@ -197,7 +197,8 @@ impl ScyllaUserRelationshipService {
             let row = row_res?;
             relationships.push(HalfRelationship {
                 user_id_b: Some(row.user_id_b.into()),
-                relationship_type: row.relationship_type
+                relationship_type: row.relationship_type,
+                created_at: row.created_at.0,
             })
         }
 

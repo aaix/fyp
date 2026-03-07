@@ -7,7 +7,7 @@ from api import *
 
 from api.routes.user.models import *
 from api.types.params import UserParam
-from api.utils import assert_user_isnt_self, unwrap
+from api.utils import assert_user_isnt_self, now, unwrap
 
 from shared.py.grpc.id import puuid_uuid
 from shared.py.grpc.lazy import LazyGRPC
@@ -47,7 +47,8 @@ async def my_relationships(s: SessionParam) -> RelationshipsResponse:
         out.append(
             UserRelationshipResponse(
                 peer_id=puuid_uuid(r.user_id_b) or unwrap(),
-                relationship=RelationshipType(r.relationship_type)
+                relationship=RelationshipType(r.relationship_type),
+                created_at=r.created_at
             )
         )
     return RelationshipsResponse(relationships=out)
@@ -70,10 +71,11 @@ async def friend_user(s: SessionParam, peer: UserParam) -> UserRelationshipRespo
             await r.set_friends()
             # cancel their request to me
             await PeerRelationshipManager(grpcrelationship, peer.user_id, s.user_id).cancel_request_to_peer()
-            return UserRelationshipResponse(peer_id=peer_id, relationship=RelationshipType.FRIENDS)
+            # we dont care about now being innacurate because of our eventual consistency model
+            return UserRelationshipResponse(peer_id=peer_id, relationship=RelationshipType.FRIENDS, created_at=now())
 
         await r.request_other()
-    return UserRelationshipResponse(peer_id=peer_id, relationship=RelationshipType.CURRENT_REQUESTING_PEER)
+    return UserRelationshipResponse(peer_id=peer_id, relationship=RelationshipType.CURRENT_REQUESTING_PEER, created_at=now())
 
 @UserRouter.delete("/relationship/{user_id}/friend")
 async def unfriend_user(s: SessionParam, peer: UserParam) -> None:
@@ -115,7 +117,8 @@ async def block_user(s: SessionParam, peer: UserParam) -> UserRelationshipRespon
 
         return UserRelationshipResponse(
             peer_id=peer_id,
-            relationship=RelationshipType(res.relationship_type)
+            relationship=RelationshipType(res.relationship_type),
+            created_at=now()
         )
 
 

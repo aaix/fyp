@@ -232,12 +232,14 @@ class ReadRelationshipsRequest(_message.Message):
     def __init__(self, user_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ...) -> None: ...
 
 class HalfRelationship(_message.Message):
-    __slots__ = ("user_id_b", "relationship_type")
+    __slots__ = ("user_id_b", "relationship_type", "created_at")
     USER_ID_B_FIELD_NUMBER: _ClassVar[int]
     RELATIONSHIP_TYPE_FIELD_NUMBER: _ClassVar[int]
+    CREATED_AT_FIELD_NUMBER: _ClassVar[int]
     user_id_b: _plib_pb2.pUUID
     relationship_type: int
-    def __init__(self, user_id_b: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., relationship_type: _Optional[int] = ...) -> None: ...
+    created_at: int
+    def __init__(self, user_id_b: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., relationship_type: _Optional[int] = ..., created_at: _Optional[int] = ...) -> None: ...
 
 class RelationshipsResponse(_message.Message):
     __slots__ = ("relationships",)
