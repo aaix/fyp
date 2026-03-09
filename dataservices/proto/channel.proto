@@ -54,7 +54,7 @@ message GetUserChannelsRequest {
 }
 
 message UserChannelsResponse {
-    repeated ChannelObjectResponse channels = 1;
+    repeated ChannelMemberObject channels = 1;
 }
 
 message AddChannelMemberRequest {
@@ -67,6 +67,8 @@ message ChannelMemberObject {
     dataservices.plib.pUUID channel_id = 2;
     bytes encrypted_channel_key = 3;
     int64 last_accessed = 4;
+    optional string opt_channel_name = 5;
+    optional dataservices.plib.pUUID opt_channel_icon_asset_id = 6;
 }
 
 message AddChannelMembersRequest {

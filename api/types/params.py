@@ -7,17 +7,18 @@ from fastapi import Depends, Path
 
 from api.utils import ResourceNotFoundRpcHandler, RpcErrHandler
 from shared.py.discovery import DiscoveryManager
+from shared.py.grpc.channel import get_channel
 from shared.py.grpc.lazy import LazyGRPC
 from shared.py.grpc.user import get_user
 
-from shared.py.grpcgen import user_pb2, user_pb2_grpc
+from shared.py.grpcgen import channel_pb2, channel_pb2_grpc, user_pb2, user_pb2_grpc
 
 
 discovery = DiscoveryManager()
 
 
 grpcuser = LazyGRPC(discovery.discover_dataservices(), user_pb2_grpc.UserServiceStub)
-grpcdevice = LazyGRPC(discovery.discover_dataservices(), user_pb2_grpc.UserDeviceServiceStub)
+grpcchannel = LazyGRPC(discovery.discover_dataservices(), channel_pb2_grpc.ChannelServiceStub)
 
 
 def RichUUIDParam[lazy_t: LazyGRPC, out_t](
@@ -35,4 +36,8 @@ def RichUUIDParam[lazy_t: LazyGRPC, out_t](
 
 UserParam = Annotated[user_pb2.ReadUserResponse, Depends(
     RichUUIDParam(ResourceNotFoundRpcHandler, grpcuser, get_user, "user_id"),
+)]
+
+ChannelParam = Annotated[channel_pb2.ChannelObjectResponse, Depends(
+    RichUUIDParam(ResourceNotFoundRpcHandler, grpcchannel, get_channel, "channel_id"),
 )]

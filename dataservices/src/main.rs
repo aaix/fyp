@@ -2,7 +2,7 @@ use tokio;
 use tonic::transport::Server;
 
 
-use dataservices::{helpers::gen_uuid, user::{account::ScyllaUserService, device::ScyallaUserDeviceService, relationship::ScyllaUserRelationshipService}};
+use dataservices::{chat::channel::ScyllaChannelServiceServer, helpers::gen_uuid, user::{account::ScyllaUserService, device::ScyallaUserDeviceService, relationship::ScyllaUserRelationshipService}};
 
 use tonic_tracing_opentelemetry::middleware::server::OtelGrpcLayer;
 use init_tracing_opentelemetry::resource::DetectResource;
@@ -40,6 +40,7 @@ async fn main() {
         .add_optional_service(ScyllaUserService::server().await)
         .add_optional_service(ScyallaUserDeviceService::server().await)
         .add_optional_service(ScyllaUserRelationshipService::server().await)
+        .add_optional_service(ScyllaChannelServiceServer::server().await)
         .serve(addr)
         .await.unwrap();
 

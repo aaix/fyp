@@ -6,7 +6,7 @@ from shared.py.grpcgen import channel_pb2
 from shared.py.grpcgen.channel_pb2_grpc import ChannelServiceStub
 
 
-async def read_channel(lazy: LazyGRPC[ChannelServiceStub], channel_id: id_t) -> channel_pb2.ChannelObjectResponse:
+async def get_channel(lazy: LazyGRPC[ChannelServiceStub], channel_id: id_t) -> channel_pb2.ChannelObjectResponse:
     return cast(channel_pb2.ChannelObjectResponse, await lazy.stub.ReadChannel(channel_pb2.ReadChannelRequest(
         channel_id=id_puuid(channel_id)
     )))

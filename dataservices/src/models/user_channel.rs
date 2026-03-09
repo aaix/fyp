@@ -2,12 +2,12 @@
 #![allow(nonstandard_style)]
 use scylla::DeserializeRow;
 use scylla::value;
-use std::collections::HashSet;
 #[derive(Debug, DeserializeRow)]
-pub struct Channel {
+pub struct UserChannel {
+    pub user_id: value::CqlTimeuuid,
     pub channel_id: value::CqlTimeuuid,
-    pub channel_type: i32,
+    pub encrypted_channel_key: Vec<u8>,
+    pub last_accessed: value::CqlTimestamp,
     pub opt_channel_name: Option<String>,
-    pub channel_members: HashSet<value::CqlTimeuuid>,
     pub opt_channel_icon_asset_id: Option<value::CqlTimeuuid>,
 }

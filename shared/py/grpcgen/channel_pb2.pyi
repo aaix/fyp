@@ -66,8 +66,8 @@ class GetUserChannelsRequest(_message.Message):
 class UserChannelsResponse(_message.Message):
     __slots__ = ("channels",)
     CHANNELS_FIELD_NUMBER: _ClassVar[int]
-    channels: _containers.RepeatedCompositeFieldContainer[ChannelObjectResponse]
-    def __init__(self, channels: _Optional[_Iterable[_Union[ChannelObjectResponse, _Mapping]]] = ...) -> None: ...
+    channels: _containers.RepeatedCompositeFieldContainer[ChannelMemberObject]
+    def __init__(self, channels: _Optional[_Iterable[_Union[ChannelMemberObject, _Mapping]]] = ...) -> None: ...
 
 class AddChannelMemberRequest(_message.Message):
     __slots__ = ("user_id", "encrypted_channel_key")
@@ -78,16 +78,20 @@ class AddChannelMemberRequest(_message.Message):
     def __init__(self, user_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., encrypted_channel_key: _Optional[bytes] = ...) -> None: ...
 
 class ChannelMemberObject(_message.Message):
-    __slots__ = ("user_id", "channel_id", "encrypted_channel_key", "last_accessed")
+    __slots__ = ("user_id", "channel_id", "encrypted_channel_key", "last_accessed", "opt_channel_name", "opt_channel_icon_asset_id")
     USER_ID_FIELD_NUMBER: _ClassVar[int]
     CHANNEL_ID_FIELD_NUMBER: _ClassVar[int]
     ENCRYPTED_CHANNEL_KEY_FIELD_NUMBER: _ClassVar[int]
     LAST_ACCESSED_FIELD_NUMBER: _ClassVar[int]
+    OPT_CHANNEL_NAME_FIELD_NUMBER: _ClassVar[int]
+    OPT_CHANNEL_ICON_ASSET_ID_FIELD_NUMBER: _ClassVar[int]
     user_id: _plib_pb2.pUUID
     channel_id: _plib_pb2.pUUID
     encrypted_channel_key: bytes
     last_accessed: int
-    def __init__(self, user_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., channel_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., encrypted_channel_key: _Optional[bytes] = ..., last_accessed: _Optional[int] = ...) -> None: ...
+    opt_channel_name: str
+    opt_channel_icon_asset_id: _plib_pb2.pUUID
+    def __init__(self, user_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., channel_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., encrypted_channel_key: _Optional[bytes] = ..., last_accessed: _Optional[int] = ..., opt_channel_name: _Optional[str] = ..., opt_channel_icon_asset_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ...) -> None: ...
 
 class AddChannelMembersRequest(_message.Message):
     __slots__ = ("channel_id", "channel", "requests")

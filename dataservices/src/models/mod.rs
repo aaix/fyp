@@ -3,6 +3,7 @@ pub mod user_by_username;
 pub mod user_device;
 pub mod relationship;
 pub mod channel;
+pub mod user_channel;
 pub mod message;
 pub mod post;
 pub mod post_comment;

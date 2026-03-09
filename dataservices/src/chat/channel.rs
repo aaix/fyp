@@ -6,11 +6,11 @@ TABLE member
 
 use std::collections::HashSet;
 
-use futures::future::join_all;
+use futures::{StreamExt, future::join_all};
 use scylla::{statement::prepared::PreparedStatement, value::{CqlTimeuuid, MaybeUnset}};
 use tonic::{Response, Status, async_trait};
 
-use crate::{db_conn::db, errors::DSResult, helpers::{gen_timeuuid, time_now}, models::channel::Channel, protos::channel_service::{AddChannelMembersRequest, AddChannelMembersResponse, ChannelMemberObject, ChannelObjectResponse, CreateChannelRequest, DeleteChannelResponse, GetUserChannelsRequest, ReadChannelRequest, RemoveChannelMembersRequest, RemoveChannelMembersResponse, UpdateChannelMemberRequest, UpdateChannelRequest, UserChannelsResponse, channel_service_server::{ChannelService, ChannelServiceServer}}, req_ref, req_tuuid};
+use crate::{db_conn::db, errors::DSResult, helpers::{gen_timeuuid, time_now}, models::{channel::Channel, user_channel::UserChannel}, protos::channel_service::{AddChannelMembersRequest, AddChannelMembersResponse, ChannelMemberObject, ChannelObjectResponse, CreateChannelRequest, DeleteChannelResponse, GetUserChannelsRequest, ReadChannelRequest, RemoveChannelMembersRequest, RemoveChannelMembersResponse, UpdateChannelMemberRequest, UpdateChannelRequest, UserChannelsResponse, channel_service_server::{ChannelService, ChannelServiceServer}}, req_ref, req_tuuid};
 
 
 #[derive(Debug)]
@@ -25,6 +25,8 @@ pub struct ScyllaChannelServiceServer {
     add_channel_members_prepared: PreparedStatement,
     remove_channel_members_prepared: PreparedStatement,
     delete_user_channel_prepared: PreparedStatement,
+
+    get_user_channels_prepared: PreparedStatement,
 }
 
 impl ScyllaChannelServiceServer {
@@ -44,8 +46,7 @@ impl ScyllaChannelServiceServer {
         let create_channel_prepared = db().await.prepare(
             "INSERT INTO dataservices.channel \
                 (channel_id, channel_type, opt_channel_name, channel_members, opt_channel_icon_asset_id) \
-                VALUES (?, ?, ?, ?, ?) \
-            "
+                VALUES (?, ?, ?, ?, ?)"
         ).await?;
 
         let read_channel_prepared = db().await.prepare(
@@ -53,7 +54,7 @@ impl ScyllaChannelServiceServer {
         ).await?;
 
         let update_channel_prepared = db().await.prepare(
-            "UPDATE dataservices.channel SET opt_channel_name = ? AND opt_channel_icon_asset_id = ? \
+            "UPDATE dataservices.channel SET opt_channel_name = ?, opt_channel_icon_asset_id = ? \
             WHERE channel_id = ?"
         ).await?;
 
@@ -62,8 +63,9 @@ impl ScyllaChannelServiceServer {
         ).await?;
 
         let add_user_channel_prepared = db().await.prepare(
-            "INSERT INTO dataservices.user_channels VALUES \
-            (user_id, channel_id, encrypted_channel_key, last_accessed, opt_channel_name, opt_channel_icon_asset_id)"
+            "INSERT INTO dataservices.user_channel \
+            (user_id, channel_id, encrypted_channel_key, last_accessed, opt_channel_name, opt_channel_icon_asset_id) \
+            VALUES (?, ?, ?, ?, ?, ?)"
         ).await?;
 
         let add_channel_members_prepared = db().await.prepare(
@@ -75,9 +77,13 @@ impl ScyllaChannelServiceServer {
         ).await?;
 
         let delete_user_channel_prepared = db().await.prepare(
-            "DELETE FROM dataservices.user_channels WHERE user_id = ? AND channel_id = ?"
+            "DELETE FROM dataservices.user_channel WHERE user_id = ? AND channel_id = ?"
         ).await?;
 
+
+        let get_user_channels_prepared = db().await.prepare(
+            "SELECT * FROM dataservices.user_channel WHERE user_id = ?",
+        ).await?;
 
         Ok(Self {
             create_channel_prepared,
@@ -90,6 +96,7 @@ impl ScyllaChannelServiceServer {
             remove_channel_members_prepared,
             delete_user_channel_prepared,
 
+            get_user_channels_prepared,
         })
     }
 
@@ -206,7 +213,7 @@ impl ScyllaChannelServiceServer {
 
         db().await.execute_unpaged(
             &self.add_channel_members_prepared,
-            (member_ids,)
+            (member_ids, channel_id)
         ).await?;
 
 
@@ -233,6 +240,40 @@ impl ScyllaChannelServiceServer {
 
     }
     
+
+    async fn get_user_channels_impl(
+        &self,
+        request: tonic::Request<GetUserChannelsRequest>,
+    ) -> DSResult<tonic::Response<UserChannelsResponse>> {
+
+        let user_id: CqlTimeuuid = req_tuuid!(request, user_id)?;
+
+        let mut pager = db().await.execute_iter(
+            self.get_user_channels_prepared.clone(),
+            (user_id,)
+        ).await?.rows_stream::<UserChannel>()?;
+
+        let mut out = Vec::new();
+
+        while let Some(channel_res) = pager.next().await {
+            let channel = channel_res?;
+            out.push(
+                ChannelMemberObject {
+                    channel_id: Some(channel.channel_id.into()),
+                    user_id: None,
+                    encrypted_channel_key: channel.encrypted_channel_key,
+                    last_accessed: channel.last_accessed.0,
+                    opt_channel_name: channel.opt_channel_name,
+                    opt_channel_icon_asset_id: channel.opt_channel_icon_asset_id.map(Into::into),
+                }
+            );
+        }
+
+        Ok(Response::new(UserChannelsResponse {
+            channels: out
+        }))
+
+    }
 }
 
 #[async_trait]
@@ -302,5 +343,7 @@ impl ChannelService for ScyllaChannelServiceServer {
     ) -> std::result::Result<
         tonic::Response<UserChannelsResponse>,
         tonic::Status,
-    > { todo!()}
+    > {
+        Ok(self.get_user_channels_impl(request).await?)
+    }
 }

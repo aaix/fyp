@@ -62,7 +62,7 @@ CREATE TABLE dataservices.channel (
 );
 
 -- denormalized form for optimum querying performance
-CREATE TABLE dataservices.user_channels (
+CREATE TABLE dataservices.user_channel (
     user_id TIMEUUID,
     channel_id TIMEUUID,
 
