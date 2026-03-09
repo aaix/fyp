@@ -145,8 +145,10 @@ service UserRelationshipService {
     // users may have multiple relationships (e.g. they both blocked eachother)
     rpc ReadRelationship (ReadRelationshipRequest) returns (ReadRelationshipResponse);
     rpc DeleteRelationship (CreateRelationshipRequest) returns (DeleteRelationshipResponse);
+
     // test a specific relationship type
     rpc TestRelationship (RelationshipObject) returns (RelationshipTestResponse);
+    rpc TestManyRelationships (TestManyRelationshipsRequest) returns (TestManyRelationshipsResponse);
 
     // read all of a users relationships with others
     rpc ReadRelationships (ReadRelationshipsRequest) returns (RelationshipsResponse);
@@ -173,6 +175,21 @@ message RelationshipObject {
 
 message ReadRelationshipResponse {
     repeated RelationshipObject relationships = 1;
+}
+
+message TestManyRelationshipEntry {
+    dataservices.plib.pUUID user_id_b = 1;
+    int32 relationship_type = 2; 
+}
+
+message TestManyRelationshipsRequest {
+    dataservices.plib.pUUID user_id = 1;
+    repeated TestManyRelationshipEntry tests = 2;
+}
+
+message TestManyRelationshipsResponse {
+    int32 exist = 1;
+    int32 errors = 2;
 }
 
 message RelationshipTestResponse {

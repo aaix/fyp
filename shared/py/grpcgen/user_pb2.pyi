@@ -219,6 +219,30 @@ class ReadRelationshipResponse(_message.Message):
     relationships: _containers.RepeatedCompositeFieldContainer[RelationshipObject]
     def __init__(self, relationships: _Optional[_Iterable[_Union[RelationshipObject, _Mapping]]] = ...) -> None: ...
 
+class TestManyRelationshipEntry(_message.Message):
+    __slots__ = ("user_id_b", "relationship_type")
+    USER_ID_B_FIELD_NUMBER: _ClassVar[int]
+    RELATIONSHIP_TYPE_FIELD_NUMBER: _ClassVar[int]
+    user_id_b: _plib_pb2.pUUID
+    relationship_type: int
+    def __init__(self, user_id_b: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., relationship_type: _Optional[int] = ...) -> None: ...
+
+class TestManyRelationshipsRequest(_message.Message):
+    __slots__ = ("user_id", "tests")
+    USER_ID_FIELD_NUMBER: _ClassVar[int]
+    TESTS_FIELD_NUMBER: _ClassVar[int]
+    user_id: _plib_pb2.pUUID
+    tests: _containers.RepeatedCompositeFieldContainer[TestManyRelationshipEntry]
+    def __init__(self, user_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., tests: _Optional[_Iterable[_Union[TestManyRelationshipEntry, _Mapping]]] = ...) -> None: ...
+
+class TestManyRelationshipsResponse(_message.Message):
+    __slots__ = ("exist", "errors")
+    EXIST_FIELD_NUMBER: _ClassVar[int]
+    ERRORS_FIELD_NUMBER: _ClassVar[int]
+    exist: int
+    errors: int
+    def __init__(self, exist: _Optional[int] = ..., errors: _Optional[int] = ...) -> None: ...
+
 class RelationshipTestResponse(_message.Message):
     __slots__ = ("exists",)
     EXISTS_FIELD_NUMBER: _ClassVar[int]

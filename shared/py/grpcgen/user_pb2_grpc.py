@@ -685,6 +685,11 @@ class UserRelationshipServiceStub(object):
                 request_serializer=user__pb2.RelationshipObject.SerializeToString,
                 response_deserializer=user__pb2.RelationshipTestResponse.FromString,
                 _registered_method=True)
+        self.TestManyRelationships = channel.unary_unary(
+                '/dataservices.userproto.UserRelationshipService/TestManyRelationships',
+                request_serializer=user__pb2.TestManyRelationshipsRequest.SerializeToString,
+                response_deserializer=user__pb2.TestManyRelationshipsResponse.FromString,
+                _registered_method=True)
         self.ReadRelationships = channel.unary_unary(
                 '/dataservices.userproto.UserRelationshipService/ReadRelationships',
                 request_serializer=user__pb2.ReadRelationshipsRequest.SerializeToString,
@@ -723,6 +728,12 @@ class UserRelationshipServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def TestManyRelationships(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def ReadRelationships(self, request, context):
         """read all of a users relationships with others
         """
@@ -752,6 +763,11 @@ def add_UserRelationshipServiceServicer_to_server(servicer, server):
                     servicer.TestRelationship,
                     request_deserializer=user__pb2.RelationshipObject.FromString,
                     response_serializer=user__pb2.RelationshipTestResponse.SerializeToString,
+            ),
+            'TestManyRelationships': grpc.unary_unary_rpc_method_handler(
+                    servicer.TestManyRelationships,
+                    request_deserializer=user__pb2.TestManyRelationshipsRequest.FromString,
+                    response_serializer=user__pb2.TestManyRelationshipsResponse.SerializeToString,
             ),
             'ReadRelationships': grpc.unary_unary_rpc_method_handler(
                     servicer.ReadRelationships,
@@ -869,6 +885,33 @@ class UserRelationshipService(object):
             '/dataservices.userproto.UserRelationshipService/TestRelationship',
             user__pb2.RelationshipObject.SerializeToString,
             user__pb2.RelationshipTestResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def TestManyRelationships(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/dataservices.userproto.UserRelationshipService/TestManyRelationships',
+            user__pb2.TestManyRelationshipsRequest.SerializeToString,
+            user__pb2.TestManyRelationshipsResponse.FromString,
             options,
             channel_credentials,
             insecure,

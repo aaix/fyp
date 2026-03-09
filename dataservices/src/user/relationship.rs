@@ -6,20 +6,21 @@ TABLE friendship_request
 TABLE blocked_user
 */
 
-use crate::{db_conn::db, errors::DSResult, helpers::time_now, models::relationship::Relationship, protos::user_service::{self, CreateRelationshipRequest, HalfRelationship, ReadRelationshipRequest, ReadRelationshipResponse, ReadRelationshipsRequest, RelationshipObject, RelationshipTestResponse, RelationshipsResponse, DeleteRelationshipResponse}, req_tuuid};
+use crate::{db_conn::db, errors::DSResult, helpers::time_now, models::relationship::Relationship, protos::user_service::{self, CreateRelationshipRequest, DeleteRelationshipResponse, HalfRelationship, ReadRelationshipRequest, ReadRelationshipResponse, ReadRelationshipsRequest, RelationshipObject, RelationshipTestResponse, RelationshipsResponse, TestManyRelationshipsRequest, TestManyRelationshipsResponse}, req_tuuid};
 
-use futures::StreamExt;
+use futures::{StreamExt, future::join_all};
+use init_tracing_opentelemetry::tracing_opentelemetry::OpenTelemetrySpanExt;
 use scylla::{statement::prepared::PreparedStatement, value::CqlTimeuuid};
 use tonic::{Request, Response, Status, async_trait};
 use user_service::user_relationship_service_server::{UserRelationshipService, UserRelationshipServiceServer};
 
 
 pub struct ScyllaUserRelationshipService {
-    // prepared statements for our CRUD operations
     create_relationship_prepared: PreparedStatement,
     read_relationship_prepared: PreparedStatement,
     read_relationships_prepared: PreparedStatement,
     delete_relationship_prepared: PreparedStatement,
+    test_relationship_prepared: PreparedStatement,
 }
 
 
@@ -59,12 +60,17 @@ impl ScyllaUserRelationshipService {
             DELETE FROM dataservices.relationship WHERE user_id_a = ? AND user_id_b = ? AND relationship_type = ?;
             APPLY BATCH"
         ).await?;
+        
+        let test_relationship_prepared = db().await.prepare(
+            "SELECT * FROM dataservices.relationship WHERE user_id_a = ? AND user_id_b = ? AND relationship_type = ?"
+        ).await?;
 
         Ok(Self {
-            create_relationship_prepared,
+            create_relationship_prepared, 
             read_relationship_prepared,
             read_relationships_prepared,
             delete_relationship_prepared,
+            test_relationship_prepared,
         })
     }
 }
@@ -168,7 +174,7 @@ impl ScyllaUserRelationshipService {
         let relationship_type = inner.relationship_type;
 
         let rows = db().await.execute_unpaged(
-            &self.read_relationship_prepared,
+            &self.test_relationship_prepared,
             (&user_a, &user_b, &relationship_type)
         ).await?.into_rows_result()?;
 
@@ -178,6 +184,46 @@ impl ScyllaUserRelationshipService {
 
         Ok(Response::new(RelationshipTestResponse {exists}))
     }
+
+    async fn test_many_relationships_impl(
+        &self,
+        request: tonic::Request<TestManyRelationshipsRequest>,
+    ) -> DSResult<tonic::Response<TestManyRelationshipsResponse>> {
+        let user_id: CqlTimeuuid = req_tuuid!(request, user_id)?;
+
+        let futures = request.get_ref().tests.iter().map(async |t| {
+
+            let user_b = t.user_id_b.ok_or(Status::invalid_argument("missing user_id in request"))?;
+            let relationship_type = t.relationship_type;
+
+            let rows = db().await.execute_unpaged(
+                &self.test_relationship_prepared,
+                (&user_id, &Into::<CqlTimeuuid>::into(user_b), &relationship_type)
+            ).await?.into_rows_result()?;
+
+            let exists: DSResult<bool> = Ok(rows.rows_num() > 0);
+            exists
+        });
+
+
+        // it is important we return an error so that the api can distinguish
+        // relationship doesnt exist vs error
+        let mut exist: i32 = 0;
+        let mut errors: i32 = 0;
+
+        for r in join_all(futures).await {
+            match r {
+                Ok(b) => {if b {exist += 1}},
+                Err(_e) => { errors += 1 },
+            }
+        }
+
+        Ok(Response::new(TestManyRelationshipsResponse {
+            exist,
+            errors
+        }))
+    }
+
 
     async fn read_relationships_impl(
         &self,
@@ -255,6 +301,16 @@ impl UserRelationshipService for ScyllaUserRelationshipService {
     > {
         Ok(self.test_relationship_impl(request).await?)
 
+    }
+
+    async fn test_many_relationships(
+        &self,
+        request: tonic::Request<TestManyRelationshipsRequest>,
+    ) -> std::result::Result<
+        tonic::Response<TestManyRelationshipsResponse>,
+        tonic::Status,
+    > {
+        Ok(self.test_many_relationships_impl(request).await?)
     }
     /// read all of a users relationships with others
     async fn read_relationships(

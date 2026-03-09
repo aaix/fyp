@@ -52,6 +52,12 @@ async def test_relationship(lazy: LazyGRPC[UserRelationshipServiceStub], user_id
         relationship_type=relationship_type.value
     )))
 
+async def test_many_relationships(lazy: LazyGRPC[UserRelationshipServiceStub], user_id_a: id_t, tests: Iterable[user_pb2.TestManyRelationshipEntry]) -> user_pb2.TestManyRelationshipsResponse:
+    return cast(user_pb2.TestManyRelationshipsResponse, await lazy.stub.TestManyRelationships(user_pb2.TestManyRelationshipsRequest(
+        user_id=id_puuid(user_id_a),
+        tests=tests
+    )))
+
 async def read_relationships(lazy: LazyGRPC[UserRelationshipServiceStub], user_id: id_t) -> user_pb2.RelationshipsResponse:
     return cast(user_pb2.RelationshipsResponse, await lazy.stub.ReadRelationships(user_pb2.ReadRelationshipsRequest(
         user_id=id_puuid(user_id)
