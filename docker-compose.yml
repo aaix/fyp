@@ -13,6 +13,8 @@ x-scylla-base: &scylla-base
   depends_on:
     - scylla-seed
   stop_grace_period: 60s
+  environment:
+    SEED: "scylla-seed"
 
 
 services:
