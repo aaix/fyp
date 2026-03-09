@@ -12,8 +12,8 @@ from shared.py.discovery import DiscoveryManager
 discovery = DiscoveryManager()
 
 
-CONF_SIGN_KEY = jwk.import_key(json.loads(discovery.find_key("API_SESSION_SIGN")))
-CONF_ENCRYPT_KEY = jwk.import_key(json.loads(discovery.find_key("API_SESSION_ENCRYPT")))
+CONF_SIGN_KEY = jwk.import_key(json.loads(discovery.find_key("API_SESSION_SIGNING_KEY")))
+CONF_ENCRYPT_KEY = jwk.import_key(json.loads(discovery.find_key("API_SESSION_ENCRYPTION_KEY")))
 
 def encode_jose_session(data: bytes) -> str:
     token = jws.serialize_compact({"alg": "HS256"}, data, private_key=CONF_SIGN_KEY, algorithms=["HS256"])

@@ -28,7 +28,15 @@ class DiscoveryManager:
         return environ["OTEL_URI"]
     
     def find_key(self, key_name: str) -> str:
-        return environ[f"SECRET_KEY_{key_name}"]
+        try:
+            return environ[key_name]
+        except KeyError:
+            return self.find_secret(f"{key_name}".lower())
+    
+    def find_secret(self, secret: str) -> str:
+        with open(f"/secrets/{secret}") as f:
+            return f.read()
+
 
     def is_prod(self) -> bool:
         return environ.get("DEPLOYMENT_MODE", "dev") == "prod"

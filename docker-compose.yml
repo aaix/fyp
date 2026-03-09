@@ -48,8 +48,8 @@ services:
     environment:
         DATASERVICES_URI: "dataservices-0:3114"
         OTEL_URI: "http://jaeger:4317"
-        SECRET_KEY_API_SESSION_SIGN: ${SECRET_KEY_API_SESSION_SIGN}
-        SECRET_KEY_API_SESSION_ENCRYPT: ${SECRET_KEY_API_SESSION_ENCRYPT}
+        API_SESSION_SIGNING_KEY: ${SECRET_KEY_API_SESSION_SIGN}
+        API_SESSION_ENCRYPTION_KEY: ${SECRET_KEY_API_SESSION_ENCRYPT}
     depends_on:
       - dataservices-0
     ports:
