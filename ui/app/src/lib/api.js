@@ -77,5 +77,5 @@ const API = {
     return await _api(uri, 'PUT', body, options)
   },
 }
-
+window.api = API; // helper for calling api from console
 export default API
