@@ -42,9 +42,42 @@ export class RelationshipManager {
     PEER_BLOCKED_CURRENT = 5
     CURRENT_BLOCKED_PEER = 6
 
-    
     getRelationships() {
         return API.GET("user/relationships");
+    }
+
+    async getRelationshipWithUser(user_id) {
+        const res = await this.getRelationships();
+        if (!res?.success) {
+            return res;
+        }
+
+        const relationships = res?.data?.relationships ?? [];
+        const norm = (id) => String(id ?? '').toLowerCase();
+        const peerRels = relationships
+            .filter((r) => norm(r.peer_id) === norm(user_id))
+            .map((r) => Number(r.relationship));
+
+        const { CURRENT_REQUESTING_PEER, PEER_REQUESTING_CURRENT, FRIENDS, CURRENT_BLOCKED_PEER, PEER_BLOCKED_CURRENT } = this;
+
+        const best =
+            peerRels.includes(FRIENDS) ? FRIENDS :
+            peerRels.includes(PEER_REQUESTING_CURRENT) ? PEER_REQUESTING_CURRENT :
+            peerRels.includes(CURRENT_REQUESTING_PEER) ? CURRENT_REQUESTING_PEER :
+            null;
+
+        const blockBest =
+            peerRels.includes(CURRENT_BLOCKED_PEER) ? CURRENT_BLOCKED_PEER :
+            peerRels.includes(PEER_BLOCKED_CURRENT) ? PEER_BLOCKED_CURRENT :
+            null;
+
+        return {
+            ...res, // propogate through error info
+            data: {
+                relationship: best,
+                blockRelationship: blockBest,
+            },
+        };
     }
 
     blockUser(user_id) {

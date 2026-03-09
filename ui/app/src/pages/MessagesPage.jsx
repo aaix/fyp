@@ -5,6 +5,7 @@ import CreateChannelModal from '../components/CreateChannelModal.jsx'
 import { channelManager } from '../lib/chat.js'
 import { userManager } from '../lib/user.js'
 import { getAvatarUrl, getDefaultChannelUrl, userContentUrl } from '../lib/utils.js'
+import MemberContextMenu from '../components/MemberContextMenu.jsx'
 
 export default function MessagesPage() {
   const [channels, setChannels] = useState([])
@@ -17,6 +18,7 @@ export default function MessagesPage() {
   const [selectedMembers, setSelectedMembers] = useState([])
   const [channelLoading, setChannelLoading] = useState(false)
   const [channelError, setChannelError] = useState(null)
+  const [openMemberMenuFor, setOpenMemberMenuFor] = useState(null)
 
   function formatRelativeFromSeconds(epochSeconds) {
     if (!epochSeconds) return ''
@@ -324,7 +326,7 @@ export default function MessagesPage() {
                     {!channelLoading && !channelError && selectedMembers.length > 0 && (
                       <ul className="space-y-1" role="list" aria-label="Channel members">
                         {selectedMembers.map((m) => (
-                          <li key={m.user_id}>
+                          <li key={m.user_id} className="relative">
                             <div className="flex items-center gap-3 rounded-button px-2 py-2 hover:bg-[color:var(--card-bg)]">
                               {m.icon_url ? (
                                 <img
@@ -340,7 +342,30 @@ export default function MessagesPage() {
                                   @{m.username || 'user'}
                                 </div>
                               </div>
+                              <button
+                                type="button"
+                                className="ml-1 flex h-7 w-7 items-center justify-center rounded-button text-[color:var(--text-muted)] hover:bg-[color:var(--card-bg)]"
+                                aria-label="Member actions"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setOpenMemberMenuFor((prev) =>
+                                    prev === m.user_id ? null : m.user_id,
+                                  )
+                                }}
+                              >
+                                <span className="material-symbols-outlined text-base" aria-hidden>
+                                  more_vert
+                                </span>
+                              </button>
                             </div>
+                            {openMemberMenuFor === m.user_id && (
+                              <div className="absolute right-1 top-9 z-20">
+                                <MemberContextMenu
+                                  userId={m.user_id}
+                                  onClose={() => setOpenMemberMenuFor(null)}
+                                />
+                              </div>
+                            )}
                           </li>
                         ))}
                       </ul>

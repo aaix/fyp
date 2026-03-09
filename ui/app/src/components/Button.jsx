@@ -11,7 +11,7 @@ export default function Button({
     primary:
       'bg-[color:var(--accent)] text-[color:var(--bg)] hover:bg-[color:var(--accent-hover)] focus-visible:ring-[color:var(--accent-focus)]',
     ghost:
-      'bg-transparent text-[color:var(--text-primary)] hover:bg-[color:var(--tab-active-bg)]',
+      'border border-[color:var(--card-border)] bg-[color:var(--card-bg)] text-[color:var(--text-primary)] hover:bg-[color:var(--tab-active-bg)]',
     danger:
       'bg-red-600 text-white hover:bg-red-500 focus-visible:ring-red-700',
   }

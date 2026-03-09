@@ -50,7 +50,7 @@ export default function UserPage() {
         const session = getCurrentSession()
         const [profileRes, relRes, meRes] = await Promise.all([
           userManager.getUserProfile(userId),
-          relationshipManager.getRelationships(),
+          relationshipManager.getRelationshipWithUser(userId),
           session.getCurrentAccount(),
         ])
         if (cancelled) return
@@ -76,13 +76,9 @@ export default function UserPage() {
           setError('User not found')
         }
 
-        const relList = relRes?.data?.relationships ?? []
-        const peerRels = relList.filter((r) => normId(r.peer_id) === normId(userId)).map((r) => Number(r.relationship))
-        // Prefer FRIENDS (3) > PEER_REQUESTING_CURRENT (2) > CURRENT_REQUESTING_PEER (1)
-        const best = peerRels.includes(FRIENDS) ? FRIENDS : peerRels.includes(PEER_REQUESTING_CURRENT) ? PEER_REQUESTING_CURRENT : peerRels.includes(CURRENT_REQUESTING_PEER) ? CURRENT_REQUESTING_PEER : null
-        setRelationship(best)
-        const blockBest = peerRels.includes(CURRENT_BLOCKED_PEER) ? CURRENT_BLOCKED_PEER : peerRels.includes(PEER_BLOCKED_CURRENT) ? PEER_BLOCKED_CURRENT : null
-        setBlockRelationship(blockBest)
+        const relData = relRes?.data ?? {}
+        setRelationship(relData.relationship ?? null)
+        setBlockRelationship(relData.blockRelationship ?? null)
       } catch (e) {
         if (!cancelled) setError(e?.message ?? 'Could not load profile')
       } finally {
@@ -113,6 +109,32 @@ export default function UserPage() {
     }
   }
 
+  const handleUnfriendAction = async () => {
+    if (!userId || relationship !== FRIENDS) return
+    setActionLoading(true)
+    try {
+      const res = await relationshipManager.unfriendUser(userId)
+      if (res?.success) {
+        setRelationship(null)
+      }
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  const handleCancelRequest = async () => {
+    if (!userId || relationship !== CURRENT_REQUESTING_PEER) return
+    setActionLoading(true)
+    try {
+      const res = await relationshipManager.unfriendUser(userId)
+      if (res?.success) {
+        setRelationship(null)
+      }
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
   const handleBlockAction = async () => {
     if (!userId) return
     setActionLoading(true)
@@ -137,9 +159,10 @@ export default function UserPage() {
   const isIncoming = relationship === PEER_REQUESTING_CURRENT
   const isSent = relationship === CURRENT_REQUESTING_PEER
   const isFriends = relationship === FRIENDS
-  const showSendOrAccept = relationship == null || isIncoming
   const isBlockedByMe = blockRelationship === CURRENT_BLOCKED_PEER
   const isBlockedByThem = blockRelationship === PEER_BLOCKED_CURRENT
+  const isBlocked = isBlockedByMe || isBlockedByThem
+  const showSendOrAccept = (relationship == null || isIncoming) && !isBlocked
 
   const profileActions =
     !loading && !error ? (
@@ -147,31 +170,41 @@ export default function UserPage() {
         {showSendOrAccept && (
           <Button
             onClick={handleFriendAction}
-            disabled={actionLoading}
+            disabled={actionLoading || isBlocked}
             aria-label={isIncoming ? 'Accept friend request' : 'Send friend request'}
           >
             {isIncoming ? 'Accept' : 'Send friend request'}
           </Button>
         )}
         {isSent && (
-          <Button variant="ghost" disabled className="cursor-default">
-            Requested
+          <Button
+            variant="ghost"
+            onClick={handleCancelRequest}
+            disabled={actionLoading}
+            aria-label="Cancel friend request"
+          >
+            Cancel friend request
           </Button>
         )}
         {isFriends && (
-          <span className="text-sm font-medium text-[color:var(--text-muted)]">
-            Friends
-          </span>
+          <Button
+            variant="ghost"
+            onClick={handleUnfriendAction}
+            disabled={actionLoading}
+            aria-label="Remove friend"
+          >
+            Remove friend
+          </Button>
         )}
         {isBlockedByMe && (
-          <>
-            <Button variant="ghost" disabled className="cursor-default">
-              Blocked
-            </Button>
-            <Button variant="ghost" onClick={handleBlockAction} disabled={actionLoading} aria-label="Unblock user">
-              Unblock
-            </Button>
-          </>
+          <Button
+            variant="ghost"
+            onClick={handleBlockAction}
+            disabled={actionLoading}
+            aria-label="Unblock user"
+          >
+            Unblock
+          </Button>
         )}
         {!isBlockedByMe && !isBlockedByThem && (
           <Button variant="ghost" onClick={handleBlockAction} disabled={actionLoading} aria-label="Block user">
