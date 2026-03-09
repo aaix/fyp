@@ -18,6 +18,23 @@ export default function MessagesPage() {
   const [channelLoading, setChannelLoading] = useState(false)
   const [channelError, setChannelError] = useState(null)
 
+  function formatRelativeFromSeconds(epochSeconds) {
+    if (!epochSeconds) return ''
+    const nowMs = Date.now()
+    const thenMs = epochSeconds * 1000
+    const diffMs = nowMs - thenMs
+    const diffSec = Math.round(diffMs / 1000)
+
+    if (diffSec < 5) return 'Just now'
+    if (diffSec < 60) return `${diffSec}s ago`
+    const diffMin = Math.round(diffSec / 60)
+    if (diffMin < 60) return `${diffMin}m ago`
+    const diffHr = Math.round(diffMin / 60)
+    if (diffHr < 24) return `${diffHr}h ago`
+    const diffDay = Math.round(diffHr / 24)
+    return `${diffDay}d ago`
+  }
+
   const loadChannels = useCallback(async () => {
     setLoading(true)
     setError(null)
@@ -28,7 +45,9 @@ export default function MessagesPage() {
         setChannels([])
         return
       }
-      setChannels(res?.data?.channels ?? [])
+      const list = res?.data?.channels ?? []
+      list.sort((a, b) => (b.last_accessed || 0) - (a.last_accessed || 0))
+      setChannels(list)
     } catch (e) {
       setError(e?.message ?? 'Could not load channels')
       setChannels([])
@@ -204,9 +223,7 @@ export default function MessagesPage() {
                               {ch.channel_name}
                             </div>
                             <div className="mt-0.5 text-xs text-[color:var(--text-muted)]">
-                              {ch.last_accessed
-                                ? `Last opened: ${new Date(ch.last_accessed * 1000).toLocaleString()}`
-                                : ''}
+                              {ch.last_accessed ? `Last opened: ${formatRelativeFromSeconds(ch.last_accessed)}` : ''}
                             </div>
                           </div>
                         </div>
