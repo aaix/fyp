@@ -8,7 +8,6 @@ CMD ["IP_ADDR=$(hostname -i) && exec /docker-entrypoint.py \
     --reactor-backend=epoll \
     --seeds=$SEED \
     --smp=1 \
-    --memory=1536M \
     --broadcast-address=$IP_ADDR \
     --broadcast-rpc-address=$IP_ADDR"]
 
