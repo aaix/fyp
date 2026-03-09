@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import FriendMultiSelect from './FriendMultiSelect.jsx'
 import { channelManager } from '../lib/chat.js'
 
@@ -14,6 +14,15 @@ export default function CreateChannelModal({
   const [selectedIds, setSelectedIds] = useState([])
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState(null)
+
+  useEffect(() => {
+    if (!open) {
+      setChannelName('')
+      setSelectedIds([])
+      setSubmitting(false)
+      setError(null)
+    }
+  }, [open])
 
   const trimmedName = channelName.trim()
   const canSubmit = selectedIds.length > 0 && trimmedName.length > 0 && !submitting
