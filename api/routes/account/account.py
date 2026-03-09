@@ -35,6 +35,8 @@ grpcdevice = LazyGRPC(discovery.discover_dataservices(), user_pb2_grpc.UserDevic
 @AccountRouter.post("/signup")
 async def signup(r: Request, body: SignupBody) -> SignupResponse:
 
+    body.username = body.username.lower()
+
     with RpcErrHandler(
         StatusCode.ALREADY_EXISTS,
         lambda: errors.BadRequest("username already exists", api_error_code=errors.ERROR_ALREADY_EXISTS)
