@@ -69,3 +69,9 @@ export function getDefaultAvatarUrl(user_id) {
 
   return `/icon${v}.png`
 }
+
+export function getDefaultChannelUrl(channel_id) {
+  let v = Math.abs(hashCode(channel_id)) % 4;
+
+  return `/icon${v}.png`
+}
