@@ -21,7 +21,7 @@ grpcuser = LazyGRPC(discovery.discover_dataservices(), user_pb2_grpc.UserService
 grpcchannel = LazyGRPC(discovery.discover_dataservices(), channel_pb2_grpc.ChannelServiceStub)
 
 
-def RichUUIDParam[lazy_t: LazyGRPC, out_t](
+def RichUUIDParamFactory[lazy_t: LazyGRPC, out_t](
     ctx: Callable[[UUID], RpcErrHandler],
     lazy: lazy_t,
     fetcher: Callable[[lazy_t, UUID], Coroutine[None, None, out_t]],
@@ -35,9 +35,9 @@ def RichUUIDParam[lazy_t: LazyGRPC, out_t](
 
 
 UserParam = Annotated[user_pb2.ReadUserResponse, Depends(
-    RichUUIDParam(ResourceNotFoundRpcHandler, grpcuser, get_user, "user_id"),
+    RichUUIDParamFactory(ResourceNotFoundRpcHandler, grpcuser, get_user, "user_id"),
 )]
 
 ChannelParam = Annotated[channel_pb2.ChannelObjectResponse, Depends(
-    RichUUIDParam(ResourceNotFoundRpcHandler, grpcchannel, get_channel, "channel_id"),
+    RichUUIDParamFactory(ResourceNotFoundRpcHandler, grpcchannel, get_channel, "channel_id"),
 )]
