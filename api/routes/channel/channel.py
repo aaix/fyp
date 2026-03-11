@@ -6,7 +6,7 @@ from api import *
 from api.middleware.auth import SessionParam
 from api.routes.channel.models import *
 
-from api.types.params import ChannelParam
+from api.types.params import ChannelParam, UserParam
 from api.utils import unwrap
 from shared.py.grpc.id import puuid_uuid, uuid_puuid
 from shared.py.grpc.lazy import LazyGRPC
@@ -102,3 +102,15 @@ async def get_my_channels(s: SessionParam) -> ChannelsResponse:
 @ChatRouter.get("/channel/{channel_id}")
 async def get_channel(s: SessionParam, channel: ChannelParam) -> ChannelResponse:
     return ChannelResponse.from_rpc(channel)
+
+@ChatRouter.patch("/channel/{channel_id}")
+async def edit_channel(s: SessionParam, channel: ChannelParam, body: EditChannelBody) -> ChannelResponse:
+    ...
+
+@ChatRouter.put("/channel/{channel_id}/members/{user_id}")
+async def add_channel_member(s: SessionParam, channel: ChannelParam, user: UserParam, body: AddChannelMemberRequest) -> None:
+    ...
+
+@ChatRouter.delete("/channel/{channel_id}/members/{user_id}")
+async def remove_channel_member(s: SessionParam, channel: ChannelParam, user: UserParam) -> None:
+    ...
