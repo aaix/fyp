@@ -4,6 +4,7 @@ import { channelManager } from '../lib/chat.js'
 import Button from './Button.jsx'
 import ModalCloseButton from './ModalCloseButton.jsx'
 import useEscapeToClose from './useEscapeToClose.js'
+import ToggleSwitch from './ToggleSwitch.jsx'
 
 export default function CreateChannelModal({
   open,
@@ -139,31 +140,14 @@ export default function CreateChannelModal({
                 members will only be able to remove themselves.
               </p>
             </div>
-            <label className="flex items-center gap-2">
-              <span className="text-xs text-[color:var(--text-muted)]">
-                {allowMembersManageUsers ? 'Allowed' : 'Restricted'}
-              </span>
-              <Button
-                type="button"
-                role="switch"
-                aria-checked={allowMembersManageUsers}
-                onClick={() => setAllowMembersManageUsers((v) => !v)}
-                disabled={submitting}
-                size="sm"
-                variant="text"
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                  allowMembersManageUsers
-                    ? 'bg-[color:var(--accent)] hover:bg-[color:var(--accent-hover)]'
-                    : 'bg-[color:var(--card-border)] hover:bg-[color:var(--input-border-hover)]'
-                } p-0`}
-              >
-                <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                    allowMembersManageUsers ? 'translate-x-5' : 'translate-x-1'
-                  }`}
-                />
-              </Button>
-            </label>
+            <ToggleSwitch
+              checked={allowMembersManageUsers}
+              onChange={setAllowMembersManageUsers}
+              disabled={submitting}
+              label={allowMembersManageUsers ? 'Allowed' : 'Restricted'}
+              onLabel="Allowed"
+              offLabel="Restricted"
+            />
           </div>
 
           <FriendMultiSelect

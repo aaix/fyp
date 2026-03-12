@@ -6,6 +6,8 @@ import AddChannelMembersModal from '../components/AddChannelMembersModal.jsx'
 import ContextMenu from '../components/ContextMenu.jsx'
 import ConfirmModal from '../components/ConfirmModal.jsx'
 import Button from '../components/Button.jsx'
+import ClickableRow from '../components/ClickableRow.jsx'
+import MenuActionItem from '../components/MenuActionItem.jsx'
 import { getCurrentSession } from '../lib/session.js'
 import { channelManager } from '../lib/chat.js'
 import { userManager } from '../lib/user.js'
@@ -263,7 +265,7 @@ export default function MessagesPage() {
   return (
     <PageContainer>
       <main className="min-h-0 flex-1 md:flex md:gap-3 md:overflow-hidden">
-        <section className="flex min-h-0 flex-1 flex-col gap-3 border-b border-[color:var(--card-border)] pb-3 md:w-80 md:flex-none md:border-b-0 md:border-r md:pb-0 lg:w-96 md:overflow-y-auto">
+        <section className="flex min-h-0 flex-1 flex-col gap-3 overflow-x-hidden border-b border-[color:var(--card-border)] pb-3 md:w-80 md:flex-none md:border-b-0 md:border-r md:pb-0 md:overflow-y-auto lg:w-96">
           <div className="flex items-center justify-between gap-2 px-1 md:px-0">
             <h1 className="text-lg font-bold text-[color:var(--text-primary)]">Messages</h1>
             <Button type="button" size="sm" className="text-xs" onClick={() => setCreateOpen(true)}>
@@ -304,17 +306,15 @@ export default function MessagesPage() {
           )}
 
           {!loading && !error && channels.length > 0 && (
-            <ul className="space-y-2" role="list" aria-label="Channels">
+            <ul className="space-y-2 overflow-x-hidden" role="list" aria-label="Channels">
               {channels.map((ch) => {
                 const isSelected = isDesktop && selectedChannelId === ch.channel_id
                 const iconSrc = getChannelIconSrc(ch)
                 return (
-                  <li key={ch.channel_id}>
-                    <Button
+                  <li key={ch.channel_id} className="min-w-0">
+                    <ClickableRow
                       type="button"
-                      variant="text"
-                      size="sm"
-                      className={`w-full justify-start px-0 py-0 text-left hover:bg-transparent ${isDesktop ? '' : 'cursor-default'}`}
+                      className={`w-full overflow-hidden px-0 py-0 hover:bg-transparent ${isDesktop ? '' : 'cursor-default'}`}
                       onClick={() => selectChannel(ch.channel_id)}
                       onContextMenu={(e) => {
                         e.preventDefault()
@@ -328,7 +328,7 @@ export default function MessagesPage() {
                       disabled={!isDesktop}
                     >
                       <Card
-                        className={`px-4 py-3 transition-colors hover:bg-[color:var(--tab-active-bg)]/60 ${isSelected ? 'border-[color:var(--accent)]' : ''}`}
+                        className={`w-full overflow-hidden px-4 py-3 transition-colors hover:bg-[color:var(--tab-active-bg)]/60 ${isSelected ? 'border-[color:var(--accent)]' : ''}`}
                       >
                         <div className="flex items-center gap-3">
                           <img
@@ -349,7 +349,7 @@ export default function MessagesPage() {
                           </div>
                         </div>
                       </Card>
-                    </Button>
+                    </ClickableRow>
                   </li>
                 )
               })}
@@ -590,11 +590,9 @@ export default function MessagesPage() {
             <div className="px-3 py-2 text-xs text-[color:var(--text-muted)]">
               {channelMenu.name || channelMenu.channelId}
             </div>
-            <Button
+            <MenuActionItem
               type="button"
-              variant="text"
-              size="sm"
-              className="w-full justify-start rounded-none px-3 text-left text-red-500 hover:bg-red-500/10"
+              className="justify-start text-red-500 hover:bg-red-500/10"
               onClick={async () => {
                 const id = channelMenu.channelId
                 setChannelMenu(null)
@@ -604,7 +602,7 @@ export default function MessagesPage() {
               disabled={leaveLoading}
             >
               Leave chat
-            </Button>
+            </MenuActionItem>
           </div>
         )}
       </ContextMenu>

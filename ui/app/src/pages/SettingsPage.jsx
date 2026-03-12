@@ -6,6 +6,7 @@ import ConfirmModal from '../components/ConfirmModal.jsx'
 import PageContainer from '../components/PageContainer.jsx'
 import Button from '../components/Button.jsx'
 import IconLinkButton from '../components/IconLinkButton.jsx'
+import ClickableRow from '../components/ClickableRow.jsx'
 
 const deviceManager = new DeviceManager()
 
@@ -259,11 +260,9 @@ export default function SettingsPage() {
                       }`}
                     >
                       <div className="flex w-full items-center gap-1">
-                        <Button
+                        <ClickableRow
                           type="button"
-                          variant="text"
-                          size="sm"
-                          className="min-w-0 flex-1 justify-between gap-3 rounded-[12px] px-2.5 py-2 text-left text-sm text-[color:var(--text-primary)] hover:bg-[rgba(148,163,184,0.08)]"
+                          className="min-w-0 flex-1 justify-between gap-3 rounded-[12px] px-2.5 py-2 text-sm text-[color:var(--text-primary)] hover:bg-[rgba(148,163,184,0.08)]"
                           onClick={() => handleDeviceClick(device.id)}
                         >
                           <div className="min-w-0">
@@ -277,7 +276,7 @@ export default function SettingsPage() {
                           <span className="material-symbols-outlined text-[1.35rem] text-[color:var(--text-muted)]" aria-hidden>
                             {expandedDeviceId === device.id ? 'expand_less' : 'chevron_right'}
                           </span>
-                        </Button>
+                        </ClickableRow>
                         <div className="mr-1 flex items-center gap-1">
                           <Button
                             type="button"
