@@ -90,6 +90,7 @@ async def new_channel(s: SessionParam, body: NewChannelBody) -> ChannelResponse:
         channel_name=channel.opt_channel_name,
         channel_icon=None,
         channel_members=list(member_ids),
+        channel_type=body.channel_type
     )
 
 @ChatRouter.get("/channels")
