@@ -9,7 +9,6 @@ TABLE blocked_user
 use crate::{db_conn::db, errors::DSResult, helpers::time_now, models::relationship::Relationship, protos::user_service::{self, CreateRelationshipRequest, DeleteRelationshipResponse, HalfRelationship, ReadRelationshipRequest, ReadRelationshipResponse, ReadRelationshipsRequest, RelationshipObject, RelationshipTestResponse, RelationshipsResponse, TestManyRelationshipsRequest, TestManyRelationshipsResponse}, req_tuuid};
 
 use futures::{StreamExt, future::join_all};
-use init_tracing_opentelemetry::tracing_opentelemetry::OpenTelemetrySpanExt;
 use scylla::{statement::prepared::PreparedStatement, value::CqlTimeuuid};
 use tonic::{Request, Response, Status, async_trait};
 use user_service::user_relationship_service_server::{UserRelationshipService, UserRelationshipServiceServer};
