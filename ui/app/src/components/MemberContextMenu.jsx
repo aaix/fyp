@@ -1,12 +1,20 @@
 import { useEffect, useState } from 'react'
 import { relationshipManager } from '../lib/user.js'
+import { channelManager } from '../lib/chat.js'
 
-export default function MemberContextMenu({ userId, onClose }) {
+export default function MemberContextMenu({
+  userId,
+  channelId,
+  onClose,
+  onMemberRemoved,
+  canManageMembers = false,
+}) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [relationship, setRelationship] = useState(null)
   const [blockRelationship, setBlockRelationship] = useState(null)
   const [actionLoading, setActionLoading] = useState(false)
+  const [removeError, setRemoveError] = useState(null)
 
   useEffect(() => {
     let cancelled = false
@@ -35,6 +43,25 @@ export default function MemberContextMenu({ userId, onClose }) {
 
   const isFriends = relationship === relationshipManager.FRIENDS
   const isBlockedByMe = blockRelationship === relationshipManager.CURRENT_BLOCKED_PEER
+
+  const handleRemoveFromChannel = async () => {
+    if (!userId || !channelId) return
+    setActionLoading(true)
+    setRemoveError(null)
+    try {
+      const res = await channelManager.removeChannelMember(channelId, userId)
+      if (res?.success === false) {
+        setRemoveError(res?.error?.message ?? 'Could not remove from channel')
+        return
+      }
+      onMemberRemoved?.(userId)
+      onClose?.()
+    } catch (e) {
+      setRemoveError(e?.message ?? 'Could not remove from channel')
+    } finally {
+      setActionLoading(false)
+    }
+  }
 
   const handleFriendToggle = async () => {
     if (!userId) return
@@ -78,7 +105,6 @@ export default function MemberContextMenu({ userId, onClose }) {
     <div
       className="min-w-[180px] rounded-card border border-[color:var(--card-border)] bg-[color:var(--card-bg)] py-1 text-sm text-[color:var(--text-primary)] shadow-card"
       role="menu"
-      onClick={(e) => e.stopPropagation()}
     >
       {loading && (
         <div className="px-3 py-2 text-xs text-[color:var(--text-muted)]">Loading…</div>
@@ -86,17 +112,20 @@ export default function MemberContextMenu({ userId, onClose }) {
       {!loading && error && (
         <div className="px-3 py-2 text-xs text-[color:var(--text-muted)]">{error}</div>
       )}
+      {!loading && !error && removeError && (
+        <div className="px-3 py-2 text-xs text-red-500" role="alert">
+          {removeError}
+        </div>
+      )}
       {!loading && !error && (
         <>
           <button
             type="button"
-            className="flex w-full items-center justify-between px-3 py-2 text-left hover:bg-[color:var(--card-bg)]/80 disabled:cursor-not-allowed disabled:opacity-60"
-            disabled
+            className="flex w-full items-center justify-between px-3 py-2 text-left text-red-500 hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-60"
+            onClick={handleRemoveFromChannel}
+            disabled={actionLoading || !channelId || !canManageMembers}
           >
             <span>Remove from group</span>
-            <span className="text-[10px] uppercase tracking-wide text-[color:var(--text-muted)]">
-              Coming soon
-            </span>
           </button>
           <button
             type="button"
@@ -113,13 +142,6 @@ export default function MemberContextMenu({ userId, onClose }) {
             disabled={actionLoading}
           >
             {isBlockedByMe ? 'Unblock' : 'Block'}
-          </button>
-          <button
-            type="button"
-            className="mt-1 flex w-full items-center justify-center border-t border-[color:var(--card-border)] px-3 py-2 text-center text-xs text-[color:var(--text-muted)] hover:bg-[color:var(--card-bg)]/80"
-            onClick={onClose}
-          >
-            Close
           </button>
         </>
       )}

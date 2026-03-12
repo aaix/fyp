@@ -14,6 +14,7 @@ export default function CreateChannelModal({
   const [selectedIds, setSelectedIds] = useState([])
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState(null)
+  const [allowMembersManageUsers, setAllowMembersManageUsers] = useState(true)
 
   useEffect(() => {
     if (!open) {
@@ -21,6 +22,7 @@ export default function CreateChannelModal({
       setSelectedIds([])
       setSubmitting(false)
       setError(null)
+      setAllowMembersManageUsers(true)
     }
   }, [open])
 
@@ -31,8 +33,15 @@ export default function CreateChannelModal({
   const descriptionId = 'create-channel-description'
 
   const payload = useMemo(() => {
+    const CHANNEL_TYPE = {
+      REGULAR: 0,
+      RESTRICTED_EXPANSION: 1,
+    }
+
     return {
-      channel_type: 1,
+      channel_type: allowMembersManageUsers
+        ? CHANNEL_TYPE.REGULAR
+        : CHANNEL_TYPE.RESTRICTED_EXPANSION,
       channel_name: trimmedName,
       encrypted_shared_key: getEncryptedSharedKey?.() ?? '',
       channel_members: (selectedIds ?? []).slice(0, maxFriends).map((userId) => ({
@@ -40,7 +49,14 @@ export default function CreateChannelModal({
         encrypted_shared_key: getEncryptedMemberKey?.(userId) ?? '',
       })),
     }
-  }, [getEncryptedMemberKey, getEncryptedSharedKey, maxFriends, selectedIds, trimmedName])
+  }, [
+    allowMembersManageUsers,
+    getEncryptedMemberKey,
+    getEncryptedSharedKey,
+    maxFriends,
+    selectedIds,
+    trimmedName,
+  ])
 
   if (!open) return null
 
@@ -116,6 +132,41 @@ export default function CreateChannelModal({
               autoComplete="off"
               required
             />
+          </div>
+
+          <div className="flex items-start justify-between gap-3 rounded-button border border-[color:var(--card-border)] bg-[color:var(--card-bg)] px-3 py-2">
+            <div className="min-w-0">
+              <div className="text-sm font-semibold text-[color:var(--text-primary)]">
+                Allow members to add and remove users
+              </div>
+              <p className="mt-0.5 text-xs text-[color:var(--text-muted)]">
+                When enabled, any member can manage the channel&apos;s membership. When disabled,
+                only the creator or privileged roles can do this.
+              </p>
+            </div>
+            <label className="flex items-center gap-2">
+              <span className="text-xs text-[color:var(--text-muted)]">
+                {allowMembersManageUsers ? 'Allowed' : 'Restricted'}
+              </span>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={allowMembersManageUsers}
+                onClick={() => setAllowMembersManageUsers((v) => !v)}
+                disabled={submitting}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  allowMembersManageUsers
+                    ? 'bg-[color:var(--accent)]'
+                    : 'bg-[color:var(--card-border)]'
+                } disabled:cursor-not-allowed disabled:opacity-60`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    allowMembersManageUsers ? 'translate-x-5' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </label>
           </div>
 
           <FriendMultiSelect
