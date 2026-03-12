@@ -20,10 +20,12 @@ pub struct ScyllaChannelServiceServer {
     update_channel_prepared: PreparedStatement,
     delete_channel_prepared: PreparedStatement,
 
-    // for channel members
-    add_user_channel_prepared: PreparedStatement,
     add_channel_members_prepared: PreparedStatement,
     remove_channel_members_prepared: PreparedStatement,
+
+
+    add_user_channel_prepared: PreparedStatement,
+    edit_user_channel_prepared: PreparedStatement,
     delete_user_channel_prepared: PreparedStatement,
 
     get_user_channels_prepared: PreparedStatement,
@@ -85,6 +87,10 @@ impl ScyllaChannelServiceServer {
             "SELECT * FROM dataservices.user_channel WHERE user_id = ?",
         ).await?;
 
+        let edit_user_channel_prepared = db().await.prepare(
+            "UPDATE dataservices.user_channel SET opt_channel_name = ?, opt_channel_icon_asset_id = ? WHERE user_id = ? AND channel_id = ?"
+        ).await?;
+
         Ok(Self {
             create_channel_prepared,
             read_channel_prepared,
@@ -95,6 +101,7 @@ impl ScyllaChannelServiceServer {
             add_channel_members_prepared,
             remove_channel_members_prepared,
             delete_user_channel_prepared,
+            edit_user_channel_prepared,
 
             get_user_channels_prepared,
         })
@@ -168,9 +175,27 @@ impl ScyllaChannelServiceServer {
         db().await.execute_unpaged(
             &self.update_channel_prepared,
             (
-                channel_name, channel_icon, channel_id
+                &channel_name, channel_icon, channel_id
             )
         ).await?;
+
+        let futures = owned.members_to_update.iter().map(async |r| {
+            let user_id: CqlTimeuuid = r.into();
+            db().await.execute_unpaged(
+                &self.edit_user_channel_prepared,
+                (
+                    &channel_name,
+                    &channel_icon,
+                    user_id,
+                    channel_id,
+                )
+            ).await.map(|_| user_id)?;
+            // cooerce for error logging
+            DSResult::Ok(user_id)
+        });
+
+        join_all(futures).await;
+
 
         Ok(Response::new(self._read_channel_reuse(channel_id).await?))
 

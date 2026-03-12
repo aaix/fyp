@@ -31,6 +31,7 @@ message UpdateChannelRequest {
     optional string opt_channel_name = 2;
     optional dataservices.plib.pUUID opt_channel_icon_asset_id = 3;
     google.protobuf.FieldMask update_mask = 4;
+    repeated dataservices.plib.pUUID members_to_update = 5;
 }
 
 message ReadChannelRequest {
