@@ -83,7 +83,8 @@ message AddChannelMembersRequest {
 message AddChannelMembersResponse {}
 
 message RemoveChannelMembersRequest {
-    repeated dataservices.plib.pUUID members = 1;
+    dataservices.plib.pUUID channel_id = 1;
+    repeated dataservices.plib.pUUID members = 2;
 }
 
 message RemoveChannelMembersResponse {}

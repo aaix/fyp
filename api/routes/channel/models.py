@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field
 
 from api.utils import unwrap
 from shared.py.constraints import CHANNEL_MAX_NUM_MEMBERS
+from shared.py.grpc.channel import ChannelType
 from shared.py.grpc.id import puuid_uuid
 from shared.py.grpcgen import channel_pb2
 from shared.py.pydantic.base64 import Base64Input, Base64Output
@@ -28,7 +29,7 @@ class ChannelMemberParam(BaseModel):
 
 
 class NewChannelBody(BaseModel):
-    channel_type: int
+    channel_type: ChannelType
     channel_name: ChannelName
     encrypted_shared_key: Base64Input
     # remove 1 from the max length as current user is an implicit member
@@ -48,6 +49,7 @@ class ChannelResponse(BaseModel):
     channel_name: str
     channel_icon: UUID | None
     channel_members: list[UUID]
+    channel_type: int
 
     @classmethod
     def from_rpc(cls, rpc: channel_pb2.ChannelObjectResponse) -> Self:
@@ -56,6 +58,7 @@ class ChannelResponse(BaseModel):
             channel_name=rpc.opt_channel_name,
             channel_icon=puuid_uuid(rpc.opt_channel_icon_asset_id),
             channel_members=list(puuid_uuid(m) or unwrap() for m in rpc.channel_members),
+            channel_type=rpc.channel_type
         )
 
 class UserChannelEntry(BaseModel):

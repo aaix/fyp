@@ -57,8 +57,13 @@ class RpcErrHandler:
 
 class ResourceNotFoundRpcHandler(RpcErrHandler):
     """Special case for mapping rpc not found to 404 user not found error"""
+
+    @staticmethod
+    def make_error(resource_id: SupportsStr) -> errors.NotFound:
+        return errors.NotFound(f"Resource {resource_id} not found", api_error_code=errors.ERROR_NO_SUCH_RESOURCE)
+
     def __init__(self, resource_id: SupportsStr):
         super().__init__(
             StatusCode.NOT_FOUND,
-            lambda: errors.NotFound(f"Resource {resource_id} not found", api_error_code=errors.ERROR_NO_SUCH_RESOURCE)
+            lambda: self.make_error(resource_id)
         )

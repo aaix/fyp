@@ -113,10 +113,12 @@ class AddChannelMembersResponse(_message.Message):
     def __init__(self) -> None: ...
 
 class RemoveChannelMembersRequest(_message.Message):
-    __slots__ = ("members",)
+    __slots__ = ("channel_id", "members")
+    CHANNEL_ID_FIELD_NUMBER: _ClassVar[int]
     MEMBERS_FIELD_NUMBER: _ClassVar[int]
+    channel_id: _plib_pb2.pUUID
     members: _containers.RepeatedCompositeFieldContainer[_plib_pb2.pUUID]
-    def __init__(self, members: _Optional[_Iterable[_Union[_plib_pb2.pUUID, _Mapping]]] = ...) -> None: ...
+    def __init__(self, channel_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., members: _Optional[_Iterable[_Union[_plib_pb2.pUUID, _Mapping]]] = ...) -> None: ...
 
 class RemoveChannelMembersResponse(_message.Message):
     __slots__ = ()

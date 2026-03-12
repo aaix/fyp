@@ -7,14 +7,16 @@ from api.middleware.auth import SessionParam
 from api.routes.channel.models import *
 
 from api.types.params import ChannelParam, UserParam
-from api.utils import unwrap
-from shared.py.grpc.id import puuid_uuid, uuid_puuid
+from api.utils import ResourceNotFoundRpcHandler, unwrap
+from shared.py.grpc.channel import ChannelType, add_channel_members, edit_channel, remove_channel_members
+from shared.py.grpc.id import id_compare, puuid_uuid, uuid_puuid
 from shared.py.grpc.lazy import LazyGRPC
-from shared.py.grpc.relationship import RelationshipType, test_many_relationships
+from shared.py.grpc.relationship import RelationshipType, test_many_relationships, test_relationship
 from shared.py.grpcgen import channel_pb2
 from shared.py.grpcgen.channel_pb2_grpc import ChannelServiceStub
 from shared.py.grpcgen.user_pb2 import TestManyRelationshipEntry
 from shared.py.grpcgen.user_pb2_grpc import UserRelationshipServiceStub
+from shared.py.types import UNSET
 
 
 
@@ -61,7 +63,7 @@ async def new_channel(s: SessionParam, body: NewChannelBody) -> ChannelResponse:
 
     # create the channel
     channel_request = channel_pb2.CreateChannelRequest(
-        channel_type=body.channel_type,
+        channel_type=body.channel_type.value,
         opt_channel_name=body.channel_name,
         opt_channel_icon_asset_id=None
     )
@@ -69,16 +71,17 @@ async def new_channel(s: SessionParam, body: NewChannelBody) -> ChannelResponse:
     channel = cast(channel_pb2.ChannelObjectResponse, await grpcchannel.stub.CreateChannel(channel_request))
 
     # add the channel members
-    members = cast(channel_pb2.AddChannelMembersResponse, await grpcchannel.stub.AddChannelMembers(channel_pb2.AddChannelMembersRequest(
-        channel_id=channel.channel_id,
-        channel=channel_request,
-        requests=(
+    members = add_channel_members(
+        grpcchannel,
+        channel.channel_id,
+        channel_request,
+        (
             channel_pb2.AddChannelMemberRequest(
                 user_id=uuid_puuid(m.user_id),
                 encrypted_channel_key=m.encrypted_shared_key,
             ) for m in body.channel_members
         )
-    )))
+    )
 
     member_ids.add(s.user_id)
 
@@ -104,13 +107,61 @@ async def get_channel(s: SessionParam, channel: ChannelParam) -> ChannelResponse
     return ChannelResponse.from_rpc(channel)
 
 @ChatRouter.patch("/channel/{channel_id}")
-async def edit_channel(s: SessionParam, channel: ChannelParam, body: EditChannelBody) -> ChannelResponse:
-    ...
+async def patch_channel(s: SessionParam, channel: ChannelParam, body: EditChannelBody) -> ChannelResponse:
+    channel_id = channel.channel_id
+
+    channel_name = body.channel_name if "channel_name" in body.model_fields_set else UNSET
+    channel_icon = UNSET
+
+    rpc = await edit_channel(
+        grpcchannel,
+        channel_id,
+        channel_name,
+        channel_icon,
+        channel.channel_members
+    )
+
+    return ChannelResponse.from_rpc(rpc)
 
 @ChatRouter.put("/channel/{channel_id}/members/{user_id}")
 async def add_channel_member(s: SessionParam, channel: ChannelParam, user: UserParam, body: AddChannelMemberRequest) -> None:
-    ...
+    test = await test_relationship(grpcrelationship, s.user_id, user.user_id, RelationshipType.FRIENDS)
+    if not test.exists:
+        raise ApiErrExc(errors.Forbidden("Only friends can be added to group chats", api_error_code=errors.ERROR_USER_NOT_FRIENDS))
+    
+    await add_channel_members(
+        grpcchannel,
+        channel.channel_id,
+        channel_request=channel_pb2.CreateChannelRequest(
+            opt_channel_icon_asset_id=channel.opt_channel_icon_asset_id,
+            opt_channel_name=channel.opt_channel_name,
+        ),
+        requests=(
+            channel_pb2.AddChannelMemberRequest(
+                user_id=user.user_id,
+                encrypted_channel_key=body.encrypted_shared_key,
+            ),
+        )
+    )
+
 
 @ChatRouter.delete("/channel/{channel_id}/members/{user_id}")
 async def remove_channel_member(s: SessionParam, channel: ChannelParam, user: UserParam) -> None:
-    ...
+
+    removing_self = id_compare(user.user_id, s.user_id)
+    current_is_member = any(id_compare(s.user_id, m_id) for m_id in channel.channel_members)
+
+    if not removing_self and not current_is_member:
+        # send not found (the same way as the param would) to not allow channel enumeration
+        raise ApiErrExc(ResourceNotFoundRpcHandler.make_error(channel.channel_id))
+    
+    # protected channels only self can be removed
+    if not removing_self and not channel.channel_type == ChannelType.REGULAR:
+        raise ApiErrExc(errors.BadRequest("Channel type does not support removing members", api_error_code=errors.ERROR_BAD_REQUEST))
+    
+    await remove_channel_members(
+        grpcchannel,
+        channel.channel_id,
+        (user.user_id,)
+    )
+

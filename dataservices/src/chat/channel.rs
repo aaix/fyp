@@ -167,10 +167,14 @@ impl ScyllaChannelServiceServer {
         
         let channel_id: CqlTimeuuid = req_tuuid!(request, channel_id)?;
         let owned = request.into_inner();
+
+        println!("{:?}", &owned);
         let map = owned.update_mask.ok_or(Status::invalid_argument("bad mask"))?;
 
         let channel_name = maybe_opt_field!(owned, opt_channel_name, map);
         let channel_icon: MaybeUnset<Option<CqlTimeuuid>> = maybe_opt_field_into!(owned, opt_channel_icon_asset_id, map);
+
+        println!("{:?}", channel_name);
 
         db().await.execute_unpaged(
             &self.update_channel_prepared,
