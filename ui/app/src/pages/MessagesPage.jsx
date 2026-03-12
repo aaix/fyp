@@ -4,6 +4,7 @@ import Card from '../components/Card.jsx'
 import CreateChannelModal from '../components/CreateChannelModal.jsx'
 import AddChannelMembersModal from '../components/AddChannelMembersModal.jsx'
 import ContextMenu from '../components/ContextMenu.jsx'
+import ConfirmModal from '../components/ConfirmModal.jsx'
 import { getCurrentSession } from '../lib/session.js'
 import { channelManager } from '../lib/chat.js'
 import { userManager } from '../lib/user.js'
@@ -30,6 +31,7 @@ export default function MessagesPage() {
   const [leaveLoading, setLeaveLoading] = useState(false)
   const [leaveError, setLeaveError] = useState(null)
   const [channelMenu, setChannelMenu] = useState(null)
+  const [leaveConfirm, setLeaveConfirm] = useState(null)
 
   function formatRelativeFromSeconds(epochSeconds) {
     if (!epochSeconds) return ''
@@ -249,6 +251,7 @@ export default function MessagesPage() {
         setEditName('')
         setEditNameError(null)
       }
+      setLeaveConfirm(null)
     } catch (e) {
       setLeaveError(e?.message ?? 'Could not leave channel')
     } finally {
@@ -258,21 +261,21 @@ export default function MessagesPage() {
 
   return (
     <PageContainer>
-      <header className="flex items-center justify-between gap-3 border-b border-[color:var(--card-border)] pb-3">
-        <h1 className="text-xl font-bold text-[color:var(--text-primary)]">Messages</h1>
-        <button
-          type="button"
-          className="rounded-button flex items-center gap-2 bg-[color:var(--accent)] px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-[color:var(--accent-hover)]"
-          onClick={() => setCreateOpen(true)}
-        >
-          <span className="material-symbols-outlined text-[18px]" aria-hidden>
-            add
-          </span>
-          Create
-        </button>
-      </header>
-      <main className="min-h-0 flex-1 pt-2 md:flex md:gap-3 md:overflow-hidden">
-        <section className="flex min-h-0 flex-1 flex-col gap-2 md:max-w-sm md:flex-none md:overflow-y-auto">
+      <main className="min-h-0 flex-1 md:flex md:gap-3 md:overflow-hidden">
+        <section className="flex min-h-0 flex-1 flex-col gap-3 border-b border-[color:var(--card-border)] pb-3 md:w-80 md:flex-none md:border-b-0 md:border-r md:pb-0 lg:w-96 md:overflow-y-auto">
+          <div className="flex items-center justify-between gap-2 px-1 md:px-0">
+            <h1 className="text-lg font-bold text-[color:var(--text-primary)]">Messages</h1>
+            <button
+              type="button"
+              className="rounded-button flex items-center gap-2 bg-[color:var(--accent)] px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-[color:var(--accent-hover)]"
+              onClick={() => setCreateOpen(true)}
+            >
+              <span className="material-symbols-outlined text-[18px]" aria-hidden>
+                add
+              </span>
+              Create
+            </button>
+          </div>
           {loading && (
             <>
               <Card className="h-18 skeleton-pulse" />
@@ -339,7 +342,10 @@ export default function MessagesPage() {
                             className="h-10 w-10 flex-shrink-0 rounded-full border border-[color:var(--card-border)] object-cover"
                           />
                           <div className="min-w-0 flex-1">
-                            <div className="truncate text-sm font-semibold text-[color:var(--text-primary)]">
+                            <div
+                              className="truncate text-sm font-semibold text-[color:var(--text-primary)]"
+                              title={ch.channel_name}
+                            >
                               {ch.channel_name}
                             </div>
                             <div className="mt-0.5 text-xs text-[color:var(--text-muted)]">
@@ -566,21 +572,7 @@ export default function MessagesPage() {
                       </ul>
                     )}
                   </div>
-                  <div className="border-t border-[color:var(--card-border)] px-4 py-3">
-                    {leaveError && (
-                      <p className="mb-2 text-xs text-red-500" role="alert">
-                        {leaveError}
-                      </p>
-                    )}
-                    <button
-                      type="button"
-                      className="w-full rounded-button border border-red-500/60 bg-transparent px-3 py-1.5 text-xs font-semibold text-red-500 hover:bg-red-500/5 disabled:cursor-not-allowed disabled:opacity-60"
-                      onClick={handleLeaveChannel}
-                      disabled={leaveLoading}
-                    >
-                      {leaveLoading ? 'Leaving…' : 'Leave group'}
-                    </button>
-                  </div>
+                  <div className="border-t border-[color:var(--card-border)] px-4 py-3" />
                 </aside>
               </div>
             </Card>
@@ -605,7 +597,8 @@ export default function MessagesPage() {
               onClick={async () => {
                 const id = channelMenu.channelId
                 setChannelMenu(null)
-                await handleLeaveChannel(id)
+                setLeaveError(null)
+                setLeaveConfirm({ channelId: id, name: channelMenu.name || channelMenu.channelId })
               }}
               disabled={leaveLoading}
             >
@@ -665,6 +658,34 @@ export default function MessagesPage() {
         }}
         maxFriends={15}
       />
+
+      <ConfirmModal
+        open={!!leaveConfirm}
+        title="Leave channel?"
+        description={
+          leaveConfirm
+            ? `You will stop receiving messages from "${leaveConfirm.name}".`
+            : ''
+        }
+        confirmLabel="Leave"
+        cancelLabel="Cancel"
+        confirmVariant="danger"
+        confirmDisabled={leaveLoading}
+        onConfirm={() => {
+          if (!leaveConfirm) return
+          void handleLeaveChannel(leaveConfirm.channelId)
+        }}
+        onCancel={() => {
+          setLeaveConfirm(null)
+          setLeaveError(null)
+        }}
+      >
+        {leaveError && (
+          <p className="text-xs text-red-500" role="alert">
+            {leaveError}
+          </p>
+        )}
+      </ConfirmModal>
     </PageContainer>
   )
 }

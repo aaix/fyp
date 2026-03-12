@@ -141,7 +141,7 @@ export default function CreateChannelModal({
               </div>
               <p className="mt-0.5 text-xs text-[color:var(--text-muted)]">
                 When enabled, any member can manage the channel&apos;s membership. When disabled,
-                only the creator or privileged roles can do this.
+                members will only be able to remove themselves.
               </p>
             </div>
             <label className="flex items-center gap-2">
