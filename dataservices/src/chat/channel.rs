@@ -10,7 +10,7 @@ use futures::{StreamExt, future::join_all};
 use scylla::{statement::prepared::PreparedStatement, value::{CqlTimeuuid, MaybeUnset}};
 use tonic::{Response, Status, async_trait};
 
-use crate::{db_conn::db, errors::DSResult, helpers::{gen_timeuuid, time_now}, models::{channel::Channel, user_channel::UserChannel}, protos::channel_service::{AddChannelMembersRequest, AddChannelMembersResponse, ChannelMemberObject, ChannelObjectResponse, CreateChannelRequest, DeleteChannelResponse, GetUserChannelsRequest, ReadChannelRequest, RemoveChannelMembersRequest, RemoveChannelMembersResponse, UpdateChannelMemberRequest, UpdateChannelRequest, UserChannelsResponse, channel_service_server::{ChannelService, ChannelServiceServer}}, req_ref, req_tuuid};
+use crate::{db_conn::db, errors::DSResult, helpers::{gen_timeuuid, time_now}, maybe_opt_field, maybe_opt_field_into, models::{channel::Channel, user_channel::UserChannel}, protos::channel_service::{AddChannelMembersRequest, AddChannelMembersResponse, ChannelMemberObject, ChannelObjectResponse, CreateChannelRequest, DeleteChannelResponse, GetUserChannelsRequest, ReadChannelRequest, RemoveChannelMembersRequest, RemoveChannelMembersResponse, UpdateChannelMemberRequest, UpdateChannelRequest, UserChannelsResponse, channel_service_server::{ChannelService, ChannelServiceServer}}, req_ref, req_tuuid};
 
 
 #[derive(Debug)]
@@ -160,9 +160,10 @@ impl ScyllaChannelServiceServer {
         
         let channel_id: CqlTimeuuid = req_tuuid!(request, channel_id)?;
         let owned = request.into_inner();
+        let map = owned.update_mask.ok_or(Status::invalid_argument("bad mask"))?;
 
-        let channel_name = MaybeUnset::from_option(owned.opt_channel_name);
-        let channel_icon: MaybeUnset<CqlTimeuuid> = MaybeUnset::from_option(owned.opt_channel_icon_asset_id.map(Into::into));
+        let channel_name = maybe_opt_field!(owned, opt_channel_name, map);
+        let channel_icon: MaybeUnset<Option<CqlTimeuuid>> = maybe_opt_field_into!(owned, opt_channel_icon_asset_id, map);
 
         db().await.execute_unpaged(
             &self.update_channel_prepared,

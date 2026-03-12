@@ -22,3 +22,25 @@ macro_rules! req_ref {
     }
 }
 
+
+#[macro_export]
+macro_rules! maybe_opt_field {
+    ($payload:expr, $field:ident, $mask:expr) => {
+        if $mask.paths.iter().any(|v| v == stringify!($mask)) {
+            MaybeUnset::Set($payload.$field)
+        } else {
+            MaybeUnset::Unset
+        }
+    }
+}
+
+#[macro_export]
+macro_rules! maybe_opt_field_into {
+    ($payload:expr, $field:ident, $mask:expr) => {
+        if $mask.paths.iter().any(|v| v == stringify!($mask)) {
+            MaybeUnset::Set($payload.$field.map(Into::into))
+        } else {
+            MaybeUnset::Unset
+        }
+    }
+}

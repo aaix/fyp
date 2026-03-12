@@ -3,6 +3,7 @@ syntax = "proto3";
 package dataservices.channelproto;
 
 import "plib.proto";
+import "google/protobuf/field_mask.proto";
 
 
 service ChannelService {
@@ -28,7 +29,8 @@ message CreateChannelRequest {
 message UpdateChannelRequest {
     dataservices.plib.pUUID channel_id = 1;
     optional string opt_channel_name = 2;
-    optional dataservices.plib.pUUID opt_channel_icon_asset_id = 3; 
+    optional dataservices.plib.pUUID opt_channel_icon_asset_id = 3;
+    google.protobuf.FieldMask update_mask = 4;
 }
 
 message ReadChannelRequest {
