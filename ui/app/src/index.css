@@ -62,6 +62,31 @@
     min-height: 100vh;
     min-height: 100dvh;
   }
+
+  button,
+  [role='button'],
+  a[href] {
+    cursor: pointer;
+  }
+
+  button:disabled,
+  [aria-disabled='true'],
+  [disabled] {
+    cursor: not-allowed;
+  }
+
+  a[href] {
+    transition: color 150ms ease, background-color 150ms ease;
+  }
+
+  a[href]:hover {
+    color: var(--accent);
+  }
+
+  .material-symbols-outlined {
+    user-select: none;
+    -webkit-user-select: none;
+  }
 }
 
 @layer utilities {

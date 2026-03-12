@@ -1,3 +1,6 @@
+import Button from './Button.jsx'
+import useEscapeToClose from './useEscapeToClose.js'
+
 export default function ConfirmModal({
   open,
   title,
@@ -11,14 +14,12 @@ export default function ConfirmModal({
   onCancel,
   labelledById,
 }) {
+  useEscapeToClose(open, onCancel)
+
   if (!open) return null
 
   const titleId = labelledById || 'confirm-modal-title'
-
-  const confirmClasses =
-    confirmVariant === 'danger'
-      ? 'bg-red-600 text-white hover:bg-red-500'
-      : 'bg-[color:var(--accent)] text-white hover:bg-[color:var(--accent-hover)]'
+  const effectiveConfirmVariant = confirmVariant === 'danger' ? 'danger' : 'primary'
 
   return (
     <div
@@ -47,22 +48,18 @@ export default function ConfirmModal({
           </div>
         )}
         <div className="flex justify-end gap-2">
-          <button
-            type="button"
-            className="rounded-button border border-[color:var(--card-border)] bg-[color:var(--card-bg)] px-3 py-1.5 text-sm font-semibold text-[color:var(--text-primary)] transition-colors hover:bg-[color:var(--card-bg)]/80 disabled:cursor-not-allowed disabled:opacity-60"
-            onClick={onCancel}
-            disabled={confirmDisabled}
-          >
+          <Button type="button" variant="ghost" size="sm" onClick={onCancel} disabled={confirmDisabled}>
             {cancelLabel}
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
-            className={`rounded-button px-3 py-1.5 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${confirmClasses}`}
+            variant={effectiveConfirmVariant}
+            size="sm"
             onClick={onConfirm}
             disabled={confirmDisabled}
           >
             {confirmLabel}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

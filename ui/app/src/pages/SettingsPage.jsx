@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from 'react'
-import { Link } from 'react-router-dom'
 import { DeviceManager } from '../lib/session.js'
 import { gatewayFactory } from '../lib/gateway.js'
 import { timeFromUUIDv1 } from '../lib/utils.js'
 import ConfirmModal from '../components/ConfirmModal.jsx'
 import PageContainer from '../components/PageContainer.jsx'
+import Button from '../components/Button.jsx'
+import IconLinkButton from '../components/IconLinkButton.jsx'
 
 const deviceManager = new DeviceManager()
 
@@ -191,15 +192,7 @@ export default function SettingsPage() {
   return (
     <PageContainer>
       <header className="flex items-center gap-3 border-b border-[color:var(--card-border)] pb-3">
-        <Link
-          to="/account"
-          className="flex h-10 w-10 items-center justify-center rounded-full text-[color:var(--text-primary)] no-underline transition-colors hover:bg-[color:var(--card-bg)] hover:text-[color:var(--accent)]"
-          aria-label="Back to account"
-        >
-          <span className="material-symbols-outlined text-xl" aria-hidden>
-            arrow_back
-          </span>
-        </Link>
+        <IconLinkButton to="/account" label="Back to account" icon="arrow_back" />
         <h1 className="m-0 text-xl font-bold text-[color:var(--text-primary)]">Settings</h1>
       </header>
       <main className="flex flex-1 flex-col overflow-y-auto pt-4">
@@ -223,14 +216,15 @@ export default function SettingsPage() {
                 </div>
               </div>
               <div className="flex flex-wrap items-center justify-end gap-2">
-                <button
+                <Button
                   type="button"
-                  className="inline-flex items-center gap-1 rounded-pill bg-[color:var(--accent)] px-4 py-2 text-xs font-semibold text-white shadow-[0_10px_20px_rgba(15,23,42,0.18)] transition-transform transition-shadow hover:bg-[color:var(--accent-hover)] hover:shadow-[0_14px_28px_rgba(15,23,42,0.2)] disabled:cursor-not-allowed disabled:opacity-70 disabled:shadow-none"
+                  size="sm"
+                  className="rounded-pill text-xs shadow-[0_10px_20px_rgba(15,23,42,0.18)] hover:shadow-[0_14px_28px_rgba(15,23,42,0.2)] disabled:shadow-none"
                   onClick={handleRegisterNewDevice}
                   disabled={registerLoading}
                 >
                   {registerLoading ? 'Registering…' : 'Register new device'}
-                </button>
+                </Button>
                 <span className="rounded-pill bg-[color:var(--tab-active-bg)] px-2 py-0.5 text-[0.7rem] font-medium text-[color:var(--accent)]">
                   Security
                 </span>
@@ -265,9 +259,11 @@ export default function SettingsPage() {
                       }`}
                     >
                       <div className="flex w-full items-center gap-1">
-                        <button
+                        <Button
                           type="button"
-                          className="flex min-w-0 flex-1 items-center justify-between gap-3 rounded-[12px] px-2.5 py-2 text-left text-sm text-[color:var(--text-primary)] transition-colors hover:bg-[rgba(148,163,184,0.08)]"
+                          variant="text"
+                          size="sm"
+                          className="min-w-0 flex-1 justify-between gap-3 rounded-[12px] px-2.5 py-2 text-left text-sm text-[color:var(--text-primary)] hover:bg-[rgba(148,163,184,0.08)]"
                           onClick={() => handleDeviceClick(device.id)}
                         >
                           <div className="min-w-0">
@@ -281,11 +277,13 @@ export default function SettingsPage() {
                           <span className="material-symbols-outlined text-[1.35rem] text-[color:var(--text-muted)]" aria-hidden>
                             {expandedDeviceId === device.id ? 'expand_less' : 'chevron_right'}
                           </span>
-                        </button>
+                        </Button>
                         <div className="mr-1 flex items-center gap-1">
-                          <button
+                          <Button
                             type="button"
-                            className="flex h-9 w-9 items-center justify-center rounded-full text-[color:var(--text-muted)] transition-colors hover:bg-[rgba(37,99,235,0.12)] hover:text-[color:var(--accent)]"
+                            variant="text"
+                            size="icon"
+                            className="rounded-full text-[color:var(--text-muted)] hover:bg-[rgba(37,99,235,0.12)] hover:text-[color:var(--accent)]"
                             onClick={(e) => openEditModal(device, e)}
                             title="Rename device"
                             aria-label={`Rename ${device.name}`}
@@ -293,10 +291,12 @@ export default function SettingsPage() {
                             <span className="material-symbols-outlined text-base" aria-hidden>
                               edit
                             </span>
-                          </button>
-                          <button
+                          </Button>
+                          <Button
                             type="button"
-                            className="flex h-9 w-9 items-center justify-center rounded-full text-[color:var(--text-muted)] transition-colors hover:bg-[rgba(185,28,28,0.12)] hover:text-red-700"
+                            variant="text"
+                            size="icon"
+                            className="rounded-full text-[color:var(--text-muted)] hover:bg-[rgba(185,28,28,0.12)] hover:text-red-700"
                             onClick={(e) => openDeleteModal(device, e)}
                             title="Remove device"
                             aria-label={`Remove ${device.name}`}
@@ -304,7 +304,7 @@ export default function SettingsPage() {
                             <span className="material-symbols-outlined text-base" aria-hidden>
                               delete
                             </span>
-                          </button>
+                          </Button>
                         </div>
                       </div>
                       {expandedDeviceId === device.id && (

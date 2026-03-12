@@ -1,3 +1,5 @@
+import Button from './Button.jsx'
+
 /**
  * Reusable profile view: avatar, @username, friends stat, posts grid.
  * No header or settings link; the parent (AccountPage or UserPage) provides those.
@@ -55,14 +57,16 @@ export default function ProfileView({
       )}
       <div className="mt-2 flex gap-6">
         {onFriendsClick ? (
-          <button
+          <Button
             type="button"
+            variant="text"
+            size="sm"
             onClick={onFriendsClick}
-            className="flex flex-col items-center gap-0.5 rounded-button transition-colors hover:bg-[color:var(--card-bg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--bg)]"
+            className="flex-col gap-0.5"
             aria-label={`${friendsCount} friends. View list`}
           >
             {friendsStat}
-          </button>
+          </Button>
         ) : (
           friendsStat
         )}

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { relationshipManager } from '../lib/user.js'
 import { channelManager } from '../lib/chat.js'
+import Button from './Button.jsx'
 
 export default function MemberContextMenu({
   userId,
@@ -119,30 +120,36 @@ export default function MemberContextMenu({
       )}
       {!loading && !error && (
         <>
-          <button
+          <Button
             type="button"
-            className="flex w-full items-center justify-between px-3 py-2 text-left text-red-500 hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-60"
+            variant="text"
+            size="sm"
+            className="w-full justify-between rounded-none px-3 text-left text-red-500 hover:bg-red-500/10"
             onClick={handleRemoveFromChannel}
             disabled={actionLoading || !channelId || !canManageMembers}
           >
             <span>Remove from group</span>
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
-            className="flex w-full items-center px-3 py-2 text-left hover:bg-[color:var(--card-bg)]/80 disabled:cursor-not-allowed disabled:opacity-60"
+            variant="text"
+            size="sm"
+            className="w-full justify-start rounded-none px-3 text-left hover:bg-[color:var(--card-bg)]/80"
             onClick={handleFriendToggle}
             disabled={actionLoading}
           >
             {isFriends ? 'Remove friend' : 'Add friend'}
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
-            className="flex w-full items-center px-3 py-2 text-left text-red-500 hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-60"
+            variant="text"
+            size="sm"
+            className="w-full justify-start rounded-none px-3 text-left text-red-500 hover:bg-red-500/10"
             onClick={handleBlockToggle}
             disabled={actionLoading}
           >
             {isBlockedByMe ? 'Unblock' : 'Block'}
-          </button>
+          </Button>
         </>
       )}
     </div>

@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import FriendMultiSelect from './FriendMultiSelect.jsx'
 import { channelManager } from '../lib/chat.js'
+import Button from './Button.jsx'
+import ModalCloseButton from './ModalCloseButton.jsx'
+import useEscapeToClose from './useEscapeToClose.js'
 
 export default function CreateChannelModal({
   open,
@@ -58,6 +61,8 @@ export default function CreateChannelModal({
     trimmedName,
   ])
 
+  useEscapeToClose(open, onClose)
+
   if (!open) return null
 
   async function onSubmit(e) {
@@ -103,17 +108,7 @@ export default function CreateChannelModal({
               Pick up to {maxFriends} friends to add. Encryption fields are currently stubbed.
             </p>
           </div>
-          <button
-            type="button"
-            className="rounded-button p-2 text-[color:var(--text-primary)] hover:bg-[color:var(--card-bg)] disabled:cursor-not-allowed disabled:opacity-60"
-            onClick={onClose}
-            disabled={submitting}
-            aria-label="Close"
-          >
-            <span className="material-symbols-outlined text-xl" aria-hidden>
-              close
-            </span>
-          </button>
+          <ModalCloseButton onClick={onClose} disabled={submitting} />
         </div>
 
         <form className="space-y-4" onSubmit={onSubmit}>
@@ -148,24 +143,26 @@ export default function CreateChannelModal({
               <span className="text-xs text-[color:var(--text-muted)]">
                 {allowMembersManageUsers ? 'Allowed' : 'Restricted'}
               </span>
-              <button
+              <Button
                 type="button"
                 role="switch"
                 aria-checked={allowMembersManageUsers}
                 onClick={() => setAllowMembersManageUsers((v) => !v)}
                 disabled={submitting}
+                size="sm"
+                variant="text"
                 className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                   allowMembersManageUsers
-                    ? 'bg-[color:var(--accent)]'
-                    : 'bg-[color:var(--card-border)]'
-                } disabled:cursor-not-allowed disabled:opacity-60`}
+                    ? 'bg-[color:var(--accent)] hover:bg-[color:var(--accent-hover)]'
+                    : 'bg-[color:var(--card-border)] hover:bg-[color:var(--input-border-hover)]'
+                } p-0`}
               >
                 <span
                   className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
                     allowMembersManageUsers ? 'translate-x-5' : 'translate-x-1'
                   }`}
                 />
-              </button>
+              </Button>
             </label>
           </div>
 
@@ -184,21 +181,12 @@ export default function CreateChannelModal({
           )}
 
           <div className="flex items-center justify-end gap-2 pt-1">
-            <button
-              type="button"
-              className="rounded-button border border-[color:var(--card-border)] bg-[color:var(--card-bg)] px-3 py-1.5 text-sm font-semibold text-[color:var(--text-primary)] transition-colors hover:bg-[color:var(--card-bg)]/80 disabled:cursor-not-allowed disabled:opacity-60"
-              onClick={onClose}
-              disabled={submitting}
-            >
+            <Button type="button" variant="ghost" size="sm" onClick={onClose} disabled={submitting}>
               Cancel
-            </button>
-            <button
-              type="submit"
-              className="rounded-button bg-[color:var(--accent)] px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-[color:var(--accent-hover)] disabled:cursor-not-allowed disabled:opacity-60"
-              disabled={!canSubmit}
-            >
+            </Button>
+            <Button type="submit" size="sm" disabled={!canSubmit}>
               {submitting ? 'Creating…' : 'Create'}
-            </button>
+            </Button>
           </div>
         </form>
       </div>

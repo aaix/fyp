@@ -98,9 +98,11 @@ export default function SearchPage() {
           <ul className="mt-2 space-y-0.5" role="list">
             {users.map((user) => (
               <li key={user.user_id}>
-                <button
+                <Button
                   type="button"
-                  className="flex w-full items-center gap-3 border-b border-[color:var(--card-border)] px-1 py-2 text-left text-sm text-[color:var(--text-primary)] hover:bg-[color:var(--card-bg)]"
+                  variant="text"
+                  size="sm"
+                  className="w-full justify-start gap-3 rounded-none border-b border-[color:var(--card-border)] px-1 py-2 text-left text-sm text-[color:var(--text-primary)] hover:bg-[color:var(--card-bg)]"
                   onClick={() => handleUserClick(user)}
                 >
                   {user.icon_url ? (
@@ -113,7 +115,7 @@ export default function SearchPage() {
                     <div className="h-11 w-11 flex-shrink-0 rounded-full border border-[color:var(--card-border)] bg-[color:var(--card-bg)]" />
                   )}
                   <span className="font-medium">@{user.username}</span>
-                </button>
+                </Button>
               </li>
             ))}
           </ul>
