@@ -638,8 +638,10 @@ export default function MessagesPage() {
         onClose={() => setAddingMembers(false)}
         channelId={selectedChannelId}
         existingMemberIds={selectedChannel?.channel_members ?? []}
-        onMembersAdded={(newMemberIds) => {
+        onMembersAdded={async (newMemberIds) => {
           if (!Array.isArray(newMemberIds) || newMemberIds.length === 0) return
+
+          // Update raw channel member IDs
           setSelectedChannel((prev) =>
             prev
               ? {
@@ -653,7 +655,32 @@ export default function MessagesPage() {
                 }
               : prev,
           )
-          setSelectedMembers((prev) => prev)
+
+          try {
+            const users = await userManager.fetchUsersBulk(newMemberIds)
+            const newProfiles = (users ?? []).map((u) => ({
+              user_id: u.user_id,
+              username: u?.username ?? '',
+              icon_url: u ? getAvatarUrl(u) : null,
+            }))
+            if (newProfiles.length === 0) return
+
+            setSelectedMembers((prev) => {
+              const existingById = new Map((prev ?? []).map((m) => [m.user_id, m]))
+              for (const profile of newProfiles) {
+                existingById.set(profile.user_id, profile)
+              }
+              const merged = Array.from(existingById.values())
+              merged.sort((a, b) =>
+                (a.username || '').localeCompare(b.username || '', undefined, {
+                  sensitivity: 'base',
+                }),
+              )
+              return merged
+            })
+          } catch (e) {
+            // Swallow; members will appear after full reload/select
+          }
         }}
         maxFriends={15}
       />

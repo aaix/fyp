@@ -10,7 +10,7 @@ use futures::{StreamExt, future::join_all};
 use scylla::{statement::prepared::PreparedStatement, value::{CqlTimeuuid, MaybeUnset}};
 use tonic::{Response, Status, async_trait};
 
-use crate::{db_conn::db, errors::DSResult, helpers::{gen_timeuuid, time_now}, maybe_opt_field, maybe_opt_field_into, models::{channel::Channel, user_channel::UserChannel}, protos::channel_service::{AddChannelMembersRequest, AddChannelMembersResponse, ChannelMemberObject, ChannelObjectResponse, CreateChannelRequest, DeleteChannelResponse, GetUserChannelsRequest, ReadChannelRequest, RemoveChannelMembersRequest, RemoveChannelMembersResponse, UpdateChannelMemberRequest, UpdateChannelRequest, UserChannelsResponse, channel_service_server::{ChannelService, ChannelServiceServer}}, req_ref, req_tuuid};
+use crate::{db_conn::db, errors::DSResult, helpers::{gen_timeuuid, time_now}, maybe_opt_field, maybe_opt_field_into, models::{channel::Channel, user_channel::UserChannel}, protos::channel_service::{AddChannelMembersRequest, AddChannelMembersResponse, ChannelMemberObject, ChannelObjectResponse, CreateChannelRequest, DeleteChannelResponse, GetUserChannelsRequest, ReadChannelRequest, RemoveChannelMembersRequest, RemoveChannelMembersResponse, UpdateChannelMemberRequest, UpdateChannelMemberResponse, UpdateChannelRequest, UserChannelsResponse, channel_service_server::{ChannelService, ChannelServiceServer}}, req_ref, req_tuuid};
 
 
 #[derive(Debug)]
@@ -25,7 +25,8 @@ pub struct ScyllaChannelServiceServer {
 
 
     add_user_channel_prepared: PreparedStatement,
-    edit_user_channel_prepared: PreparedStatement,
+    update_user_channel_denorm_prepared: PreparedStatement,
+    update_user_channel_norm_prepared: PreparedStatement,
     delete_user_channel_prepared: PreparedStatement,
 
     get_user_channels_prepared: PreparedStatement,
@@ -87,8 +88,12 @@ impl ScyllaChannelServiceServer {
             "SELECT * FROM dataservices.user_channel WHERE user_id = ?",
         ).await?;
 
-        let edit_user_channel_prepared = db().await.prepare(
+        let update_user_channel_denorm_prepared = db().await.prepare(
             "UPDATE dataservices.user_channel SET opt_channel_name = ?, opt_channel_icon_asset_id = ? WHERE user_id = ? AND channel_id = ?"
+        ).await?;
+
+        let update_user_channel_norm_prepared = db().await.prepare(
+            "UPDATE dataservices.user_channel SET last_accessed = ? WHERE user_id = ? AND channel_id = ?"
         ).await?;
 
         Ok(Self {
@@ -101,7 +106,8 @@ impl ScyllaChannelServiceServer {
             add_channel_members_prepared,
             remove_channel_members_prepared,
             delete_user_channel_prepared,
-            edit_user_channel_prepared,
+            update_user_channel_denorm_prepared,
+            update_user_channel_norm_prepared,
 
             get_user_channels_prepared,
         })
@@ -168,13 +174,11 @@ impl ScyllaChannelServiceServer {
         let channel_id: CqlTimeuuid = req_tuuid!(request, channel_id)?;
         let owned = request.into_inner();
 
-        println!("{:?}", &owned);
         let map = owned.update_mask.ok_or(Status::invalid_argument("bad mask"))?;
 
         let channel_name = maybe_opt_field!(owned, opt_channel_name, map);
         let channel_icon: MaybeUnset<Option<CqlTimeuuid>> = maybe_opt_field_into!(owned, opt_channel_icon_asset_id, map);
 
-        println!("{:?}", channel_name);
 
         db().await.execute_unpaged(
             &self.update_channel_prepared,
@@ -186,7 +190,7 @@ impl ScyllaChannelServiceServer {
         let futures = owned.members_to_update.iter().map(async |r| {
             let user_id: CqlTimeuuid = r.into();
             db().await.execute_unpaged(
-                &self.edit_user_channel_prepared,
+                &self.update_user_channel_denorm_prepared,
                 (
                     &channel_name,
                     &channel_icon,
@@ -263,7 +267,7 @@ impl ScyllaChannelServiceServer {
             ).await.map(|_| user_id)
         });
 
-        let res = join_all(futures).await;
+        join_all(futures).await;
 
         Ok(Response::new(AddChannelMembersResponse {}))
 
@@ -303,6 +307,67 @@ impl ScyllaChannelServiceServer {
             channels: out
         }))
 
+    }
+
+    async fn remove_channel_members_impl(
+        &self,
+        request: tonic::Request<RemoveChannelMembersRequest>,
+    ) -> DSResult<tonic::Response<RemoveChannelMembersResponse>> {
+        let channel_id: CqlTimeuuid = req_tuuid!(request, channel_id)?;
+
+        let inner = request.get_ref();
+
+        let member_ids = inner.members.iter().map(Into::into).collect::<Vec<CqlTimeuuid>>();
+
+
+        db().await.execute_unpaged(
+            &self.remove_channel_members_prepared,
+            (member_ids, channel_id)
+        ).await?;
+
+
+
+        let futures = inner.members.iter().map(async |r| {
+            let user_id: CqlTimeuuid = r.into();
+            db().await.execute_unpaged(
+                &self.delete_user_channel_prepared,
+                (
+                    user_id,
+                    channel_id,
+                )
+            ).await.map(|_| user_id)
+        });
+
+        join_all(futures).await;
+
+        Ok(Response::new(RemoveChannelMembersResponse {}))
+
+
+    }
+    async fn update_channel_member_impl(
+        &self,
+        request: tonic::Request<UpdateChannelMemberRequest>,
+    ) -> DSResult<tonic::Response<UpdateChannelMemberResponse>> {
+        
+        let user_id: CqlTimeuuid = req_tuuid!(request, user_id)?;
+        let channel_id: CqlTimeuuid = req_tuuid!(request, channel_id)?;
+
+        let inner = request.get_ref();
+
+        let last_accessed = MaybeUnset::from_option(inner.last_accessed);
+
+
+        db().await.execute_unpaged(
+            &self.update_user_channel_norm_prepared,
+            (
+                last_accessed,
+                user_id,
+                channel_id,
+            )
+        ).await?;
+
+
+        Ok(Response::new(UpdateChannelMemberResponse {}))
     }
 }
 
@@ -359,14 +424,18 @@ impl ChannelService for ScyllaChannelServiceServer {
     ) -> std::result::Result<
         tonic::Response<RemoveChannelMembersResponse>,
         tonic::Status,
-    > { todo!()}
+    > {
+        Ok(self.remove_channel_members_impl(request).await?)
+    }
     async fn update_channel_member(
         &self,
         request: tonic::Request<UpdateChannelMemberRequest>,
     ) -> std::result::Result<
-        tonic::Response<ChannelMemberObject>,
+        tonic::Response<UpdateChannelMemberResponse>,
         tonic::Status,
-    > { todo!()}
+    > {
+        Ok(self.update_channel_member_impl(request).await?)
+    }
     async fn get_user_channels(
         &self,
         request: tonic::Request<GetUserChannelsRequest>,

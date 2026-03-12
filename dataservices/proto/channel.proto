@@ -14,7 +14,7 @@ service ChannelService {
 
     rpc AddChannelMembers (AddChannelMembersRequest) returns (AddChannelMembersResponse);
     rpc RemoveChannelMembers (RemoveChannelMembersRequest) returns (RemoveChannelMembersResponse);
-    rpc UpdateChannelMember (UpdateChannelMemberRequest) returns (ChannelMemberObject);
+    rpc UpdateChannelMember (UpdateChannelMemberRequest) returns (UpdateChannelMemberResponse);
 
     rpc GetUserChannels (GetUserChannelsRequest) returns (UserChannelsResponse);
 
@@ -92,4 +92,7 @@ message RemoveChannelMembersResponse {}
 message UpdateChannelMemberRequest {
     dataservices.plib.pUUID user_id = 1;
     dataservices.plib.pUUID channel_id = 2;
+    optional int64 last_accessed = 3;
 }
+
+message UpdateChannelMemberResponse {}

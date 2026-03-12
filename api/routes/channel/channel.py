@@ -71,7 +71,7 @@ async def new_channel(s: SessionParam, body: NewChannelBody) -> ChannelResponse:
     channel = cast(channel_pb2.ChannelObjectResponse, await grpcchannel.stub.CreateChannel(channel_request))
 
     # add the channel members
-    members = add_channel_members(
+    members = await add_channel_members(
         grpcchannel,
         channel.channel_id,
         channel_request,

@@ -125,9 +125,15 @@ class RemoveChannelMembersResponse(_message.Message):
     def __init__(self) -> None: ...
 
 class UpdateChannelMemberRequest(_message.Message):
-    __slots__ = ("user_id", "channel_id")
+    __slots__ = ("user_id", "channel_id", "last_accessed")
     USER_ID_FIELD_NUMBER: _ClassVar[int]
     CHANNEL_ID_FIELD_NUMBER: _ClassVar[int]
+    LAST_ACCESSED_FIELD_NUMBER: _ClassVar[int]
     user_id: _plib_pb2.pUUID
     channel_id: _plib_pb2.pUUID
-    def __init__(self, user_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., channel_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ...) -> None: ...
+    last_accessed: int
+    def __init__(self, user_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., channel_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., last_accessed: _Optional[int] = ...) -> None: ...
+
+class UpdateChannelMemberResponse(_message.Message):
+    __slots__ = ()
+    def __init__(self) -> None: ...

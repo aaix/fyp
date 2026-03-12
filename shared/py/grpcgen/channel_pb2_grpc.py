@@ -67,7 +67,7 @@ class ChannelServiceStub(object):
         self.UpdateChannelMember = channel.unary_unary(
                 '/dataservices.channelproto.ChannelService/UpdateChannelMember',
                 request_serializer=channel__pb2.UpdateChannelMemberRequest.SerializeToString,
-                response_deserializer=channel__pb2.ChannelMemberObject.FromString,
+                response_deserializer=channel__pb2.UpdateChannelMemberResponse.FromString,
                 _registered_method=True)
         self.GetUserChannels = channel.unary_unary(
                 '/dataservices.channelproto.ChannelService/GetUserChannels',
@@ -163,7 +163,7 @@ def add_ChannelServiceServicer_to_server(servicer, server):
             'UpdateChannelMember': grpc.unary_unary_rpc_method_handler(
                     servicer.UpdateChannelMember,
                     request_deserializer=channel__pb2.UpdateChannelMemberRequest.FromString,
-                    response_serializer=channel__pb2.ChannelMemberObject.SerializeToString,
+                    response_serializer=channel__pb2.UpdateChannelMemberResponse.SerializeToString,
             ),
             'GetUserChannels': grpc.unary_unary_rpc_method_handler(
                     servicer.GetUserChannels,
@@ -359,7 +359,7 @@ class ChannelService(object):
             target,
             '/dataservices.channelproto.ChannelService/UpdateChannelMember',
             channel__pb2.UpdateChannelMemberRequest.SerializeToString,
-            channel__pb2.ChannelMemberObject.FromString,
+            channel__pb2.UpdateChannelMemberResponse.FromString,
             options,
             channel_credentials,
             insecure,
