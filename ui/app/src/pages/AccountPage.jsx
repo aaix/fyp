@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { getCurrentSession } from '../lib/session.js'
 import { getAvatarUrl } from '../lib/utils.js'
 import { relationshipManager } from '../lib/user.js'
 import ProfileView from '../components/ProfileView.jsx'
 import PageContainer from '../components/PageContainer.jsx'
 import FriendsListModal from '../components/FriendsListModal.jsx'
+import IconLinkButton from '../components/IconLinkButton.jsx'
 
 const FRIENDS = 3
 
@@ -66,24 +66,8 @@ export default function AccountPage() {
           My Profile
         </h1>
         <div className="flex items-center gap-1">
-          <Link
-            to="/notifications"
-            className="flex h-10 w-10 items-center justify-center rounded-full text-[color:var(--text-primary)] no-underline transition-colors hover:bg-[color:var(--card-bg)] hover:text-[color:var(--accent)]"
-            aria-label="Friend requests"
-          >
-            <span className="material-symbols-outlined text-xl" aria-hidden>
-              notifications
-            </span>
-          </Link>
-          <Link
-            to="/account/settings"
-            className="flex h-10 w-10 items-center justify-center rounded-full text-[color:var(--text-primary)] no-underline transition-colors hover:bg-[color:var(--card-bg)] hover:text-[color:var(--accent)]"
-            aria-label="Settings"
-          >
-            <span className="material-symbols-outlined text-xl" aria-hidden>
-              settings
-            </span>
-          </Link>
+          <IconLinkButton to="/notifications" label="Friend requests" icon="notifications" />
+          <IconLinkButton to="/account/settings" label="Settings" icon="settings" />
         </div>
       </header>
       <ProfileView

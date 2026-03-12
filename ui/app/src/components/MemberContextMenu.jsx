@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { relationshipManager } from '../lib/user.js'
 import { channelManager } from '../lib/chat.js'
+import MenuActionItem from './MenuActionItem.jsx'
 
 export default function MemberContextMenu({
   userId,
@@ -119,30 +120,30 @@ export default function MemberContextMenu({
       )}
       {!loading && !error && (
         <>
-          <button
+          <MenuActionItem
             type="button"
-            className="flex w-full items-center justify-between px-3 py-2 text-left text-red-500 hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-60"
+            className="justify-between text-red-500 hover:bg-red-500/10"
             onClick={handleRemoveFromChannel}
             disabled={actionLoading || !channelId || !canManageMembers}
           >
             <span>Remove from group</span>
-          </button>
-          <button
+          </MenuActionItem>
+          <MenuActionItem
             type="button"
-            className="flex w-full items-center px-3 py-2 text-left hover:bg-[color:var(--card-bg)]/80 disabled:cursor-not-allowed disabled:opacity-60"
+            className="justify-start hover:bg-[color:var(--card-bg)]/80"
             onClick={handleFriendToggle}
             disabled={actionLoading}
           >
             {isFriends ? 'Remove friend' : 'Add friend'}
-          </button>
-          <button
+          </MenuActionItem>
+          <MenuActionItem
             type="button"
-            className="flex w-full items-center px-3 py-2 text-left text-red-500 hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-60"
+            className="justify-start text-red-500 hover:bg-red-500/10"
             onClick={handleBlockToggle}
             disabled={actionLoading}
           >
             {isBlockedByMe ? 'Unblock' : 'Block'}
-          </button>
+          </MenuActionItem>
         </>
       )}
     </div>

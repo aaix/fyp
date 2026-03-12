@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import FriendMultiSelect from './FriendMultiSelect.jsx'
 import { channelManager } from '../lib/chat.js'
+import Button from './Button.jsx'
+import ModalCloseButton from './ModalCloseButton.jsx'
+import useEscapeToClose from './useEscapeToClose.js'
 
 export default function AddChannelMembersModal({
   open,
@@ -35,6 +38,8 @@ export default function AddChannelMembersModal({
     effectiveMax > 0
 
   const titleId = 'add-channel-members-title'
+
+  useEscapeToClose(open, onClose)
 
   if (!open) return null
 
@@ -97,17 +102,7 @@ export default function AddChannelMembersModal({
               Select friends to add to this channel.
             </p>
           </div>
-          <button
-            type="button"
-            className="rounded-button p-2 text-[color:var(--text-primary)] hover:bg-[color:var(--card-bg)] disabled:cursor-not-allowed disabled:opacity-60"
-            onClick={onClose}
-            disabled={submitting}
-            aria-label="Close"
-          >
-            <span className="material-symbols-outlined text-xl" aria-hidden>
-              close
-            </span>
-          </button>
+          <ModalCloseButton onClick={onClose} disabled={submitting} />
         </div>
 
         {effectiveMax === 0 ? (
@@ -131,21 +126,12 @@ export default function AddChannelMembersModal({
             )}
 
             <div className="flex items-center justify-end gap-2 pt-1">
-              <button
-                type="button"
-                className="rounded-button border border-[color:var(--card-border)] bg-[color:var(--card-bg)] px-3 py-1.5 text-sm font-semibold text-[color:var(--text-primary)] transition-colors hover:bg-[color:var(--card-bg)]/80 disabled:cursor-not-allowed disabled:opacity-60"
-                onClick={onClose}
-                disabled={submitting}
-              >
+              <Button type="button" variant="ghost" size="sm" onClick={onClose} disabled={submitting}>
                 Cancel
-              </button>
-              <button
-                type="submit"
-                className="rounded-button bg-[color:var(--accent)] px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-[color:var(--accent-hover)] disabled:cursor-not-allowed disabled:opacity-60"
-                disabled={!canSubmit}
-              >
+              </Button>
+              <Button type="submit" size="sm" disabled={!canSubmit}>
                 {submitting ? 'Adding…' : 'Add'}
-              </button>
+              </Button>
             </div>
           </form>
         )}

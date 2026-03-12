@@ -5,6 +5,9 @@ import CreateChannelModal from '../components/CreateChannelModal.jsx'
 import AddChannelMembersModal from '../components/AddChannelMembersModal.jsx'
 import ContextMenu from '../components/ContextMenu.jsx'
 import ConfirmModal from '../components/ConfirmModal.jsx'
+import Button from '../components/Button.jsx'
+import ClickableRow from '../components/ClickableRow.jsx'
+import MenuActionItem from '../components/MenuActionItem.jsx'
 import { getCurrentSession } from '../lib/session.js'
 import { channelManager } from '../lib/chat.js'
 import { userManager } from '../lib/user.js'
@@ -262,19 +265,15 @@ export default function MessagesPage() {
   return (
     <PageContainer>
       <main className="min-h-0 flex-1 md:flex md:gap-3 md:overflow-hidden">
-        <section className="flex min-h-0 flex-1 flex-col gap-3 border-b border-[color:var(--card-border)] pb-3 md:w-80 md:flex-none md:border-b-0 md:border-r md:pb-0 lg:w-96 md:overflow-y-auto">
+        <section className="flex min-h-0 flex-1 flex-col gap-3 overflow-x-hidden border-b border-[color:var(--card-border)] pb-3 md:w-80 md:flex-none md:border-b-0 md:border-r md:pb-0 md:overflow-y-auto lg:w-96">
           <div className="flex items-center justify-between gap-2 px-1 md:px-0">
             <h1 className="text-lg font-bold text-[color:var(--text-primary)]">Messages</h1>
-            <button
-              type="button"
-              className="rounded-button flex items-center gap-2 bg-[color:var(--accent)] px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-[color:var(--accent-hover)]"
-              onClick={() => setCreateOpen(true)}
-            >
+            <Button type="button" size="sm" className="text-xs" onClick={() => setCreateOpen(true)}>
               <span className="material-symbols-outlined text-[18px]" aria-hidden>
                 add
               </span>
               Create
-            </button>
+            </Button>
           </div>
           {loading && (
             <>
@@ -291,13 +290,9 @@ export default function MessagesPage() {
                 {error}
               </p>
               <div className="mt-3">
-                <button
-                  type="button"
-                  className="rounded-button border border-[color:var(--card-border)] bg-[color:var(--card-bg)] px-3 py-1.5 text-sm font-semibold text-[color:var(--text-primary)] transition-colors hover:bg-[color:var(--card-bg)]/80"
-                  onClick={loadChannels}
-                >
+                <Button type="button" variant="ghost" size="sm" onClick={loadChannels}>
                   Retry
-                </button>
+                </Button>
               </div>
             </Card>
           )}
@@ -311,15 +306,15 @@ export default function MessagesPage() {
           )}
 
           {!loading && !error && channels.length > 0 && (
-            <ul className="space-y-2" role="list" aria-label="Channels">
+            <ul className="space-y-2 overflow-x-hidden" role="list" aria-label="Channels">
               {channels.map((ch) => {
                 const isSelected = isDesktop && selectedChannelId === ch.channel_id
                 const iconSrc = getChannelIconSrc(ch)
                 return (
-                  <li key={ch.channel_id}>
-                    <button
+                  <li key={ch.channel_id} className="min-w-0">
+                    <ClickableRow
                       type="button"
-                      className={`w-full text-left ${isDesktop ? '' : 'cursor-default'}`}
+                      className={`w-full overflow-hidden px-0 py-0 hover:bg-transparent ${isDesktop ? '' : 'cursor-default'}`}
                       onClick={() => selectChannel(ch.channel_id)}
                       onContextMenu={(e) => {
                         e.preventDefault()
@@ -333,7 +328,7 @@ export default function MessagesPage() {
                       disabled={!isDesktop}
                     >
                       <Card
-                        className={`px-4 py-3 transition-colors ${isSelected ? 'border-[color:var(--accent)]' : ''}`}
+                        className={`w-full overflow-hidden px-4 py-3 transition-colors hover:bg-[color:var(--tab-active-bg)]/60 ${isSelected ? 'border-[color:var(--accent)]' : ''}`}
                       >
                         <div className="flex items-center gap-3">
                           <img
@@ -354,7 +349,7 @@ export default function MessagesPage() {
                           </div>
                         </div>
                       </Card>
-                    </button>
+                    </ClickableRow>
                   </li>
                 )
               })}
@@ -383,9 +378,11 @@ export default function MessagesPage() {
                 )}
                 <div className="min-w-0 flex-1">
                   {!editingName && (
-                    <button
+                    <Button
                       type="button"
-                      className="group flex w-full items-center gap-2 truncate text-left text-base font-bold text-[color:var(--text-primary)]"
+                      variant="text"
+                      size="sm"
+                      className="group w-full justify-start truncate px-0 py-0 text-left text-base font-bold hover:bg-transparent"
                       onClick={handleStartEditName}
                     >
                       <span className="truncate">
@@ -397,7 +394,7 @@ export default function MessagesPage() {
                         </span>
                         <span className="sr-only">Edit channel name</span>
                       </span>
-                    </button>
+                    </Button>
                   )}
                   {editingName && (
                     <div className="flex items-center gap-2">
@@ -419,9 +416,9 @@ export default function MessagesPage() {
                           }
                         }}
                       />
-                      <button
+                      <Button
                         type="button"
-                        className="flex h-8 w-8 items-center justify-center rounded-button bg-[color:var(--accent)] text-white hover:bg-[color:var(--accent-hover)] disabled:cursor-not-allowed disabled:opacity-60"
+                        size="iconSm"
                         onClick={handleSubmitEditName}
                         disabled={editNameLoading}
                         aria-label="Save channel name"
@@ -429,10 +426,12 @@ export default function MessagesPage() {
                         <span className="material-symbols-outlined text-base" aria-hidden>
                           check
                         </span>
-                      </button>
-                      <button
+                      </Button>
+                      <Button
                         type="button"
-                        className="flex h-8 w-8 items-center justify-center rounded-button text-[color:var(--text-muted)] hover:bg-[color:var(--card-bg)] disabled:cursor-not-allowed disabled:opacity-60"
+                        variant="text"
+                        size="iconSm"
+                        className="text-[color:var(--text-muted)]"
                         onClick={handleCancelEditName}
                         disabled={editNameLoading}
                         aria-label="Cancel edit"
@@ -440,7 +439,7 @@ export default function MessagesPage() {
                         <span className="material-symbols-outlined text-base" aria-hidden>
                           close
                         </span>
-                      </button>
+                      </Button>
                     </div>
                   )}
                   {editNameError && (
@@ -469,13 +468,9 @@ export default function MessagesPage() {
                         placeholder="Message (coming soon)…"
                         disabled
                       />
-                      <button
-                        type="button"
-                        className="rounded-button bg-[color:var(--accent)] px-3 py-2 text-sm font-semibold text-white opacity-60"
-                        disabled
-                      >
+                      <Button type="button" size="sm" disabled>
                         Send
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 </div>
@@ -491,9 +486,11 @@ export default function MessagesPage() {
                           {selectedMembers.length}
                         </div>
                       </div>
-                      <button
+                      <Button
                         type="button"
-                        className="flex items-center gap-1 rounded-button border border-[color:var(--card-border)] bg-[color:var(--card-bg)] px-2 py-1 text-xs font-medium text-[color:var(--text-primary)] hover:bg-[color:var(--card-bg)]/80 disabled:cursor-not-allowed disabled:opacity-60"
+                        variant="ghost"
+                        size="xs"
+                        className="gap-1"
                         onClick={() => setAddingMembers(true)}
                         disabled={!canManageMembers}
                       >
@@ -501,7 +498,7 @@ export default function MessagesPage() {
                           person_add
                         </span>
                         Add
-                      </button>
+                      </Button>
                     </div>
                   </div>
                   <div className="flex-1 overflow-y-auto px-2 py-2">
@@ -544,9 +541,11 @@ export default function MessagesPage() {
                                   @{m.username || 'user'}
                                 </div>
                               </div>
-                              <button
+                              <Button
                                 type="button"
-                                className="ml-1 flex h-7 w-7 items-center justify-center rounded-button text-[color:var(--text-muted)] hover:bg-[color:var(--card-bg)]"
+                                variant="text"
+                                size="xs"
+                                className="ml-1 h-7 w-7 p-0 text-[color:var(--text-muted)]"
                                 aria-label="Member actions"
                                 onClick={(e) => {
                                   e.stopPropagation()
@@ -565,7 +564,7 @@ export default function MessagesPage() {
                                 <span className="material-symbols-outlined text-base" aria-hidden>
                                   more_vert
                                 </span>
-                              </button>
+                              </Button>
                             </div>
                           </li>
                         ))}
@@ -591,9 +590,9 @@ export default function MessagesPage() {
             <div className="px-3 py-2 text-xs text-[color:var(--text-muted)]">
               {channelMenu.name || channelMenu.channelId}
             </div>
-            <button
+            <MenuActionItem
               type="button"
-              className="flex w-full items-center px-3 py-2 text-left text-red-500 hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-60"
+              className="justify-start text-red-500 hover:bg-red-500/10"
               onClick={async () => {
                 const id = channelMenu.channelId
                 setChannelMenu(null)
@@ -603,7 +602,7 @@ export default function MessagesPage() {
               disabled={leaveLoading}
             >
               Leave chat
-            </button>
+            </MenuActionItem>
           </div>
         )}
       </ContextMenu>

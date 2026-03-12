@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { relationshipManager, userManager } from '../lib/user.js'
 import { getAvatarUrl } from '../lib/utils.js'
+import Button from './Button.jsx'
 
 /**
  * Friend picker that only searches within your existing friends.
@@ -94,7 +95,7 @@ export default function FriendMultiSelect({
 
   const inputId = labelledById ? `${labelledById}-friend-search` : undefined
   const rowBase =
-    'flex w-full items-center gap-3 rounded-button border border-[color:var(--card-border)] px-2 py-2 text-left text-sm text-[color:var(--text-primary)] transition-colors hover:bg-[color:var(--card-bg)] disabled:cursor-not-allowed disabled:opacity-60'
+    'w-full justify-start gap-3 border border-[color:var(--card-border)] px-2 py-2 text-left text-sm text-[color:var(--text-primary)] hover:bg-[color:var(--card-bg)]'
 
   return (
     <div className="space-y-3">
@@ -167,8 +168,10 @@ export default function FriendMultiSelect({
             const disableRow = disabled || (!checked && !canSelectMore)
             return (
               <li key={friend.user_id}>
-                <button
+                <Button
                   type="button"
+                  variant="text"
+                  size="sm"
                   className={rowBase}
                   onClick={() => toggle(friend.user_id)}
                   disabled={disableRow}
@@ -192,7 +195,7 @@ export default function FriendMultiSelect({
                   >
                     {checked ? 'check_circle' : 'radio_button_unchecked'}
                   </span>
-                </button>
+                </Button>
               </li>
             )
           })}

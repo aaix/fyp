@@ -109,39 +109,45 @@ export default function AuthPage({ onLogin }) {
     <div className="flex min-h-screen items-center justify-center bg-[color:var(--bg)] px-4 py-8">
       <Card className="w-full max-w-md overflow-hidden rounded-card">
         <div className="flex border-b border-[color:var(--card-border)]">
-          <button
+          <Button
             type="button"
-            className={`flex-1 px-6 py-3 text-sm font-medium transition-colors ${
+            variant="tab"
+            size="sm"
+            className={`flex-1 rounded-none px-6 py-3 ${
               mode === 'login'
-                ? 'bg-[color:var(--tab-active-bg)] text-[color:var(--accent)]'
-                : 'text-[color:var(--text-muted)] hover:text-[color:var(--text-primary)]'
+                ? 'border-[color:var(--accent)] bg-[color:var(--tab-active-bg)] text-[color:var(--accent)]'
+                : 'border-transparent'
             }`}
             onClick={() => setMode('login')}
           >
             Continue on this device
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
-            className={`flex-1 px-6 py-3 text-sm font-medium transition-colors ${
+            variant="tab"
+            size="sm"
+            className={`flex-1 rounded-none px-6 py-3 ${
               mode === 'signup'
-                ? 'bg-[color:var(--tab-active-bg)] text-[color:var(--accent)]'
-                : 'text-[color:var(--text-muted)] hover:text-[color:var(--text-primary)]'
+                ? 'border-[color:var(--accent)] bg-[color:var(--tab-active-bg)] text-[color:var(--accent)]'
+                : 'border-transparent'
             }`}
             onClick={() => setMode('signup')}
           >
             Sign up
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
-            className={`flex-1 px-6 py-3 text-sm font-medium transition-colors ${
+            variant="tab"
+            size="sm"
+            className={`flex-1 rounded-none px-6 py-3 ${
               mode === 'otherDevice'
-                ? 'bg-[color:var(--tab-active-bg)] text-[color:var(--accent)]'
-                : 'text-[color:var(--text-muted)] hover:text-[color:var(--text-primary)]'
+                ? 'border-[color:var(--accent)] bg-[color:var(--tab-active-bg)] text-[color:var(--accent)]'
+                : 'border-transparent'
             }`}
             onClick={() => setMode('otherDevice')}
           >
             Log in from other device
-          </button>
+          </Button>
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4 rounded-b-card p-6">

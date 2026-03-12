@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { relationshipManager, userManager } from '../lib/user.js'
 import { getAvatarUrl } from '../lib/utils.js'
-import { gatewayFactory } from '../lib/gateway.js'
+import ModalCloseButton from './ModalCloseButton.jsx'
+import useEscapeToClose from './useEscapeToClose.js'
 
 const FRIENDS = 3
 
@@ -63,6 +64,8 @@ export default function FriendsListModal({ open, onClose }) {
     }
   }, [open])
 
+  useEscapeToClose(open, onClose)
+
   if (!open) return null
 
   const rowBase =
@@ -82,16 +85,7 @@ export default function FriendsListModal({ open, onClose }) {
         >
           Friends
         </h2>
-        <button
-          type="button"
-          className="rounded-button p-2 text-[color:var(--text-primary)] hover:bg-[color:var(--card-bg)]"
-          onClick={onClose}
-          aria-label="Close"
-        >
-          <span className="material-symbols-outlined text-xl" aria-hidden>
-            close
-          </span>
-        </button>
+        <ModalCloseButton onClick={onClose} />
       </div>
       <div className="flex-1 overflow-y-auto px-4 py-2">
         {loading && (
