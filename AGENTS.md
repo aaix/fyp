@@ -2,7 +2,7 @@
 
 ## Cursor Cloud specific instructions
 
-you are only authorized to make changes to the ui/ folder, refrain from making anything typo fixes to the ui/app/src/lib/ folder, do not try to implement things to interact with the backend - if functionality is missing make a note of it and use placeholders, you can search for api routes in api/ and the response model will be defined in the models file in the same folder as the route definition.
+you are only authorized to make changes to the ui/ folder, refrain from making anything but typo fixes to the ui/app/src/lib/ folder, do not try to implement things to interact with the backend - if functionality is missing make a note of it and use placeholders, you can search for api routes in api/ and the response model will be defined in the models file in the same folder as the route definition.
 
 the frontend is a vite+react app, if you think something may be reused multiple times, you should create a component for it, do not worry about supporting old browsers as the project requires websockets & webcrypto support
 
