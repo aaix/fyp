@@ -4,6 +4,7 @@ import { gatewayFactory } from '../lib/gateway.js'
 import Button from '../components/Button.jsx'
 import FormInput from '../components/FormInput.jsx'
 import Card from '../components/Card.jsx'
+import logoAz7 from '../assets/logo-az7.svg'
 
 export default function AuthPage({ onLogin }) {
   const [mode, setMode] = useState('login')
@@ -108,46 +109,54 @@ export default function AuthPage({ onLogin }) {
   return (
     <div className="flex min-h-screen items-center justify-center bg-[color:var(--bg)] px-4 py-8">
       <Card className="w-full max-w-md overflow-hidden rounded-card">
-        <div className="flex border-b border-[color:var(--card-border)]">
-          <Button
-            type="button"
-            variant="tab"
-            size="sm"
-            className={`flex-1 rounded-none px-6 py-3 ${
-              mode === 'login'
-                ? 'border-[color:var(--accent)] bg-[color:var(--tab-active-bg)] text-[color:var(--accent)]'
-                : 'border-transparent'
-            }`}
-            onClick={() => setMode('login')}
-          >
-            Continue on this device
-          </Button>
-          <Button
-            type="button"
-            variant="tab"
-            size="sm"
-            className={`flex-1 rounded-none px-6 py-3 ${
-              mode === 'signup'
-                ? 'border-[color:var(--accent)] bg-[color:var(--tab-active-bg)] text-[color:var(--accent)]'
-                : 'border-transparent'
-            }`}
-            onClick={() => setMode('signup')}
-          >
-            Sign up
-          </Button>
-          <Button
-            type="button"
-            variant="tab"
-            size="sm"
-            className={`flex-1 rounded-none px-6 py-3 ${
-              mode === 'otherDevice'
-                ? 'border-[color:var(--accent)] bg-[color:var(--tab-active-bg)] text-[color:var(--accent)]'
-                : 'border-transparent'
-            }`}
-            onClick={() => setMode('otherDevice')}
-          >
-            Log in from other device
-          </Button>
+        <div className="flex flex-col border-b border-[color:var(--card-border)]">
+          <div className="flex flex-col items-center gap-2 px-6 pt-6 pb-4">
+            <img src={logoAz7} alt="az7" className="h-10 w-auto" />
+            <p className="text-xs font-medium uppercase tracking-[0.18em] text-[color:var(--text-muted)]">
+              Private messaging
+            </p>
+          </div>
+          <div className="flex">
+            <Button
+              type="button"
+              variant="tab"
+              size="sm"
+              className={`flex-1 rounded-none px-6 py-3 ${
+                mode === 'login'
+                  ? 'border-[color:var(--accent)] bg-[color:var(--tab-active-bg)] text-[color:var(--accent)]'
+                  : 'border-transparent'
+              }`}
+              onClick={() => setMode('login')}
+            >
+              Continue on this device
+            </Button>
+            <Button
+              type="button"
+              variant="tab"
+              size="sm"
+              className={`flex-1 rounded-none px-6 py-3 ${
+                mode === 'signup'
+                  ? 'border-[color:var(--accent)] bg-[color:var(--tab-active-bg)] text-[color:var(--accent)]'
+                  : 'border-transparent'
+              }`}
+              onClick={() => setMode('signup')}
+            >
+              Sign up
+            </Button>
+            <Button
+              type="button"
+              variant="tab"
+              size="sm"
+              className={`flex-1 rounded-none px-6 py-3 ${
+                mode === 'otherDevice'
+                  ? 'border-[color:var(--accent)] bg-[color:var(--tab-active-bg)] text-[color:var(--accent)]'
+                  : 'border-transparent'
+              }`}
+              onClick={() => setMode('otherDevice')}
+            >
+              Log in from other device
+            </Button>
+          </div>
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4 rounded-b-card p-6">

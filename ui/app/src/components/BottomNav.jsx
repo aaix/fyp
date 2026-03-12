@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom'
+import logoAz7 from '../assets/logo-az7.svg'
 
 const baseLinkClasses =
   'flex flex-col items-center gap-1 rounded-button px-4 py-2 text-[0.75rem] font-medium text-[color:var(--text-muted)] no-underline transition-colors md:flex-row md:justify-start md:gap-3 md:px-3 md:py-2.5 md:text-sm'
@@ -10,6 +11,9 @@ export default function BottomNav() {
       role="navigation"
       aria-label="Main"
     >
+      <div className="hidden w-full items-center justify-start gap-2 pb-4 pl-1 pr-2 md:flex">
+        <img src={logoAz7} alt="az7" className="h-8 w-auto flex-shrink-0" />
+      </div>
       <NavLink
         to="/"
         end
