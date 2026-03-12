@@ -357,7 +357,6 @@ impl UserService for ScyllaUserService {
         &self,
         request: Request<DeleteUserRequest>,
     ) -> Result<Response<DeleteUserResponse>, Status> {
-        println!("Got a request: {:?}", request);
 
         Ok(self.delete_user_impl(request).await?)
     }
