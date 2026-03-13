@@ -1,18 +1,17 @@
-<svg width="300" height="120" viewBox="0 0 300 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <g>
-          <rect x="20" y="34" width="60" height="42" rx="12" fill="#c084fc"/>
-          <path d="M 30 76 L 25 86 L 40 76 Z" fill="#c084fc"/>
-        </g>
-        
-        <text 
-          x="100" 
-          y="72" 
-          fill="#c084fc" 
-          fontSize="52" 
-          fontFamily="'Orbitron', sans-serif" 
-          fontWeight="700"
-          letterSpacing="-0.02em"
-        >
-          az7
-        </text>
-      </svg>
+<svg width="215" height="60" viewBox="0 31 215 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    text {
+      font-family: sans-serif;
+      font-weight: 700;
+      font-size: 52px;
+      dominant-baseline: central;
+    }
+  </style>
+
+  <g>
+    <rect x="0" y="39" width="60" height="42" rx="12" fill="#c084fc"/>
+    <path d="M 30 81 L 25 91 L 40 81 Z" fill="#c084fc"/>
+  </g>
+
+  <text x="85" y="60" fill="#c084fc">az7</text>
+</svg>

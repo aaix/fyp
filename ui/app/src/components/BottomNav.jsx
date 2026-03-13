@@ -12,7 +12,7 @@ export default function BottomNav() {
       aria-label="Main"
     >
       <div className="hidden w-full items-center justify-start gap-2 pb-4 pl-1 pr-2 md:flex">
-        <img src={logoAz7} alt="az7" className="h-8 w-auto flex-shrink-0" />
+        <img src={logoAz7} alt="az7" className="h-10 w-auto flex-shrink-0" />
       </div>
       <NavLink
         to="/"
