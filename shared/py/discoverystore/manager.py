@@ -1,25 +1,21 @@
-from typing import Self
-
 from os import environ
-from threading import Lock
 
 
-class DiscoveryManager:
-    __discovery_manager = None
-    __lock = Lock()
-    def __new__(cls) -> Self:
-        if cls.__discovery_manager is not None:
-            return cls.__discovery_manager
+from shared.py.types import SingletonMixin
 
-        with cls.__lock:
-            if cls.__discovery_manager is None:
-                cls.__discovery_manager = super().__new__(cls)
-            else:
-                # we raced
-                assert cls.__discovery_manager
-        return cls.__discovery_manager
+class DiscoveryManager(SingletonMixin):
+    """
+    Handles discovery of variables & secrets as well as building a picture
+    of the distributed system as a whole for persistent routing
+    """
+
 
     def __init__(self): ...
+
+    def discover_valkey(self) -> tuple[str, int]:
+        host, port = environ["VALKEY_URI"].split(":", 1)
+
+        return host, int(port)
 
     def discover_dataservices(self) -> str:
         return environ["DATASERVICES_URI"]

@@ -24,6 +24,7 @@ async def main():
     loop = asyncio.get_running_loop()
 
     controller = GatewayController()
+    await controller.start()
     server_future = loop.create_future()
 
     for sig in (signal.SIGTERM, signal.SIGINT):
