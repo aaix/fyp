@@ -13,7 +13,12 @@ from gateway.models.closecodes import GatewayCloseCode
 from gateway.models.exceptions import HandshakeFailed
 from gateway.models.messages import NewDeviceClientHello, NewDeviceOK
 from gateway.tracing import tracer
+from gateway.utils import get_current_node_ip
+from shared.py.discoverystore.manager import DiscoveryManager
+from shared.py.discoverystore.node import BigPictureNode
 
+
+discovery = DiscoveryManager()
 
 class GatewayController:
     def __init__(self):
@@ -22,13 +27,20 @@ class GatewayController:
         self.__by_user: defaultdict[UUID, set[GatewayClient]] = defaultdict(set)
 
         self.__new_device_waiters: dict[tuple[UUID, int], tuple[NewDeviceClientHello, Future[NewDeviceOK]]] = {}
+
+        self.__address = get_current_node_ip()
+        self.__big_picture = BigPictureNode(discovery.discover_valkey(), self.__address)
     
+    async def start(self):
+        await self.__big_picture.valkey_connect()
+
     def shutdown(self, loop: AbstractEventLoop, server_future: Future[None]):
         server_future.set_result(None)
         loop.create_task(self.shutdown_inner(loop))
     
     @tracer.start_as_current_span("Controller.shutdown_inner")
     async def shutdown_inner(self, loop: AbstractEventLoop):
+        await self.__big_picture.shutdown()
         existing: list[Task[Any]] = []
         pending: list[Task[Any]] = []
         for clients in self.__by_user.values():

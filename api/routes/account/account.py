@@ -12,6 +12,7 @@ from api.routes.account.models import *
 from api.utils import RpcErrHandler, unwrap, ResourceNotFoundRpcHandler
 
 from shared.py.constraints import USER_MAX_NUM_DEVICES
+from shared.py.discoverystore.client import BigPictureClient
 from shared.py.grpc.id import id_compare, puuid_uuid, id_t, uuid_puuid
 from shared.py.grpc.user import get_user, get_user_by_username
 from shared.py.pydantic.pem import PEMPublicKey
@@ -24,6 +25,7 @@ from shared.py.grpc.device import create_device, read_devices
 
 
 discovery = DiscoveryManager()
+bigpicture = BigPictureClient()
 
 AccountRouter = APIRouter()
 
@@ -161,12 +163,16 @@ async def patch_device(s: SessionParam, device_id: UUID, body: UpdateDeviceBody)
 async def my_account(s: SessionParam) -> AccountResponse:
     res = await get_user(grpcuser, s.user_id)
 
+    gateway = await bigpicture.get_node(s.user_id)
+
     return AccountResponse(
         user_id=s.user_id,
         avatar_asset_id=puuid_uuid(res.avatar_asset_id),
         public_key=PEMPublicKey.from_bytes(res.public_key),
         username=res.username,
         email=res.email,
+
+        assigned_gateway=gateway
     )
 
 

@@ -1,19 +1,18 @@
-FROM python:3.14.2-alpine3.23
+FROM az-shared-base:latest
 
-RUN mkdir -p /az7/api/
-RUN mkdir -p /az7/shared/
+RUN mkdir -p /az7/gateway/
 
 COPY ./requirements.txt /az7/gateway/
 
-RUN python3 -m pip install -r /az7/gateway/requirements.txt
+RUN python3 -m pip install --no-cache-dir -r /az7/gateway/requirements.txt
 
-COPY --from=shared ./requirements.txt /az7/shared/requirements.txt
-
-RUN python3 -m pip install -r /az7/shared/requirements.txt
 
 COPY --from=shared . /az7/shared/
 
 COPY . /az7/gateway/
+
+RUN mkdir -p /az7/gateway/
+
 
 RUN chmod +x /az7/gateway/entrypoint.sh
 

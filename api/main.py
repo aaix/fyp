@@ -1,3 +1,4 @@
+import asyncio
 from typing import Literal
 
 from fastapi import FastAPI
@@ -20,8 +21,12 @@ from api.routes.account.account import AccountRouter
 from api.routes.session.session import SessionRouter
 from api.routes.user.user import UserRouter
 from api.routes.channel.channel import ChatRouter
+from shared.py.discoverystore.client import BigPictureClient
+
+loop = asyncio.get_event_loop()
 
 discovery = DiscoveryManager()
+bigpicture = BigPictureClient()
 
 # middlewares
 middlewares = ( # outer
@@ -40,6 +45,9 @@ middlewares = ( # outer
 app = FastAPI(
     middleware=middlewares,
     default_response_class=SuccessResponse,
+    on_startup=(
+        bigpicture.valkey_connect,
+    )
 )
 
 # routers

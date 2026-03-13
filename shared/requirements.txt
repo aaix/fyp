@@ -2,6 +2,8 @@ cryptography==46.0.5
 joserfc==1.6.0
 grpcio==1.76.0
 protobuf==6.33.5
+valkey-glide==2.2.7
+uhashring==2.4
 
 opentelemetry-api
 opentelemetry-sdk

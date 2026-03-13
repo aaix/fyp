@@ -27,6 +27,12 @@ services:
       - COLLECTOR_OTLP_ENABLED=true
     ports:
       - 16686:16686
+    
+  
+  discoverystore-0:
+    networks:
+      - shared-network
+    image: az-discoverystore:latest
 
 
   dataservices-0:
@@ -50,6 +56,8 @@ services:
         OTEL_URI: "http://jaeger:4317"
         API_SESSION_SIGNING_KEY: ${SECRET_KEY_API_SESSION_SIGN}
         API_SESSION_ENCRYPTION_KEY: ${SECRET_KEY_API_SESSION_ENCRYPT}
+        VALKEY_URI: discoverystore-0:6379
+
     depends_on:
       - dataservices-0
     ports:
@@ -62,6 +70,7 @@ services:
     environment:
         DATASERVICES_URI: "dataservices-0:3114"
         OTEL_URI: "http://jaeger:4317"
+        VALKEY_URI: discoverystore-0:6379
 
     depends_on:
       - dataservices-0

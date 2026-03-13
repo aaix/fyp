@@ -84,3 +84,5 @@ class AccountResponse(BaseModel):
     public_key: PEMPublicKey
     username: str
     email: str
+    
+    assigned_gateway: str

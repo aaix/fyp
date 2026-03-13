@@ -16,7 +16,7 @@ type MaybeUnset[T] = T | UnsetType
 class SingletonMixin:
     __instance = None
     __lock = Lock()
-    def __new__(cls) -> Self:
+    def __new__(cls, *args, **kwargs) -> Self:
         if cls.__instance is not None:
             return cls.__instance
 
