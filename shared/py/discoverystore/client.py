@@ -20,7 +20,7 @@ class BigPictureClient(SingletonMixin):
         self.valkey_addresses = [NodeAddress(*address),]
         self.sub_patterns = {CHANNEL_GATEWAY_JOIN, CHANNEL_GATEWAY_LEAVE}
         self.ring_built = asyncio.Event()
-        self.ring = HashRing()
+        self.ring = HashRing() # TODO: this is NOT thread safe
     
 
     async def valkey_connect(self) -> None:
