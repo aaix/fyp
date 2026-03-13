@@ -59,6 +59,7 @@ class ClientHello(ClientMessage):
 class ServerHello(ServerMessage):
     """Sent by the server to an identifying client for a challenge"""
     op: Literal["server_hello"]
+    gateway_id: str
     ### The part the client needs to sign
     device_challenge: Base64Output
     account_challenge: Base64Output
@@ -88,6 +89,7 @@ class NewDeviceClientHello(ClientMessage):
 class NewDeviceServerHello(ServerMessage):
     """Hello to the new device requesting to be added"""
     op: Literal["new_device_server_hello"]
+    gateway_id: str
     code: int
 
 class SelectDeviceIntention(ClientMessage):
