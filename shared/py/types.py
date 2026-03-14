@@ -1,4 +1,5 @@
 from typing import Literal, Self
+from collections.abc import Callable
 
 from threading import Lock
 from enum import Enum
@@ -27,3 +28,14 @@ class SingletonMixin:
                 # we raced
                 assert cls.__instance
         return cls.__instance
+
+
+class KeyedDefaultDict[K, V](dict[K, V]):
+    """Like collections.defaultdict but passes the key to the factory function"""
+    def __init__(self, factory: Callable[[K], V]):
+        self.factory = factory
+        
+    def __missing__(self, key: K) -> V:
+        default = self.factory(key)
+        self[key] = default
+        return default

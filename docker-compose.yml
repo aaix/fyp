@@ -60,6 +60,7 @@ services:
 
     depends_on:
       - dataservices-0
+      - discoverystore-0
     ports:
       - 8000:8000
   
@@ -74,6 +75,7 @@ services:
 
     depends_on:
       - dataservices-0
+      - discoverystore-0
     ports:
       - 8001:80
 
