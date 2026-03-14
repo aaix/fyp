@@ -5,10 +5,8 @@ from shared.py.types import SingletonMixin
 
 class DiscoveryManager(SingletonMixin):
     """
-    Handles discovery of variables & secrets as well as building a picture
-    of the distributed system as a whole for persistent routing
+    Handles discovery of variables & secrets
     """
-
 
     def __init__(self): ...
 
@@ -32,7 +30,6 @@ class DiscoveryManager(SingletonMixin):
     def find_secret(self, secret: str) -> str:
         with open(f"/secrets/{secret}") as f:
             return f.read()
-
 
     def is_prod(self) -> bool:
         return environ.get("DEPLOYMENT_MODE", "dev") == "prod"
