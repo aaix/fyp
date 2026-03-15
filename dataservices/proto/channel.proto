@@ -23,37 +23,37 @@ service ChannelService {
 message CreateChannelRequest {
     int32 channel_type = 1;
     optional string opt_channel_name = 2;
-    optional dataservices.plib.pUUID opt_channel_icon_asset_id = 3; 
+    optional plib.pUUID opt_channel_icon_asset_id = 3; 
 }
 
 message UpdateChannelRequest {
-    dataservices.plib.pUUID channel_id = 1;
+    plib.pUUID channel_id = 1;
     optional string opt_channel_name = 2;
-    optional dataservices.plib.pUUID opt_channel_icon_asset_id = 3;
+    optional plib.pUUID opt_channel_icon_asset_id = 3;
     google.protobuf.FieldMask update_mask = 4;
-    repeated dataservices.plib.pUUID members_to_update = 5;
+    repeated plib.pUUID members_to_update = 5;
 }
 
 message ReadChannelRequest {
-    dataservices.plib.pUUID channel_id = 1;
+    plib.pUUID channel_id = 1;
 }
 
 message DeleteChannelRequest {
-    dataservices.plib.pUUID channel_id = 1;
+    plib.pUUID channel_id = 1;
 }
 
 message DeleteChannelResponse {}
 
 message ChannelObjectResponse {
-    dataservices.plib.pUUID channel_id = 1;
+    plib.pUUID channel_id = 1;
     int32 channel_type = 2;
     optional string opt_channel_name = 3;
-    repeated dataservices.plib.pUUID channel_members = 4;
-    optional dataservices.plib.pUUID opt_channel_icon_asset_id = 5;
+    repeated plib.pUUID channel_members = 4;
+    optional plib.pUUID opt_channel_icon_asset_id = 5;
 }
 
 message GetUserChannelsRequest {
-    dataservices.plib.pUUID user_id = 1;
+    plib.pUUID user_id = 1;
 }
 
 message UserChannelsResponse {
@@ -61,21 +61,21 @@ message UserChannelsResponse {
 }
 
 message AddChannelMemberRequest {
-    dataservices.plib.pUUID user_id = 1;
+    plib.pUUID user_id = 1;
     bytes encrypted_channel_key = 2;
 }
 
 message ChannelMemberObject {
-    dataservices.plib.pUUID user_id = 1;
-    dataservices.plib.pUUID channel_id = 2;
+    plib.pUUID user_id = 1;
+    plib.pUUID channel_id = 2;
     bytes encrypted_channel_key = 3;
     int64 last_accessed = 4;
     optional string opt_channel_name = 5;
-    optional dataservices.plib.pUUID opt_channel_icon_asset_id = 6;
+    optional plib.pUUID opt_channel_icon_asset_id = 6;
 }
 
 message AddChannelMembersRequest {
-    dataservices.plib.pUUID channel_id = 1;
+    plib.pUUID channel_id = 1;
     CreateChannelRequest channel = 3;
     repeated AddChannelMemberRequest requests = 2;
 }
@@ -83,15 +83,15 @@ message AddChannelMembersRequest {
 message AddChannelMembersResponse {}
 
 message RemoveChannelMembersRequest {
-    dataservices.plib.pUUID channel_id = 1;
-    repeated dataservices.plib.pUUID members = 2;
+    plib.pUUID channel_id = 1;
+    repeated plib.pUUID members = 2;
 }
 
 message RemoveChannelMembersResponse {}
 
 message UpdateChannelMemberRequest {
-    dataservices.plib.pUUID user_id = 1;
-    dataservices.plib.pUUID channel_id = 2;
+    plib.pUUID user_id = 1;
+    plib.pUUID channel_id = 2;
     optional int64 last_accessed = 3;
 }
 

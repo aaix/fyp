@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package intraservice.internalmesssage;
+
+
+import "traceparent.proto";
+import "plib.proto";
+
+
+
+message IntraMessage {
+    plib.pUUID to = 1;
+    optional traceparent.TraceParent traceparent = 2;
+    oneof event {
+        EventSessionCreate session_create = 3;
+    }
+}
+
+message EventSessionCreate {
+    plib.pUUID device_id = 1;
+    string device_name = 2;
+    uint32 ipaddress = 3;
+}

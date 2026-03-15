@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package dataservices.plib;
+package plib;
 
 message pUUID {
     uint64 id_high = 1;

@@ -24,7 +24,7 @@ message ReadUserRequest {
 }
 
 message ReadUserBulkRequest {
-    repeated dataservices.plib.pUUID user_ids = 1;
+    repeated plib.pUUID user_ids = 1;
 }
 
 message ReadUserByUsernameRequest {
@@ -70,7 +70,7 @@ message BulkUserResponse {
 }
 
 message UserError {
-    dataservices.plib.pUUID user_id = 1;
+    plib.pUUID user_id = 1;
     string error = 2;
 }
 
@@ -156,20 +156,20 @@ service UserRelationshipService {
 }
 
 message CreateRelationshipRequest {
-    dataservices.plib.pUUID user_id_a = 1;
-    dataservices.plib.pUUID user_id_b = 2;
+    plib.pUUID user_id_a = 1;
+    plib.pUUID user_id_b = 2;
     int32 a_to_b_type = 3;
     int32 b_to_a_type = 4;
 }
 
 message ReadRelationshipRequest {
-    dataservices.plib.pUUID user_id_a = 1;
-    dataservices.plib.pUUID user_id_b = 2;
+    plib.pUUID user_id_a = 1;
+    plib.pUUID user_id_b = 2;
 }
 
 message RelationshipObject {
-    dataservices.plib.pUUID user_id_a = 1;
-    dataservices.plib.pUUID user_id_b = 2;
+    plib.pUUID user_id_a = 1;
+    plib.pUUID user_id_b = 2;
     int32 relationship_type = 3;
 }
 
@@ -178,12 +178,12 @@ message ReadRelationshipResponse {
 }
 
 message TestManyRelationshipEntry {
-    dataservices.plib.pUUID user_id_b = 1;
+    plib.pUUID user_id_b = 1;
     int32 relationship_type = 2; 
 }
 
 message TestManyRelationshipsRequest {
-    dataservices.plib.pUUID user_id = 1;
+    plib.pUUID user_id = 1;
     repeated TestManyRelationshipEntry tests = 2;
 }
 
@@ -197,11 +197,11 @@ message RelationshipTestResponse {
 }
 
 message ReadRelationshipsRequest {
-    dataservices.plib.pUUID user_id = 1;
+    plib.pUUID user_id = 1;
 }
 
 message HalfRelationship {
-    dataservices.plib.pUUID user_id_b = 1;
+    plib.pUUID user_id_b = 1;
     int32 relationship_type = 2;
     int64 created_at = 3;
 }
