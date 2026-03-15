@@ -5,7 +5,8 @@ package traceparent;
 
 
 message TraceParent {
-  bytes trace_id = 1; // 16 bytes
-  bytes parent_id = 2; // 8 bytes
-  uint32 flags = 3; // 1 byte
+  uint64 trace_id_lo = 1; // 8 + 8 bytes
+  uint64 trace_id_hi = 2;
+  uint64 parent_id = 3; // 8 bytes
+  uint32 flags = 4; // 1 byte
 }

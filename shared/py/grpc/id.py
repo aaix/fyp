@@ -54,6 +54,11 @@ def id_puuid(id1: id_t) -> pUUID | None:
         return None
     return int_puuid(id_int)
 
+def id_uuid(id1: id_t) -> UUID | None:
+    if not (id_int := _id_int(id1)):
+        return None
+    return UUID(int=id_int)
+
 def _id_int(id1: id_t) -> int | None:
     """Convert an "id" type to an integer"""
     if isinstance(id1, pUUID):

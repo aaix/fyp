@@ -18,11 +18,7 @@ class IntraMessage(_message.Message):
     def __init__(self, to: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., traceparent: _Optional[_Union[_traceparent_pb2.TraceParent, _Mapping]] = ..., session_create: _Optional[_Union[EventSessionCreate, _Mapping]] = ...) -> None: ...
 
 class EventSessionCreate(_message.Message):
-    __slots__ = ("device_id", "device_name", "ipaddress")
-    DEVICE_ID_FIELD_NUMBER: _ClassVar[int]
-    DEVICE_NAME_FIELD_NUMBER: _ClassVar[int]
+    __slots__ = ("ipaddress",)
     IPADDRESS_FIELD_NUMBER: _ClassVar[int]
-    device_id: _plib_pb2.pUUID
-    device_name: str
     ipaddress: int
-    def __init__(self, device_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., device_name: _Optional[str] = ..., ipaddress: _Optional[int] = ...) -> None: ...
+    def __init__(self, ipaddress: _Optional[int] = ...) -> None: ...

@@ -1,9 +1,11 @@
+from ipaddress import IPv4Address, IPv6Address, ip_address
 from typing import Any, Literal, Never, overload
 
 
 from collections.abc import Callable
 from datetime import datetime, UTC
 
+from fastapi import Request
 from grpc import RpcError, StatusCode
 
 from api.responses import ErrorResponse, errors, ApiErrExc
@@ -67,3 +69,11 @@ class ResourceNotFoundRpcHandler(RpcErrHandler):
             StatusCode.NOT_FOUND,
             lambda: self.make_error(resource_id)
         )
+
+def get_ip_from_request(request: Request) -> IPv4Address | IPv6Address | None:
+    cf_connecting_ip = request.headers.get("CF-Connecting-IP", None)
+    ip = cf_connecting_ip if cf_connecting_ip else request.client[0] if request.client else None
+
+    if ip:
+        return ip_address(ip)
+    return None

@@ -17,7 +17,5 @@ message IntraMessage {
 }
 
 message EventSessionCreate {
-    plib.pUUID device_id = 1;
-    string device_name = 2;
-    uint32 ipaddress = 3;
+    uint32 ipaddress = 1;
 }

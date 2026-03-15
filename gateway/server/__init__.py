@@ -4,7 +4,9 @@ import asyncio
 from asyncio import AbstractEventLoop, Future, InvalidStateError, Task
 from collections import defaultdict
 from uuid import UUID, uuid4
+from google.protobuf.message import DecodeError
 
+from opentelemetry import trace
 from websockets import CloseCode, ConnectionClosed, ServerConnection
 
 from gateway import log
@@ -14,9 +16,12 @@ from gateway.models.exceptions import HandshakeFailed
 from gateway.models.messages import NewDeviceClientHello, NewDeviceOK
 from gateway.tracing import tracer
 from gateway.utils import get_current_node_ip
+
 from shared.py.discovery import DiscoveryManager
-from shared.py.intraservice.discoverystore.node import BigPictureNode
-from shared.py.intraservice.mpi.server import Sub
+from shared.py.grpc.id import puuid_uuid
+from shared.py.grpc.traceparent import span_from_traceparent
+from shared.py.grpcgen.internalmessage_pb2 import IntraMessage
+from shared.py.intraservice import server as intraserver
 
 
 discovery = DiscoveryManager()
@@ -35,8 +40,8 @@ class GatewayController:
 
         # distributed system
         self.__address = get_current_node_ip()
-        self.__big_picture = BigPictureNode(discovery.discover_valkey(), self.__address)
-        self.__sublisher = Sub(self.__loop)
+        self.__big_picture = intraserver.BigPictureNode(discovery.discover_valkey(), self.__address)
+        self.__sublisher = intraserver.Sub(self.__loop)
     
     async def start(self):
         await self.__big_picture.valkey_connect()
@@ -80,8 +85,21 @@ class GatewayController:
         """Loop through events recieved from the distributed system"""
         async with self.__sublisher:
             async for msg in self.__sublisher:
-                log(f"recieved message {msg}")
+                try:
+                    d = IntraMessage.FromString(msg)
+                    self.__loop.create_task(self.handle_internal(d))
+                except DecodeError:
+                    log("failed decoding object")
 
+
+    async def handle_internal(self, msg: IntraMessage):
+        if msg.HasField("traceparent"):
+            parent = trace.set_span_in_context(span_from_traceparent(msg.traceparent))
+        else:
+            parent = None
+        with tracer.start_as_current_span("Controller.handle_internal", context=parent):
+            to = puuid_uuid(msg.to)
+            log(f"Recieved event for {to} type {msg.WhichOneof("event")}")
 
     # client connection management
 

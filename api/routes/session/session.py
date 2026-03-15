@@ -1,17 +1,22 @@
-from fastapi import APIRouter, Request
+from ipaddress import ip_address
+from typing import Annotated
+
+from fastapi import APIRouter, Header, Request
 from grpc import RpcError, StatusCode
 
 
 from api import *
 from api.types.session import Session
 from api.routes.session.models import *
-from api.utils import ResourceNotFoundRpcHandler, unwrap
+from api.utils import ResourceNotFoundRpcHandler, get_ip_from_request, unwrap
 
+from shared.py.intraservice import client as intraclient
 from shared.py.crypto import session as session_crypto
 from shared.py.grpc.lazy import LazyGRPC
 from shared.py.grpc.user import get_user_by_username
 from shared.py.grpcgen import user_pb2_grpc
 from shared.py.grpc.id import puuid_uuid
+from shared.py.grpcgen.internalmessage_pb2 import EventSessionCreate
 
 discovery = DiscoveryManager()
 
@@ -22,7 +27,7 @@ grpcuser = LazyGRPC(discovery.discover_dataservices(), user_pb2_grpc.UserService
 
 
 @SessionRouter.post("/login")
-async def login(body: LoginBody) -> LoginResponse:
+async def login(r: Request, body: LoginBody) -> LoginResponse:
     with ResourceNotFoundRpcHandler(body.username):
         user = await get_user_by_username(grpcuser, body.username)
 
@@ -30,6 +35,16 @@ async def login(body: LoginBody) -> LoginResponse:
 
     session = Session.new(user_id=user_id)
     token = session_crypto.encode_jose_session(session.to_encode())
+
+    int_ip = int(get_ip_from_request(r) or 0)
+
+
+    event = intraclient.new_event(user_id)
+    event.session_create.SetInParent()
+    event.session_create.CopyFrom(EventSessionCreate(
+        ipaddress=int_ip
+    ))
+    await intraclient.send_to_remote(event)
 
     return LoginResponse(
         encrypted_session=session_crypto.encrypt_session_with_key(token, user.public_key),
