@@ -23,14 +23,14 @@ log(f"Gateway on {host}:{port}")
 async def main():
     loop = asyncio.get_running_loop()
 
-    controller = GatewayController()
+    controller = GatewayController(loop)
     await controller.start()
     server_future = loop.create_future()
 
     for sig in (signal.SIGTERM, signal.SIGINT):
         loop.add_signal_handler(
             sig,
-            lambda: controller.shutdown(loop, server_future)
+            lambda: controller.shutdown(server_future)
         )
 
 

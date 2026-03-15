@@ -31,11 +31,17 @@ class SingletonMixin:
 
 
 class KeyedDefaultDict[K, V](dict[K, V]):
-    """Like collections.defaultdict but passes the key to the factory function"""
+    """
+    Like collections.defaultdict but passes the key to the factory function
+    allegedly thread safe
+    """
     def __init__(self, factory: Callable[[K], V]):
         self.factory = factory
+        self.__add_lock = Lock()
         
     def __missing__(self, key: K) -> V:
-        default = self.factory(key)
-        self[key] = default
-        return default
+        with self.__add_lock:
+            # its possible to race to __missing__
+            if self.get(key, None) is None:
+                self[key] = self.factory(key)
+        return self[key]

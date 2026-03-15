@@ -16,38 +16,49 @@ from gateway.tracing import tracer
 from gateway.utils import get_current_node_ip
 from shared.py.discoverystore.manager import DiscoveryManager
 from shared.py.discoverystore.node import BigPictureNode
+from shared.py.mpi.server import Sub
 
 
 discovery = DiscoveryManager()
 
 class GatewayController:
-    def __init__(self):
+    def __init__(self, loop: AbstractEventLoop):
         self.id = uuid4()
+        self.__loop = loop
+
+        # clients
         self.__pending: dict[UUID, GatewayClient] = {}
         self.__by_user: defaultdict[UUID, set[GatewayClient]] = defaultdict(set)
 
+        # client waiters
         self.__new_device_waiters: dict[tuple[UUID, int], tuple[NewDeviceClientHello, Future[NewDeviceOK]]] = {}
 
+        # distributed system
         self.__address = get_current_node_ip()
         self.__big_picture = BigPictureNode(discovery.discover_valkey(), self.__address)
+        self.__sublisher = Sub(self.__loop)
     
     async def start(self):
         await self.__big_picture.valkey_connect()
+        await self.__sublisher.test_bind()
+        self.__loop.create_task(self.internal_events_loop())
 
-    def shutdown(self, loop: AbstractEventLoop, server_future: Future[None]):
+    def shutdown(self, server_future: Future[None]):
         server_future.set_result(None)
-        loop.create_task(self.shutdown_inner(loop))
+        self.__loop.create_task(self.shutdown_inner())
     
     @tracer.start_as_current_span("Controller.shutdown_inner")
-    async def shutdown_inner(self, loop: AbstractEventLoop):
+    async def shutdown_inner(self):
         await self.__big_picture.shutdown()
+        await self.__sublisher.close()
+
         existing: list[Task[Any]] = []
         pending: list[Task[Any]] = []
         for clients in self.__by_user.values():
             for client in clients:
-                existing.append(loop.create_task(client.shutdown()))
+                existing.append(self.__loop.create_task(client.shutdown()))
         for client in self.__pending.values():
-            pending.append(loop.create_task(client.shutdown()))
+            pending.append(self.__loop.create_task(client.shutdown()))
 
 
         exc = HandshakeFailed(HandshakeFailed.Reason.GOING_AWAY, "node shutting down")
@@ -63,6 +74,16 @@ class GatewayController:
 
         await asyncio.gather(*existing, *pending, return_exceptions=True)
         log(f"Shut down all clients")
+
+
+    async def internal_events_loop(self):
+        """Loop through events recieved from the distributed system"""
+        async with self.__sublisher:
+            async for msg in self.__sublisher:
+                log(f"recieved message {msg}")
+
+
+    # client connection management
 
 
     async def accept_incoming(self, ws: ServerConnection) -> None:
