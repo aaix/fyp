@@ -1,7 +1,7 @@
 
 from glide import GlideClusterClientConfiguration, NodeAddress, GlideClusterClient
 
-from shared.py.discoverystore import GATEWAY_SET, CHANNEL_GATEWAY_JOIN, CHANNEL_GATEWAY_LEAVE
+from shared.py.intraservice.discoverystore import GATEWAY_SET, CHANNEL_GATEWAY_JOIN, CHANNEL_GATEWAY_LEAVE
 from shared.py.types import SingletonMixin
 
 class BigPictureNode(SingletonMixin):

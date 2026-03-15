@@ -25,7 +25,7 @@ from gateway.models.messages import *
 from gateway.tracing import tracer
 from gateway.utils import unwrap
 from shared.py.constraints import USER_MAX_NUM_DEVICES
-from shared.py.discoverystore.manager import DiscoveryManager
+from shared.py.discovery import DiscoveryManager
 from shared.py.grpc.device import create_device, get_device, read_devices
 from shared.py.grpc.id import puuid_str, puuid_uuid
 from shared.py.grpc.lazy import LazyGRPC

@@ -3,8 +3,8 @@ from typing import Self
 
 import asyncio
 
-from shared.py.mpi import MPI_PORT, MPI_MAX_SIZE
-from shared.py.mpi.sock import AsyncRecvSocket
+from shared.py.intraservice.mpi import MPI_PORT, MPI_MAX_SIZE
+from shared.py.intraservice.mpi.sock import AsyncRecvSocket
 
 
 class Sub:

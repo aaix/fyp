@@ -5,7 +5,7 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 
 
-from shared.py.discoverystore.manager import DiscoveryManager
+from shared.py.discovery import DiscoveryManager
 from shared.py import grpc as shared_grpc
 
 

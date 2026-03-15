@@ -7,7 +7,7 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives import hashes
 
-from shared.py.discoverystore.manager import DiscoveryManager
+from shared.py.discovery import DiscoveryManager
 
 discovery = DiscoveryManager()
 

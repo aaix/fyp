@@ -6,7 +6,7 @@ from uuid import UUID
 from fastapi import Depends, Path
 
 from api.utils import ResourceNotFoundRpcHandler, RpcErrHandler
-from shared.py.discoverystore.manager import DiscoveryManager
+from shared.py.discovery import DiscoveryManager
 from shared.py.grpc.channel import get_channel
 from shared.py.grpc.lazy import LazyGRPC
 from shared.py.grpc.user import get_user

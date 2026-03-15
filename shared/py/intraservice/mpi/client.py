@@ -1,7 +1,7 @@
 import asyncio
 
-from shared.py.mpi import MPI_PORT
-from shared.py.mpi.sock import AsyncSendSocket
+from shared.py.intraservice.mpi import MPI_PORT
+from shared.py.intraservice.mpi.sock import AsyncSendSocket
 from shared.py.types import KeyedDefaultDict, SingletonMixin
 
 

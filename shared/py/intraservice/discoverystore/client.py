@@ -5,8 +5,8 @@ from uuid import UUID
 from glide import GlideClusterClientConfiguration, NodeAddress, GlideClusterClient, PubSubMsg
 from uhashring import HashRing
 
-from shared.py.discoverystore import CHANNEL_GATEWAY_JOIN, CHANNEL_GATEWAY_LEAVE, GATEWAY_SET
-from shared.py.discoverystore.manager import DiscoveryManager
+from shared.py.intraservice.discoverystore import CHANNEL_GATEWAY_JOIN, CHANNEL_GATEWAY_LEAVE, GATEWAY_SET
+from shared.py.discovery import DiscoveryManager
 from shared.py.types import SingletonMixin
 
 

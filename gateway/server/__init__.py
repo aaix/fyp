@@ -14,9 +14,9 @@ from gateway.models.exceptions import HandshakeFailed
 from gateway.models.messages import NewDeviceClientHello, NewDeviceOK
 from gateway.tracing import tracer
 from gateway.utils import get_current_node_ip
-from shared.py.discoverystore.manager import DiscoveryManager
-from shared.py.discoverystore.node import BigPictureNode
-from shared.py.mpi.server import Sub
+from shared.py.discovery import DiscoveryManager
+from shared.py.intraservice.discoverystore.node import BigPictureNode
+from shared.py.intraservice.mpi.server import Sub
 
 
 discovery = DiscoveryManager()

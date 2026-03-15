@@ -3,7 +3,7 @@ from api.middleware.auth import SessionParam
 from api.responses import errors
 from api.logger import log
 
-from shared.py.discoverystore.manager import DiscoveryManager
+from shared.py.discovery import DiscoveryManager
 
 
 __all__ = (

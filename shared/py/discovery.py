@@ -5,7 +5,7 @@ from shared.py.types import SingletonMixin
 
 class DiscoveryManager(SingletonMixin):
     """
-    Handles discovery of variables & secrets
+    Handles discovery of variables, secrets and services
     """
 
     def __init__(self): ...
