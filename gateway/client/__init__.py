@@ -107,7 +107,9 @@ class GatewayClient:
         for data in await self.next():
             match data:
                 case InternalEvent():
-                    await self.handle_internal(data)
+                    parent = trace.set_span_in_context(data.span)
+                    with tracer.start_as_current_span("Client.run_once::InternalEvent", context=parent):
+                        await self.handle_internal(data)
                 case bytes():
                     await self.handle_incoming(data)
 
@@ -124,8 +126,9 @@ class GatewayClient:
                 await self.cleanup()
 
 
+    @tracer.start_as_current_span("Client.handle_internal")
     async def handle_internal(self, e: InternalEvent):
-        return
+        await self.send_event(events.HintEvent(message=f"internal {e}"))
 
     @tracer.start_as_current_span("Client.handle_incoming")
     async def handle_incoming(self, d: bytes):

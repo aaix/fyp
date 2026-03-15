@@ -1,7 +1,13 @@
-from uuid import UUID
+from typing import Any
 
-from pydantic import BaseModel
+from dataclasses import dataclass
+
+from opentelemetry.trace import Span
 
 
-class InternalEvent(BaseModel):
-    recipient: UUID
+
+@dataclass(kw_only=True)
+class InternalEvent:
+    span: Span
+    oneof: str
+    payload: Any

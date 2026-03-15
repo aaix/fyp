@@ -1,7 +1,8 @@
+import contextlib
 from typing import Any
 
 import asyncio
-from asyncio import AbstractEventLoop, Future, InvalidStateError, Task
+from asyncio import AbstractEventLoop, Future, InvalidStateError, QueueFull, Task
 from collections import defaultdict
 from uuid import UUID, uuid4
 from google.protobuf.message import DecodeError
@@ -13,6 +14,7 @@ from gateway import log
 from gateway.client import GatewayClient
 from gateway.models.closecodes import GatewayCloseCode
 from gateway.models.exceptions import HandshakeFailed
+from gateway.models.internalevent import InternalEvent
 from gateway.models.messages import NewDeviceClientHello, NewDeviceOK
 from gateway.tracing import tracer
 from gateway.utils import get_current_node_ip
@@ -97,8 +99,21 @@ class GatewayController:
             parent = trace.set_span_in_context(span_from_traceparent(msg.traceparent))
         else:
             parent = None
-        with tracer.start_as_current_span("Controller.handle_internal", context=parent):
+        with tracer.start_as_current_span("Controller.handle_internal", context=parent) as span:
             to = puuid_uuid(msg.to)
+            if not to:
+                return
+            if not to in self.__by_user:
+                return
+            
+            if not (field := msg.WhichOneof("event")):
+                return
+            data = getattr(msg, field)
+
+            for client in self.__by_user[to]:
+                with contextlib.suppress(QueueFull):
+                    client.queue.put_nowait(InternalEvent(oneof=field, payload=data, span=span))
+
             log(f"Recieved event for {to} type {msg.WhichOneof("event")}")
 
     # client connection management
