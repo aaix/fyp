@@ -10,8 +10,6 @@ from grpc import RpcError, StatusCode
 
 from api.responses import ErrorResponse, errors, ApiErrExc
 from api.types.extensions import SupportsStr
-from shared.py.grpc.id import id_compare
-from shared.py.grpcgen import user_pb2
 
 
 __all__ = (

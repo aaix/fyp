@@ -38,13 +38,9 @@ async def login(r: Request, body: LoginBody) -> LoginResponse:
 
     int_ip = int(get_ip_from_request(r) or 0)
 
-
-    event = intraclient.new_event(user_id)
-    event.session_create.SetInParent()
-    event.session_create.CopyFrom(EventSessionCreate(
+    await intraclient.send_to_remote(user_id, session_create=EventSessionCreate(
         ipaddress=int_ip
     ))
-    await intraclient.send_to_remote(event)
 
     return LoginResponse(
         encrypted_session=session_crypto.encrypt_session_with_key(token, user.public_key),

@@ -1,22 +1,29 @@
+from google.protobuf.message import Message
+
 from shared.py.grpc.id import id_puuid, id_t, puuid_uuid
 from shared.py.grpc.traceparent import get_current_traceparent
 from shared.py.grpcgen.internalmessage_pb2 import IntraMessage
 from shared.py.intraservice.discoverystore.client import BigPictureClient
 from shared.py.intraservice.mpi.client import Pub
+from shared.py.tracing import tracer
 
 publisher = Pub()
 bigpicture = BigPictureClient()
 
-def new_event(to: id_t) -> IntraMessage:
-    return IntraMessage(
+
+@tracer.start_as_current_span("shared.send_to_remote")
+async def send_to_remote(to: id_t, **to_send: Message):
+    """Discover the recipient, serialise and send the event"""
+
+    event = IntraMessage(
         to=id_puuid(to),
         traceparent=get_current_traceparent(),
     )
 
+    name, d = to_send.popitem()
+    getattr(event, name).SetInParent()
+    getattr(event, name).CopyFrom(d)
 
-async def send_to_remote(event: IntraMessage):
-    """Discover the recipient, serialise and send the event"""
-    
     if not (uuid := puuid_uuid(event.to)):
         return
     
