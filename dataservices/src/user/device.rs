@@ -6,7 +6,7 @@ use crate::db_conn::db;
 use crate::errors::DSResult;
 use crate::helpers::gen_timeuuid;
 use crate::models::user_device::UserDevice;
-use crate::protos::user_service::{self, CreateDeviceRequest, DeleteDeviceRequest, DeleteDeviceResponse, DeviceObjectResponse, ReadDeviceRequest, ReadDevicesRequest, ReadDevicesResponse, UpdateDeviceRequest};
+use crate::protos::dataservices::user_service::{self, CreateDeviceRequest, DeleteDeviceRequest, DeleteDeviceResponse, DeviceObjectResponse, ReadDeviceRequest, ReadDevicesRequest, ReadDevicesResponse, UpdateDeviceRequest};
 use crate::req_tuuid;
 
 use scylla::statement::prepared::PreparedStatement;

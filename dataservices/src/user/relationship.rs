@@ -6,7 +6,7 @@ TABLE friendship_request
 TABLE blocked_user
 */
 
-use crate::{db_conn::db, errors::DSResult, helpers::time_now, models::relationship::Relationship, protos::user_service::{self, CreateRelationshipRequest, DeleteRelationshipResponse, HalfRelationship, ReadRelationshipRequest, ReadRelationshipResponse, ReadRelationshipsRequest, RelationshipObject, RelationshipTestResponse, RelationshipsResponse, TestManyRelationshipsRequest, TestManyRelationshipsResponse}, req_tuuid};
+use crate::{db_conn::db, errors::DSResult, helpers::time_now, models::relationship::Relationship, protos::dataservices::user_service::{self, CreateRelationshipRequest, DeleteRelationshipResponse, HalfRelationship, ReadRelationshipRequest, ReadRelationshipResponse, ReadRelationshipsRequest, RelationshipObject, RelationshipTestResponse, RelationshipsResponse, TestManyRelationshipsRequest, TestManyRelationshipsResponse}, req_tuuid};
 
 use futures::{StreamExt, future::join_all};
 use scylla::{statement::prepared::PreparedStatement, value::CqlTimeuuid};

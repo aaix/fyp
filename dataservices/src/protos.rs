@@ -1,5 +1,5 @@
 pub mod plib {
-    tonic::include_proto!("dataservices.plib");
+    tonic::include_proto!("plib");
 
     // impls
     use scylla::value::CqlTimeuuid;
@@ -47,11 +47,13 @@ pub mod plib {
     }
 }
 
-pub mod user_service {
-    tonic::include_proto!("dataservices.userproto");
-}
+pub mod dataservices {
+    pub mod user_service {
+        tonic::include_proto!("dataservices.userproto");
+    }
 
-pub mod channel_service {
-    tonic::include_proto!("dataservices.channelproto");
+    pub mod channel_service {
+        tonic::include_proto!("dataservices.channelproto");
+    }
 }
 

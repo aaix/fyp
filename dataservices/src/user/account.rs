@@ -2,8 +2,8 @@ use crate::db_conn::db;
 use crate::errors::{DSResult};
 use crate::helpers::gen_timeuuid;
 use crate::models::user::User;
-use crate::protos::user_service::{BulkUserResponse, CheckUsernameResponse, ReadUserBulkRequest, ReadUserByUsernameRequest, UserError, UserSearchEntry, UsernameSearch};
-use crate::protos::{user_service};
+use crate::protos::dataservices::user_service::{BulkUserResponse, CheckUsernameResponse, ReadUserBulkRequest, ReadUserByUsernameRequest, UserError, UserSearchEntry, UsernameSearch};
+use crate::protos::dataservices::{user_service};
 use crate::req_tuuid;
 
 use futures::future;
