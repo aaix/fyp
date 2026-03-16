@@ -87,6 +87,24 @@ export default function MessagesPage() {
   }, [loadChannels])
 
   useEffect(() => {
+    channelManager.setOnChannelUpsert((channel, isNew) => {
+      setChannels((prev) => {
+        const list = prev ?? []
+        if (isNew) {
+          if (list.some((c) => c.channel_id === channel.channel_id)) return list
+          const next = [...list, { ...channel, last_accessed: channel.last_accessed ?? Math.floor(Date.now() / 1000) }]
+          next.sort((a, b) => (b.last_accessed || 0) - (a.last_accessed || 0))
+          return next
+        }
+        const next = list.map((c) => (c.channel_id === channel.channel_id ? { ...c, ...channel } : c))
+        next.sort((a, b) => (b.last_accessed || 0) - (a.last_accessed || 0))
+        return next
+      })
+    })
+    return () => channelManager.setOnChannelUpsert(null)
+  }, [])
+
+  useEffect(() => {
     const media = window.matchMedia?.('(min-width: 768px)')
     if (!media) {
       setIsDesktop(false)

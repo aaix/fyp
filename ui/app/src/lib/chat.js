@@ -7,19 +7,22 @@ class ChannelManager {
 
 
     async processNewChannel(channel_id, channel_name, encrypted_channel_key) {
-        const channel = {channel_id, channel_name, encrypted_channel_key};
+        const isNew = !!encrypted_channel_key;
+        const channel = { channel_id, channel_name, encrypted_channel_key };
 
         // if encrypted channel key is sent it must be a new channel
         if (encrypted_channel_key) {
             await this.populateEncryptedChannelFields(channel);
+            channel.last_accessed = channel.last_accessed ?? Math.floor(Date.now() / 1000);
         }
         // else we need to merge the channel with the current channel list (to get the key)
         // then we can populate its encrypted fields to get the new values
 
-        console.log("new channel", channel);
+        this.onChannelUpsert?.(channel, isNew);
+    }
 
-        // TODO: render channel in list
-
+    setOnChannelUpsert(fn) {
+        this.onChannelUpsert = fn ?? null;
     }
 
 
