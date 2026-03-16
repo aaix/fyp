@@ -8,17 +8,29 @@ from typing import ClassVar as _ClassVar, Optional as _Optional, Union as _Union
 DESCRIPTOR: _descriptor.FileDescriptor
 
 class IntraMessage(_message.Message):
-    __slots__ = ("to", "traceparent", "session_create")
+    __slots__ = ("to", "traceparent", "session_create", "channel_create")
     TO_FIELD_NUMBER: _ClassVar[int]
     TRACEPARENT_FIELD_NUMBER: _ClassVar[int]
     SESSION_CREATE_FIELD_NUMBER: _ClassVar[int]
+    CHANNEL_CREATE_FIELD_NUMBER: _ClassVar[int]
     to: _plib_pb2.pUUID
     traceparent: _traceparent_pb2.TraceParent
     session_create: EventSessionCreate
-    def __init__(self, to: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., traceparent: _Optional[_Union[_traceparent_pb2.TraceParent, _Mapping]] = ..., session_create: _Optional[_Union[EventSessionCreate, _Mapping]] = ...) -> None: ...
+    channel_create: EventChannelCreate
+    def __init__(self, to: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., traceparent: _Optional[_Union[_traceparent_pb2.TraceParent, _Mapping]] = ..., session_create: _Optional[_Union[EventSessionCreate, _Mapping]] = ..., channel_create: _Optional[_Union[EventChannelCreate, _Mapping]] = ...) -> None: ...
 
 class EventSessionCreate(_message.Message):
     __slots__ = ("ipaddress",)
     IPADDRESS_FIELD_NUMBER: _ClassVar[int]
     ipaddress: int
     def __init__(self, ipaddress: _Optional[int] = ...) -> None: ...
+
+class EventChannelCreate(_message.Message):
+    __slots__ = ("channel_id", "encrypted_channel_name", "encrypted_channel_key")
+    CHANNEL_ID_FIELD_NUMBER: _ClassVar[int]
+    ENCRYPTED_CHANNEL_NAME_FIELD_NUMBER: _ClassVar[int]
+    ENCRYPTED_CHANNEL_KEY_FIELD_NUMBER: _ClassVar[int]
+    channel_id: _plib_pb2.pUUID
+    encrypted_channel_name: bytes
+    encrypted_channel_key: bytes
+    def __init__(self, channel_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., encrypted_channel_name: _Optional[bytes] = ..., encrypted_channel_key: _Optional[bytes] = ...) -> None: ...

@@ -5,6 +5,18 @@ import { B64toUint8Array } from "./utils";
 
 class ChannelManager {
 
+
+    async processNewChannel(channel_id, channel_name, encrypted_channel_key) {
+        const channelEntry = {channel_id, channel_name, encrypted_channel_key};
+        await this.populateEncryptedChannelFields(channel);
+
+        console.log("new channel", channelEntry);
+
+        // TODO: render channel in list
+
+    }
+
+
     async createEncryptedSharedKey(user, shared_sym) {
         const user_pk = await importFromPem(user.public_key);
 

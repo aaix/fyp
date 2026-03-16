@@ -34,7 +34,7 @@ async def login(r: Request, body: LoginBody) -> LoginResponse:
 
     int_ip = int(get_ip_from_request(r) or 0)
 
-    await intraclient.send_to_remote(user_id, session_create=EventSessionCreate(
+    await intraclient.send_to_remote(user_id, "session_create", EventSessionCreate(
         ipaddress=int_ip
     ))
 

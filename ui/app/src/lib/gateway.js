@@ -1,7 +1,7 @@
 import { decryptB64, digestOf, exportAsPem, importFromPem, RSAWrapRSAwithSym } from "./keyhandler";
 import { getCurrentSession } from "./session";
 import { keyStore } from "./session";
-import { UserManager } from "./user";
+import { channelManager } from "./chat";
 import { B64toUint8Array, blobToB64, hexFromBuffer } from "./utils";
 
 const GATEWAY_URL = "/gateway";
@@ -380,7 +380,10 @@ class Gateway {
                     console.warn(event.errors);
                 }
                 break;
-            case _: 
+            case 'channel_create':
+                channelManager.processNewChannel(event.channel_id, event.channel_name, event.encrypted_channel_key);
+            default:
+                console.log("unknown event", event.intent); 
         }
     }
 }

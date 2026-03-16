@@ -1,3 +1,9 @@
+from typing import LiteralString
+from collections.abc import Callable, Iterable
+
+import asyncio
+
+
 from google.protobuf.message import Message
 
 from shared.py.grpc.id import id_puuid, id_t, puuid_uuid
@@ -12,7 +18,7 @@ bigpicture = BigPictureClient()
 
 
 @tracer.start_as_current_span("shared.send_to_remote")
-async def send_to_remote(to: id_t, **to_send: Message):
+async def send_to_remote(to: id_t, key: str, value: Message):
     """Discover the recipient, serialise and send the event"""
 
     event = IntraMessage(
@@ -20,9 +26,8 @@ async def send_to_remote(to: id_t, **to_send: Message):
         traceparent=get_current_traceparent(),
     )
 
-    name, d = to_send.popitem()
-    getattr(event, name).SetInParent()
-    getattr(event, name).CopyFrom(d)
+    getattr(event, key).SetInParent()
+    getattr(event, key).CopyFrom(value)
 
     if not (uuid := puuid_uuid(event.to)):
         return
@@ -30,3 +35,12 @@ async def send_to_remote(to: id_t, **to_send: Message):
     payload = event.SerializeToString()
     node = await bigpicture.get_node(uuid)
     await publisher.send_to(node, payload)
+
+@tracer.start_as_current_span("shared.fan_out")
+async def fan_out[T: id_t](bucket: id_t, recipients: Iterable[T], event_name: LiteralString, message_factory: Callable[[T], Message]):
+    futures = []
+    for recipient in recipients:
+        futures.append(
+            send_to_remote(recipient, event_name, message_factory(recipient))
+        )
+    await asyncio.gather(*futures)

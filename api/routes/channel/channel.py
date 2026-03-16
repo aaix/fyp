@@ -8,11 +8,13 @@ from api.routes.channel.models import *
 
 from api.types.params import ChannelParam, UserParam
 from api.utils import ResourceNotFoundRpcHandler, unwrap
+
+from shared.py.intraservice import client as intraclient
 from shared.py.grpc.channel import ChannelType, add_channel_members, edit_channel, remove_channel_members
 from shared.py.grpc.id import id_compare, puuid_uuid, uuid_puuid
 from shared.py.grpc.lazy import LazyGRPC
 from shared.py.grpc.relationship import RelationshipType, test_many_relationships, test_relationship
-from shared.py.grpcgen import channel_pb2
+from shared.py.grpcgen import channel_pb2, internalmessage_pb2
 from shared.py.grpcgen.channel_pb2_grpc import ChannelServiceStub
 from shared.py.grpcgen.user_pb2 import TestManyRelationshipEntry
 from shared.py.grpcgen.user_pb2_grpc import UserRelationshipServiceStub
@@ -85,6 +87,14 @@ async def new_channel(s: SessionParam, body: NewChannelBody) -> ChannelResponse:
 
     member_ids.add(s.user_id)
 
+    encrypted_map = {m.user_id : m.encrypted_shared_key for m in body.channel_members}
+
+    await intraclient.fan_out(channel.channel_id, member_ids, "channel_create", lambda user_id: internalmessage_pb2.EventChannelCreate(
+        channel_id=channel.channel_id,
+        encrypted_channel_name=channel.opt_channel_name,
+        encrypted_channel_key=encrypted_map.get(user_id)
+    ))
+
     return ChannelResponse(
         channel_id=puuid_uuid(channel.channel_id) or unwrap(),
         channel_name=channel.opt_channel_name,
@@ -122,6 +132,11 @@ async def patch_channel(s: SessionParam, channel: ChannelParam, body: EditChanne
         channel.channel_members
     )
 
+    await intraclient.fan_out(channel.channel_id, channel.channel_members, "channel_create", lambda _user_id: internalmessage_pb2.EventChannelCreate(
+        channel_id=channel_id,
+        encrypted_channel_name=rpc.opt_channel_name,
+    ))
+
     return ChannelResponse.from_rpc(rpc)
 
 @ChatRouter.put("/channel/{channel_id}/members/{user_id}")
@@ -144,6 +159,12 @@ async def add_channel_member(s: SessionParam, channel: ChannelParam, user: UserP
             ),
         )
     )
+
+    await intraclient.send_to_remote(user.user_id, "channel_create", internalmessage_pb2.EventChannelCreate(
+        channel_id=channel.channel_id,
+        encrypted_channel_name=channel.opt_channel_name,
+        encrypted_channel_key=body.encrypted_shared_key
+    ))
 
 
 @ChatRouter.delete("/channel/{channel_id}/members/{user_id}")

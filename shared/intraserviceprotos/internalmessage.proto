@@ -13,9 +13,16 @@ message IntraMessage {
     optional traceparent.TraceParent traceparent = 2;
     oneof event {
         EventSessionCreate session_create = 3;
+        EventChannelCreate channel_create = 4;
     }
 }
 
 message EventSessionCreate {
     uint32 ipaddress = 1;
+}
+
+message EventChannelCreate {
+    plib.pUUID channel_id = 1;
+    optional bytes encrypted_channel_name = 2;
+    bytes encrypted_channel_key = 3;
 }

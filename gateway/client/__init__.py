@@ -1,3 +1,4 @@
+from ipaddress import IPv4Address
 from typing import Final, Iterable
 
 import uuid
@@ -32,6 +33,7 @@ from shared.py.grpc.lazy import LazyGRPC
 from shared.py.grpc.user import get_bulk_users, get_user, get_user_by_username
 from shared.py.grpcgen import user_pb2_grpc
 from shared.py.crypto import challenge, onetimecode
+from shared.py.grpcgen import internalmessage_pb2
 from shared.py.pydantic.user import UserSearchResponse
 
 discovery = DiscoveryManager()
@@ -125,10 +127,34 @@ class GatewayClient:
             with tracer.start_as_current_span("Client.loop:cleanup"):
                 await self.cleanup()
 
+    # internal events
 
     @tracer.start_as_current_span("Client.handle_internal")
     async def handle_internal(self, e: InternalEvent):
-        await self.send_event(events.HintEvent(message=f"internal {e}"))
+        match e.oneof:
+            case "session_create":
+                await self.handle_internal_session_create(e.payload)
+            case "channel_create":
+                await self.handle_internal_channel_create(e.payload)
+    
+
+    @tracer.start_as_current_span("Client.handle_internal::session_create")
+    async def handle_internal_session_create(self, d: internalmessage_pb2.EventSessionCreate):
+        ip = str(IPv4Address(d.ipaddress))
+        await self.send_event(events.SessionCreateEvent(ip_address=ip))
+    
+
+    @tracer.start_as_current_span("Client.handle_internal::channel_create")
+    async def handle_internal_channel_create(self, d: internalmessage_pb2.EventChannelCreate):
+        event = events.ChannelCreateEvent(
+            channel_id=puuid_uuid(d.channel_id) or unwrap(),
+            channel_name=d.encrypted_channel_name or None,
+            encrypted_channel_key=d.encrypted_channel_key
+        )
+        await self.send_event(event)
+    
+
+    # client (gateway) events
 
     @tracer.start_as_current_span("Client.handle_incoming")
     async def handle_incoming(self, d: bytes):
