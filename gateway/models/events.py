@@ -6,7 +6,7 @@ from enum import Enum
 from pydantic import BaseModel
 
 from shared.py.pydantic.base64 import Base64Output
-from shared.py.pydantic.common import ChannelName
+from shared.py.pydantic.common import ChannelNameOut
 from shared.py.pydantic.user import UserSearchResponse
 
 type Event_t = MessageEvent | ChannelCreateEvent | HintEvent | UsersEvent | SessionCreateEvent
@@ -35,7 +35,7 @@ class SessionCreateEvent(BaseEvent):
 class ChannelCreateEvent(BaseEvent):
     intent: Literal["channel_update"] = "channel_update"
     channel_id: UUID
-    channel_name: ChannelName | None
+    channel_name: ChannelNameOut | None
     encrypted_channel_key: Base64Output
 
 

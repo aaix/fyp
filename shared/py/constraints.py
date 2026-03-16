@@ -15,8 +15,8 @@ USERNAME_MIN_LENGTH: Final[int] = 2
 DEVICE_NAME_MAX_LENGTH: Final[int] = 32
 DEVICE_NAME_MIN_LENGTH: Final[int] = 1
 
-CHANNEL_NAME_MAX_LENGTH: Final[int] = 136 # 136 bytes b64 82 byte payload (48 byte name)
-CHANNEL_NAME_MIN_LENGTH: Final[int] = 48 # 48b64 34 ciphertext
+CHANNEL_NAME_MAX_LENGTH: Final[int] = 82 # 136 bytes b64 82 byte payload (48 byte name)
+CHANNEL_NAME_MIN_LENGTH: Final[int] = 34 # 48b64 34 ciphertext
 
 CHANNEL_MAX_NUM_MEMBERS: Final[int] = 15
 

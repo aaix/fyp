@@ -34,7 +34,11 @@ grpcchannel = LazyGRPC(discovery.discover_dataservices(), ChannelServiceStub)
 async def new_channel(s: SessionParam, body: NewChannelBody) -> ChannelResponse:
     member_ids = set(cm.user_id for cm in body.channel_members)
 
-    if not len(member_ids) == len(body.channel_members):
+    # create a copy so we can add ourself as an out param so we dont b64 convert
+    member_objects: list[ChannelMemberParamIn | ChannelMemberParamOut] = []
+    member_objects.extend(body.channel_members)
+
+    if not len(member_ids) == len(member_objects):
         raise ApiErrExc(errors.BadRequest("Channel members should not contain duplicates", api_error_code=errors.ERROR_INVALID_BODY_PARTS))    
 
     if s.user_id in member_ids:
@@ -55,13 +59,12 @@ async def new_channel(s: SessionParam, body: NewChannelBody) -> ChannelResponse:
 
 
     # current user needs to be a member of the channel
-    body.channel_members.append(
-        ChannelMemberParam(
+    member_objects.append(
+        ChannelMemberParamOut(
             user_id=s.user_id,
             encrypted_shared_key=body.encrypted_shared_key,
         )
     )
-
 
     # create the channel
     channel_request = channel_pb2.CreateChannelRequest(
@@ -81,13 +84,13 @@ async def new_channel(s: SessionParam, body: NewChannelBody) -> ChannelResponse:
             channel_pb2.AddChannelMemberRequest(
                 user_id=uuid_puuid(m.user_id),
                 encrypted_channel_key=m.encrypted_shared_key,
-            ) for m in body.channel_members
+            ) for m in member_objects
         )
     )
 
     member_ids.add(s.user_id)
 
-    encrypted_map = {m.user_id : m.encrypted_shared_key for m in body.channel_members}
+    encrypted_map = {m.user_id : m.encrypted_shared_key for m in member_objects}
 
     await intraclient.fan_out(channel.channel_id, member_ids, "channel_create", lambda user_id: internalmessage_pb2.EventChannelCreate(
         channel_id=channel.channel_id,

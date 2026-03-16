@@ -9,13 +9,14 @@ from shared.py.grpc.channel import ChannelType
 from shared.py.grpc.id import puuid_uuid
 from shared.py.grpcgen import channel_pb2
 from shared.py.pydantic.base64 import Base64Input, Base64Output
-from shared.py.pydantic.common import ChannelName
+from shared.py.pydantic.common import ChannelNameIn, ChannelNameOut
 
 
 __all__ = (
     "NewChannelBody",
     "ChannelResponse",
-    "ChannelMemberParam",
+    "ChannelMemberParamIn",
+    "ChannelMemberParamOut",
     "ChannelsResponse",
     "UserChannelEntry",
     "AddChannelMemberRequest",
@@ -23,20 +24,24 @@ __all__ = (
 )
 
 
-class ChannelMemberParam(BaseModel):
+class ChannelMemberParamIn(BaseModel):
+    user_id: UUID
+    encrypted_shared_key: Base64Input
+
+class ChannelMemberParamOut(BaseModel):
     user_id: UUID
     encrypted_shared_key: Base64Output
 
 
 class NewChannelBody(BaseModel):
     channel_type: ChannelType
-    channel_name: ChannelName
+    channel_name: ChannelNameIn
     encrypted_shared_key: Base64Input
     # remove 1 from the max length as current user is an implicit member
-    channel_members: Annotated[list[ChannelMemberParam], Field(max_length=CHANNEL_MAX_NUM_MEMBERS-1)]
+    channel_members: Annotated[list[ChannelMemberParamIn], Field(max_length=CHANNEL_MAX_NUM_MEMBERS-1)]
 
 class EditChannelBody(BaseModel):
-    channel_name: ChannelName | None
+    channel_name: ChannelNameIn | None
     # TODO
     # channel_icon: PrivateImage
 
@@ -46,7 +51,7 @@ class AddChannelMemberRequest(BaseModel):
 
 class ChannelResponse(BaseModel):
     channel_id: UUID
-    channel_name: bytes | None
+    channel_name: ChannelNameOut
     channel_icon: UUID | None
     channel_members: list[UUID]
     channel_type: int
@@ -67,7 +72,7 @@ class UserChannelEntry(BaseModel):
     encrypted_channel_key: Base64Output
     last_accessed: int
 
-    channel_name: bytes | None
+    channel_name: ChannelNameOut
     channel_icon: UUID | None
 
     @classmethod
