@@ -13,8 +13,10 @@ class ChannelManager {
         if (encrypted_channel_key) {
             await this.populateEncryptedChannelFields(channel);
         }
+        // else we need to merge the channel with the current channel list (to get the key)
+        // then we can populate its encrypted fields to get the new values
 
-        console.log("new channel", channelEntry);
+        console.log("new channel", channel);
 
         // TODO: render channel in list
 
