@@ -62,7 +62,16 @@ export async function decryptB64(encrypted_b64, key) {
 
 export async function encryptSymB64(plaintext, key) {
   const iv = window.crypto.getRandomValues(new Uint8Array(16))
-  const ciphertext = await window.crypto.subtle.encrypt({ name: 'AES-GCM', length:256, iv: iv }, key, plaintext);
+  const ciphertext = await window.crypto.subtle.encrypt(
+    {
+      name: 'AES-GCM',
+      length:256,
+      iv: iv,
+      additionalData: iv
+    },
+    key,
+    plaintext,
+  );
   const parts = lengthPrefixedBlob(1, [iv, ciphertext]);
   return await blobToB64(parts);
 }
@@ -73,7 +82,12 @@ export async function decryptB64Sym(encrypted_b64, key) {
 
   const [iv, ciphertext] = parts;
   return await window.crypto.subtle.decrypt(
-    { name: 'AES-GCM', length:256, iv: iv },
+    {
+      name: 'AES-GCM',
+      length:256,
+      iv: iv,
+      additionalData: iv,
+    },
     key,
     ciphertext,
   )
@@ -155,7 +169,7 @@ export async function RSAWrapRSAwithSym(wrapper_key, private_key) {
     'pkcs8',
     private_key,
     sym,
-    { name: 'AES-GCM', iv: iv }
+    { name: 'AES-GCM', iv: iv, additionalData: iv}
   )
 
   const combined = lengthPrefixedBlob(1, [
@@ -177,7 +191,7 @@ export async function RSAunwrapRSAwithSym(wrapper_private, buffer, extractable =
     sym_wrapped,
     wrapper_private,
     { name: 'RSA-OAEP' },
-    { name: 'AES-GCM', length: 256, iv: iv },
+    { name: 'AES-GCM', length: 256, iv: iv},
     false,
     ['unwrapKey']
   )
@@ -186,7 +200,7 @@ export async function RSAunwrapRSAwithSym(wrapper_private, buffer, extractable =
     'pkcs8',
     private_wrapped,
     sym,
-    { name: 'AES-GCM', length: 256, iv: iv },
+    { name: 'AES-GCM', length: 256, iv: iv, additionalData: iv},
     { name: 'RSA-OAEP', hash: 'SHA-256' },
     extractable,
     ['decrypt', 'unwrapKey']
