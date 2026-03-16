@@ -6,13 +6,12 @@ from fastapi import APIRouter, Request
 from grpc import StatusCode
 
 from api import *
-from api import ApiErrExc
 
 from api.routes.account.models import *
 from api.utils import RpcErrHandler, unwrap, ResourceNotFoundRpcHandler
 
 from shared.py.constraints import USER_MAX_NUM_DEVICES
-from shared.py.intraservice.discoverystore.client import BigPictureClient
+from shared.py.intraservice.client import BigPictureClient
 from shared.py.grpc.id import id_compare, puuid_uuid, id_t, uuid_puuid
 from shared.py.grpc.user import get_user, get_user_by_username
 from shared.py.pydantic.pem import PEMPublicKey
