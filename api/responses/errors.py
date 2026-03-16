@@ -25,3 +25,7 @@ class UnsupportedMediaType(ErrorResponse):
 class InternalServerError(ErrorResponse):
     API_CODE = ERROR_UNKNOWN
     HTTP_CODE = 500
+
+class Unavailable(ErrorResponse):
+    API_CODE = ERROR_DISTRIBUTED_UNREACHABLE
+    HTTP_CODE = 503

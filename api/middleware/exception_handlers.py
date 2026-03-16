@@ -1,5 +1,6 @@
 from fastapi import Request, Response
-from fastapi.exceptions import RequestValidationError 
+from fastapi.exceptions import RequestValidationError
+from grpc import RpcError, StatusCode 
 
 from api import ApiErrExc
 from api.responses import errors, status_codes as code
@@ -11,6 +12,12 @@ def api_err_exc_error_handler(request: Request, exc: Exception) -> Response:
 def request_validation_error_handler(request: Request, exc: Exception) -> Response:
     assert isinstance(exc, RequestValidationError)
     return errors.BadRequest("Invalid request data", structure=exc.errors())
+
+def grpc_error_handler(request: Request, exc: Exception) -> Response:
+    assert isinstance(exc, RpcError)
+    if exc.code() == StatusCode.UNAVAILABLE:
+        return errors.Unavailable("Service temporarily unavailable")
+    return unhandled_exception_handler(request, exc)
 
 def unhandled_exception_handler(request: Request, exc: Exception) -> Response:
     return errors.InternalServerError("Unexpected error occurred")

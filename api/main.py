@@ -4,6 +4,7 @@ from typing import Literal
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError 
 from fastapi.middleware.cors import CORSMiddleware
+from grpc import RpcError
 from starlette.middleware import Middleware
 
 
@@ -63,6 +64,7 @@ app.add_exception_handler(RequestValidationError, exception_handlers.request_val
 app.add_exception_handler(ApiErrExc, exception_handlers.api_err_exc_error_handler)
 app.add_exception_handler(Exception, exception_handlers.unhandled_exception_handler)
 app.add_exception_handler(404, exception_handlers.not_found_exception_handler)
+app.add_exception_handler(RpcError, exception_handlers.grpc_error_handler)
 
 @app.get("/")
 async def root() -> dict[Literal["hello"], Literal["world"]]:
