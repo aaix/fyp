@@ -380,7 +380,7 @@ class Gateway {
                     console.warn(event.errors);
                 }
                 break;
-            case 'channel_create':
+            case 'channel_update':
                 channelManager.processNewChannel(event.channel_id, event.channel_name, event.encrypted_channel_key);
             default:
                 console.log("unknown event", event.intent); 

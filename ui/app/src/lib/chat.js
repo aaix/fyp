@@ -7,7 +7,7 @@ class ChannelManager {
 
 
     async processNewChannel(channel_id, channel_name, encrypted_channel_key) {
-        const channelEntry = {channel_id, channel_name, encrypted_channel_key};
+        const channel = {channel_id, channel_name, encrypted_channel_key};
         await this.populateEncryptedChannelFields(channel);
 
         console.log("new channel", channelEntry);
