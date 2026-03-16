@@ -1,21 +1,22 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import FriendMultiSelect from './FriendMultiSelect.jsx'
 import { channelManager } from '../lib/chat.js'
 import Button from './Button.jsx'
 import ModalCloseButton from './ModalCloseButton.jsx'
 import useEscapeToClose from './useEscapeToClose.js'
 import ToggleSwitch from './ToggleSwitch.jsx'
+import { encryptSymB64, genSymKey, RSAWrapSym } from '../lib/keyhandler.js'
+import { getCurrentSession } from '../lib/session.js'
+import { blobToB64 } from '../lib/utils.js'
 
 export default function CreateChannelModal({
   open,
   onClose,
   onCreated,
   maxFriends = 15,
-  getEncryptedSharedKey = () => '',
-  getEncryptedMemberKey = () => '',
 }) {
   const [channelName, setChannelName] = useState('')
-  const [selectedIds, setSelectedIds] = useState([])
+  const [selectedUsers, setselectedUsers] = useState([])
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState(null)
   const [allowMembersManageUsers, setAllowMembersManageUsers] = useState(true)
@@ -23,7 +24,7 @@ export default function CreateChannelModal({
   useEffect(() => {
     if (!open) {
       setChannelName('')
-      setSelectedIds([])
+      setselectedUsers([])
       setSubmitting(false)
       setError(null)
       setAllowMembersManageUsers(true)
@@ -31,36 +32,10 @@ export default function CreateChannelModal({
   }, [open])
 
   const trimmedName = channelName.trim()
-  const canSubmit = selectedIds.length > 0 && trimmedName.length > 0 && !submitting
+  const canSubmit = selectedUsers.length > 0 && trimmedName.length > 0 && !submitting
 
   const titleId = 'create-channel-title'
   const descriptionId = 'create-channel-description'
-
-  const payload = useMemo(() => {
-    const CHANNEL_TYPE = {
-      REGULAR: 0,
-      RESTRICTED_EXPANSION: 1,
-    }
-
-    return {
-      channel_type: allowMembersManageUsers
-        ? CHANNEL_TYPE.REGULAR
-        : CHANNEL_TYPE.RESTRICTED_EXPANSION,
-      channel_name: trimmedName,
-      encrypted_shared_key: getEncryptedSharedKey?.() ?? '',
-      channel_members: (selectedIds ?? []).slice(0, maxFriends).map((userId) => ({
-        user_id: userId,
-        encrypted_shared_key: getEncryptedMemberKey?.(userId) ?? '',
-      })),
-    }
-  }, [
-    allowMembersManageUsers,
-    getEncryptedMemberKey,
-    getEncryptedSharedKey,
-    maxFriends,
-    selectedIds,
-    trimmedName,
-  ])
 
   useEscapeToClose(open, onClose)
 
@@ -73,6 +48,40 @@ export default function CreateChannelModal({
     setSubmitting(true)
     setError(null)
     try {
+      const CHANNEL_TYPE = {
+        REGULAR: 0,
+        RESTRICTED_EXPANSION: 1,
+      }
+
+      const sym = await genSymKey(true);
+      const me = (await (await getCurrentSession()).getAccountKey()).publicKey;
+      const my_key = await RSAWrapSym(me, sym);
+      const my_key_b64 = await blobToB64(new Blob([my_key]));
+
+      const encrypted_channel_name = await encryptSymB64(
+        new TextEncoder().encode(trimmedName).buffer,
+        sym
+      );
+
+      const channel_members = await Promise.all(
+        (selectedUsers ?? []).slice(0, maxFriends).map(async (user) => {
+          const wrapped = await channelManager.createEncryptedSharedKey(user, sym)
+          return {
+            user_id: user.user_id,
+            encrypted_shared_key: await blobToB64(new Blob([wrapped])),
+          }
+        }),
+      )
+
+      const payload = {
+        channel_type: allowMembersManageUsers
+          ? CHANNEL_TYPE.REGULAR
+          : CHANNEL_TYPE.RESTRICTED_EXPANSION,
+        channel_name: encrypted_channel_name,
+        encrypted_shared_key: my_key_b64,
+        channel_members,
+      }
+
       const res = await channelManager.createChannel(payload)
       if (!res?.success) {
         setError(res?.error?.message ?? 'Could not create channel')
@@ -81,6 +90,7 @@ export default function CreateChannelModal({
       onCreated?.(res?.data)
       onClose?.()
     } catch (err) {
+      console.error(err);
       setError(err?.message ?? 'Could not create channel')
     } finally {
       setSubmitting(false)
@@ -151,8 +161,8 @@ export default function CreateChannelModal({
           </div>
 
           <FriendMultiSelect
-            value={selectedIds}
-            onChange={setSelectedIds}
+            value={selectedUsers}
+            onChange={setselectedUsers}
             maxSelected={maxFriends}
             disabled={submitting}
             labelledById={titleId}

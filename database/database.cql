@@ -54,7 +54,7 @@ CREATE TABLE dataservices.relationship (
 CREATE TABLE dataservices.channel (
     channel_id TIMEUUID,
     channel_type INT,
-    opt_channel_name TEXT, 
+    opt_channel_name BLOB, 
     channel_members set<TIMEUUID>,
     opt_channel_icon_asset_id TIMEUUID, 
 
@@ -72,7 +72,7 @@ CREATE TABLE dataservices.user_channel (
     -- therefore we cant sort it, we will have to limit it to server side
     last_accessed TIMESTAMP,
 
-    opt_channel_name TEXT,
+    opt_channel_name BLOB,
     opt_channel_icon_asset_id TIMEUUID,
 
     PRIMARY KEY (user_id, channel_id)

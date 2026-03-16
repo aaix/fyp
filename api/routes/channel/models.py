@@ -25,7 +25,7 @@ __all__ = (
 
 class ChannelMemberParam(BaseModel):
     user_id: UUID
-    encrypted_shared_key: Base64Input
+    encrypted_shared_key: Base64Output
 
 
 class NewChannelBody(BaseModel):
@@ -46,7 +46,7 @@ class AddChannelMemberRequest(BaseModel):
 
 class ChannelResponse(BaseModel):
     channel_id: UUID
-    channel_name: str
+    channel_name: bytes | None
     channel_icon: UUID | None
     channel_members: list[UUID]
     channel_type: int
@@ -67,7 +67,7 @@ class UserChannelEntry(BaseModel):
     encrypted_channel_key: Base64Output
     last_accessed: int
 
-    channel_name: str
+    channel_name: bytes | None
     channel_icon: UUID | None
 
     @classmethod

@@ -3,7 +3,7 @@ from itertools import chain
 
 cql_statements: list[list[str]] = []
 
-with open("../database/database.cql", "r") as f:
+with open("./database/database.cql", "r") as f:
     table_definitions = f.read()
     for statement in table_definitions.split(";"):
         lines = map(lambda l: l.split("--")[0].strip(), statement.split("\n"))
@@ -139,10 +139,10 @@ for table in tables.values():
     except Exception:
         print(f"Error generating table: {table}")
         raise
-    with open(f"./src/models/{path}.rs", "w+") as f:
+    with open(f"./dataservices/src/models/{path}.rs", "w+") as f:
         f.write(rust_code)
 
-with open("./src/models/mod.rs", "w+") as f:
+with open("./dataservices/src/models/mod.rs", "w+") as f:
     mod_lines = [f"pub mod {table.name};" for table in tables.values()]
     f.write("\n".join(mod_lines))
 

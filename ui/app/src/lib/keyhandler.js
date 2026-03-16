@@ -1,3 +1,5 @@
+import { B64toUint8Array, blobToB64 } from "./utils"
+
 function lengthPrefixedBlob(version, parts) {
   let prefixed = [new Uint8Array([version])]
 
@@ -26,10 +28,11 @@ function unwrapLengthPrefixed(buffer) {
   const parts = []
 
   while (offset < buffer.byteLength) {
-    const partLength = view.getUint16(offset, true)
+    const partLength = view.getUint16(offset, true);
     offset += 2
-    const part = new Uint8Array(buffer, offset, partLength)
-    parts.push(part)
+    const part = new Uint8Array(buffer, offset, partLength);
+    // slice so that we dont end up with the same shared buffer
+    parts.push(part.slice().buffer)
     offset += partLength
   }
 
@@ -57,6 +60,25 @@ export async function decryptB64(encrypted_b64, key) {
   return await window.crypto.subtle.decrypt({ name: 'RSA-OAEP' }, key, encrypted)
 }
 
+export async function encryptSymB64(plaintext, key) {
+  const iv = window.crypto.getRandomValues(new Uint8Array(16))
+  const ciphertext = await window.crypto.subtle.encrypt({ name: 'AES-GCM', length:256, iv: iv }, key, plaintext);
+  const parts = lengthPrefixedBlob(1, [iv, ciphertext]);
+  return await blobToB64(parts);
+}
+
+export async function decryptB64Sym(encrypted_b64, key) {
+  const buff = await B64toUint8Array(encrypted_b64);
+  const {parts} = unwrapLengthPrefixed(buff.buffer);
+
+  const [iv, ciphertext] = parts;
+  return await window.crypto.subtle.decrypt(
+    { name: 'AES-GCM', length:256, iv: iv },
+    key,
+    ciphertext,
+  )
+}
+
 export async function exportAsPem(key) {
   const spki = await window.crypto.subtle.exportKey('spki', key)
   const b64 = btoa(String.fromCharCode(...new Uint8Array(spki)))
@@ -76,6 +98,41 @@ export async function importFromPem(pem) {
     ['encrypt', 'wrapKey']
   )
 }
+
+export async function genSymKey(extractable = false) {
+  return await window.crypto.subtle.generateKey(
+    {name: 'AES-GCM', length: 256},
+    extractable,
+    ['encrypt', 'decrypt']
+  )
+}
+
+
+export async function RSAWrapSym(pub_wrapper_key, sym_private_key) {
+  const wrapped = await window.crypto.subtle.wrapKey(
+    'raw',
+    sym_private_key,
+    pub_wrapper_key,
+    { name: 'RSA-OAEP'}
+  );
+
+  return wrapped;
+}
+
+export async function RSAUnwrapSym(private_wrapper_key, ciphertext) {
+  const unwrapped = await window.crypto.subtle.unwrapKey(
+    'raw',
+    ciphertext,
+    private_wrapper_key,
+    {name: 'RSA-OAEP'},
+    {name: 'AES-GCM', length: 256},
+    false,
+    ['encrypt', 'decrypt']
+  );
+
+  return unwrapped;
+}
+
 
 export async function RSAWrapRSAwithSym(wrapper_key, private_key) {
 

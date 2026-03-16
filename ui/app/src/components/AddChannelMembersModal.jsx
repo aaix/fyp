@@ -5,7 +5,7 @@ import Button from './Button.jsx'
 import ModalCloseButton from './ModalCloseButton.jsx'
 import useEscapeToClose from './useEscapeToClose.js'
 
-export default function AddChannelMembersModal({
+function AddChannelMembersModal({
   open,
   onClose,
   channelId,
@@ -13,13 +13,13 @@ export default function AddChannelMembersModal({
   onMembersAdded,
   maxFriends = 15,
 }) {
-  const [selectedIds, setSelectedIds] = useState([])
+  const [selectedUsers, setSelectedUsers] = useState([])
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState(null)
 
   useEffect(() => {
     if (!open) {
-      setSelectedIds([])
+      setSelectedUsers([])
       setSubmitting(false)
       setError(null)
     }
@@ -34,7 +34,7 @@ export default function AddChannelMembersModal({
     open &&
     !submitting &&
     channelId &&
-    selectedIds.length > 0 &&
+    selectedUsers.length > 0 &&
     effectiveMax > 0
 
   const titleId = 'add-channel-members-title'
@@ -51,14 +51,14 @@ export default function AddChannelMembersModal({
     setError(null)
     try {
       const existingSet = new Set(existingMemberIds ?? [])
-      const toAdd = selectedIds.filter((id) => !existingSet.has(id))
+      const toAdd = selectedUsers.filter((u) => !existingSet.has(u.user_id))
       if (toAdd.length === 0) {
         onClose?.()
         return
       }
 
       const results = await Promise.allSettled(
-        toAdd.map((userId) => channelManager.addChannelMember(channelId, userId)),
+        toAdd.map((u) => channelManager.addChannelMember(channelId, u.user_id)),
       )
 
       const failed = results.filter(
@@ -69,12 +69,13 @@ export default function AddChannelMembersModal({
         setError('Some members could not be added')
       }
 
-      const successfulIds = toAdd.filter((_, idx) => !failed[idx])
+      const successfulIds = toAdd.filter((_, idx) => !failed[idx]).map((u) => u.user_id)
       if (successfulIds.length > 0) {
         onMembersAdded?.(successfulIds)
       }
       onClose?.()
     } catch (err) {
+      console.error(err);
       setError(err?.message ?? 'Could not add members')
     } finally {
       setSubmitting(false)
@@ -112,8 +113,8 @@ export default function AddChannelMembersModal({
         ) : (
           <form className="space-y-4" onSubmit={onSubmit}>
             <FriendMultiSelect
-              value={selectedIds}
-              onChange={setSelectedIds}
+              value={selectedUsers}
+              onChange={setSelectedUsers}
               maxSelected={effectiveMax}
               disabled={submitting}
               labelledById={titleId}
@@ -140,3 +141,4 @@ export default function AddChannelMembersModal({
   )
 }
 
+export default AddChannelMembersModal

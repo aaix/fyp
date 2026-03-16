@@ -14,9 +14,9 @@ class CreateChannelRequest(_message.Message):
     OPT_CHANNEL_NAME_FIELD_NUMBER: _ClassVar[int]
     OPT_CHANNEL_ICON_ASSET_ID_FIELD_NUMBER: _ClassVar[int]
     channel_type: int
-    opt_channel_name: str
+    opt_channel_name: bytes
     opt_channel_icon_asset_id: _plib_pb2.pUUID
-    def __init__(self, channel_type: _Optional[int] = ..., opt_channel_name: _Optional[str] = ..., opt_channel_icon_asset_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ...) -> None: ...
+    def __init__(self, channel_type: _Optional[int] = ..., opt_channel_name: _Optional[bytes] = ..., opt_channel_icon_asset_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ...) -> None: ...
 
 class UpdateChannelRequest(_message.Message):
     __slots__ = ("channel_id", "opt_channel_name", "opt_channel_icon_asset_id", "update_mask", "members_to_update")
@@ -26,11 +26,11 @@ class UpdateChannelRequest(_message.Message):
     UPDATE_MASK_FIELD_NUMBER: _ClassVar[int]
     MEMBERS_TO_UPDATE_FIELD_NUMBER: _ClassVar[int]
     channel_id: _plib_pb2.pUUID
-    opt_channel_name: str
+    opt_channel_name: bytes
     opt_channel_icon_asset_id: _plib_pb2.pUUID
     update_mask: _field_mask_pb2.FieldMask
     members_to_update: _containers.RepeatedCompositeFieldContainer[_plib_pb2.pUUID]
-    def __init__(self, channel_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., opt_channel_name: _Optional[str] = ..., opt_channel_icon_asset_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., update_mask: _Optional[_Union[_field_mask_pb2.FieldMask, _Mapping]] = ..., members_to_update: _Optional[_Iterable[_Union[_plib_pb2.pUUID, _Mapping]]] = ...) -> None: ...
+    def __init__(self, channel_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., opt_channel_name: _Optional[bytes] = ..., opt_channel_icon_asset_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., update_mask: _Optional[_Union[_field_mask_pb2.FieldMask, _Mapping]] = ..., members_to_update: _Optional[_Iterable[_Union[_plib_pb2.pUUID, _Mapping]]] = ...) -> None: ...
 
 class ReadChannelRequest(_message.Message):
     __slots__ = ("channel_id",)
@@ -57,10 +57,10 @@ class ChannelObjectResponse(_message.Message):
     OPT_CHANNEL_ICON_ASSET_ID_FIELD_NUMBER: _ClassVar[int]
     channel_id: _plib_pb2.pUUID
     channel_type: int
-    opt_channel_name: str
+    opt_channel_name: bytes
     channel_members: _containers.RepeatedCompositeFieldContainer[_plib_pb2.pUUID]
     opt_channel_icon_asset_id: _plib_pb2.pUUID
-    def __init__(self, channel_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., channel_type: _Optional[int] = ..., opt_channel_name: _Optional[str] = ..., channel_members: _Optional[_Iterable[_Union[_plib_pb2.pUUID, _Mapping]]] = ..., opt_channel_icon_asset_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ...) -> None: ...
+    def __init__(self, channel_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., channel_type: _Optional[int] = ..., opt_channel_name: _Optional[bytes] = ..., channel_members: _Optional[_Iterable[_Union[_plib_pb2.pUUID, _Mapping]]] = ..., opt_channel_icon_asset_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ...) -> None: ...
 
 class GetUserChannelsRequest(_message.Message):
     __slots__ = ("user_id",)
@@ -94,9 +94,9 @@ class ChannelMemberObject(_message.Message):
     channel_id: _plib_pb2.pUUID
     encrypted_channel_key: bytes
     last_accessed: int
-    opt_channel_name: str
+    opt_channel_name: bytes
     opt_channel_icon_asset_id: _plib_pb2.pUUID
-    def __init__(self, user_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., channel_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., encrypted_channel_key: _Optional[bytes] = ..., last_accessed: _Optional[int] = ..., opt_channel_name: _Optional[str] = ..., opt_channel_icon_asset_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ...) -> None: ...
+    def __init__(self, user_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., channel_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., encrypted_channel_key: _Optional[bytes] = ..., last_accessed: _Optional[int] = ..., opt_channel_name: _Optional[bytes] = ..., opt_channel_icon_asset_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ...) -> None: ...
 
 class AddChannelMembersRequest(_message.Message):
     __slots__ = ("channel_id", "channel", "requests")

@@ -8,6 +8,6 @@ pub struct UserChannel {
     pub channel_id: value::CqlTimeuuid,
     pub encrypted_channel_key: Vec<u8>,
     pub last_accessed: value::CqlTimestamp,
-    pub opt_channel_name: Option<String>,
+    pub opt_channel_name: Option<Vec<u8>>,
     pub opt_channel_icon_asset_id: Option<value::CqlTimeuuid>,
 }

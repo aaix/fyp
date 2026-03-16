@@ -26,7 +26,7 @@ async def get_channel(lazy: LazyGRPC[ChannelServiceStub], channel_id: id_t) -> c
 async def edit_channel(
     lazy: LazyGRPC[ChannelServiceStub],
     channel_id: id_t,
-    channel_name: MaybeUnset[str | None],
+    channel_name: MaybeUnset[bytes | None],
     icon_id: MaybeUnset[UUID | None],
     members: Iterable[pUUID]
 ) -> channel_pb2.ChannelObjectResponse:

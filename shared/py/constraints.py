@@ -15,8 +15,8 @@ USERNAME_MIN_LENGTH: Final[int] = 2
 DEVICE_NAME_MAX_LENGTH: Final[int] = 32
 DEVICE_NAME_MIN_LENGTH: Final[int] = 1
 
-CHANNEL_NAME_MAX_LENGTH: Final[int] = 48
-CHANNEL_NAME_MIN_LENGTH: Final[int] = 1
+CHANNEL_NAME_MAX_LENGTH: Final[int] = 48 + 32 # 48 char + iv + iv block
+CHANNEL_NAME_MIN_LENGTH: Final[int] = 48 # bytes iv + 2 blocks
 
 CHANNEL_MAX_NUM_MEMBERS: Final[int] = 15
 

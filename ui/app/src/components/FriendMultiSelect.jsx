@@ -6,7 +6,8 @@ import Button from './Button.jsx'
 /**
  * Friend picker that only searches within your existing friends.
  * - Sources friend IDs from relationshipManager.getRelationships()
- * - Hydrates user fields via userManager.fetchUsersBulk()
+ * - Hydrates via userManager.fetchUsersBulk() (full user objects, including public_key).
+ * - value/onChange are arrays of those full user objects.
  */
 export default function FriendMultiSelect({
   value,
@@ -48,16 +49,13 @@ export default function FriendMultiSelect({
         const users = await userManager.fetchUsersBulk(friendPeerIds)
         if (cancelled) return
 
-        const profiles = (users ?? []).map((user) => ({
-          user_id: user.user_id,
-          username: user?.username ?? '',
-          icon_url: user ? getAvatarUrl(user) : null,
-        }))
-        profiles.sort((a, b) =>
-          (a.username || '').localeCompare(b.username || '', undefined, { sensitivity: 'base' }),
+        const list = (users ?? []).slice()
+        list.sort((a, b) =>
+          (a?.username ?? '').localeCompare(b?.username ?? '', undefined, { sensitivity: 'base' }),
         )
-        setFriends(profiles)
+        setFriends(list)
       } catch (e) {
+        console.error(e);
         if (!cancelled) setError(e?.message ?? 'Could not load friends')
       } finally {
         if (!cancelled) setLoading(false)
@@ -69,28 +67,26 @@ export default function FriendMultiSelect({
     }
   }, [])
 
-  const selectedSet = useMemo(() => new Set(value ?? []), [value])
+  const selected = value ?? []
+  const selectedSet = useMemo(() => new Set(selected.map((u) => u.user_id)), [value])
   const normalizedQuery = query.trim().toLowerCase()
   const filtered = useMemo(() => {
     if (!normalizedQuery) return friends
-    return friends.filter((f) => (f.username || '').toLowerCase().includes(normalizedQuery))
+    return friends.filter((f) => (f?.username ?? '').toLowerCase().includes(normalizedQuery))
   }, [friends, normalizedQuery])
 
-  const selectedCount = value?.length ?? 0
+  const selectedCount = selected.length
   const remaining = Math.max(0, maxSelected - selectedCount)
   const canSelectMore = selectedCount < maxSelected
 
-  function toggle(userId) {
+  function toggle(friend) {
     if (disabled) return
-    const next = new Set(value ?? [])
-    if (next.has(userId)) {
-      next.delete(userId)
-      onChange?.(Array.from(next))
+    if (selectedSet.has(friend.user_id)) {
+      onChange?.(selected.filter((u) => u.user_id !== friend.user_id))
       return
     }
     if (!canSelectMore) return
-    next.add(userId)
-    onChange?.(Array.from(next))
+    onChange?.([...selected, friend])
   }
 
   const inputId = labelledById ? `${labelledById}-friend-search` : undefined
@@ -173,21 +169,21 @@ export default function FriendMultiSelect({
                   variant="text"
                   size="sm"
                   className={rowBase}
-                  onClick={() => toggle(friend.user_id)}
+                  onClick={() => toggle(friend)}
                   disabled={disableRow}
                   aria-pressed={checked}
                 >
-                  {friend.icon_url ? (
+                  {getAvatarUrl(friend) ? (
                     <img
-                      src={friend.icon_url}
-                      alt={friend.username ? `${friend.username}'s avatar` : 'User avatar'}
+                      src={getAvatarUrl(friend)}
+                      alt={friend?.username ? `${friend.username}'s avatar` : 'User avatar'}
                       className="h-10 w-10 flex-shrink-0 rounded-full border border-[color:var(--card-border)] object-cover"
                     />
                   ) : (
                     <div className="h-10 w-10 flex-shrink-0 rounded-full border border-[color:var(--card-border)] bg-[color:var(--card-bg)]" />
                   )}
                   <div className="min-w-0 flex-1">
-                    <div className="truncate font-medium">@{friend.username || 'user'}</div>
+                    <div className="truncate font-medium">@{friend?.username ?? 'user'}</div>
                   </div>
                   <span
                     className={`material-symbols-outlined text-xl ${checked ? 'text-[color:var(--accent)]' : 'text-[color:var(--text-muted)]'}`}
