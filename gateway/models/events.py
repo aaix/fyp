@@ -36,7 +36,7 @@ class ChannelCreateEvent(BaseEvent):
     intent: Literal["channel_update"] = "channel_update"
     channel_id: UUID
     channel_name: ChannelNameOut | None
-    encrypted_channel_key: Base64Output
+    encrypted_channel_key: Base64Output | None
 
 
 class UsersEvent(BaseEvent):
