@@ -67,6 +67,7 @@ export default function MessagesPage() {
       list.sort((a, b) => (b.last_accessed || 0) - (a.last_accessed || 0))
       setChannels(list)
     } catch (e) {
+      console.error(e);
       setError(e?.message ?? 'Could not load channels')
       setChannels([])
     } finally {
@@ -144,7 +145,9 @@ export default function MessagesPage() {
       setChannelLoading(true)
       setChannelError(null)
       try {
-        const res = await channelManager.getChannel(channelId)
+        const channelFromList = channels.find((c) => c.channel_id === channelId)
+        const encryptedChannelKey = channelFromList?.encrypted_channel_key
+        const res = await channelManager.getChannel(channelId, encryptedChannelKey)
         if (!res?.success) {
           setChannelError(res?.error?.message ?? 'Could not load channel')
           return
@@ -167,12 +170,13 @@ export default function MessagesPage() {
           setSelectedMembers(profiles)
         }
       } catch (e) {
+        console.error(e);
         setChannelError(e?.message ?? 'Could not load channel')
       } finally {
         setChannelLoading(false)
       }
     },
-    [isDesktop],
+    [isDesktop, channels],
   )
 
   const handleMemberRemoved = useCallback((userId) => {
@@ -222,6 +226,7 @@ export default function MessagesPage() {
       )
       setEditingName(false)
     } catch (e) {
+      console.error(e);
       setEditNameError(e?.message ?? 'Could not update channel name')
     } finally {
       setEditNameLoading(false)
@@ -256,6 +261,7 @@ export default function MessagesPage() {
       }
       setLeaveConfirm(null)
     } catch (e) {
+      console.error(e);
       setLeaveError(e?.message ?? 'Could not leave channel')
     } finally {
       setLeaveLoading(false)

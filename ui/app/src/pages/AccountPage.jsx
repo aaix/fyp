@@ -49,6 +49,7 @@ export default function AccountPage() {
         iconUrl,
       })
     } catch (e) {
+      console.error(e);
       setError(e.message || 'Could not load account')
     } finally {
       setLoading(false)

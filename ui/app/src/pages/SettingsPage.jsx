@@ -173,6 +173,7 @@ export default function SettingsPage() {
 
       await gateway.register_new_device(code, confirmCallback, errorCallback, successCallback)
     } catch (err) {
+      console.error(err);
       setRegisterError(err?.message || 'Failed to start device registration')
       setRegisterLoading(false)
     }

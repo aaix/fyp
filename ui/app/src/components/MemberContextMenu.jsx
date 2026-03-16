@@ -32,6 +32,7 @@ export default function MemberContextMenu({
         setRelationship(res?.data?.relationship ?? null)
         setBlockRelationship(res?.data?.blockRelationship ?? null)
       } catch (e) {
+        console.error(e);
         if (!cancelled) setError(e?.message ?? 'Could not load relationship')
       } finally {
         if (!cancelled) setLoading(false)
@@ -58,6 +59,7 @@ export default function MemberContextMenu({
       onMemberRemoved?.(userId)
       onClose?.()
     } catch (e) {
+      console.error(e);
       setRemoveError(e?.message ?? 'Could not remove from channel')
     } finally {
       setActionLoading(false)

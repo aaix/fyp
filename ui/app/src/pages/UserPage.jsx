@@ -80,6 +80,7 @@ export default function UserPage() {
         setRelationship(relData.relationship ?? null)
         setBlockRelationship(relData.blockRelationship ?? null)
       } catch (e) {
+        console.error(e);
         if (!cancelled) setError(e?.message ?? 'Could not load profile')
       } finally {
         if (!cancelled) setLoading(false)

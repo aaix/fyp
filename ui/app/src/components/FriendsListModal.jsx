@@ -53,6 +53,7 @@ export default function FriendsListModal({ open, onClose }) {
         }))
         setList(profiles)
       } catch (e) {
+        console.error(e);
         if (!cancelled) setError(e?.message ?? 'Could not load friends')
       } finally {
         if (!cancelled) setLoading(false)
