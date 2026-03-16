@@ -27,11 +27,11 @@ num_tokens: 256
 # data, hints, view_hints and saved_caches subdirectories. All of these
 # subs can be overridden by the respective options below.
 # If unset, the value defaults to /var/lib/scylla
-# workdir: /var/lib/scylla
+workdir: /var/lib/scylla
 
 # Directory where Scylla should store data on disk.
-# data_file_directories:
-#    - /var/lib/scylla/data
+data_file_directories:
+  - /var/lib/scylla/data
 
 # commit log.  when running on magnetic HDD, this should be a
 # separate spindle than the data directories.

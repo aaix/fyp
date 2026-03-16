@@ -40,7 +40,7 @@ services:
       - shared-network
     image: az-dataservices:latest
     environment:
-      - SCYLLA_URI=172.31.0.7
+      - SCYLLA_URI=172.31.0.199
       - OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://jaeger:4317
     depends_on:
       scylla-seed:
@@ -83,7 +83,7 @@ services:
   scylla-seed:
     networks:
       shared-network:
-        ipv4_address: 172.31.0.7
+        ipv4_address: 172.31.0.199
       
     image: az-database:latest
     volumes:
@@ -94,11 +94,11 @@ services:
         source: ./database/main.yaml
         target: /etc/scylla/scylla.yaml
     hostname: scylla-seed
+    environment:
+      SEED: "172.31.0.199"
 
   scylla-node1:
     <<: *scylla-base
-    profiles:
-      - full-cluster
     volumes:
       - type: bind
         source: ./database/data/scylla1/
@@ -107,8 +107,7 @@ services:
         source: ./database/main.yaml
         target: /etc/scylla/scylla.yaml
     networks:
-      shared-network:
-          ipv4_address: 172.31.0.3
+      - shared-network
 
   scylla-node2:
     <<: *scylla-base

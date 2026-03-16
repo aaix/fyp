@@ -1,4 +1,4 @@
-FROM scylladb/scylla:latest
+FROM scylladb/scylla:2025.4.5
 
 COPY ./database.cql /schema.cql
 
