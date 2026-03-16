@@ -1,5 +1,5 @@
 import API from "./api";
-import { decryptB64Sym, importFromPem, RSAUnwrapSym, RSAWrapSym } from "./keyhandler";
+import { decryptB64Sym, encryptSymB64, importFromPem, RSAUnwrapSym, RSAWrapSym } from "./keyhandler";
 import { getCurrentSession } from "./session";
 import { B64toUint8Array } from "./utils";
 
@@ -11,13 +11,31 @@ class ChannelManager {
         return await RSAWrapSym(user_pk, shared_sym);
     }
 
-    async populateEncryptedChannelFields(channel, keep_key=false) {
+    async channelGetSharedKey(channel) {
+
+        if (channel.shared_key) {
+            return channel.shared_key;
+        }
 
         const my_key = await (await getCurrentSession()).getAccountKey();
-        
+
+
         const shared_key = await RSAUnwrapSym(my_key.privateKey, await B64toUint8Array(channel.encrypted_channel_key));
+
+        return shared_key;
+
+    }
+
+    async populateEncryptedChannelFields(channel, keep_key=false, shared_key) {
+        
+        if (!shared_key) {
+            shared_key = await this.channelGetSharedKey(channel);
+        }
+
         if (keep_key) {
             channel.shared_key = shared_key;
+        } else {
+            delete channel.shared_key;
         }
 
         channel.channel_name = new TextDecoder().decode(await decryptB64Sym(channel.channel_name, shared_key));
@@ -66,10 +84,22 @@ class ChannelManager {
         API.DELETE(`chat/channel/${channel_id}/members/${user_id}`)
     }
 
-    async editChannel(channel_id, channel_name) {
-        return API.PATCH(`chat/channel/${channel_id}`,{
-            channel_name: channel_name
+    async editChannel(channel, channel_name) {
+
+        const channel_id = channel.channel_id;
+
+        const encrypted_channel_name = await encryptSymB64(new TextEncoder().encode(channel_name).buffer, channel.shared_key);
+
+        const res = await API.PATCH(`chat/channel/${channel_id}`,{
+            channel_name: encrypted_channel_name
         })
+
+        if (res.success) {
+            const updatedChannel = {...channel, ...res.data};
+            await this.populateEncryptedChannelFields(updatedChannel, true);
+            res.data = updatedChannel;
+        }
+        return res;
     }
     
 }

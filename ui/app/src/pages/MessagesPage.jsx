@@ -205,7 +205,7 @@ export default function MessagesPage() {
   }
 
   const handleSubmitEditName = async () => {
-    if (!selectedChannelId) return
+    if (!selectedChannel) return
     const trimmed = (editName ?? '').trim()
     if (!trimmed) {
       setEditNameError('Channel name cannot be empty')
@@ -214,13 +214,15 @@ export default function MessagesPage() {
     setEditNameLoading(true)
     setEditNameError(null)
     try {
-      const res = await channelManager.editChannel(selectedChannelId, trimmed)
+      const res = await channelManager.editChannel(selectedChannel, trimmed)
       if (!res?.success) {
         setEditNameError(res?.error?.message ?? 'Could not update channel name')
         return
       }
       const updated = res?.data
-      setSelectedChannel(updated)
+      setSelectedChannel((prev) =>
+        prev && updated ? { ...updated, shared_key: updated.shared_key ?? prev.shared_key } : updated,
+      )
       setChannels((prev) =>
         (prev ?? []).map((ch) => (ch.channel_id === updated.channel_id ? updated : ch)),
       )
