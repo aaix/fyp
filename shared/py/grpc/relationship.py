@@ -129,6 +129,12 @@ class PeerRelationshipManager:
 
         return await self._test_relationship(RelationshipType.FRIENDS)
 
+    async def peer_blocked_current(self) -> bool:
+        relationships = await self._get_relationship()
+        return any((
+            rel.relationship_type == RelationshipType.PEER_BLOCKED_CURRENT for rel in relationships
+        ))
+
     async def is_blocked(self) -> bool:
         """Test if either user has blocked the other"""
         relationships = await self._get_relationship()

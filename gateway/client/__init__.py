@@ -30,6 +30,7 @@ from shared.py.discovery import DiscoveryManager
 from shared.py.grpc.device import create_device, get_device, read_devices
 from shared.py.grpc.id import puuid_str, puuid_uuid
 from shared.py.grpc.lazy import LazyGRPC
+from shared.py.grpc.relationship import RelationshipType
 from shared.py.grpc.user import get_bulk_users, get_user, get_user_by_username
 from shared.py.grpcgen import user_pb2_grpc
 from shared.py.crypto import challenge, onetimecode
@@ -136,7 +137,18 @@ class GatewayClient:
                 await self.handle_internal_session_create(e.payload)
             case "channel_create":
                 await self.handle_internal_channel_create(e.payload)
+            case "friendship_update":
+                await self.handle_internal_friendship_update(e.payload)
     
+
+    @tracer.start_as_current_span("Client.handle_internal::friendship_update")
+    async def handle_internal_friendship_update(self, d: internalmessage_pb2.EventFriendshipUpdate):
+        event = events.FriendEvent(
+            peer_user_id=puuid_uuid(d.peer_id) or unwrap(),
+            relationship_type=RelationshipType(d.relationship_type) if d.relationship_type else None
+        )
+        await self.send_event(event)
+
 
     @tracer.start_as_current_span("Client.handle_internal::session_create")
     async def handle_internal_session_create(self, d: internalmessage_pb2.EventSessionCreate):
@@ -264,6 +276,8 @@ class GatewayClient:
         ))
 
 
+    # state handling
+
     async def handle_close(self, exc: ConnectionClosed):
         self.open = False
         if exc.sent:
@@ -289,6 +303,8 @@ class GatewayClient:
         await self.controller.unregister(self)
         self.open = False
 
+
+    # handshaking
 
     @tracer.start_as_current_span("Client.handshake_get_next")
     async def handshake_get_next[T: BaseMessage](self, schema_or_schemas: Iterable[type[T]] | type[T]) -> T:

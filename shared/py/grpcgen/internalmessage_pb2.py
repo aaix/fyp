@@ -26,7 +26,7 @@ from . import traceparent_pb2 as traceparent__pb2
 from . import plib_pb2 as plib__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x15internalmessage.proto\x12\x1dintraservice.internalmesssage\x1a\x11traceparent.proto\x1a\nplib.proto\"\x8e\x02\n\x0cIntraMessage\x12\x17\n\x02to\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\x12\x32\n\x0btraceparent\x18\x02 \x01(\x0b\x32\x18.traceparent.TraceParentH\x01\x88\x01\x01\x12K\n\x0esession_create\x18\x03 \x01(\x0b\x32\x31.intraservice.internalmesssage.EventSessionCreateH\x00\x12K\n\x0e\x63hannel_create\x18\x04 \x01(\x0b\x32\x31.intraservice.internalmesssage.EventChannelCreateH\x00\x42\x07\n\x05\x65ventB\x0e\n\x0c_traceparent\"\'\n\x12\x45ventSessionCreate\x12\x11\n\tipaddress\x18\x01 \x01(\r\"\x94\x01\n\x12\x45ventChannelCreate\x12\x1f\n\nchannel_id\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\x12#\n\x16\x65ncrypted_channel_name\x18\x02 \x01(\x0cH\x00\x88\x01\x01\x12\x1d\n\x15\x65ncrypted_channel_key\x18\x03 \x01(\x0c\x42\x19\n\x17_encrypted_channel_nameb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x15internalmessage.proto\x12\x1dintraservice.internalmesssage\x1a\x11traceparent.proto\x1a\nplib.proto\"\xe1\x02\n\x0cIntraMessage\x12\x17\n\x02to\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\x12\x32\n\x0btraceparent\x18\x02 \x01(\x0b\x32\x18.traceparent.TraceParentH\x01\x88\x01\x01\x12K\n\x0esession_create\x18\x03 \x01(\x0b\x32\x31.intraservice.internalmesssage.EventSessionCreateH\x00\x12K\n\x0e\x63hannel_create\x18\x04 \x01(\x0b\x32\x31.intraservice.internalmesssage.EventChannelCreateH\x00\x12Q\n\x11\x66riendship_update\x18\x05 \x01(\x0b\x32\x34.intraservice.internalmesssage.EventFriendshipUpdateH\x00\x42\x07\n\x05\x65ventB\x0e\n\x0c_traceparent\"\'\n\x12\x45ventSessionCreate\x12\x11\n\tipaddress\x18\x01 \x01(\r\"\x94\x01\n\x12\x45ventChannelCreate\x12\x1f\n\nchannel_id\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\x12#\n\x16\x65ncrypted_channel_name\x18\x02 \x01(\x0cH\x00\x88\x01\x01\x12\x1d\n\x15\x65ncrypted_channel_key\x18\x03 \x01(\x0c\x42\x19\n\x17_encrypted_channel_name\"k\n\x15\x45ventFriendshipUpdate\x12\x1c\n\x07peer_id\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\x12\x1e\n\x11relationship_type\x18\x02 \x01(\rH\x00\x88\x01\x01\x42\x14\n\x12_relationship_typeb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -34,9 +34,11 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'internalmessage_pb2', _glob
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
   _globals['_INTRAMESSAGE']._serialized_start=88
-  _globals['_INTRAMESSAGE']._serialized_end=358
-  _globals['_EVENTSESSIONCREATE']._serialized_start=360
-  _globals['_EVENTSESSIONCREATE']._serialized_end=399
-  _globals['_EVENTCHANNELCREATE']._serialized_start=402
-  _globals['_EVENTCHANNELCREATE']._serialized_end=550
+  _globals['_INTRAMESSAGE']._serialized_end=441
+  _globals['_EVENTSESSIONCREATE']._serialized_start=443
+  _globals['_EVENTSESSIONCREATE']._serialized_end=482
+  _globals['_EVENTCHANNELCREATE']._serialized_start=485
+  _globals['_EVENTCHANNELCREATE']._serialized_end=633
+  _globals['_EVENTFRIENDSHIPUPDATE']._serialized_start=635
+  _globals['_EVENTFRIENDSHIPUPDATE']._serialized_end=742
 # @@protoc_insertion_point(module_scope)

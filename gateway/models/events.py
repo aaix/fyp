@@ -5,11 +5,12 @@ from enum import Enum
 
 from pydantic import BaseModel
 
+from shared.py.grpc.relationship import RelationshipType
 from shared.py.pydantic.base64 import Base64Output
 from shared.py.pydantic.common import ChannelNameOut
 from shared.py.pydantic.user import UserSearchResponse
 
-type Event_t = MessageEvent | ChannelCreateEvent | HintEvent | UsersEvent | SessionCreateEvent
+type Event_t = MessageEvent | ChannelCreateEvent | HintEvent | UsersEvent | SessionCreateEvent | FriendEvent
 
 class BaseEvent(BaseModel):
     """Base class for business logic events sent from the gateway"""
@@ -43,3 +44,8 @@ class UsersEvent(BaseEvent):
     intent: Literal["user_event"] = "user_event"
     users: list[UserSearchResponse]
     errors: list[tuple[UUID, str]]
+
+class FriendEvent(BaseEvent):
+    intent: Literal["friendship_update"] = "friendship_update"
+    peer_user_id: UUID
+    relationship_type: RelationshipType | None

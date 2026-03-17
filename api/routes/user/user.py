@@ -9,11 +9,12 @@ from api.routes.user.models import *
 from api.types.params import UserParam
 from api.utils import now, unwrap
 
-from shared.py.grpc.id import puuid_uuid
+from shared.py.intraservice import client as intraclient
+from shared.py.grpc.id import id_puuid, puuid_uuid, id_t
 from shared.py.grpc.lazy import LazyGRPC
 from shared.py.grpc.relationship import PeerRelationshipManager, RelationshipType, read_relationships
 from shared.py.pydantic.pem import PEMPublicKey
-from shared.py.grpcgen import user_pb2, user_pb2_grpc
+from shared.py.grpcgen import internalmessage_pb2, user_pb2, user_pb2_grpc
 
 
 discovery = DiscoveryManager()
@@ -22,6 +23,14 @@ UserRouter = APIRouter()
 
 grpcuser = LazyGRPC(discovery.discover_dataservices(), user_pb2_grpc.UserServiceStub)
 grpcrelationship = LazyGRPC(discovery.discover_dataservices(), user_pb2_grpc.UserRelationshipServiceStub)
+
+async def send_friend_update(to: id_t, peer: id_t, r_type: RelationshipType | None):
+    await intraclient.send_to_remote(to, "friendship_update", internalmessage_pb2.EventFriendshipUpdate(
+        peer_id=id_puuid(peer) or unwrap(),
+        relationship_type=r_type
+    ))
+
+
 
 
 @UserRouter.get("/profile/{user_id}")
@@ -68,6 +77,8 @@ async def friend_user(s: SessionParam, peer: UserParam) -> UserRelationshipRespo
             raise ApiErrExc(errors.BadRequest("Users are already friends", api_error_code=errors.ERROR_ALREADY_EXISTS))
         
         if await r.is_peer_requesting():
+            await send_friend_update(peer.user_id, s.user_id, RelationshipType.FRIENDS)
+
             await r.set_friends()
             # cancel their request to me
             await PeerRelationshipManager(grpcrelationship, peer.user_id, s.user_id).cancel_request_to_peer()
@@ -75,6 +86,8 @@ async def friend_user(s: SessionParam, peer: UserParam) -> UserRelationshipRespo
             return UserRelationshipResponse(peer_id=peer_id, relationship=RelationshipType.FRIENDS, created_at=now())
 
         await r.request_other()
+        await send_friend_update(peer.user_id, s.user_id, RelationshipType.PEER_REQUESTING_CURRENT)
+
     return UserRelationshipResponse(peer_id=peer_id, relationship=RelationshipType.CURRENT_REQUESTING_PEER, created_at=now())
 
 @UserRouter.delete("/relationship/{user_id}/friend")
@@ -84,13 +97,18 @@ async def unfriend_user(s: SessionParam, peer: UserParam) -> None:
 
     async with PeerRelationshipManager(grpcrelationship, s.user_id, peer.user_id) as r:
         if await r.is_peer_requesting():
+            await send_friend_update(peer.user_id, s.user_id, None)
             await PeerRelationshipManager(grpcrelationship, peer.user_id, s.user_id).cancel_request_to_peer()
             return   
         if await r.is_current_requesting():
+            await send_friend_update(peer.user_id, s.user_id, None)
             await r.cancel_request_to_peer()
             return
 
         await r.unfriend()
+        if await r.are_friends():
+            await send_friend_update(peer.user_id, s.user_id, None)
+
 
 
 
@@ -106,7 +124,7 @@ async def block_user(s: SessionParam, peer: UserParam) -> UserRelationshipRespon
     async with PeerRelationshipManager(grpcrelationship, s.user_id, peer.user_id) as r:
 
         if await r.are_friends():
-           await r.unfriend()
+            await r.unfriend()
 
         if await r.is_current_requesting():
             await r.cancel_request_to_peer()
@@ -114,6 +132,7 @@ async def block_user(s: SessionParam, peer: UserParam) -> UserRelationshipRespon
             await PeerRelationshipManager(grpcrelationship, peer.user_id, s.user_id).cancel_request_to_peer()
         
         res = await r.block_other()
+        await send_friend_update(peer.user_id, s.user_id, RelationshipType.PEER_BLOCKED_CURRENT)
 
         return UserRelationshipResponse(
             peer_id=peer_id,
@@ -128,6 +147,9 @@ async def unblock_user(s: SessionParam, peer: UserParam) -> None:
 
 
     async with PeerRelationshipManager(grpcrelationship, s.user_id, peer.user_id) as r:
+        # if they blocked us dont send them an update
+        if await r.is_blocked() and not await r.peer_blocked_current():
+            await send_friend_update(peer.user_id, s.user_id, RelationshipType.PEER_BLOCKED_CURRENT)
         await r.unblock()
 
 
