@@ -107,7 +107,8 @@ services:
         source: ./database/main.yaml
         target: /etc/scylla/scylla.yaml
     networks:
-      - shared-network
+      shared-network:
+          ipv4_address: 172.31.0.7
 
   scylla-node2:
     <<: *scylla-base
