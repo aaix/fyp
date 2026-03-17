@@ -291,7 +291,7 @@ export default function MessagesPage() {
   return (
     <PageContainer>
       <main className="min-h-0 flex-1 md:flex md:gap-3 md:overflow-hidden">
-        <section className="flex min-h-0 flex-1 flex-col gap-3 overflow-x-hidden border-b border-[color:var(--card-border)] pb-3 md:w-80 md:flex-none md:border-b-0 md:border-r md:pb-0 md:overflow-y-auto lg:w-96">
+        <section className="flex min-h-0 flex-1 flex-col gap-3 overflow-x-hidden border-b border-[color:var(--card-border)] pb-3 md:w-80 md:flex-none md:border-b-0 md:pb-0 md:overflow-y-auto lg:w-96">
           <div className="flex items-center justify-between gap-2 px-1 md:px-0">
             <h1 className="text-lg font-bold text-[color:var(--text-primary)]">Messages</h1>
             <Button type="button" size="sm" className="text-xs" onClick={() => setCreateOpen(true)}>
