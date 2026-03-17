@@ -110,18 +110,40 @@ export class RelationshipManager {
         };
     }
 
-    blockUser(user_id) {
-        return API.PUT(`user/relationship/${user_id}/block`);
+    async blockUser(user_id) {
+        const res = await API.PUT(`user/relationship/${user_id}/block`);
+
+        if (res.success) {
+            this.updateRelationships(user_id, res.data.relationship);
+        }
+
+        return res;
     }
-    unblockUser(user_id) {
-        return API.DELETE(`user/relationship/${user_id}/block`);
+    async unblockUser(user_id) {
+        const res = await API.DELETE(`user/relationship/${user_id}/block`);
+
+        if (res.success) {
+            this.updateRelationships(user_id, null);
+        }
+
+        return res;
     }
 
-    friendUser(user_id) {
-        return API.PUT(`user/relationship/${user_id}/friend`);
+    async friendUser(user_id) {
+        const res = await API.PUT(`user/relationship/${user_id}/friend`);
+
+        if (res.success) {
+            this.updateRelationships(user_id, res.data.relationship);
+        }
+        return res;
     }
-    unfriendUser(user_id) {
-        return API.DELETE(`user/relationship/${user_id}/friend`);
+
+    async unfriendUser(user_id) {
+        const res = await API.DELETE(`user/relationship/${user_id}/friend`);
+        if (res.success) {
+            this.updateRelationships(user_id, null);
+        }
+        return res;
     }
 }
 
