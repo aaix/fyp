@@ -44,6 +44,8 @@ class GatewayController:
         self.__address = get_current_node_ip()
         self.__big_picture = intraserver.BigPictureNode(discovery.discover_valkey(), self.__address)
         self.__sublisher = intraserver.Sub(self.__loop)
+        self.__internal_burnt = 0
+        self.__internal_fanned = 0
     
     async def start(self):
         await self.__big_picture.valkey_connect()
@@ -81,6 +83,7 @@ class GatewayController:
 
         await asyncio.gather(*existing, *pending, return_exceptions=True)
         log(f"Shut down all clients")
+        log(f"Fan rate was {self.__internal_burnt} burnt {self.__internal_fanned}")
 
 
     async def internal_events_loop(self):
@@ -104,7 +107,9 @@ class GatewayController:
             if not to:
                 return
             if not to in self.__by_user:
+                self.__internal_burnt += 1
                 return
+            self.__internal_fanned += 1
             
             if not (field := msg.WhichOneof("event")):
                 return
@@ -113,8 +118,6 @@ class GatewayController:
             for client in self.__by_user[to]:
                 with contextlib.suppress(QueueFull):
                     client.queue.put_nowait(InternalEvent(oneof=field, payload=data, span=span))
-
-            log(f"Recieved event for {to} type {msg.WhichOneof("event")}")
 
     # client connection management
 
