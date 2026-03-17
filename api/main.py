@@ -21,7 +21,7 @@ from api.middleware import exception_handlers
 from api.routes.account.account import AccountRouter
 from api.routes.session.session import SessionRouter
 from api.routes.user.user import UserRouter
-from api.routes.channel.channel import ChatRouter
+from api.routes.channel.channel import ChannelRouter
 
 # shared
 from shared.py.intraservice.client import BigPictureClient
@@ -57,7 +57,7 @@ app = FastAPI(
 app.include_router(AccountRouter, prefix="/account")
 app.include_router(SessionRouter, prefix="/session")
 app.include_router(UserRouter, prefix="/user")
-app.include_router(ChatRouter, prefix="/chat")
+app.include_router(ChannelRouter, prefix="/chat")
 
 # exception handlers
 app.add_exception_handler(RequestValidationError, exception_handlers.request_validation_error_handler)

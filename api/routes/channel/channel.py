@@ -24,13 +24,13 @@ from shared.py.types import UNSET
 
 discovery = DiscoveryManager()
 
-ChatRouter = APIRouter()
+ChannelRouter = APIRouter()
 
 grpcrelationship = LazyGRPC(discovery.discover_dataservices(), UserRelationshipServiceStub)
 grpcchannel = LazyGRPC(discovery.discover_dataservices(), ChannelServiceStub)
 
 
-@ChatRouter.post("/channel")
+@ChannelRouter.post("/channel")
 async def new_channel(s: SessionParam, body: NewChannelBody) -> ChannelResponse:
     member_ids = set(cm.user_id for cm in body.channel_members)
 
@@ -106,7 +106,7 @@ async def new_channel(s: SessionParam, body: NewChannelBody) -> ChannelResponse:
         channel_type=body.channel_type
     )
 
-@ChatRouter.get("/channels")
+@ChannelRouter.get("/channels")
 async def get_my_channels(s: SessionParam) -> ChannelsResponse:
     res = cast(channel_pb2.UserChannelsResponse, await grpcchannel.stub.GetUserChannels(channel_pb2.GetUserChannelsRequest(
         user_id=uuid_puuid(s.user_id) or unwrap()
@@ -116,11 +116,11 @@ async def get_my_channels(s: SessionParam) -> ChannelsResponse:
         channels=list(map(UserChannelEntry.from_rpc, res.channels))
     )
 
-@ChatRouter.get("/channel/{channel_id}")
+@ChannelRouter.get("/channel/{channel_id}")
 async def get_channel(s: SessionParam, channel: ChannelParam) -> ChannelResponse:
     return ChannelResponse.from_rpc(channel)
 
-@ChatRouter.patch("/channel/{channel_id}")
+@ChannelRouter.patch("/channel/{channel_id}")
 async def patch_channel(s: SessionParam, channel: ChannelParam, body: EditChannelBody) -> ChannelResponse:
     channel_id = channel.channel_id
 
@@ -142,7 +142,7 @@ async def patch_channel(s: SessionParam, channel: ChannelParam, body: EditChanne
 
     return ChannelResponse.from_rpc(rpc)
 
-@ChatRouter.put("/channel/{channel_id}/members/{user_id}")
+@ChannelRouter.put("/channel/{channel_id}/members/{user_id}")
 async def add_channel_member(s: SessionParam, channel: ChannelParam, user: UserParam, body: AddChannelMemberRequest) -> None:
     test = await test_relationship(grpcrelationship, s.user_id, user.user_id, RelationshipType.FRIENDS)
     if not test.exists:
@@ -170,7 +170,7 @@ async def add_channel_member(s: SessionParam, channel: ChannelParam, user: UserP
     ))
 
 
-@ChatRouter.delete("/channel/{channel_id}/members/{user_id}")
+@ChannelRouter.delete("/channel/{channel_id}/members/{user_id}")
 async def remove_channel_member(s: SessionParam, channel: ChannelParam, user: UserParam) -> None:
 
     removing_self = id_compare(user.user_id, s.user_id)
