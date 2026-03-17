@@ -7,7 +7,7 @@ macro_rules! req_tuuid {
         $req.get_ref()
             .$field
             .map(|parts| parts.into())
-            .ok_or(Status::invalid_argument(concat!("invalid ", stringify!($field))))
+            .ok_or(tonic::Status::invalid_argument(concat!("invalid ", stringify!($field))))
     };
 }
 
@@ -17,7 +17,7 @@ macro_rules! req_ref {
         $req.get_ref()
             .$field
             .as_ref()
-            .ok_or(Status::invalid_argument(concat!("invalid ", stringify!($field))))
+            .ok_or(tonic::Status::invalid_argument(concat!("invalid ", stringify!($field))))
 
     }
 }
