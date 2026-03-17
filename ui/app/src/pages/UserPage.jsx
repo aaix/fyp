@@ -43,12 +43,31 @@ export default function UserPage() {
 
     let cancelled = false
     ;(async () => {
+      const mapRelationshipType = (relType) => {
+        if (relType == null) {
+          return { relationship: null, blockRelationship: null }
+        }
+        if (relType === CURRENT_BLOCKED_PEER || relType === PEER_BLOCKED_CURRENT) {
+          return {
+            relationship: null,
+            blockRelationship: relType,
+          }
+        }
+        if (relType === CURRENT_REQUESTING_PEER || relType === PEER_REQUESTING_CURRENT || relType === FRIENDS) {
+          return {
+            relationship: relType,
+            blockRelationship: null,
+          }
+        }
+        return { relationship: null, blockRelationship: null }
+      }
+
       try {
         if (cancelled) return
         setLoading(true)
         setError(null)
         const session = getCurrentSession()
-        const [profileRes, relRes, meRes] = await Promise.all([
+        const [profileRes, relType, meRes] = await Promise.all([
           userManager.getUserProfile(userId),
           relationshipManager.getRelationshipWithUser(userId),
           session.getCurrentAccount(),
@@ -72,13 +91,17 @@ export default function UserPage() {
             iconUrl: user ? getAvatarUrl(user) : null,
             friendsCount: 0,
           })
-        } else {
+        }
+
+        if (!profileRes?.success && !profileRes?.data) {
           setError('User not found')
         }
 
-        const relData = relRes?.data ?? {}
-        setRelationship(relData.relationship ?? null)
-        setBlockRelationship(relData.blockRelationship ?? null)
+        const { relationship, blockRelationship } = mapRelationshipType(
+          relType != null ? Number(relType) : null,
+        )
+        setRelationship(relationship)
+        setBlockRelationship(blockRelationship)
       } catch (e) {
         console.error(e);
         if (!cancelled) setError(e?.message ?? 'Could not load profile')

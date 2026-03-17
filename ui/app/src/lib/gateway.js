@@ -3,6 +3,7 @@ import { getCurrentSession } from "./session";
 import { keyStore } from "./session";
 import { channelManager } from "./chat";
 import { B64toUint8Array, blobToB64, hexFromBuffer } from "./utils";
+import { relationshipManager} from "./user.js"
 
 const GATEWAY_URL = "/gateway";
 
@@ -382,6 +383,9 @@ class Gateway {
                 break;
             case 'channel_update':
                 channelManager.processNewChannel(event.channel_id, event.channel_name, event.encrypted_channel_key);
+                break;
+            case 'friendship_update':
+                relationshipManager.updateRelationships(event.peer_user_id, event.relationship_type)
                 break;
             default:
                 console.log("unknown event", event.intent); 

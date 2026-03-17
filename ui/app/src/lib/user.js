@@ -34,6 +34,15 @@ export class UserManager {
 export const userManager = new UserManager();
 
 export class RelationshipManager {
+
+    constructor() {
+        this.relationships = new Promise((resolve, reject) => {
+            this._fetchRelationships().then((v) => resolve(v)).catch((e) => reject(e));
+        });
+
+        this.richRelationships = {};
+    }
+    
     CURRENT_REQUESTING_PEER = 1
     PEER_REQUESTING_CURRENT = 2
 
@@ -42,15 +51,36 @@ export class RelationshipManager {
     PEER_BLOCKED_CURRENT = 5
     CURRENT_BLOCKED_PEER = 6
 
-    getRelationships() {
-        return API.GET("user/relationships");
+    updateRelationships(peer_id, new_relationship_type) {
+        if (!new_relationship_type) {
+            delete this.richRelationships[peer_id];
+        }
+
+        this.richRelationships[peer_id] = new_relationship_type;
     }
+
+    getRelationships() {
+        return this.relationships;
+    }
+
+
+    async _fetchRelationships() {
+        const res = await API.GET("user/relationships");
+
+        for (let rel of res.data.relationships) {
+            this.updateRelationships(rel.peer_id, rel.relationship)
+        }
+        return res;
+    }
+    
 
     async getRelationshipWithUser(user_id) {
         const res = await this.getRelationships();
-        if (!res?.success) {
-            return res;
+        if (!res.success) {
+            throw new Error(res.error.message);
         }
+
+        return this.richRelationships[user_id];
 
         const relationships = res?.data?.relationships ?? [];
         const norm = (id) => String(id ?? '').toLowerCase();

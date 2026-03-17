@@ -22,15 +22,39 @@ export default function MemberContextMenu({
     ;(async () => {
       setLoading(true)
       setError(null)
-      try {
-        const res = await relationshipManager.getRelationshipWithUser(userId)
-        if (cancelled) return
-        if (!res?.success) {
-          setError(res?.error?.message ?? 'Could not load relationship')
-          return
+
+      const mapRelationshipType = (relType) => {
+        if (relType == null) {
+          return { relationship: null, blockRelationship: null }
         }
-        setRelationship(res?.data?.relationship ?? null)
-        setBlockRelationship(res?.data?.blockRelationship ?? null)
+        if (
+          relType === relationshipManager.CURRENT_BLOCKED_PEER ||
+          relType === relationshipManager.PEER_BLOCKED_CURRENT
+        ) {
+          return {
+            relationship: null,
+            blockRelationship: relType,
+          }
+        }
+        if (
+          relType === relationshipManager.CURRENT_REQUESTING_PEER ||
+          relType === relationshipManager.PEER_REQUESTING_CURRENT ||
+          relType === relationshipManager.FRIENDS
+        ) {
+          return {
+            relationship: relType,
+            blockRelationship: null,
+          }
+        }
+        return { relationship: null, blockRelationship: null }
+      }
+
+      try {
+        const relType = await relationshipManager.getRelationshipWithUser(userId)
+        if (cancelled) return
+        const mapped = mapRelationshipType(relType != null ? Number(relType) : null)
+        setRelationship(mapped.relationship)
+        setBlockRelationship(mapped.blockRelationship)
       } catch (e) {
         console.error(e);
         if (!cancelled) setError(e?.message ?? 'Could not load relationship')
