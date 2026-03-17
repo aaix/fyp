@@ -116,7 +116,7 @@ export default function CreateChannelModal({
               Create channel
             </h2>
             <p id={descriptionId} className="mt-1 text-sm text-[color:var(--text-muted)]">
-              Pick up to {maxFriends} friends to add. Encryption fields are currently stubbed.
+              Pick up to {maxFriends} friends to add.
             </p>
           </div>
           <ModalCloseButton onClick={onClose} disabled={submitting} />
