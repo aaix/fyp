@@ -96,7 +96,7 @@ class ChannelsResponse(BaseModel):
 
 class NewMessageBody(BaseModel):
     message_type: int
-    content: Base64Input
+    content: Annotated[Base64Input, Field(min_length=1)]
 
 class NewMessageResponse(BaseModel):
 
