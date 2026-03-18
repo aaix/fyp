@@ -172,7 +172,7 @@ export async function RSAWrapRSAwithSym(wrapper_key, private_key) {
     { name: 'AES-GCM', iv: iv, additionalData: iv}
   )
 
-  const combined = lengthPrefixedBlob(1, [
+  const combined = lengthPrefixedBlob(2, [
     sym_wrapped,
     iv,
     private_wrapped,
@@ -182,7 +182,7 @@ export async function RSAWrapRSAwithSym(wrapper_key, private_key) {
 }
 
 export async function RSAunwrapRSAwithSym(wrapper_private, buffer, extractable = false) {
-  const { parts } = unwrapLengthPrefixed(buffer)
+  const { version, parts } = unwrapLengthPrefixed(buffer);
 
   const [sym_wrapped, iv, private_wrapped] = parts
 
@@ -196,11 +196,17 @@ export async function RSAunwrapRSAwithSym(wrapper_private, buffer, extractable =
     ['unwrapKey']
   )
 
+  let additionalData = undefined;
+  if (version > 1) {
+    additionalData = iv;
+  }
+
+
   const pk = await window.crypto.subtle.unwrapKey(
     'pkcs8',
     private_wrapped,
     sym,
-    { name: 'AES-GCM', length: 256, iv: iv, additionalData: iv},
+    { name: 'AES-GCM', length: 256, iv: iv, additionalData},
     { name: 'RSA-OAEP', hash: 'SHA-256' },
     extractable,
     ['decrypt', 'unwrapKey']
