@@ -27,16 +27,14 @@ export default function FriendsListModal({ open, onClose }) {
 
     ;(async () => {
       try {
-        const res = await relationshipManager.getRelationships()
+        const res = await relationshipManager.getRelationships(FRIENDS)
         if (cancelled) return
         if (!res?.success) {
           setError(res?.error?.message ?? 'Could not load friends')
           return
         }
         const relationships = res?.data?.relationships ?? []
-        const friendPeerIds = relationships
-          .filter((r) => Number(r.relationship) === FRIENDS)
-          .map((r) => r.peer_id)
+        const friendPeerIds = relationships.map((r) => r.peer_id)
 
         if (friendPeerIds.length === 0) {
           setList([])

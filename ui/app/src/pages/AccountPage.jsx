@@ -25,7 +25,7 @@ export default function AccountPage() {
       const session = getCurrentSession()
       const [accountRes, relRes] = await Promise.all([
         session.getCurrentAccount(),
-        relationshipManager.getRelationships(),
+        relationshipManager.getRelationships(FRIENDS),
       ])
 
       if (!accountRes?.success) {
@@ -36,12 +36,7 @@ export default function AccountPage() {
       const data = accountRes.data || {}
       const iconUrl = getAvatarUrl(data)
 
-      let friendsCount = 0
-      if (relRes?.success && Array.isArray(relRes.data?.relationships)) {
-        friendsCount = relRes.data.relationships.filter(
-          (r) => Number(r.relationship) === FRIENDS
-        ).length
-      }
+      const friendsCount = relRes?.success ? (relRes?.data?.relationships?.length ?? 0) : 0
 
       setProfile({
         username: data.username ?? '',

@@ -29,7 +29,7 @@ export default function FriendMultiSelect({
 
     ;(async () => {
       try {
-        const res = await relationshipManager.getRelationships()
+        const res = await relationshipManager.getRelationships(Number(relationshipManager.FRIENDS))
         if (cancelled) return
         if (!res?.success) {
           setError(res?.error?.message ?? 'Could not load friends')
@@ -37,9 +37,7 @@ export default function FriendMultiSelect({
         }
 
         const relationships = res?.data?.relationships ?? []
-        const friendPeerIds = relationships
-          .filter((r) => Number(r.relationship) === Number(relationshipManager.FRIENDS))
-          .map((r) => r.peer_id)
+        const friendPeerIds = relationships.map((r) => r.peer_id)
 
         if (friendPeerIds.length === 0) {
           setFriends([])
