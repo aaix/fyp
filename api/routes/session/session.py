@@ -32,11 +32,11 @@ async def login(r: Request, body: LoginBody) -> LoginResponse:
     session = Session.new(user_id=user_id)
     token = session_crypto.encode_jose_session(session.to_encode())
 
-    int_ip = int(get_ip_from_request(r) or 0)
+    # int_ip = int(get_ip_from_request(r) or 0)
 
-    await intraclient.send_to_remote(user_id, "session_create", EventSessionCreate(
-        ipaddress=int_ip
-    ))
+    # await intraclient.send_to_remote(user_id, "session_create", EventSessionCreate(
+    #     ipaddress=int_ip
+    # ))
 
     return LoginResponse(
         encrypted_session=session_crypto.encrypt_session_with_key(token, user.public_key),
