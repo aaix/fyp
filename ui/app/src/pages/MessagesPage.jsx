@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import PageContainer from '../components/PageContainer.jsx'
 import Card from '../components/Card.jsx'
 import CreateChannelModal from '../components/CreateChannelModal.jsx'
@@ -8,8 +8,10 @@ import ConfirmModal from '../components/ConfirmModal.jsx'
 import Button from '../components/Button.jsx'
 import ClickableRow from '../components/ClickableRow.jsx'
 import MenuActionItem from '../components/MenuActionItem.jsx'
+import Message from '../components/Message.jsx'
 import { getCurrentSession } from '../lib/session.js'
-import { channelManager } from '../lib/chat.js'
+import { channelManager, messageManager } from '../lib/chat.js'
+import { decryptB64Sym } from '../lib/keyhandler.js'
 import { userManager } from '../lib/user.js'
 import { getAvatarUrl, getDefaultChannelUrl, userContentUrl } from '../lib/utils.js'
 import MemberContextMenu from '../components/MemberContextMenu.jsx'
@@ -36,6 +38,32 @@ export default function MessagesPage() {
   const [channelMenu, setChannelMenu] = useState(null)
   const [leaveConfirm, setLeaveConfirm] = useState(null)
 
+  const currentUserId = getCurrentSession()?.user_id
+
+  const [messages, setMessages] = useState([])
+  const [messagesLoading, setMessagesLoading] = useState(false)
+  const [messagesError, setMessagesError] = useState(null)
+
+  const [draft, setDraft] = useState('')
+  const [sendLoading, setSendLoading] = useState(false)
+  const [sendError, setSendError] = useState(null)
+
+  // For now attachments/images are UI-only; `messageManager.sendMessage()` does not upload them.
+  const [attachment, setAttachment] = useState(null) // { kind: 'file'|'image', file, previewUrl? }
+  const fileInputRef = useRef(null)
+  const imageInputRef = useRef(null)
+  const bottomRef = useRef(null)
+
+  const handleIncomingMessage = useCallback((incomingMessage) => {
+    if (!incomingMessage?.message_id) return
+    setMessages((prev) => {
+      const prevList = prev ?? []
+      if (prevList.some((m) => m.message_id === incomingMessage.message_id)) return prevList
+      // New gateway-created messages are newest; keep newest 50.
+      return [...prevList, incomingMessage].slice(-50)
+    })
+  }, [])
+
   function formatRelativeFromSeconds(epochSeconds) {
     if (!epochSeconds) return ''
     const nowMs = Date.now()
@@ -52,6 +80,82 @@ export default function MessagesPage() {
     const diffDay = Math.round(diffHr / 24)
     return `${diffDay}d ago`
   }
+
+  const clearAttachment = useCallback(() => {
+    setAttachment((prev) => {
+      if (prev?.previewUrl) {
+        try {
+          URL.revokeObjectURL(prev.previewUrl)
+        } catch {
+          // Ignore; best-effort cleanup
+        }
+      }
+      return null
+    })
+  }, [])
+
+  const loadMessages = useCallback(async () => {
+    if (!selectedChannel) return
+    setMessagesLoading(true)
+    setMessagesError(null)
+    try {
+      const res = await messageManager.getMessages(selectedChannel, null, 50)
+      if (!res?.success) {
+        setMessagesError(res?.error?.message ?? 'Could not load messages')
+        setMessages([])
+        return
+      }
+
+      const raw = res?.data?.messages ?? []
+      const settled = await Promise.allSettled(raw)
+      const ok = settled.filter((s) => s.status === 'fulfilled').map((s) => s.value)
+      setMessages(ok)
+    } catch (e) {
+      console.error(e)
+      setMessagesError(e?.message ?? 'Could not load messages')
+      setMessages([])
+    } finally {
+      setMessagesLoading(false)
+    }
+  }, [selectedChannel])
+
+  useEffect(() => {
+    if (!selectedChannelId) {
+      setMessages([])
+      setMessagesError(null)
+      return
+    }
+    if (!selectedChannel) {
+      setMessages([])
+      setMessagesError(null)
+      return
+    }
+    void loadMessages()
+  }, [selectedChannelId, selectedChannel, loadMessages])
+
+  // Keep `messageManager` in sync with the currently selected channel so it can decrypt
+  // incoming gateway events and emit only relevant messages.
+  useEffect(() => {
+    messageManager.setActiveChannel(selectedChannel)
+    return () => {
+      messageManager.setActiveChannel(null)
+    }
+  }, [selectedChannel])
+
+  useEffect(() => {
+    messageManager.setOnMessageCreate(handleIncomingMessage)
+    return () => {
+      messageManager.setOnMessageCreate(null)
+    }
+  }, [handleIncomingMessage])
+
+  useEffect(() => {
+    if (!bottomRef.current) return
+    if (messagesLoading) return
+    bottomRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' })
+  }, [messagesLoading, messages.length])
+
+  // No polling / realtime updates in this UI.
 
   const loadChannels = useCallback(async () => {
     setLoading(true)
@@ -278,6 +382,14 @@ export default function MessagesPage() {
         setEditingName(false)
         setEditName('')
         setEditNameError(null)
+
+        setMessages([])
+        setMessagesLoading(false)
+        setMessagesError(null)
+        setDraft('')
+        setSendError(null)
+        setSendLoading(false)
+        clearAttachment()
       }
       setLeaveConfirm(null)
     } catch (e) {
@@ -481,24 +593,233 @@ export default function MessagesPage() {
 
               <div className="flex min-h-0 flex-1 overflow-hidden">
                 <div className="flex min-h-0 flex-1 flex-col">
-                  <div className="flex min-h-0 flex-1 items-center justify-center px-4 py-6">
-                    <p className="text-sm text-[color:var(--text-muted)]">
-                      Messages will appear here.
-                    </p>
+                  <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
+                    {messagesLoading && (
+                      <div className="space-y-2" aria-label="Loading messages">
+                        {Array.from({ length: 6 }, (_, i) => (
+                          <Card key={i} className="h-14 skeleton-pulse" />
+                        ))}
+                      </div>
+                    )}
+
+                    {!messagesLoading && messagesError && (
+                      <Card className="p-4">
+                        <p className="text-sm text-[color:var(--text-muted)]" role="alert">
+                          {messagesError}
+                        </p>
+                        <div className="mt-3">
+                          <Button type="button" variant="ghost" size="sm" onClick={() => void loadMessages()}>
+                            Retry
+                          </Button>
+                        </div>
+                      </Card>
+                    )}
+
+                    {!messagesLoading && !messagesError && messages.length === 0 && (
+                      <div className="flex h-full items-center justify-center py-10">
+                        <p className="text-sm text-[color:var(--text-muted)]">No messages yet.</p>
+                      </div>
+                    )}
+
+                    {!messagesLoading && !messagesError && messages.length > 0 && (
+                      <ul className="space-y-2" role="list" aria-label="Messages">
+                        {messages.map((m) => {
+                          const author = selectedMembers.find((u) => u.user_id === m.author_id) ?? null
+                          const isOwn = currentUserId && m.author_id === currentUserId
+                          return <Message key={m.message_id} message={m} author={author} isOwn={!!isOwn} />
+                        })}
+                        <li ref={bottomRef} className="h-0 list-none" />
+                      </ul>
+                    )}
                   </div>
-                  <div className="border-t border-[color:var(--card-border)] p-3">
+
+                  <form
+                    className="border-t border-[color:var(--card-border)] p-3"
+                    onSubmit={(e) => {
+                      e.preventDefault()
+                      if (!selectedChannel) return
+                      if (sendLoading) return
+
+                      setSendError(null)
+                      const trimmed = (draft ?? '').trim()
+                      let finalText = trimmed
+
+                      if (!finalText && attachment?.file?.name) {
+                        finalText = attachment.file.name
+                      }
+
+                      if (!finalText) return
+
+                      const payload = {
+                        content: new TextEncoder().encode(finalText).buffer,
+                      }
+
+                      setSendLoading(true)
+                      Promise.resolve()
+                        .then(() => messageManager.sendMessage(selectedChannel, payload))
+                        .then(async (res) => {
+                          if (!res?.success) {
+                            setSendError(res?.error?.message ?? 'Could not send message')
+                            return
+                          }
+
+                          // Avoid re-fetching the whole message history: decrypt + append locally.
+                          const created = res?.data
+
+                          let decryptedContent = created?.content ?? null
+                          try {
+                            if (decryptedContent && selectedChannel?.shared_key) {
+                              decryptedContent = await decryptB64Sym(
+                                decryptedContent,
+                                selectedChannel.shared_key,
+                              )
+                            }
+                          } catch {
+                            decryptedContent = null
+                          }
+
+                          const newMessage = { ...created, content: decryptedContent }
+
+                          setMessages((prev) => {
+                            const prevList = prev ?? []
+                            if (prevList.some((m) => m.message_id === newMessage.message_id)) {
+                              return prevList
+                            }
+                            // `messageManager.getMessages()` returns oldest-first, so append.
+                            return [...prevList, newMessage].slice(-50)
+                          })
+
+                          setDraft('')
+                          clearAttachment()
+                        })
+                        .catch((err) => {
+                          console.error(err)
+                          setSendError(err?.message ?? 'Could not send message')
+                        })
+                        .finally(() => setSendLoading(false))
+                    }}
+                  >
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0]
+                        if (!file) return
+                        clearAttachment()
+                        setAttachment({ kind: 'file', file })
+                        e.target.value = ''
+                      }}
+                    />
+                    <input
+                      ref={imageInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0]
+                        if (!file) return
+                        clearAttachment()
+                        const previewUrl = URL.createObjectURL(file)
+                        setAttachment({ kind: 'image', file, previewUrl })
+                        e.target.value = ''
+                      }}
+                    />
+
                     <div className="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        size="iconSm"
+                        variant="ghost"
+                        aria-label="Attach file"
+                        disabled={!selectedChannel || sendLoading}
+                        onClick={() => fileInputRef.current?.click()}
+                      >
+                        <span className="material-symbols-outlined text-base" aria-hidden>
+                          attach_file
+                        </span>
+                      </Button>
+
+                      <Button
+                        type="button"
+                        size="iconSm"
+                        variant="ghost"
+                        aria-label="Attach image"
+                        disabled={!selectedChannel || sendLoading}
+                        onClick={() => imageInputRef.current?.click()}
+                      >
+                        <span className="material-symbols-outlined text-base" aria-hidden>
+                          image
+                        </span>
+                      </Button>
+
                       <input
                         type="text"
-                        className="w-full rounded-button border border-[color:var(--card-border)] bg-[color:var(--card-bg)] px-3 py-2 text-sm text-[color:var(--text-primary)] placeholder:text-[color:var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[color:var(--accent)]"
-                        placeholder="Message (coming soon)…"
-                        disabled
+                        className="w-full rounded-button border border-[color:var(--card-border)] bg-[color:var(--card-bg)] px-3 py-2 text-sm text-[color:var(--text-primary)] placeholder:text-[color:var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[color:var(--accent)] disabled:opacity-60"
+                        placeholder="Message"
+                        value={draft}
+                        disabled={!selectedChannel || sendLoading}
+                        onChange={(e) => {
+                          setDraft(e.target.value)
+                          setSendError(null)
+                        }}
                       />
-                      <Button type="button" size="sm" disabled>
+
+                      <Button
+                        type="submit"
+                        size="sm"
+                        disabled={!selectedChannel || sendLoading || (!draft?.trim() && !attachment?.file?.name)}
+                      >
                         Send
                       </Button>
                     </div>
-                  </div>
+
+                    {attachment?.file ? (
+                      <div className="mt-2 flex items-center justify-between gap-2 rounded-button border border-[color:var(--card-border)] bg-[color:var(--card-bg)] px-2 py-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          {attachment.kind === 'image' && attachment.previewUrl ? (
+                            <img
+                              src={attachment.previewUrl}
+                              alt=""
+                              className="h-10 w-10 rounded-button border border-[color:var(--card-border)] object-cover"
+                            />
+                          ) : (
+                            <div className="flex h-10 w-10 items-center justify-center rounded-button border border-[color:var(--card-border)] bg-[color:var(--card-bg)]">
+                              <span className="material-symbols-outlined text-base" aria-hidden>
+                                insert_drive_file
+                              </span>
+                            </div>
+                          )}
+                          <div className="min-w-0">
+                            <div className="truncate text-sm font-medium text-[color:var(--text-primary)]">{attachment.file.name}</div>
+                            {(!draft || !draft.trim()) && (
+                              <div className="text-xs text-[color:var(--text-muted)]">
+                                Upload not supported yet; sending filename as text.
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <Button
+                          type="button"
+                          size="iconSm"
+                          variant="text"
+                          className="text-[color:var(--text-muted)]"
+                          onClick={() => clearAttachment()}
+                          aria-label="Remove attachment"
+                        >
+                          <span className="material-symbols-outlined text-base" aria-hidden>
+                            close
+                          </span>
+                        </Button>
+                      </div>
+                    ) : null}
+
+                    {sendError && (
+                      <div className="mt-2 text-xs text-red-500" role="alert">
+                        {sendError}
+                      </div>
+                    )}
+                  </form>
                 </div>
 
                 <aside className="hidden w-64 flex-shrink-0 border-l border-[color:var(--card-border)] md:flex md:flex-col">
@@ -704,7 +1025,7 @@ export default function MessagesPage() {
               )
               return merged
             })
-          } catch (e) {
+          } catch {
             // Swallow; members will appear after full reload/select
           }
         }}

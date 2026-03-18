@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useMemo } from 'react'
 
 export default function ContextMenu({
   open,
@@ -9,10 +9,8 @@ export default function ContextMenu({
   preferLeft = false,
   preferUp = false,
 }) {
-  const [position, setPosition] = useState({ x, y, anchorRight: false, anchorBottom: false })
-
-  useEffect(() => {
-    if (!open || x == null || y == null) return
+  const position = useMemo(() => {
+    if (!open || x == null || y == null) return null
 
     const margin = 8
     const approxWidth = 220
@@ -35,10 +33,10 @@ export default function ContextMenu({
       py = Math.min(vh - margin, Math.max(margin, py))
     }
 
-    setPosition({ x: px, y: py, anchorRight, anchorBottom })
+    return { x: px, y: py, anchorRight, anchorBottom }
   }, [open, x, y, preferLeft, preferUp])
 
-  if (!open || position.x == null || position.y == null) return null
+  if (!position) return null
 
   return (
     <div

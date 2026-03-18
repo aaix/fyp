@@ -1,7 +1,7 @@
 import API from "./api";
 import { decryptB64Sym, encryptSymB64, importFromPem, RSAUnwrapSym, RSAWrapSym } from "./keyhandler";
 import { getCurrentSession } from "./session";
-import { B64toUint8Array } from "./utils";
+import { B64toUint8Array, timeFromUUIDv1 } from "./utils";
 
 class ChannelManager {
 
@@ -125,4 +125,124 @@ class ChannelManager {
     
 }
 
+
+class MessageManager {
+    
+    constructor() {
+        this.activeChannel = null;
+        this.onMessageCreateCb = null;
+    }
+
+    setActiveChannel(channel) {
+        this.activeChannel = channel ?? null;
+    }
+
+    setOnMessageCreate(fn) {
+        this.onMessageCreateCb = fn ?? null;
+    }
+
+    async populateEncryptedMessageFields(key, message) {
+
+        const ciphertext = message.content;
+
+        const plaintext = await decryptB64Sym(ciphertext, key);
+
+        message.content = plaintext;
+
+        return message;
+
+    }
+
+    async onMessage(event) {
+        if (!event || event.intent !== 'message_create') return;
+
+        const channel = this.activeChannel;
+        if (!channel) return;
+        if (event.channel_id !== channel.channel_id) return;
+
+        const key = channel.shared_key;
+        if (!key) return;
+
+        let decryptedContent = null;
+        if (event.content) {
+            decryptedContent = await decryptB64Sym(event.content, key);
+        }
+
+
+        const uiMessage = {
+            channel_id: event.channel_id,
+            bucket: null,
+            message_id: event.message_id,
+            message_type: event.message_type,
+            last_edited: null,
+            content: decryptedContent,
+            attachment_asset_id: event.attachment_id ?? null,
+            author_id: event.author_id ?? null,
+        };
+
+            this.onMessageCreateCb?.(uiMessage);
+
+    }
+
+
+    async getMessages(channel, before=null, count=null) {
+
+        const key = channel.shared_key;
+
+        if (!key) {
+            throw new Error("Missing channel key");
+        }
+
+
+        let params = new URLSearchParams();
+        if (before) {
+            params.append("before", before);
+        }
+        if (count) {
+            params.append("count", count);
+        }
+
+        let url = `chat/channel/${channel.channel_id}/messages?${params.toString()}`
+
+
+        const res = await API.GET(url);
+
+        if (!res.success) return res;
+
+        const messages = res.data.messages.map((m) => this.populateEncryptedMessageFields(key, m)).reverse();
+        
+
+        res.data.messages = messages;
+
+        return res;
+    }
+
+    async sendMessage(channel, message) {
+
+        if (message.attachment || message.attachment_type) {
+            throw new Error("Attachments not yet supported")
+        }
+
+
+        const { content } = message;
+
+
+        const key = channel.shared_key;
+
+        if (!key) {
+            throw new Error("Missing channel key");
+        }
+
+        
+        const ciphertext = await encryptSymB64(content, key);
+
+        return await API.POST(`chat/channel/${channel.channel_id}/message`, {
+            content: ciphertext,
+            message_type: 0,
+        })
+
+    }
+}
+
 export const channelManager = new ChannelManager();
+export const messageManager = new MessageManager();
