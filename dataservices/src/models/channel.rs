@@ -7,6 +7,7 @@ use std::collections::HashSet;
 pub struct Channel {
     pub channel_id: value::CqlTimeuuid,
     pub channel_type: i32,
+    pub latest_bucket: i64,
     pub opt_channel_name: Option<Vec<u8>>,
     pub channel_members: HashSet<value::CqlTimeuuid>,
     pub opt_channel_icon_asset_id: Option<value::CqlTimeuuid>,

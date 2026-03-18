@@ -26,9 +26,10 @@ async def get_channel(lazy: LazyGRPC[ChannelServiceStub], channel_id: id_t) -> c
 async def edit_channel(
     lazy: LazyGRPC[ChannelServiceStub],
     channel_id: id_t,
-    channel_name: MaybeUnset[bytes | None],
-    icon_id: MaybeUnset[UUID | None],
-    members: Iterable[pUUID]
+    channel_name: MaybeUnset[bytes | None] = UNSET,
+    icon_id: MaybeUnset[UUID | None] = UNSET,
+    latest_bucket: int | None = None,
+    members: Iterable[pUUID] = (),
 ) -> channel_pb2.ChannelObjectResponse:
     
     update_mask = []
@@ -45,6 +46,7 @@ async def edit_channel(
         opt_channel_name=channel_name if channel_name else None,
         update_mask=FieldMask(paths=update_mask),
         members_to_update=members,
+        last_bucket=latest_bucket
     )
 
     return cast(channel_pb2.ChannelObjectResponse, await lazy.stub.UpdateChannel(msg))

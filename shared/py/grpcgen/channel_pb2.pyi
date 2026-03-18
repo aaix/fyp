@@ -19,18 +19,20 @@ class CreateChannelRequest(_message.Message):
     def __init__(self, channel_type: _Optional[int] = ..., opt_channel_name: _Optional[bytes] = ..., opt_channel_icon_asset_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ...) -> None: ...
 
 class UpdateChannelRequest(_message.Message):
-    __slots__ = ("channel_id", "opt_channel_name", "opt_channel_icon_asset_id", "update_mask", "members_to_update")
+    __slots__ = ("channel_id", "opt_channel_name", "opt_channel_icon_asset_id", "update_mask", "members_to_update", "last_bucket")
     CHANNEL_ID_FIELD_NUMBER: _ClassVar[int]
     OPT_CHANNEL_NAME_FIELD_NUMBER: _ClassVar[int]
     OPT_CHANNEL_ICON_ASSET_ID_FIELD_NUMBER: _ClassVar[int]
     UPDATE_MASK_FIELD_NUMBER: _ClassVar[int]
     MEMBERS_TO_UPDATE_FIELD_NUMBER: _ClassVar[int]
+    LAST_BUCKET_FIELD_NUMBER: _ClassVar[int]
     channel_id: _plib_pb2.pUUID
     opt_channel_name: bytes
     opt_channel_icon_asset_id: _plib_pb2.pUUID
     update_mask: _field_mask_pb2.FieldMask
     members_to_update: _containers.RepeatedCompositeFieldContainer[_plib_pb2.pUUID]
-    def __init__(self, channel_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., opt_channel_name: _Optional[bytes] = ..., opt_channel_icon_asset_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., update_mask: _Optional[_Union[_field_mask_pb2.FieldMask, _Mapping]] = ..., members_to_update: _Optional[_Iterable[_Union[_plib_pb2.pUUID, _Mapping]]] = ...) -> None: ...
+    last_bucket: int
+    def __init__(self, channel_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., opt_channel_name: _Optional[bytes] = ..., opt_channel_icon_asset_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., update_mask: _Optional[_Union[_field_mask_pb2.FieldMask, _Mapping]] = ..., members_to_update: _Optional[_Iterable[_Union[_plib_pb2.pUUID, _Mapping]]] = ..., last_bucket: _Optional[int] = ...) -> None: ...
 
 class ReadChannelRequest(_message.Message):
     __slots__ = ("channel_id",)
@@ -49,18 +51,20 @@ class DeleteChannelResponse(_message.Message):
     def __init__(self) -> None: ...
 
 class ChannelObjectResponse(_message.Message):
-    __slots__ = ("channel_id", "channel_type", "opt_channel_name", "channel_members", "opt_channel_icon_asset_id")
+    __slots__ = ("channel_id", "channel_type", "latest_bucket", "opt_channel_name", "channel_members", "opt_channel_icon_asset_id")
     CHANNEL_ID_FIELD_NUMBER: _ClassVar[int]
     CHANNEL_TYPE_FIELD_NUMBER: _ClassVar[int]
+    LATEST_BUCKET_FIELD_NUMBER: _ClassVar[int]
     OPT_CHANNEL_NAME_FIELD_NUMBER: _ClassVar[int]
     CHANNEL_MEMBERS_FIELD_NUMBER: _ClassVar[int]
     OPT_CHANNEL_ICON_ASSET_ID_FIELD_NUMBER: _ClassVar[int]
     channel_id: _plib_pb2.pUUID
     channel_type: int
+    latest_bucket: int
     opt_channel_name: bytes
     channel_members: _containers.RepeatedCompositeFieldContainer[_plib_pb2.pUUID]
     opt_channel_icon_asset_id: _plib_pb2.pUUID
-    def __init__(self, channel_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., channel_type: _Optional[int] = ..., opt_channel_name: _Optional[bytes] = ..., channel_members: _Optional[_Iterable[_Union[_plib_pb2.pUUID, _Mapping]]] = ..., opt_channel_icon_asset_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ...) -> None: ...
+    def __init__(self, channel_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., channel_type: _Optional[int] = ..., latest_bucket: _Optional[int] = ..., opt_channel_name: _Optional[bytes] = ..., channel_members: _Optional[_Iterable[_Union[_plib_pb2.pUUID, _Mapping]]] = ..., opt_channel_icon_asset_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ...) -> None: ...
 
 class GetUserChannelsRequest(_message.Message):
     __slots__ = ("user_id",)

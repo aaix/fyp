@@ -48,8 +48,8 @@ impl ScyllaChannelServiceServer {
 
         let create_channel_prepared = db().await.prepare(
             "INSERT INTO dataservices.channel \
-                (channel_id, channel_type, opt_channel_name, channel_members, opt_channel_icon_asset_id) \
-                VALUES (?, ?, ?, ?, ?)"
+                (channel_id, channel_type, opt_channel_name, channel_members, opt_channel_icon_asset_id, latest_bucket) \
+                VALUES (?, ?, ?, ?, ?, ?)"
         ).await?;
 
         let read_channel_prepared = db().await.prepare(
@@ -57,7 +57,7 @@ impl ScyllaChannelServiceServer {
         ).await?;
 
         let update_channel_prepared = db().await.prepare(
-            "UPDATE dataservices.channel SET opt_channel_name = ?, opt_channel_icon_asset_id = ? \
+            "UPDATE dataservices.channel SET opt_channel_name = ?, opt_channel_icon_asset_id = ?, latest_bucket = ? \
             WHERE channel_id = ?"
         ).await?;
 
@@ -123,10 +123,11 @@ impl ScyllaChannelServiceServer {
         let channel_id = gen_timeuuid();
         let members: HashSet<CqlTimeuuid> = HashSet::new();
         let asset_id: Option<CqlTimeuuid> = owned.opt_channel_icon_asset_id.map(|u| u.into());
+        let latest_bucket: i64 = 0;
 
         db().await.execute_unpaged(
             &self.create_channel_prepared,
-            (channel_id, owned.channel_type, &owned.opt_channel_name, members, asset_id)
+            (channel_id, owned.channel_type, &owned.opt_channel_name, members, asset_id, latest_bucket)
         ).await?;
 
 
@@ -136,6 +137,7 @@ impl ScyllaChannelServiceServer {
             opt_channel_name: owned.opt_channel_name,
             opt_channel_icon_asset_id: asset_id.map(|i| i.into()),
             channel_members: Vec::new(),
+            latest_bucket: 0,
         }))
     }
 
@@ -152,6 +154,7 @@ impl ScyllaChannelServiceServer {
             opt_channel_name: res.opt_channel_name,
             channel_members: res.channel_members.into_iter().map(Into::into).collect(),
             opt_channel_icon_asset_id: res.opt_channel_icon_asset_id.map(|i| i.into()),
+            latest_bucket: res.latest_bucket,
         })
     }
 
@@ -178,12 +181,13 @@ impl ScyllaChannelServiceServer {
 
         let channel_name = maybe_opt_field!(owned, opt_channel_name, map);
         let channel_icon: MaybeUnset<Option<CqlTimeuuid>> = maybe_opt_field_into!(owned, opt_channel_icon_asset_id, map);
+        let bucket: MaybeUnset<i64> = MaybeUnset::from_option(owned.last_bucket);
 
 
         db().await.execute_unpaged(
             &self.update_channel_prepared,
             (
-                &channel_name, channel_icon, channel_id
+                &channel_name, channel_icon, bucket, channel_id,
             )
         ).await?;
 

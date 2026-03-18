@@ -18,6 +18,7 @@ service MessageService {
 message CreateMessageRequest {
     plib.pUUID channel_id = 1;
     int32 message_type = 2;
+    plib.pUUID author_id = 6;
     optional int64 opt_last_edited = 3;
     optional bytes opt_content = 4;
     optional plib.pUUID opt_attachment_asset_id = 5;
@@ -28,6 +29,7 @@ message MessageObject {
     int64 bucket = 2;
     plib.pUUID message_id = 3;
     int32 message_type = 4;
+    plib.pUUID author_id = 8;
     optional int64 opt_last_edited = 5;
     optional bytes opt_content = 6;
     optional plib.pUUID opt_attachment_asset_id = 7;
@@ -35,7 +37,6 @@ message MessageObject {
 
 message UpdateMessageRequest {
     plib.pUUID channel_id = 1;
-    int64 bucket = 2;
     plib.pUUID message_id = 3;
     int32 message_type = 4;
     optional int64 opt_last_edited = 5;
@@ -46,14 +47,12 @@ message UpdateMessageRequest {
 
 message ReadMessageRequest {
     plib.pUUID channel_id = 1;
-    int64 bucket = 2;
-    plib.pUUID message_id = 3;
+    plib.pUUID message_id = 2;
 }
 
 message DeleteMessageRequest {
     plib.pUUID channel_id = 1;
-    int64 bucket = 2;
-    plib.pUUID message_id = 3;
+    plib.pUUID message_id = 2;
 }
 
 message DeleteMessageResponse {}
@@ -61,7 +60,8 @@ message DeleteMessageResponse {}
 message ReadMessagesRequest {
     plib.pUUID channel_id = 1;
     optional plib.pUUID before = 2;
-    optional uint32 count = 3;
+    int32 count = 3;
+    int64 latest_bucket = 4;
 }
 
 message ReadMessagesResponse {

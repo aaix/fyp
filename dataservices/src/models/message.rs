@@ -2,12 +2,12 @@
 #![allow(nonstandard_style)]
 use scylla::DeserializeRow;
 use scylla::value;
-use uuid;
 #[derive(Debug, DeserializeRow)]
 pub struct Message {
-    pub channel_id: uuid::Uuid,
+    pub channel_id: value::CqlTimeuuid,
     pub bucket: i64,
     pub message_id: value::CqlTimeuuid,
+    pub author_id: value::CqlTimeuuid,
     pub message_type: i32,
     pub opt_last_edited: Option<value::CqlTimestamp>,
     pub opt_content: Option<Vec<u8>>,

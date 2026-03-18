@@ -54,6 +54,7 @@ CREATE TABLE dataservices.relationship (
 CREATE TABLE dataservices.channel (
     channel_id TIMEUUID,
     channel_type INT,
+    latest_bucket BIGINT,
     opt_channel_name BLOB, 
     channel_members set<TIMEUUID>,
     opt_channel_icon_asset_id TIMEUUID, 
@@ -80,9 +81,10 @@ CREATE TABLE dataservices.user_channel (
 
 
 CREATE TABLE dataservices.message (
-    channel_id UUID, -- foreign key: message_channel.channel_id
+    channel_id TIMEUUID, -- foreign key: message_channel.channel_id
     bucket BIGINT, -- bucket to stop partitions from getting too large (100mb max recommended)
     message_id TIMEUUID,
+    author_id TIMEUUID,
     message_type INT,
     opt_last_edited TIMESTAMP,
     opt_content BLOB,

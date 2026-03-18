@@ -21,3 +21,5 @@ CHANNEL_NAME_MIN_LENGTH: Final[int] = 34 # 48b64 34 ciphertext
 CHANNEL_MAX_NUM_MEMBERS: Final[int] = 15
 
 USER_MAX_NUM_DEVICES: Final[int] = 15
+
+MAX_MESSAGES_QUERYABLE: Final[int] = 50

@@ -32,6 +32,7 @@ message UpdateChannelRequest {
     optional plib.pUUID opt_channel_icon_asset_id = 3;
     google.protobuf.FieldMask update_mask = 4;
     repeated plib.pUUID members_to_update = 5;
+    optional int64 last_bucket = 6;
 }
 
 message ReadChannelRequest {
@@ -47,6 +48,7 @@ message DeleteChannelResponse {}
 message ChannelObjectResponse {
     plib.pUUID channel_id = 1;
     int32 channel_type = 2;
+    int64 latest_bucket = 6;
     optional bytes opt_channel_name = 3;
     repeated plib.pUUID channel_members = 4;
     optional plib.pUUID opt_channel_icon_asset_id = 5;

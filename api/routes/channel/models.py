@@ -7,7 +7,7 @@ from api.utils import unwrap
 from shared.py.constraints import CHANNEL_MAX_NUM_MEMBERS
 from shared.py.grpc.channel import ChannelType
 from shared.py.grpc.id import puuid_uuid
-from shared.py.grpcgen import channel_pb2
+from shared.py.grpcgen import channel_pb2, message_pb2
 from shared.py.pydantic.base64 import Base64Input, Base64Output
 from shared.py.pydantic.common import ChannelNameIn, ChannelNameOut
 
@@ -21,6 +21,10 @@ __all__ = (
     "UserChannelEntry",
     "AddChannelMemberRequest",
     "EditChannelBody",
+
+    "NewMessageBody",
+    "NewMessageResponse",
+    "MessagesResponse",
 )
 
 
@@ -88,3 +92,34 @@ class UserChannelEntry(BaseModel):
 
 class ChannelsResponse(BaseModel):
     channels: list[UserChannelEntry]
+
+
+class NewMessageBody(BaseModel):
+    message_type: int
+    content: Base64Input
+
+class NewMessageResponse(BaseModel):
+
+    @classmethod
+    def from_rpc(cls, rpc: message_pb2.MessageObject) -> Self:
+        return cls(
+            channel_id=puuid_uuid(rpc.channel_id) or unwrap(),
+            bucket=rpc.bucket,
+            message_id=puuid_uuid(rpc.message_id) or unwrap(),
+            message_type=rpc.message_type,
+            last_edited=rpc.opt_last_edited,
+            content=rpc.opt_content,
+            attachment_asset_id=puuid_uuid(rpc.opt_attachment_asset_id),
+        )
+
+
+    channel_id: UUID
+    bucket: int
+    message_id: UUID
+    message_type: int
+    last_edited: int | None
+    content: Base64Output | None
+    attachment_asset_id: UUID | None
+
+class MessagesResponse(BaseModel):
+    messages: list[NewMessageResponse]
