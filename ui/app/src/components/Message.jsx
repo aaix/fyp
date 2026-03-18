@@ -46,8 +46,8 @@ function Message({ message, author, isOwn }) {
   const maybeImage = hasAttachment && message?.message_type === 1
 
   return (
-    <li className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}>
-      <div className={`flex gap-2 ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
+    <li className={`flex w-full ${isOwn ? 'justify-end' : 'justify-start'}`}>
+      <div className={`flex w-full min-w-0 gap-2 ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
         {avatarUrl ? (
           <img
             src={avatarUrl}
@@ -59,7 +59,7 @@ function Message({ message, author, isOwn }) {
         )}
 
         <div
-          className={`max-w-[80%] rounded-card border border-[color:var(--card-border)] px-3 py-2 ${
+          className={`min-w-0 max-w-[80%] rounded-card border border-[color:var(--card-border)] px-3 py-2 flex-shrink ${
             isOwn ? 'bg-[color:var(--tab-active-bg)]' : 'bg-[color:var(--card-bg)]'
           }`}
         >
@@ -72,7 +72,11 @@ function Message({ message, author, isOwn }) {
             ) : null}
           </div>
 
-          {text ? <div className="mt-1 whitespace-pre-wrap break-words text-sm text-[color:var(--text-primary)]">{text}</div> : null}
+          {text ? (
+            <div className="mt-1 break-all whitespace-pre-wrap break-words text-sm text-[color:var(--text-primary)]">
+              {text}
+            </div>
+          ) : null}
 
           {hasAttachment ? (
             <div className="mt-2">
