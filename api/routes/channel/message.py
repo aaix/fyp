@@ -12,7 +12,7 @@ from api.utils import ResourceNotFoundRpcHandler
 from shared.py.grpc.channel import edit_channel
 from shared.py.grpc.id import uuid_puuid
 from shared.py.grpc.lazy import LazyGRPC
-from shared.py.grpcgen import channel_pb2_grpc, message_pb2, message_pb2_grpc
+from shared.py.grpcgen import channel_pb2_grpc, internalmessage_pb2, message_pb2, message_pb2_grpc
 from shared.py.constraints import MAX_MESSAGES_QUERYABLE
 from shared.py.intraservice import client as intraclient
 
@@ -36,14 +36,25 @@ async def create_message(s: SessionParam, channel: ChannelParam, body: NewMessag
 
     channel_membership_check(s, channel)
     
+    author_id = uuid_puuid(s.user_id)
+
     message = cast(message_pb2.MessageObject, await grpcmessage.stub.CreateMessage(message_pb2.CreateMessageRequest(
         channel_id=channel.channel_id,
         message_type=body.message_type,
         opt_last_edited=None,
         opt_content=body.content,
         opt_attachment_asset_id=None,
-        author_id=uuid_puuid(s.user_id),
+        author_id=author_id,
     )))
+
+    await intraclient.fan_out(channel.channel_id, channel.channel_members, "message_create", lambda m_id: internalmessage_pb2.EventMessageCreate(
+        author_id=author_id,
+        content=body.content,
+        message_type=body.message_type,
+        channel_id=channel.channel_id,
+        message_id=message.message_id,
+        attachment_id=None,
+    ))
 
     if message.bucket != channel.latest_bucket:
         # update channel bucket

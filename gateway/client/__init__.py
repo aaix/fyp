@@ -139,6 +139,8 @@ class GatewayClient:
                 await self.handle_internal_channel_create(e.payload)
             case "friendship_update":
                 await self.handle_internal_friendship_update(e.payload)
+            case "message_create":
+                await self.handle_internal_message_create(e.payload)
     
 
     @tracer.start_as_current_span("Client.handle_internal::friendship_update")
@@ -162,6 +164,19 @@ class GatewayClient:
             channel_id=puuid_uuid(d.channel_id) or unwrap(),
             channel_name=d.encrypted_channel_name or None,
             encrypted_channel_key=d.encrypted_channel_key
+        )
+        await self.send_event(event)
+    
+
+    @tracer.start_as_current_span("Client.handle_internal::message_create")
+    async def handle_internal_message_create(self, d: internalmessage_pb2.EventMessageCreate):
+        event = events.MessageCreateEvent(
+            message_id=puuid_uuid(d.message_id) or unwrap(),
+            channel_id=puuid_uuid(d.channel_id) or unwrap(),
+            content=d.content,
+            message_type=d.message_type,
+            attachment_id=puuid_uuid(d.attachment_id),
+            author_id=puuid_uuid(d.author_id) or unwrap(),
         )
         await self.send_event(event)
     

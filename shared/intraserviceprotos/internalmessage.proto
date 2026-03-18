@@ -15,6 +15,7 @@ message IntraMessage {
         EventSessionCreate session_create = 3;
         EventChannelCreate channel_create = 4;
         EventFriendshipUpdate friendship_update = 5;
+        EventMessageCreate message_create = 6;
     }
 }
 
@@ -31,4 +32,13 @@ message EventChannelCreate {
 message EventFriendshipUpdate {
     plib.pUUID peer_id = 1;
     optional uint32 relationship_type = 2;
+}
+
+message EventMessageCreate {
+    plib.pUUID author_id = 1;
+    plib.pUUID message_id = 5;
+    plib.pUUID channel_id = 4;
+    optional bytes content = 2;
+    int32 message_type = 3;
+    optional plib.pUUID attachment_id = 6;
 }

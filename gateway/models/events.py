@@ -10,7 +10,7 @@ from shared.py.pydantic.base64 import Base64Output
 from shared.py.pydantic.common import ChannelNameOut
 from shared.py.pydantic.user import UserSearchResponse
 
-type Event_t = MessageEvent | ChannelCreateEvent | HintEvent | UsersEvent | SessionCreateEvent | FriendEvent
+type Event_t = MessageEvent | ChannelCreateEvent | HintEvent | UsersEvent | SessionCreateEvent | FriendEvent | MessageCreateEvent
 
 class BaseEvent(BaseModel):
     """Base class for business logic events sent from the gateway"""
@@ -49,3 +49,12 @@ class FriendEvent(BaseEvent):
     intent: Literal["friendship_update"] = "friendship_update"
     peer_user_id: UUID
     relationship_type: RelationshipType | None
+
+class MessageCreateEvent(BaseEvent):
+    intent: Literal["message_create"] = "message_create"
+    channel_id: UUID
+    message_id: UUID
+    content: Base64Output | None
+    message_type: int
+    attachment_id: UUID | None
+    author_id: UUID

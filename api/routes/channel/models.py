@@ -110,6 +110,7 @@ class NewMessageResponse(BaseModel):
             last_edited=rpc.opt_last_edited,
             content=rpc.opt_content,
             attachment_asset_id=puuid_uuid(rpc.opt_attachment_asset_id),
+            author_id=puuid_uuid(rpc.author_id) or unwrap()
         )
 
 
@@ -120,6 +121,7 @@ class NewMessageResponse(BaseModel):
     last_edited: int | None
     content: Base64Output | None
     attachment_asset_id: UUID | None
+    author_id: UUID
 
 class MessagesResponse(BaseModel):
     messages: list[NewMessageResponse]

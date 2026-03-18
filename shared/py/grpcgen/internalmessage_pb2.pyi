@@ -8,18 +8,20 @@ from typing import ClassVar as _ClassVar, Optional as _Optional, Union as _Union
 DESCRIPTOR: _descriptor.FileDescriptor
 
 class IntraMessage(_message.Message):
-    __slots__ = ("to", "traceparent", "session_create", "channel_create", "friendship_update")
+    __slots__ = ("to", "traceparent", "session_create", "channel_create", "friendship_update", "message_create")
     TO_FIELD_NUMBER: _ClassVar[int]
     TRACEPARENT_FIELD_NUMBER: _ClassVar[int]
     SESSION_CREATE_FIELD_NUMBER: _ClassVar[int]
     CHANNEL_CREATE_FIELD_NUMBER: _ClassVar[int]
     FRIENDSHIP_UPDATE_FIELD_NUMBER: _ClassVar[int]
+    MESSAGE_CREATE_FIELD_NUMBER: _ClassVar[int]
     to: _plib_pb2.pUUID
     traceparent: _traceparent_pb2.TraceParent
     session_create: EventSessionCreate
     channel_create: EventChannelCreate
     friendship_update: EventFriendshipUpdate
-    def __init__(self, to: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., traceparent: _Optional[_Union[_traceparent_pb2.TraceParent, _Mapping]] = ..., session_create: _Optional[_Union[EventSessionCreate, _Mapping]] = ..., channel_create: _Optional[_Union[EventChannelCreate, _Mapping]] = ..., friendship_update: _Optional[_Union[EventFriendshipUpdate, _Mapping]] = ...) -> None: ...
+    message_create: EventMessageCreate
+    def __init__(self, to: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., traceparent: _Optional[_Union[_traceparent_pb2.TraceParent, _Mapping]] = ..., session_create: _Optional[_Union[EventSessionCreate, _Mapping]] = ..., channel_create: _Optional[_Union[EventChannelCreate, _Mapping]] = ..., friendship_update: _Optional[_Union[EventFriendshipUpdate, _Mapping]] = ..., message_create: _Optional[_Union[EventMessageCreate, _Mapping]] = ...) -> None: ...
 
 class EventSessionCreate(_message.Message):
     __slots__ = ("ipaddress",)
@@ -44,3 +46,19 @@ class EventFriendshipUpdate(_message.Message):
     peer_id: _plib_pb2.pUUID
     relationship_type: int
     def __init__(self, peer_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., relationship_type: _Optional[int] = ...) -> None: ...
+
+class EventMessageCreate(_message.Message):
+    __slots__ = ("author_id", "message_id", "channel_id", "content", "message_type", "attachment_id")
+    AUTHOR_ID_FIELD_NUMBER: _ClassVar[int]
+    MESSAGE_ID_FIELD_NUMBER: _ClassVar[int]
+    CHANNEL_ID_FIELD_NUMBER: _ClassVar[int]
+    CONTENT_FIELD_NUMBER: _ClassVar[int]
+    MESSAGE_TYPE_FIELD_NUMBER: _ClassVar[int]
+    ATTACHMENT_ID_FIELD_NUMBER: _ClassVar[int]
+    author_id: _plib_pb2.pUUID
+    message_id: _plib_pb2.pUUID
+    channel_id: _plib_pb2.pUUID
+    content: bytes
+    message_type: int
+    attachment_id: _plib_pb2.pUUID
+    def __init__(self, author_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., message_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., channel_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., content: _Optional[bytes] = ..., message_type: _Optional[int] = ..., attachment_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ...) -> None: ...
