@@ -196,9 +196,11 @@ export async function RSAunwrapRSAwithSym(wrapper_private, buffer, extractable =
     ['unwrapKey']
   )
 
-  let additionalData = undefined;
+  let algo;
   if (version > 1) {
-    additionalData = iv;
+    algo = { name: 'AES-GCM', length: 256, iv: iv, additionalData: iv};
+  } else {
+    algo = { name: 'AES-GCM', length: 256, iv: iv }
   }
 
 
@@ -206,7 +208,7 @@ export async function RSAunwrapRSAwithSym(wrapper_private, buffer, extractable =
     'pkcs8',
     private_wrapped,
     sym,
-    { name: 'AES-GCM', length: 256, iv: iv, additionalData},
+    algo,
     { name: 'RSA-OAEP', hash: 'SHA-256' },
     extractable,
     ['decrypt', 'unwrapKey']
