@@ -26,6 +26,12 @@ services:
     ports:
       - 8080:16686
 
+  discoverystore-0:
+    networks:
+      - shared-network
+    image: europe-west2-docker.pkg.dev/fyp-25coc251/az7-backend/discoverystore:latest
+
+
   dataservices-0:
     networks:
       shared-network:
@@ -47,8 +53,11 @@ services:
         DEPLOYMENT_MODE: prod
         DATASERVICES_URI: "dataservices-0:3114"
         OTEL_URI: "http://jaeger:4317"
+        VALKEY_URI: discoverystore-0:6379
+
     depends_on:
       - dataservices-0
+      - discoverystore-0
     ports:
       - 8081:8081
   
@@ -63,11 +72,12 @@ services:
         OTEL_URI: "http://jaeger:4317"
         API_SESSION_SIGNING_KEY: ${SECRET_KEY_API_SESSION_SIGN}
         API_SESSION_ENCRYPTION_KEY: ${SECRET_KEY_API_SESSION_ENCRYPT}
+        VALKEY_URI: discoverystore-0:6379
     ports:
       - "80:80"
-    volumes:
-      - ./certs/cert.pem:/az7/api/certs/cert.pem:ro
-      - ./certs/key.pem:/az7/api/certs/key.pem:ro
+    depends_on:
+      - discoverystore-0
+
 
 
   scylla-seed:
