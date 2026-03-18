@@ -26,6 +26,7 @@ async def get_channel(lazy: LazyGRPC[ChannelServiceStub], channel_id: id_t) -> c
 async def edit_channel(
     lazy: LazyGRPC[ChannelServiceStub],
     channel_id: id_t,
+    *,
     channel_name: MaybeUnset[bytes | None] = UNSET,
     icon_id: MaybeUnset[UUID | None] = UNSET,
     latest_bucket: int | None = None,

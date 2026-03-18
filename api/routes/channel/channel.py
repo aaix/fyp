@@ -130,9 +130,9 @@ async def patch_channel(s: SessionParam, channel: ChannelParam, body: EditChanne
     rpc = await edit_channel(
         grpcchannel,
         channel_id,
-        channel_name,
-        channel_icon,
-        channel.channel_members
+        channel_name=channel_name,
+        icon_id=channel_icon,
+        members=channel.channel_members
     )
 
     await intraclient.fan_out(channel.channel_id, channel.channel_members, "channel_create", lambda _user_id: internalmessage_pb2.EventChannelCreate(
