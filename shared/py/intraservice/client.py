@@ -6,4 +6,5 @@ __all__ = (
     "send_to_remote",
     "BigPictureClient",
     "Pub",
+    "fan_out",
 )
