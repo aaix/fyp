@@ -53,6 +53,12 @@ macro_rules! profile_statement {
             $name,
             status = "pending"
         );
-        $stmt.instrument(span)
+        let span_clone = span.clone();
+        let res = $stmt.instrument(span);
+        if let Err(e) = res.inner() {
+            span_clone.record("status", "error");
+            span_clone.record("az.dataservices.error", format!("{e:?}"));
+        };
+        res.into_inner()
     }}
 }

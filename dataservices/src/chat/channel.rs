@@ -9,7 +9,6 @@ use std::collections::HashSet;
 use futures::{StreamExt, future::join_all};
 use scylla::{statement::prepared::PreparedStatement, value::{CqlTimeuuid, MaybeUnset}};
 use tonic::{Response, Status, async_trait};
-use tracing::Level;
 
 use crate::{db_conn::db, errors::DSResult, helpers::{gen_timeuuid, time_now}, maybe_opt_field, maybe_opt_field_into, models::{channel::Channel, user_channel::UserChannel}, profile_statement, protos::dataservices::channel_service::{AddChannelMembersRequest, AddChannelMembersResponse, ChannelMemberObject, ChannelObjectResponse, CreateChannelRequest, DeleteChannelResponse, GetUserChannelsRequest, ReadChannelRequest, RemoveChannelMembersRequest, RemoveChannelMembersResponse, UpdateChannelMemberRequest, UpdateChannelMemberResponse, UpdateChannelRequest, UserChannelsResponse, channel_service_server::{ChannelService, ChannelServiceServer}}, req_ref, req_tuuid};
 

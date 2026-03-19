@@ -1,9 +1,9 @@
 use futures::StreamExt;
-use scylla::{statement::prepared::PreparedStatement, value::{CqlTimeuuid, MaybeUnset}};
+use scylla::{statement::prepared::PreparedStatement, value::CqlTimeuuid};
 use tonic::{Request, Response, async_trait};
 use uuid::Uuid;
 
-use crate::{db_conn::db, errors::DSResult, helpers::gen_timeuuid, models::message::Message, protos::dataservices::message_service::{
+use crate::{db_conn::db, errors::DSResult, helpers::gen_timeuuid, models::message::Message, profile_statement, protos::dataservices::message_service::{
     CreateMessageRequest, DeleteMessageRequest, DeleteMessageResponse, MessageObject, ReadMessageRequest, ReadMessagesRequest, ReadMessagesResponse, UpdateMessageRequest, message_service_server::{MessageService, MessageServiceServer}
 }, req_tuuid};
 
@@ -147,7 +147,7 @@ impl ScyllaMessageServiceServer {
 
         let mut pager = match before {
             Some(b) =>  {
-                db().await.execute_iter(
+                profile_statement!("read_messages_prepared", db().await.execute_iter(
                     self.read_messages_prepared.clone(), 
                     (
                         channel_id,
@@ -155,19 +155,21 @@ impl ScyllaMessageServiceServer {
                         b,
                         count
                     )
-                ).await
+                ).await)
             }
             None => {
-                db().await.execute_iter(
+                profile_statement!("read_messages_prepared_no_before", db().await.execute_iter(
                     self.read_messages_prepared_no_before.clone(), 
                     (
                         channel_id,
                         bucket,
                         count
                     )
-                ).await
+                ).await)
             }
         }?.rows_stream::<Message>()?;
+
+        let _guard: tracing::Span = tracing::span!(tracing::Level::INFO, "do_paging");
 
         let mut out = Vec::new();
 
@@ -185,6 +187,7 @@ impl ScyllaMessageServiceServer {
                 author_id: Some(row.author_id.into())
             })
         }
+        drop(_guard);
 
 
         Ok(Response::new(ReadMessagesResponse { messages: out }))
