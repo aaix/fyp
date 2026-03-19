@@ -35,10 +35,14 @@ export const userManager = new UserManager();
 
 export class RelationshipManager {
 
-    constructor() {
+    _createPromise() {
         this.relationships = new Promise((resolve, reject) => {
             this._fetchRelationships().then((v) => resolve(v)).catch((e) => reject(e));
         });
+    }
+
+    constructor() {
+        this._createPromise();
 
         this.richRelationships = {};
     }
@@ -60,10 +64,16 @@ export class RelationshipManager {
     }
 
     async getRelationships(rel_type) {
-        const res = await this.relationships;
+        let res = await this.relationships;
 
-        // short circuit errors
-        if (!res?.success) return res;
+        // retry errors
+        if (!res?.success) {
+            this._createPromise();
+            res = await this.relationships;
+
+            if (!res?.success) return res;
+
+        };
 
         const relationships = Object.entries(relationshipManager.richRelationships).map(([peer_id, relationship]) => ({
             peer_id,
@@ -89,6 +99,8 @@ export class RelationshipManager {
 
     async _fetchRelationships() {
         const res = await API.GET("user/relationships");
+
+        if (!res.success) return res;
 
         for (let rel of res.data.relationships) {
             this.updateRelationships(rel.peer_id, rel.relationship)
