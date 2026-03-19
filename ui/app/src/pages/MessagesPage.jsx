@@ -25,6 +25,8 @@ export default function MessagesPage() {
   const [selectedChannelId, setSelectedChannelId] = useState(null)
   const [selectedChannel, setSelectedChannel] = useState(null)
   const selectedChannelIdRef = useRef(null)
+  const selectedChannelRef = useRef(null)
+  const lastLoadedChannelIdRef = useRef(null)
   const [selectedMembers, setSelectedMembers] = useState([])
   const [channelLoading, setChannelLoading] = useState(false)
   const [channelError, setChannelError] = useState(null)
@@ -44,6 +46,16 @@ export default function MessagesPage() {
   const [messages, setMessages] = useState([])
   const [messagesLoading, setMessagesLoading] = useState(false)
   const [messagesError, setMessagesError] = useState(null)
+
+  const PAGE_SIZE = 20
+  const [hasMoreBefore, setHasMoreBefore] = useState(true)
+  const [olderMessagesLoading, setOlderMessagesLoading] = useState(false)
+
+  const messagesScrollRef = useRef(null)
+  const shouldAutoScrollRef = useRef(false)
+  const scrollLockUntilRef = useRef(0)
+  const nextScrollBehaviorRef = useRef('smooth')
+  const fillViewportRef = useRef(false)
 
   const [draft, setDraft] = useState('')
   const [sendLoading, setSendLoading] = useState(false)
@@ -85,8 +97,14 @@ export default function MessagesPage() {
     setMessages((prev) => {
       const prevList = prev ?? []
       if (prevList.some((m) => m.message_id === incomingMessage.message_id)) return prevList
-      // New gateway-created messages are newest; keep newest 50.
-      return [...prevList, incomingMessage].slice(-50)
+      // Only auto-scroll if the user is already at/near the bottom.
+      const el = messagesScrollRef.current
+      const atBottom = el ? el.scrollHeight - el.scrollTop - el.clientHeight < 120 : true
+      if (atBottom) {
+        nextScrollBehaviorRef.current = 'smooth'
+        shouldAutoScrollRef.current = true
+      }
+      return [...prevList, incomingMessage]
     })
   }, [])
 
@@ -153,12 +171,16 @@ export default function MessagesPage() {
     })
   }, [])
 
+  const oldestMessageId = messages[0]?.message_id
+  const lastMessageId = messages[messages.length - 1]?.message_id
+
   const loadMessages = useCallback(async () => {
-    if (!selectedChannel) return
+    const channel = selectedChannelRef.current
+    if (!channel) return
     setMessagesLoading(true)
     setMessagesError(null)
     try {
-      const res = await messageManager.getMessages(selectedChannel, null, 50)
+      const res = await messageManager.getMessages(channel, null, PAGE_SIZE)
       if (!res?.success) {
         setMessagesError(res?.error?.message ?? 'Could not load messages')
         setMessages([])
@@ -169,6 +191,11 @@ export default function MessagesPage() {
       const settled = await Promise.allSettled(raw)
       const ok = settled.filter((s) => s.status === 'fulfilled').map((s) => s.value)
       setMessages(ok)
+
+      // If we got a full page, optimistically assume there's more older history.
+      setHasMoreBefore(ok.length === PAGE_SIZE && ok.length > 0)
+      nextScrollBehaviorRef.current = 'auto'
+      shouldAutoScrollRef.current = true
     } catch (e) {
       console.error(e)
       setMessagesError(e?.message ?? 'Could not load messages')
@@ -176,30 +203,105 @@ export default function MessagesPage() {
     } finally {
       setMessagesLoading(false)
     }
+  }, [PAGE_SIZE])
+
+  useEffect(() => {
+    selectedChannelRef.current = selectedChannel
   }, [selectedChannel])
 
   useEffect(() => {
     if (!selectedChannelId) {
-      setMessages([])
-      setMessagesError(null)
-      return
+      lastLoadedChannelIdRef.current = null
     }
-    if (!selectedChannel) {
-      setMessages([])
-      setMessagesError(null)
-      return
-    }
+    // Clear immediately on channel switch; load happens once the channel is ready.
+    setMessages([])
+    setMessagesError(null)
+    setHasMoreBefore(true)
+    setOlderMessagesLoading(false)
+    shouldAutoScrollRef.current = false
+    fillViewportRef.current = false
+  }, [selectedChannelId])
+
+  useEffect(() => {
+    if (!selectedChannelId) return
+    if (!selectedChannel?.shared_key) return
+    if (lastLoadedChannelIdRef.current === selectedChannelId) return
+
+    lastLoadedChannelIdRef.current = selectedChannelId
     void loadMessages()
-  }, [selectedChannelId, selectedChannel, loadMessages])
+  }, [selectedChannelId, selectedChannel?.shared_key, loadMessages])
+
+  const loadOlderMessages = useCallback(async () => {
+    if (olderMessagesLoading) return
+    if (!hasMoreBefore) return
+    if (!selectedChannelRef.current) return
+    if (!oldestMessageId) return
+
+    const channel = selectedChannelRef.current
+    const before = oldestMessageId
+
+    setOlderMessagesLoading(true)
+
+    const el = messagesScrollRef.current
+    const prevScrollTop = el?.scrollTop ?? null
+    const prevScrollHeight = el?.scrollHeight ?? null
+
+    try {
+      const res = await messageManager.getMessages(channel, before, PAGE_SIZE)
+      if (!res?.success) {
+        setHasMoreBefore(false)
+        return
+      }
+
+      const raw = res?.data?.messages ?? []
+      const settled = await Promise.allSettled(raw)
+      const ok = settled.filter((s) => s.status === 'fulfilled').map((s) => s.value)
+
+      setMessages((prev) => {
+        const prevList = prev ?? []
+        const existing = new Set(prevList.map((m) => m.message_id))
+        const filtered = ok.filter((m) => !existing.has(m.message_id))
+        return [...filtered, ...prevList]
+      })
+
+      setHasMoreBefore(ok.length === PAGE_SIZE && ok.length > 0)
+    } catch (e) {
+      console.error(e)
+      setHasMoreBefore(false)
+    } finally {
+      setOlderMessagesLoading(false)
+      // Keep the viewport anchored when prepending older messages.
+      requestAnimationFrame(() => {
+        const root = messagesScrollRef.current
+        if (!root) return
+        if (prevScrollTop == null || prevScrollHeight == null) return
+        const nextScrollHeight = root.scrollHeight
+        root.scrollTop = prevScrollTop + (nextScrollHeight - prevScrollHeight)
+      })
+    }
+  }, [PAGE_SIZE, hasMoreBefore, oldestMessageId, olderMessagesLoading])
+
+  const handleMessagesScroll = useCallback(() => {
+    // Load older history only when user scrolls near the top.
+    const root = messagesScrollRef.current
+    if (!root) return
+    if (Date.now() < scrollLockUntilRef.current) return
+    if (messagesLoading) return
+    if (olderMessagesLoading) return
+    if (shouldAutoScrollRef.current) return
+    if (root.scrollHeight <= root.clientHeight + 1) return
+    if (root.scrollTop > 80) return
+    void loadOlderMessages()
+  }, [loadOlderMessages, messagesLoading, olderMessagesLoading])
 
   // Keep `messageManager` in sync with the currently selected channel so it can decrypt
   // incoming gateway events and emit only relevant messages.
   useEffect(() => {
-    messageManager.setActiveChannel(selectedChannel)
+    messageManager.setActiveChannel(selectedChannelRef.current)
     return () => {
       messageManager.setActiveChannel(null)
     }
-  }, [selectedChannel])
+  }, [selectedChannelId, selectedChannel?.shared_key])
 
   useEffect(() => {
     messageManager.setOnMessageCreate(handleIncomingMessage)
@@ -215,19 +317,60 @@ export default function MessagesPage() {
 
   // Focus the message input when a channel is opened.
   useEffect(() => {
-    if (!selectedChannelId || !selectedChannel) return
+    if (!selectedChannelId || !selectedChannel?.shared_key) return
     // Wait a tick so the input is mounted and enabled.
     const t = setTimeout(() => {
       messageInputRef.current?.focus?.()
     }, 0)
     return () => clearTimeout(t)
-  }, [selectedChannelId, selectedChannel])
+  }, [selectedChannelId, selectedChannel?.shared_key])
 
   useEffect(() => {
     if (!bottomRef.current) return
     if (messagesLoading) return
-    bottomRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' })
-  }, [messagesLoading, messages.length])
+    if (!shouldAutoScrollRef.current) return
+
+    // Prevent `onScroll` from firing pagination while the browser is still applying
+    // the programmatic scroll to the bottom.
+    scrollLockUntilRef.current = Date.now() + 400
+    fillViewportRef.current = true
+
+    requestAnimationFrame(() => {
+      bottomRef.current?.scrollIntoView({ behavior: nextScrollBehaviorRef.current, block: 'end' })
+      shouldAutoScrollRef.current = false
+    })
+  }, [messagesLoading, lastMessageId, hasMoreBefore, olderMessagesLoading, loadOlderMessages])
+
+  // If the screen is tall, keep fetching older pages until we actually fill the viewport.
+  // We stop as soon as we either run out of history or the user scrolls away from the bottom.
+  useEffect(() => {
+    if (!fillViewportRef.current) return
+    if (!selectedChannelId) return
+    if (messagesLoading) return
+    if (olderMessagesLoading) return
+
+    const root = messagesScrollRef.current
+    if (!root) return
+
+    const remainingToBottom = root.scrollHeight - root.scrollTop - root.clientHeight
+    const atBottom = remainingToBottom < 6
+    if (!atBottom) {
+      fillViewportRef.current = false
+      return
+    }
+
+    if (!hasMoreBefore) {
+      fillViewportRef.current = false
+      return
+    }
+
+    // No scrollbar / not enough content to fill viewport.
+    if (root.scrollHeight <= root.clientHeight + 1) {
+      void loadOlderMessages()
+    } else {
+      fillViewportRef.current = false
+    }
+  }, [selectedChannelId, messagesLoading, olderMessagesLoading, hasMoreBefore, loadOlderMessages, messages.length])
 
   // No polling / realtime updates in this UI.
 
@@ -310,9 +453,10 @@ export default function MessagesPage() {
 
   useEffect(() => {
     // Unmount cleanup.
+    const timers = typingTimersRef.current
     return () => {
-      for (const { timeoutId } of typingTimersRef.current.values()) clearTimeout(timeoutId)
-      typingTimersRef.current.clear()
+      for (const { timeoutId } of timers.values()) clearTimeout(timeoutId)
+      timers.clear()
     }
   }, [])
 
@@ -513,6 +657,10 @@ export default function MessagesPage() {
         setMessages([])
         setMessagesLoading(false)
         setMessagesError(null)
+        setHasMoreBefore(true)
+        setOlderMessagesLoading(false)
+        shouldAutoScrollRef.current = false
+      fillViewportRef.current = false
         setDraft('')
         setSendError(null)
         setSendLoading(false)
@@ -720,7 +868,11 @@ export default function MessagesPage() {
 
               <div className="flex min-h-0 flex-1 overflow-hidden">
                 <div className="flex min-h-0 flex-1 flex-col">
-                  <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
+                  <div
+                    ref={messagesScrollRef}
+                    onScroll={handleMessagesScroll}
+                    className="min-h-0 flex-1 overflow-y-auto px-4 py-4"
+                  >
                     {messagesLoading && (
                       <div className="space-y-2" aria-label="Loading messages">
                         {Array.from({ length: 6 }, (_, i) => (
@@ -819,7 +971,9 @@ export default function MessagesPage() {
                               return prevList
                             }
                             // `messageManager.getMessages()` returns oldest-first, so append.
-                            return [...prevList, newMessage].slice(-50)
+                            nextScrollBehaviorRef.current = 'smooth'
+                            shouldAutoScrollRef.current = true
+                            return [...prevList, newMessage]
                           })
 
                           setDraft('')
