@@ -4,7 +4,6 @@ import { gatewayFactory } from '../lib/gateway.js'
 import Button from '../components/Button.jsx'
 import FormInput from '../components/FormInput.jsx'
 import Card from '../components/Card.jsx'
-import logoAz7 from '../assets/logo-az7.svg'
 
 export default function AuthPage({ onLogin }) {
   const [mode, setMode] = useState('login')
@@ -111,7 +110,7 @@ export default function AuthPage({ onLogin }) {
       <Card className="w-full max-w-md overflow-hidden rounded-card">
         <div className="flex flex-col border-b border-[color:var(--card-border)]">
           <div className="flex flex-col items-center gap-2 px-6 pt-6 pb-4">
-            <img src={logoAz7} alt="az7" className="h-10 w-auto" />
+            <img src="/logo.webp" alt="az7" className="h-10 w-auto" />
             <p className="text-xs font-medium uppercase tracking-[0.18em] text-[color:var(--text-muted)]">
               Private messaging
             </p>

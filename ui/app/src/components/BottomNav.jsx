@@ -1,5 +1,4 @@
 import { NavLink } from 'react-router-dom'
-import logoAz7 from '../assets/logo-az7.svg'
 
 const baseLinkClasses =
   'flex flex-col items-center gap-1 rounded-button px-4 py-2 text-[0.75rem] font-medium text-[color:var(--text-muted)] no-underline transition-colors md:flex-row md:justify-start md:gap-3 md:px-3 md:py-2.5 md:text-sm'
@@ -7,12 +6,12 @@ const baseLinkClasses =
 export default function BottomNav() {
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-50 flex flex-shrink-0 items-center justify-around border-t border-[color:var(--card-border)] bg-[color:var(--card-bg)] px-2 pb-[max(0.65rem,env(safe-area-inset-bottom))] pt-2 shadow-[0_-2px_8px_rgba(0,0,0,0.1)] md:static md:z-auto md:h-dvh md:w-64 md:flex-col md:items-stretch md:justify-start md:gap-1 md:border-r md:border-t-0 md:px-3 md:pb-4 md:pt-6 md:shadow-none"
+      className="fixed inset-x-0 bottom-0 z-50 flex flex-shrink-0 items-center justify-around border-t border-[color:var(--card-border)] bg-[color:var(--card-bg)] px-2 pb-[max(0.65rem,env(safe-area-inset-bottom))] pt-2 shadow-[0_-2px_8px_rgba(0,0,0,0.1)] md:static md:z-auto md:h-dvh md:w-56 md:flex-col md:items-stretch md:justify-start md:gap-1 md:border-r md:border-t-0 md:px-3 md:pb-4 md:pt-6 md:shadow-none"
       role="navigation"
       aria-label="Main"
     >
       <div className="hidden w-full items-center justify-start gap-2 pb-3 pl-3 pr-2 md:flex">
-        <img src={logoAz7} alt="az7" className="h-10 w-auto flex-shrink-0" />
+        <img src="/logo.webp" alt="az7" className="h-20 w-auto flex-shrink-0" />
       </div>
       <NavLink
         to="/"
