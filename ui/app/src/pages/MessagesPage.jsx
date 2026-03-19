@@ -1117,15 +1117,10 @@ export default function MessagesPage() {
                           const prevTrimmed = (draft ?? '').trim()
                           const nextTrimmed = (next ?? '').trim()
 
-                          // If the input is empty, reset so the next keystroke re-triggers typing.
-                          if (!nextTrimmed) {
-                            lastTypingSentAtRef.current = 0
-                            return
-                          }
+                          if (!nextTrimmed) return
 
                           const now = Date.now()
-                          const prevWasEmpty = !prevTrimmed
-                          const shouldSend = prevWasEmpty || now - lastTypingSentAtRef.current > 2_000
+                          const shouldSend = now - lastTypingSentAtRef.current > 10_000
                           if (!shouldSend) return
 
                           lastTypingSentAtRef.current = now
