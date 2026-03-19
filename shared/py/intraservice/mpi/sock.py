@@ -54,7 +54,7 @@ class AsyncSendSocket(AsyncSocket):
         self.__remote = remote
         self.__port = port
         self.sent = 0
-        self.failed = 1
+        self.refused = 1
     
     async def connect(self):
         print(f"Connecting to peer {self.__remote}:{self.__port}", flush=True)
