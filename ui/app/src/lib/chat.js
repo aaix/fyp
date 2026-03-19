@@ -1,10 +1,15 @@
 import API from "./api";
 import { decryptB64Sym, encryptSymB64, importFromPem, RSAUnwrapSym, RSAWrapSym } from "./keyhandler";
 import { getCurrentSession } from "./session";
-import { B64toUint8Array, timeFromUUIDv1 } from "./utils";
+import { B64toUint8Array } from "./utils";
 
 class ChannelManager {
-
+    constructor() {
+        // Cache per-channel encrypted keys so we can decrypt later updates
+        // for modified channels (no encrypted_channel_key)
+        this.channelStore = new Map()
+        this.onChannelUpsert = null
+    }
 
     async processNewChannel(channel_id, channel_name, encrypted_channel_key) {
         const isNew = !!encrypted_channel_key;
@@ -12,11 +17,21 @@ class ChannelManager {
 
         // if encrypted channel key is sent it must be a new channel
         if (encrypted_channel_key) {
+            // Store encrypted key immediately for later updates.
+            this.channelStore.set(channel_id, { encrypted_channel_key, shared_key: null });
+
             await this.populateEncryptedChannelFields(channel);
             channel.last_accessed = channel.last_accessed ?? Math.floor(Date.now() / 1000);
         }
-        // else we need to merge the channel with the current channel list (to get the key)
-        // then we can populate its encrypted fields to get the new values
+
+        // else we need to merge the channel with the cached channel list to get the key
+        else {
+            const cached = this.channelStore.get(channel_id);
+            if (cached?.encrypted_channel_key) {
+                channel.encrypted_channel_key = cached.encrypted_channel_key;
+                await this.populateEncryptedChannelFields(channel, false, cached?.shared_key);
+            }
+        }
 
         this.onChannelUpsert?.(channel, isNew);
     }
@@ -59,7 +74,11 @@ class ChannelManager {
             delete channel.shared_key;
         }
 
-        channel.channel_name = new TextDecoder().decode(await decryptB64Sym(channel.channel_name, shared_key));
+        if (channel.channel_name != null) {
+            channel.channel_name = new TextDecoder().decode(
+                await decryptB64Sym(channel.channel_name, shared_key)
+            );
+        }
             
     }
 
@@ -73,6 +92,9 @@ class ChannelManager {
         await Promise.all(res.data.channels.map(async (channel) => {
             // modify channel in place
             await this.populateEncryptedChannelFields(channel, false);
+            if (channel?.encrypted_channel_key) {
+                this.channelStore.set(channel.channel_id, { encrypted_channel_key: channel.encrypted_channel_key, shared_key: null });
+            }
         }))
 
 
@@ -91,6 +113,12 @@ class ChannelManager {
         const channel = res.data;
         channel.encrypted_channel_key = encrypted_channel_key;
         await this.populateEncryptedChannelFields(channel, true);
+        if (channel?.encrypted_channel_key) {
+            this.channelStore.set(channel.channel_id, {
+                encrypted_channel_key: channel.encrypted_channel_key,
+                shared_key: channel.shared_key ?? null
+            });
+        }
 
         return res;
     }
@@ -119,6 +147,13 @@ class ChannelManager {
             const updatedChannel = {...channel, ...res.data};
             await this.populateEncryptedChannelFields(updatedChannel, true);
             res.data = updatedChannel;
+
+            if (updatedChannel?.encrypted_channel_key) {
+                this.channelStore.set(updatedChannel.channel_id, {
+                    encrypted_channel_key: updatedChannel.encrypted_channel_key,
+                    shared_key: updatedChannel.shared_key ?? null,
+                });
+            }
         }
         return res;
     }
@@ -168,7 +203,6 @@ class MessageManager {
             decryptedContent = await decryptB64Sym(event.content, key);
         }
 
-
         const uiMessage = {
             channel_id: event.channel_id,
             bucket: null,
@@ -180,7 +214,7 @@ class MessageManager {
             author_id: event.author_id ?? null,
         };
 
-            this.onMessageCreateCb?.(uiMessage);
+        this.onMessageCreateCb?.(uiMessage);
 
     }
 

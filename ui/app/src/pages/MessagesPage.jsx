@@ -24,6 +24,7 @@ export default function MessagesPage() {
   const [isDesktop, setIsDesktop] = useState(false)
   const [selectedChannelId, setSelectedChannelId] = useState(null)
   const [selectedChannel, setSelectedChannel] = useState(null)
+  const selectedChannelIdRef = useRef(null)
   const [selectedMembers, setSelectedMembers] = useState([])
   const [channelLoading, setChannelLoading] = useState(false)
   const [channelError, setChannelError] = useState(null)
@@ -204,9 +205,27 @@ export default function MessagesPage() {
         next.sort((a, b) => (b.last_accessed || 0) - (a.last_accessed || 0))
         return next
       })
+
+      // If the currently open channel is updated by the gateway, ensure we
+      // keep the existing decrypted `shared_key` so messaging still works.
+      if (selectedChannelIdRef.current && channel?.channel_id === selectedChannelIdRef.current) {
+        setSelectedChannel((prev) => {
+          if (!prev) return prev
+          return {
+            ...prev,
+            ...channel,
+            shared_key: prev.shared_key,
+            encrypted_channel_key: prev.encrypted_channel_key ?? channel.encrypted_channel_key,
+          }
+        })
+      }
     })
     return () => channelManager.setOnChannelUpsert(null)
   }, [])
+
+  useEffect(() => {
+    selectedChannelIdRef.current = selectedChannelId
+  }, [selectedChannelId])
 
   useEffect(() => {
     const media = window.matchMedia?.('(min-width: 768px)')
