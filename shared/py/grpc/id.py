@@ -10,6 +10,11 @@ def puuid_int(uuid: pUUID) -> int | None:
         return None
     return (uuid.id_high << 64) | uuid.id_low
 
+def puuid_opt(uuid: pUUID) -> pUUID | None:
+    if uuid.id_high + uuid.id_low == 0:
+        return None
+    return uuid
+
 def puuid_str(uuid: pUUID) -> str | None:
     """Convert pUUID to str"""
     if int_id := puuid_int(uuid):

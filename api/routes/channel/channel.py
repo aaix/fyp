@@ -11,7 +11,7 @@ from api.utils import ResourceNotFoundRpcHandler, unwrap
 
 from shared.py.intraservice import client as intraclient
 from shared.py.grpc.channel import ChannelType, add_channel_members, edit_channel, remove_channel_members
-from shared.py.grpc.id import id_compare, puuid_uuid, uuid_puuid
+from shared.py.grpc.id import id_compare, puuid_opt, puuid_uuid, uuid_puuid
 from shared.py.grpc.lazy import LazyGRPC
 from shared.py.grpc.relationship import RelationshipType, test_many_relationships, test_relationship
 from shared.py.grpcgen import channel_pb2, internalmessage_pb2
@@ -152,32 +152,58 @@ async def patch_channel(s: SessionParam, channel: ChannelParam, body: EditChanne
 
     return ChannelResponse.from_rpc(rpc)
 
-@ChannelRouter.put("/channel/{channel_id}/members/{user_id}")
-async def add_channel_member(s: SessionParam, channel: ChannelParam, user: UserParam, body: AddChannelMemberRequest) -> None:
-    test = await test_relationship(grpcrelationship, s.user_id, user.user_id, RelationshipType.FRIENDS)
-    if not test.exists:
-        raise ApiErrExc(errors.Forbidden("Only friends can be added to group chats", api_error_code=errors.ERROR_USER_NOT_FRIENDS))
-    
-    await add_channel_members(
+@ChannelRouter.post("/channel/{channel_id}/members")
+async def r_add_channel_members(s: SessionParam, channel: ChannelParam, body: AddChannelMembersRequest) -> None:
+    member_ids = set(cm.user_id for cm in body.members_to_add)
+
+
+    if not len(member_ids) == len(body.members_to_add):
+        raise ApiErrExc(errors.BadRequest("Channel members should not contain duplicates", api_error_code=errors.ERROR_INVALID_BODY_PARTS))    
+
+    if s.user_id in member_ids:
+        raise ApiErrExc(errors.BadRequest("Channel members should not contain yourself", api_error_code=errors.ERROR_INVALID_BODY_PARTS))
+
+    # test that current user is friends with all users
+    test_res = await test_many_relationships(
+        grpcrelationship,
+        s.user_id,
+        (TestManyRelationshipEntry(user_id_b=uuid_puuid(peer_id), relationship_type=RelationshipType.FRIENDS) for peer_id in member_ids)
+    )
+
+    if test_res.errors > 0:
+        raise ApiErrExc(errors.InternalServerError("Error resolving relationship with members"))
+
+    if test_res.exist != len(member_ids):
+        raise ApiErrExc(errors.BadRequest("Only friends can be added to chats", api_error_code=errors.ERROR_USER_NOT_FRIENDS))
+
+
+    # we only need the parts that are in the user_channel table
+    channel_request = channel_pb2.CreateChannelRequest(
+        opt_channel_name=channel.opt_channel_name,
+        opt_channel_icon_asset_id=puuid_opt(channel.opt_channel_icon_asset_id)
+    )
+
+
+    members = await add_channel_members(
         grpcchannel,
         channel.channel_id,
-        channel_request=channel_pb2.CreateChannelRequest(
-            opt_channel_icon_asset_id=channel.opt_channel_icon_asset_id,
-            opt_channel_name=channel.opt_channel_name,
-        ),
-        requests=(
+        channel_request,
+        (
             channel_pb2.AddChannelMemberRequest(
-                user_id=user.user_id,
-                encrypted_channel_key=body.encrypted_shared_key,
-            ),
+                user_id=uuid_puuid(m.user_id),
+                encrypted_channel_key=m.encrypted_shared_key,
+            ) for m in body.members_to_add
         )
     )
 
-    await intraclient.send_to_remote(user.user_id, "channel_create", internalmessage_pb2.EventChannelCreate(
+    encrypted_map = {m.user_id : m.encrypted_shared_key for m in body.members_to_add}
+
+    await intraclient.fan_out(channel.channel_id, member_ids, "channel_create", lambda user_id: internalmessage_pb2.EventChannelCreate(
         channel_id=channel.channel_id,
         encrypted_channel_name=channel.opt_channel_name,
-        encrypted_channel_key=body.encrypted_shared_key
+        encrypted_channel_key=encrypted_map.get(user_id)
     ))
+
 
 
 @ChannelRouter.delete("/channel/{channel_id}/members/{user_id}")

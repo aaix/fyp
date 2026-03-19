@@ -19,7 +19,7 @@ __all__ = (
     "ChannelMemberParamOut",
     "ChannelsResponse",
     "UserChannelEntry",
-    "AddChannelMemberRequest",
+    "AddChannelMembersRequest",
     "EditChannelBody",
 
     "NewMessageBody",
@@ -27,6 +27,8 @@ __all__ = (
     "MessagesResponse",
 )
 
+
+type ChannelMembers = Annotated[list[ChannelMemberParamIn], Field(max_length=CHANNEL_MAX_NUM_MEMBERS-1)]
 
 class ChannelMemberParamIn(BaseModel):
     user_id: UUID
@@ -42,15 +44,15 @@ class NewChannelBody(BaseModel):
     channel_name: ChannelNameIn
     encrypted_shared_key: RSA4096CiphertextIn
     # remove 1 from the max length as current user is an implicit member
-    channel_members: Annotated[list[ChannelMemberParamIn], Field(max_length=CHANNEL_MAX_NUM_MEMBERS-1)]
+    channel_members: ChannelMembers
 
 class EditChannelBody(BaseModel):
     channel_name: ChannelNameIn | None
     # TODO
     # channel_icon: PrivateImage
 
-class AddChannelMemberRequest(BaseModel):
-    encrypted_shared_key: RSA4096CiphertextIn
+class AddChannelMembersRequest(BaseModel):
+    members_to_add: ChannelMembers
 
 
 class ChannelResponse(BaseModel):

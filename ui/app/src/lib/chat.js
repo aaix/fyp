@@ -1,7 +1,7 @@
 import API from "./api";
 import { decryptB64Sym, encryptSymB64, importFromPem, RSAUnwrapSym, RSAWrapSym } from "./keyhandler";
 import { getCurrentSession } from "./session";
-import { B64toUint8Array } from "./utils";
+import { B64toUint8Array, blobToB64 } from "./utils";
 
 class ChannelManager {
     constructor() {
@@ -60,16 +60,16 @@ class ChannelManager {
         return await RSAWrapSym(user_pk, shared_sym);
     }
 
-    async channelGetSharedKey(channel) {
+    async channelGetSharedKey(channel, extractable=false) {
 
-        if (channel.shared_key) {
+        if (channel.shared_key && !extractable) {
             return channel.shared_key;
         }
 
         const my_key = await (await getCurrentSession()).getAccountKey();
 
 
-        const shared_key = await RSAUnwrapSym(my_key.privateKey, await B64toUint8Array(channel.encrypted_channel_key));
+        const shared_key = await RSAUnwrapSym(my_key.privateKey, await B64toUint8Array(channel.encrypted_channel_key), extractable);
 
         return shared_key;
 
@@ -136,9 +136,22 @@ class ChannelManager {
         return res;
     }
 
-    async addChannelMember(channel_id, user_id) {
-        API.PUT(`chat/channel/${channel_id}/members/${user_id}`, {
-            encrypted_shared_key: ""
+    async addChannelMembers(channel, users) {
+
+        const sym = await this.channelGetSharedKey(channel, true);
+
+        const members_to_add = await Promise.all(users.map(async (u) => {
+            const pk = await importFromPem(u.public_key);
+            const encrypted_shared_key = await blobToB64(new Blob([await RSAWrapSym(pk, sym)]));
+
+            return {
+                encrypted_shared_key,
+                user_id: u.user_id,
+            }
+        }))
+
+        return await API.POST(`chat/channel/${channel.channel_id}/members`, {
+            members_to_add,
         })
     }
 

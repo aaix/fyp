@@ -133,14 +133,14 @@ export async function RSAWrapSym(pub_wrapper_key, sym_private_key) {
   return wrapped;
 }
 
-export async function RSAUnwrapSym(private_wrapper_key, ciphertext) {
+export async function RSAUnwrapSym(private_wrapper_key, ciphertext, extractable=false) {
   const unwrapped = await window.crypto.subtle.unwrapKey(
     'raw',
     ciphertext,
     private_wrapper_key,
     {name: 'RSA-OAEP'},
     {name: 'AES-GCM', length: 256},
-    false,
+    extractable,
     ['encrypt', 'decrypt']
   );
 
