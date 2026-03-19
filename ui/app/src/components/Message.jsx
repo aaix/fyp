@@ -81,15 +81,11 @@ function Message({ message, author, isOwn }) {
           {hasAttachment ? (
             <div className="mt-2">
               {maybeImage ? (
-                message?.bucket ? (
-                  <img
-                    src={userContentUrl(message.bucket, message.attachment_asset_id, 'webp')}
-                    alt="Attachment"
-                    className="max-h-64 w-full rounded-button border border-[color:var(--card-border)] object-contain"
-                  />
-                ) : (
-                  <div className="text-sm text-[color:var(--text-muted)]">Attachment unavailable</div>
-                )
+                <img
+                  src={userContentUrl(message.channel_id, message.attachment_asset_id, 'webp')}
+                  alt="Attachment"
+                  className="max-h-64 w-full rounded-button border border-[color:var(--card-border)] object-contain"
+                />
               ) : (
                 <div className="text-sm text-[color:var(--text-muted)]">
                   Attachment: {String(message.attachment_asset_id)}
