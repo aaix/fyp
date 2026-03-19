@@ -9,8 +9,9 @@ use std::collections::HashSet;
 use futures::{StreamExt, future::join_all};
 use scylla::{statement::prepared::PreparedStatement, value::{CqlTimeuuid, MaybeUnset}};
 use tonic::{Response, Status, async_trait};
+use tracing::Level;
 
-use crate::{db_conn::db, errors::DSResult, helpers::{gen_timeuuid, time_now}, maybe_opt_field, maybe_opt_field_into, models::{channel::Channel, user_channel::UserChannel}, protos::dataservices::channel_service::{AddChannelMembersRequest, AddChannelMembersResponse, ChannelMemberObject, ChannelObjectResponse, CreateChannelRequest, DeleteChannelResponse, GetUserChannelsRequest, ReadChannelRequest, RemoveChannelMembersRequest, RemoveChannelMembersResponse, UpdateChannelMemberRequest, UpdateChannelMemberResponse, UpdateChannelRequest, UserChannelsResponse, channel_service_server::{ChannelService, ChannelServiceServer}}, req_ref, req_tuuid};
+use crate::{db_conn::db, errors::DSResult, helpers::{gen_timeuuid, time_now}, maybe_opt_field, maybe_opt_field_into, models::{channel::Channel, user_channel::UserChannel}, profile_statement, protos::dataservices::channel_service::{AddChannelMembersRequest, AddChannelMembersResponse, ChannelMemberObject, ChannelObjectResponse, CreateChannelRequest, DeleteChannelResponse, GetUserChannelsRequest, ReadChannelRequest, RemoveChannelMembersRequest, RemoveChannelMembersResponse, UpdateChannelMemberRequest, UpdateChannelMemberResponse, UpdateChannelRequest, UserChannelsResponse, channel_service_server::{ChannelService, ChannelServiceServer}}, req_ref, req_tuuid};
 
 
 #[derive(Debug)]
@@ -258,17 +259,20 @@ impl ScyllaChannelServiceServer {
 
         let futures = inner.requests.iter().map(async |r| {
             let user_id: CqlTimeuuid = r.user_id.unwrap().into();
-            db().await.execute_unpaged(
-                &self.add_user_channel_prepared,
-                (
-                    user_id,
-                    channel_id,
-                    &r.encrypted_channel_key,
-                    last_accessed,
-                    &channel.opt_channel_name,
-                    channel.opt_channel_icon_asset_id.map(Into::<CqlTimeuuid>::into)
-                )
-            ).await.map(|_| user_id)
+            profile_statement!(
+                "add_user_channel_prepared",
+                db().await.execute_unpaged(
+                    &self.add_user_channel_prepared,
+                    (
+                        user_id,
+                        channel_id,
+                        &r.encrypted_channel_key,
+                        last_accessed,
+                        &channel.opt_channel_name,
+                        channel.opt_channel_icon_asset_id.map(Into::<CqlTimeuuid>::into)
+                    )
+                ).await
+            )
         });
 
         join_all(futures).await;

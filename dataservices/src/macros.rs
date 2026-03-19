@@ -44,3 +44,15 @@ macro_rules! maybe_opt_field_into {
         }
     }
 }
+
+#[macro_export]
+macro_rules! profile_statement {
+    ($name:expr, $stmt:expr) => {{
+        use tracing::Instrument;
+        let span = tracing::info_span!(
+            $name,
+            status = "pending"
+        );
+        $stmt.instrument(span)
+    }}
+}
