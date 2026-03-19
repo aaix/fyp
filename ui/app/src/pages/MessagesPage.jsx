@@ -54,6 +54,7 @@ export default function MessagesPage() {
   const fileInputRef = useRef(null)
   const imageInputRef = useRef(null)
   const bottomRef = useRef(null)
+  const messageInputRef = useRef(null)
 
   const handleIncomingMessage = useCallback((incomingMessage) => {
     if (!incomingMessage?.message_id) return
@@ -149,6 +150,16 @@ export default function MessagesPage() {
       messageManager.setOnMessageCreate(null)
     }
   }, [handleIncomingMessage])
+
+  // Focus the message input when a channel is opened.
+  useEffect(() => {
+    if (!selectedChannelId || !selectedChannel) return
+    // Wait a tick so the input is mounted and enabled.
+    const t = setTimeout(() => {
+      messageInputRef.current?.focus?.()
+    }, 0)
+    return () => clearTimeout(t)
+  }, [selectedChannelId, selectedChannel])
 
   useEffect(() => {
     if (!bottomRef.current) return
@@ -710,6 +721,10 @@ export default function MessagesPage() {
 
                           setDraft('')
                           clearAttachment()
+                          // Keep typing; focus input after successful send.
+                          setTimeout(() => {
+                            messageInputRef.current?.focus?.()
+                          }, 0)
                         })
                         .catch((err) => {
                           console.error(err)
@@ -778,6 +793,7 @@ export default function MessagesPage() {
                         placeholder="Message"
                         value={draft}
                         disabled={!selectedChannel || sendLoading}
+                        ref={messageInputRef}
                         onChange={(e) => {
                           setDraft(e.target.value)
                           setSendError(null)
