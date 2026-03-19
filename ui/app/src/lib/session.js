@@ -172,9 +172,17 @@ export class Session {
     resolve();
   }
 
-  async getAccountKey(username_or_id) {
+  getAccountKey() {
+    if (!this.accKeyPromise) {
+      this.accKeyPromise = new Promise((resolve, reject) => {this._getAccountKey().then(resolve).catch(reject)})
+    }
+    return this.accKeyPromise;
+    
+  }
+  
+  async _getAccountKey() {
     if (this.accKey === null) {
-      await this.doAccountKeyHandshake(username_or_id);
+      await this.doAccountKeyHandshake();
     }
     return this.accKey;
   }

@@ -229,7 +229,9 @@ class Gateway {
     }
 
     async handler_server_hello(msg) {
-        const accKey = (await getCurrentSession().getAccountKey(this.user_id)).privateKey;
+        const session = await getCurrentSession();
+        session.user_id = this.user_id;
+        const accKey = (await session.getAccountKey()).privateKey;
         const deviceKey = (await keyStore.getDefaultKey()).key.privateKey;
 
 
