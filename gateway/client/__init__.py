@@ -141,7 +141,17 @@ class GatewayClient:
                 await self.handle_internal_friendship_update(e.payload)
             case "message_create":
                 await self.handle_internal_message_create(e.payload)
-    
+            case "user_typing":
+                await self.handle_internal_user_typing(e.payload)
+
+    @tracer.start_as_current_span("Client.handle_internal::user_typing")
+    async def handle_internal_user_typing(self, d: internalmessage_pb2.EventUserTyping):
+        event = events.UserTypingEvent(
+            author_id=puuid_uuid(d.author_id) or unwrap(),
+            channel_id=puuid_uuid(d.channel_id) or unwrap()
+        )
+        await self.send_event(event)    
+
 
     @tracer.start_as_current_span("Client.handle_internal::friendship_update")
     async def handle_internal_friendship_update(self, d: internalmessage_pb2.EventFriendshipUpdate):

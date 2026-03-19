@@ -16,6 +16,7 @@ message IntraMessage {
         EventChannelCreate channel_create = 4;
         EventFriendshipUpdate friendship_update = 5;
         EventMessageCreate message_create = 6;
+        EventUserTyping user_typing = 7;
     }
 }
 
@@ -41,4 +42,9 @@ message EventMessageCreate {
     optional bytes content = 2;
     int32 message_type = 3;
     optional plib.pUUID attachment_id = 6;
+}
+
+message EventUserTyping {
+    plib.pUUID author_id = 1;
+    plib.pUUID channel_id = 2;
 }

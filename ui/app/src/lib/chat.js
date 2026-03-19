@@ -11,6 +11,14 @@ class ChannelManager {
         this.onChannelUpsert = null
     }
 
+    startTyping(channel_id) {
+        return API.PUT(`chat/channel/${channel_id}/typing`);
+    }
+
+    onUserTyping(channel_id, user_id) {
+        
+    }
+
     async processNewChannel(channel_id, channel_name, encrypted_channel_key) {
         const isNew = !!encrypted_channel_key;
         const channel = { channel_id, channel_name, encrypted_channel_key };

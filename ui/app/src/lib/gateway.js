@@ -390,6 +390,9 @@ class Gateway {
             case 'message_create':
                 messageManager.onMessage(event);
                 break;
+            case 'user_typing':
+                channelManager.onUserTyping(event.channel_id, event.author_id)
+                break;
             default:
                 console.log("unknown event", event.intent); 
         }

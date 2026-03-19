@@ -10,7 +10,7 @@ from shared.py.pydantic.base64 import Base64Output
 from shared.py.pydantic.common import ChannelNameOut
 from shared.py.pydantic.user import UserSearchResponse
 
-type Event_t = MessageEvent | ChannelCreateEvent | HintEvent | UsersEvent | SessionCreateEvent | FriendEvent | MessageCreateEvent
+type Event_t = MessageEvent | ChannelCreateEvent | HintEvent | UsersEvent | SessionCreateEvent | FriendEvent | MessageCreateEvent| UserTypingEvent
 
 class BaseEvent(BaseModel):
     """Base class for business logic events sent from the gateway"""
@@ -57,4 +57,9 @@ class MessageCreateEvent(BaseEvent):
     content: Base64Output | None
     message_type: int
     attachment_id: UUID | None
+    author_id: UUID
+
+class UserTypingEvent(BaseEvent):
+    intent: Literal["user_typing"] = "user_typing"
+    channel_id: UUID
     author_id: UUID

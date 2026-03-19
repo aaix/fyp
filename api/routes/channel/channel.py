@@ -120,6 +120,16 @@ async def get_my_channels(s: SessionParam) -> ChannelsResponse:
 async def get_channel(s: SessionParam, channel: ChannelParam) -> ChannelResponse:
     return ChannelResponse.from_rpc(channel)
 
+@ChannelRouter.put("/channel/{channel_id}/typing")
+async def user_channel_typing(s: SessionParam, channel: ChannelParam) -> None:
+    await intraclient.fan_out(
+        channel.channel_id, channel.channel_members, "user_typing",
+        lambda _: internalmessage_pb2.EventUserTyping(
+            author_id=uuid_puuid(s.user_id),
+            channel_id=channel.channel_id,
+        )
+    )
+
 @ChannelRouter.patch("/channel/{channel_id}")
 async def patch_channel(s: SessionParam, channel: ChannelParam, body: EditChannelBody) -> ChannelResponse:
     channel_id = channel.channel_id
