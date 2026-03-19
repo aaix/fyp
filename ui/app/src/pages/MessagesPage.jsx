@@ -1299,6 +1299,7 @@ export default function MessagesPage() {
       <AddChannelMembersModal
         open={addingMembers}
         onClose={() => setAddingMembers(false)}
+        channel={selectedChannel}
         channelId={selectedChannelId}
         existingMemberIds={selectedChannel?.channel_members ?? []}
         onMembersAdded={async (newMemberIds) => {

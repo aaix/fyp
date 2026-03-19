@@ -8,6 +8,7 @@ import useEscapeToClose from './useEscapeToClose.js'
 function AddChannelMembersModal({
   open,
   onClose,
+  channel,
   channelId,
   existingMemberIds = [],
   onMembersAdded,
@@ -33,7 +34,7 @@ function AddChannelMembersModal({
   const canSubmit =
     open &&
     !submitting &&
-    channelId &&
+    channel?.channel_id &&
     selectedUsers.length > 0 &&
     effectiveMax > 0
 
@@ -50,6 +51,11 @@ function AddChannelMembersModal({
     setSubmitting(true)
     setError(null)
     try {
+      if (!channel) {
+        setError('Missing channel info')
+        return
+      }
+
       const existingSet = new Set(existingMemberIds ?? [])
       const toAdd = selectedUsers.filter((u) => !existingSet.has(u.user_id))
       if (toAdd.length === 0) {
@@ -57,22 +63,13 @@ function AddChannelMembersModal({
         return
       }
 
-      const results = await Promise.allSettled(
-        toAdd.map((u) => channelManager.addChannelMember(channelId, u.user_id)),
-      )
-
-      const failed = results.filter(
-        (r) => r.status === 'rejected' || (r.value && r.value.success === false),
-      )
-
-      if (failed.length > 0) {
-        setError('Some members could not be added')
+      const res = await channelManager.addChannelMembers(channel, toAdd)
+      if (!res?.success) {
+        setError(res?.error?.message ?? 'Could not add members')
+        return
       }
 
-      const successfulIds = toAdd.filter((_, idx) => !failed[idx]).map((u) => u.user_id)
-      if (successfulIds.length > 0) {
-        onMembersAdded?.(successfulIds)
-      }
+      onMembersAdded?.(toAdd.map((u) => u.user_id))
       onClose?.()
     } catch (err) {
       console.error(err);
