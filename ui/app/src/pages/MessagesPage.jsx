@@ -742,12 +742,6 @@ export default function MessagesPage() {
                       </Card>
                     )}
 
-                    {!messagesLoading && !messagesError && typingDisplay && (
-                      <div className="mb-2 text-xs text-[color:var(--text-muted)]" aria-live="polite">
-                        {typingDisplay}
-                      </div>
-                    )}
-
                     {!messagesLoading && !messagesError && messages.length === 0 && (
                       <div className="flex h-full items-center justify-center py-10">
                         <p className="text-sm text-[color:var(--text-muted)]">No messages yet.</p>
@@ -765,6 +759,12 @@ export default function MessagesPage() {
                       </ul>
                     )}
                   </div>
+
+                  {!messagesLoading && !messagesError && typingDisplay && (
+                    <div className="px-3 pb-2 text-xs text-[color:var(--text-muted)]" aria-live="polite">
+                      {typingDisplay}
+                    </div>
+                  )}
 
                   <form
                     className="border-t border-[color:var(--card-border)] p-3"
@@ -824,16 +824,18 @@ export default function MessagesPage() {
 
                           setDraft('')
                           clearAttachment()
-                          // Keep typing; focus input after successful send.
-                          setTimeout(() => {
-                            messageInputRef.current?.focus?.()
-                          }, 0)
                         })
                         .catch((err) => {
                           console.error(err)
                           setSendError(err?.message ?? 'Could not send message')
                         })
-                        .finally(() => setSendLoading(false))
+                        .finally(() => {
+                          setSendLoading(false)
+                          // Focus after send finishes and the input is enabled again.
+                          setTimeout(() => {
+                            messageInputRef.current?.focus?.()
+                          }, 0)
+                        })
                     }}
                   >
                     <input
