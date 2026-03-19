@@ -49,6 +49,12 @@ export default function MessagesPage() {
   const [sendLoading, setSendLoading] = useState(false)
   const [sendError, setSendError] = useState(null)
 
+  // Typing indicators for the currently open channel.
+  // Keeps a 10s timeout per user; cleared immediately when that user sends a message.
+  const [typingByUserId, setTypingByUserId] = useState({})
+  const typingTimersRef = useRef(new Map()) // user_id(string) -> { timeoutId, seq }
+  const lastTypingSentAtRef = useRef(0)
+
   // For now attachments/images are UI-only; `messageManager.sendMessage()` does not upload them.
   const [attachment, setAttachment] = useState(null) // { kind: 'file'|'image', file, previewUrl? }
   const fileInputRef = useRef(null)
@@ -58,6 +64,24 @@ export default function MessagesPage() {
 
   const handleIncomingMessage = useCallback((incomingMessage) => {
     if (!incomingMessage?.message_id) return
+
+    // Clear typing indicator when the sender posts a message.
+    const authorId = incomingMessage?.author_id
+    const channelId = incomingMessage?.channel_id
+    const activeChannelId = selectedChannelIdRef.current
+    if (authorId && channelId && activeChannelId && String(channelId) === String(activeChannelId)) {
+      const uid = String(authorId)
+      const existing = typingTimersRef.current.get(uid)
+      if (existing?.timeoutId) clearTimeout(existing.timeoutId)
+      typingTimersRef.current.delete(uid)
+      setTypingByUserId((prev) => {
+        if (!prev || prev[uid] == null) return prev
+        const next = { ...prev }
+        delete next[uid]
+        return next
+      })
+    }
+
     setMessages((prev) => {
       const prevList = prev ?? []
       if (prevList.some((m) => m.message_id === incomingMessage.message_id)) return prevList
@@ -65,6 +89,39 @@ export default function MessagesPage() {
       return [...prevList, incomingMessage].slice(-50)
     })
   }, [])
+
+  const handleUserTyping = useCallback(
+    (channelId, userId) => {
+      if (!channelId || userId == null) return
+      const activeChannelId = selectedChannelIdRef.current
+      if (!activeChannelId || String(channelId) !== String(activeChannelId)) return
+
+      const uid = String(userId)
+      if (currentUserId != null && uid === String(currentUserId)) return
+
+      const seq = Date.now()
+
+      setTypingByUserId((prev) => ({ ...(prev ?? {}), [uid]: seq }))
+
+      const existing = typingTimersRef.current.get(uid)
+      if (existing?.timeoutId) clearTimeout(existing.timeoutId)
+
+      const timeoutId = setTimeout(() => {
+        const current = typingTimersRef.current.get(uid)
+        if (!current || current.seq !== seq) return
+        typingTimersRef.current.delete(uid)
+        setTypingByUserId((prev) => {
+          if (!prev || prev[uid] !== seq) return prev
+          const next = { ...prev }
+          delete next[uid]
+          return next
+        })
+      }, 10_000)
+
+      typingTimersRef.current.set(uid, { timeoutId, seq })
+    },
+    [currentUserId],
+  )
 
   function formatRelativeFromSeconds(epochSeconds) {
     if (!epochSeconds) return ''
@@ -150,6 +207,11 @@ export default function MessagesPage() {
       messageManager.setOnMessageCreate(null)
     }
   }, [handleIncomingMessage])
+
+  useEffect(() => {
+    channelManager.setOnUserTyping(handleUserTyping)
+    return () => channelManager.setOnUserTyping(null)
+  }, [handleUserTyping])
 
   // Focus the message input when a channel is opened.
   useEffect(() => {
@@ -239,6 +301,22 @@ export default function MessagesPage() {
   }, [selectedChannelId])
 
   useEffect(() => {
+    // Reset typing indicators when switching channels.
+    setTypingByUserId({})
+    for (const { timeoutId } of typingTimersRef.current.values()) clearTimeout(timeoutId)
+    typingTimersRef.current.clear()
+    lastTypingSentAtRef.current = 0
+  }, [selectedChannelId])
+
+  useEffect(() => {
+    // Unmount cleanup.
+    return () => {
+      for (const { timeoutId } of typingTimersRef.current.values()) clearTimeout(timeoutId)
+      typingTimersRef.current.clear()
+    }
+  }, [])
+
+  useEffect(() => {
     const media = window.matchMedia?.('(min-width: 768px)')
     if (!media) {
       setIsDesktop(false)
@@ -287,6 +365,25 @@ export default function MessagesPage() {
     // Default to allowing management for legacy channels without a type
     return true
   }, [selectedChannel])
+
+  const typingDisplay = useMemo(() => {
+    const typingIds = Object.keys(typingByUserId ?? {}).filter((uid) => typingByUserId[uid] != null)
+    const visibleTypingIds =
+      currentUserId != null ? typingIds.filter((uid) => uid !== String(currentUserId)) : typingIds
+
+    if (visibleTypingIds.length === 0) return null
+
+    const names = visibleTypingIds.map((uid) => {
+      const profile = selectedMembers.find((m) => String(m.user_id) === uid)
+      return profile?.username ? `@${profile.username}` : `@${uid}`
+    })
+
+    const shown = names.slice(0, 3)
+    const remaining = names.length - shown.length
+
+    if (names.length === 1) return `${shown[0]} is typing...`
+    return `${shown.join(', ')}${remaining > 0 ? ` +${remaining} more` : ''} are typing...`
+  }, [typingByUserId, selectedMembers, currentUserId])
 
   const selectChannel = useCallback(
     async (channelId) => {
@@ -645,6 +742,12 @@ export default function MessagesPage() {
                       </Card>
                     )}
 
+                    {!messagesLoading && !messagesError && typingDisplay && (
+                      <div className="mb-2 text-xs text-[color:var(--text-muted)]" aria-live="polite">
+                        {typingDisplay}
+                      </div>
+                    )}
+
                     {!messagesLoading && !messagesError && messages.length === 0 && (
                       <div className="flex h-full items-center justify-center py-10">
                         <p className="text-sm text-[color:var(--text-muted)]">No messages yet.</p>
@@ -795,8 +898,32 @@ export default function MessagesPage() {
                         disabled={!selectedChannel || sendLoading}
                         ref={messageInputRef}
                         onChange={(e) => {
-                          setDraft(e.target.value)
+                          const next = e.target.value
+                          setDraft(next)
                           setSendError(null)
+
+                          if (!selectedChannel) return
+
+                          const prevTrimmed = (draft ?? '').trim()
+                          const nextTrimmed = (next ?? '').trim()
+
+                          // If the input is empty, reset so the next keystroke re-triggers typing.
+                          if (!nextTrimmed) {
+                            lastTypingSentAtRef.current = 0
+                            return
+                          }
+
+                          const now = Date.now()
+                          const prevWasEmpty = !prevTrimmed
+                          const shouldSend = prevWasEmpty || now - lastTypingSentAtRef.current > 2_000
+                          if (!shouldSend) return
+
+                          lastTypingSentAtRef.current = now
+                          void channelManager
+                            .startTyping(selectedChannel.channel_id)
+                            .catch(() => {
+                              // Best-effort: typing notifications shouldn't break composing.
+                            })
                         }}
                       />
 

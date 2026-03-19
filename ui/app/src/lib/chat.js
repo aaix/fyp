@@ -9,14 +9,19 @@ class ChannelManager {
         // for modified channels (no encrypted_channel_key)
         this.channelStore = new Map()
         this.onChannelUpsert = null
+        this.onUserTypingCb = null
     }
 
     startTyping(channel_id) {
         return API.PUT(`chat/channel/${channel_id}/typing`);
     }
 
+    setOnUserTyping(fn) {
+        this.onUserTypingCb = fn ?? null
+    }
+
     onUserTyping(channel_id, user_id) {
-        
+        this.onUserTypingCb?.(channel_id, user_id)
     }
 
     async processNewChannel(channel_id, channel_name, encrypted_channel_key) {
