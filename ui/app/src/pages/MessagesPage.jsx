@@ -28,6 +28,7 @@ export default function MessagesPage() {
   const selectedChannelRef = useRef(null)
   const lastLoadedChannelIdRef = useRef(null)
   const [selectedMembers, setSelectedMembers] = useState([])
+  const [authorProfilesById, setAuthorProfilesById] = useState({})
   const [channelLoading, setChannelLoading] = useState(false)
   const [channelError, setChannelError] = useState(null)
   const [memberMenu, setMemberMenu] = useState(null)
@@ -73,6 +74,7 @@ export default function MessagesPage() {
   const imageInputRef = useRef(null)
   const bottomRef = useRef(null)
   const messageInputRef = useRef(null)
+  const authorLookupInFlightRef = useRef(new Set())
 
   const handleIncomingMessage = useCallback((incomingMessage) => {
     if (!incomingMessage?.message_id) return
@@ -218,8 +220,59 @@ export default function MessagesPage() {
     setMessagesError(null)
     setHasMoreBefore(true)
     setOlderMessagesLoading(false)
+    setAuthorProfilesById({})
+    authorLookupInFlightRef.current.clear()
     shouldAutoScrollRef.current = false
   }, [selectedChannelId])
+
+  useEffect(() => {
+    const knownMemberIds = new Set((selectedMembers ?? []).map((m) => String(m.user_id)))
+    const missingIds = []
+
+    for (const m of messages ?? []) {
+      const authorId = m?.author_id
+      if (authorId == null) continue
+      const key = String(authorId)
+      if (knownMemberIds.has(key)) continue
+      if (authorProfilesById[key]) continue
+      if (authorLookupInFlightRef.current.has(key)) continue
+      missingIds.push(authorId)
+      authorLookupInFlightRef.current.add(key)
+    }
+
+    if (missingIds.length === 0) return
+
+    let cancelled = false
+    ;(async () => {
+      try {
+        const users = await userManager.fetchUsersBulk(missingIds)
+        if (cancelled || !users?.length) return
+        setAuthorProfilesById((prev) => {
+          const next = { ...(prev ?? {}) }
+          for (const user of users) {
+            if (!user?.user_id) continue
+            const key = String(user.user_id)
+            next[key] = {
+              user_id: user.user_id,
+              username: user?.username ?? '',
+              icon_url: getAvatarUrl(user),
+            }
+          }
+          return next
+        })
+      } catch {
+        // Best-effort fallback; keep rendering with existing data.
+      } finally {
+        for (const id of missingIds) {
+          authorLookupInFlightRef.current.delete(String(id))
+        }
+      }
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [messages, selectedMembers, authorProfilesById])
 
   useEffect(() => {
     if (!selectedChannelId) return
@@ -901,7 +954,10 @@ export default function MessagesPage() {
                     {!messagesLoading && !messagesError && messages.length > 0 && (
                       <ul className="space-y-2" role="list" aria-label="Messages">
                         {messages.map((m) => {
-                          const author = selectedMembers.find((u) => u.user_id === m.author_id) ?? null
+                          const author =
+                            selectedMembers.find((u) => u.user_id === m.author_id) ??
+                            authorProfilesById[String(m.author_id)] ??
+                            null
                           const isOwn = currentUserId && m.author_id === currentUserId
                           return <Message key={m.message_id} message={m} author={author} isOwn={!!isOwn} />
                         })}
