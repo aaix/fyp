@@ -5,6 +5,7 @@ from collections.abc import Iterable
 from uuid import UUID
 from google.protobuf.field_mask_pb2 import FieldMask
 
+from shared.py.grpc import instrument_call
 from shared.py.grpc.id import id_t, id_puuid, uuid_puuid
 from shared.py.grpc.lazy import LazyGRPC
 from shared.py.grpcgen import channel_pb2
@@ -53,6 +54,7 @@ async def edit_channel(
     return cast(channel_pb2.ChannelObjectResponse, await lazy.stub.UpdateChannel(msg))
 
 
+@instrument_call
 async def add_channel_members(
     lazy: LazyGRPC[ChannelServiceStub],
     channel_id: id_t,

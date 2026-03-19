@@ -9,7 +9,7 @@ from shared.py.grpc.channel import ChannelType
 from shared.py.grpc.id import puuid_uuid
 from shared.py.grpcgen import channel_pb2, message_pb2
 from shared.py.pydantic.base64 import Base64Input, Base64Output
-from shared.py.pydantic.common import ChannelNameIn, ChannelNameOut
+from shared.py.pydantic.common import ChannelNameIn, ChannelNameOut, RSA4096CiphertextIn, RSA4096CiphertextOut
 
 
 __all__ = (
@@ -30,17 +30,17 @@ __all__ = (
 
 class ChannelMemberParamIn(BaseModel):
     user_id: UUID
-    encrypted_shared_key: Base64Input
+    encrypted_shared_key: RSA4096CiphertextIn
 
 class ChannelMemberParamOut(BaseModel):
     user_id: UUID
-    encrypted_shared_key: Base64Output
+    encrypted_shared_key: RSA4096CiphertextOut
 
 
 class NewChannelBody(BaseModel):
     channel_type: ChannelType
     channel_name: ChannelNameIn
-    encrypted_shared_key: Base64Input
+    encrypted_shared_key: RSA4096CiphertextIn
     # remove 1 from the max length as current user is an implicit member
     channel_members: Annotated[list[ChannelMemberParamIn], Field(max_length=CHANNEL_MAX_NUM_MEMBERS-1)]
 
@@ -50,7 +50,7 @@ class EditChannelBody(BaseModel):
     # channel_icon: PrivateImage
 
 class AddChannelMemberRequest(BaseModel):
-    encrypted_shared_key: Base64Input
+    encrypted_shared_key: RSA4096CiphertextIn
 
 
 class ChannelResponse(BaseModel):
