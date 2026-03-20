@@ -6,7 +6,7 @@ import "asset.proto";
 
 service TransformerService {
     rpc TransformImage (TransformImageRequest) returns (TransformImageResponse);
-    rpc TransformVideo (TransformVideoRequest) returns (TransformVideoResponse);
+    rpc TransformVideo (stream TransformVideoRequest) returns (TransformVideoResponse);
 }
 
 
@@ -22,8 +22,10 @@ message TransformImageResponse {
 }
 
 message TransformVideoRequest {
-    mediaservices.asset.Asset asset = 1;
-    bytes data = 2;
+    oneof next {
+        mediaservices.asset.Asset asset = 1;
+        bytes chunk = 2;
+    }
 }
 
 message TransformVideoResponse {

@@ -27,7 +27,7 @@ impl TransformerService for TransformerServer {
     }
     async fn transform_video(
         &self,
-        request: tonic::Request<TransformVideoRequest>,
+        request: tonic::Request<tonic::Streaming<TransformVideoRequest> >,
     ) -> std::result::Result<
         tonic::Response<TransformVideoResponse>,
         tonic::Status,
