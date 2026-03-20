@@ -1,6 +1,6 @@
-dataservices/target/
+*/target/
 database/data
-api/.venv
+.venv
 *__pycache__
 .env
 .env.cloud
