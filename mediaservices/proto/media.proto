@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package mediaservices.transformer;
+
+import "asset.proto";
+
+service TransformerService {
+    rpc TransformImage (TransformImageRequest) returns (TransformImageResponse);
+    rpc TransformVideo (stream MediaInput) returns (TransformVideoResponse);
+}
+
+message TransformImageRequest {
+    mediaservices.asset.Asset asset = 1;
+    bytes data = 2;
+}
+
+message TransformImageResponse {
+    
+}
+
+message MediaInput {
+    oneof next {
+        mediaservices.asset.Asset asset = 1;
+        bytes chunk = 2;
+    }
+}
+
+message TransformVideoResponse {
+    
+}

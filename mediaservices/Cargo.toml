@@ -1,0 +1,24 @@
+[package]
+name = "mediaservices"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+tokio = { version = "1.40", features=["rt-multi-thread", "sync"]}
+tokio-util = { version = "0.7.18", features = ["io", "io-util"]}
+tonic = { version = "0.14.2", features = ["server"] }
+tonic-prost = "0.14.2"
+prost = "0.14.1"
+prost-types="0.14.1"
+futures = "0.3.32"
+
+image = "0.25.10"
+aws-sdk-s3 = "1.127.0"
+aws-config = {version = "1.1.7", features= ["behavior-version-latest"] }
+
+tonic-tracing-opentelemetry = "0.32.1"
+init-tracing-opentelemetry = { version = "0.36.0", features = ["otlp", "tracing_subscriber_ext"]}
+tracing = "0.1.44"
+
+[build-dependencies]
+tonic-prost-build = "*"
