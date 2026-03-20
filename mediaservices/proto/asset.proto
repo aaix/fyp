@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package mediaservices.asset;
+
+
+message Asset {
+    string path = 1;
+    bool public = 2;
+}
