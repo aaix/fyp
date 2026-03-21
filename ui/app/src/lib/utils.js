@@ -1,5 +1,5 @@
-const PUBLIC_BASE = "https://userpublic.dev.az7.chat";
-const PRIVATE_BASE = "https://userprivate.dev.az7.chat";
+const PUBLIC_BASE = "https://userpublic.az7.chat";
+const PRIVATE_BASE = "https://userprivate.az7.chat";
 
 
 export async function blobToB64(blob) {
