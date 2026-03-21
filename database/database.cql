@@ -112,7 +112,7 @@ CREATE TABLE dataservices.post (
 CREATE TABLE dataservices.post_comment (
     comment_id TIMEUUID,
     post_id TIMEUUID, -- foreign key: post.post_id
-    author__user_id UUID, -- foreign key: user.user_id
+    author__user_id TIMEUUID, -- foreign key: user.user_id
     body TEXT,
     opt_last_edited TIMESTAMP,
     PRIMARY KEY (post_id, comment_id),
@@ -126,7 +126,7 @@ CREATE TABLE dataservices.post_like (
 
 CREATE TABLE dataservices.temporary_post (
     temp_post_id TIMEUUID,
-    author__user_id UUID, -- foreign key: user.user_id
+    author__user_id TIMEUUID, -- foreign key: user.user_id
     PRIMARY KEY (author__user_id, temp_post_id)
 );
 

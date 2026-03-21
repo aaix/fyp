@@ -2,9 +2,8 @@
 #![allow(nonstandard_style)]
 use scylla::DeserializeRow;
 use scylla::value;
-use uuid;
 #[derive(Debug, DeserializeRow)]
 pub struct TemporaryPost {
     pub temp_post_id: value::CqlTimeuuid,
-    pub author__user_id: uuid::Uuid,
+    pub author__user_id: value::CqlTimeuuid,
 }
