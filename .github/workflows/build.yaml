@@ -6,6 +6,11 @@ on:
   push:
     branches: [ "main" ]
 
+# Required for BuildKit type=gha cache (manual docker buildx does not get this from the default token alone).
+permissions:
+  contents: read
+  actions: write
+
 env:
   PROJECT_ID: fyp-25coc251
   REGION: europe-west2
@@ -38,6 +43,11 @@ jobs:
       - name: Configure Docker for GCP
         run: |
           gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+
+      # Expose ACTIONS_CACHE_URL / ACTIONS_RUNTIME_TOKEN so docker buildx --cache-to type=gha works from shell scripts.
+      # See https://docs.docker.com/build/cache/backends/gha/
+      - name: Expose GitHub Actions cache for buildx
+        uses: crazy-max/ghaction-github-runtime@v3
 
       - name: Run Build Script
         run: |
