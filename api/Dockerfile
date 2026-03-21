@@ -1,4 +1,5 @@
-FROM az-shared-base:latest
+ARG BASE_IMAGE=az-shared-base:latest
+FROM ${BASE_IMAGE}
 
 RUN mkdir -p /az7/api/
 
