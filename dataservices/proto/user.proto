@@ -3,6 +3,7 @@ syntax = "proto3";
 package dataservices.userproto;
 
 import "plib.proto";
+import "google/protobuf/wrappers.proto";
 
 // User Management (TABLE: account)
 
@@ -48,7 +49,12 @@ message CreateUserRequest {
 message UpdateUserRequest {
     plib.pUUID user_id = 1;
     optional string username = 2;
-    optional plib.pUUID avatar_asset_id = 3;
+    // set, None = delete
+    // set, True = create new id
+    // set, False = undefined
+    // unset = ignore,
+    optional google.protobuf.BoolValue opt_make_avatar_asset_id = 3;
+
 }
 
 message DeleteUserRequest {

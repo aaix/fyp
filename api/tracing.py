@@ -38,7 +38,7 @@ trace.set_tracer_provider(provider)
 print("tracer provider set")
 
 def instrument_fastapi_app(app: FastAPI):
-    FastAPIInstrumentor.instrument_app(app)
+    FastAPIInstrumentor.instrument_app(app, exclude_spans=["receive", "send"])
 
 tracer = trace.get_tracer("api")
 

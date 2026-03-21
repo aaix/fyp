@@ -3,26 +3,30 @@ from typing import Annotated, cast
 from uuid import UUID
 import uuid
 
-from fastapi import APIRouter, File, Request, UploadFile
+from fastapi import APIRouter, File, Header, Request, UploadFile
 from grpc import StatusCode
 
 from api import *
 
 from api.routes.account.models import *
+from api.types.asset import PublicAsset
 from api.utils import RpcErrHandler, unwrap, ResourceNotFoundRpcHandler
 
 from shared.py import asset
-from shared.py.constraints import ICON_MAX_UPLOAD_SIZE, USER_MAX_NUM_DEVICES
+from shared.py.constraints import ASSET_MIN_SIZE, ICON_MAX_UPLOAD_SIZE, USER_MAX_NUM_DEVICES
+from shared.py.grpc import mediaservices
 from shared.py.intraservice.client import BigPictureClient
-from shared.py.grpc.id import id_compare, puuid_uuid, id_t, uuid_puuid
-from shared.py.grpc.user import get_user, get_user_by_username
+from shared.py.grpc.id import id_compare, puuid_opt, puuid_uuid, id_t, uuid_puuid
+from shared.py.grpc.user import edit_user, get_user, get_user_by_username
 from shared.py.pydantic.pem import PEMPublicKey
 from shared.py.pydantic.common import Username
 from shared.py.grpc.lazy import LazyGRPC
-from shared.py.grpcgen import user_pb2_grpc
+from shared.py.grpcgen import media_pb2_grpc, user_pb2_grpc
 from shared.py.grpcgen import user_pb2
 from shared.py.grpc.device import create_device, read_devices
 
+
+CONF_AVATAR_CONTENT_TYPE = "image/webp" 
 
 
 discovery = DiscoveryManager()
@@ -32,6 +36,7 @@ AccountRouter = APIRouter()
 
 grpcuser = LazyGRPC(discovery.discover_dataservices(), user_pb2_grpc.UserServiceStub)
 grpcdevice = LazyGRPC(discovery.discover_dataservices(), user_pb2_grpc.UserDeviceServiceStub)
+grpcmedia = LazyGRPC(discovery.discover_mediaservices(), media_pb2_grpc.TransformerServiceStub)
 
 
 
@@ -178,8 +183,38 @@ async def my_account(s: SessionParam) -> AccountResponse:
 
 
 @AccountRouter.put("/@me/icon")
-async def set_my_icon(s: SessionParam, icon: Annotated[UploadFile, File(max_length=ICON_MAX_UPLOAD_SIZE)]) -> UUID:
+async def set_my_icon(
+    s: SessionParam,
+    content_length: Annotated[int | None, Header(lt=ICON_MAX_UPLOAD_SIZE, gt=ASSET_MIN_SIZE)],
+    icon: Annotated[UploadFile, File()]
+) -> PublicAsset:
     user = await s.full_user()
     if user.HasField("avatar_asset_id"):
         await asset.delete_asset(public=True, bucket_id=s.user_id, asset_id=user.avatar_asset_id)
-    asset_id = uuid.uuid1()
+
+    user = await edit_user(
+        grpcuser,
+        user.user_id,
+        make_avatar=True,
+    )
+
+    # creating a path None would be bad
+    assert puuid_opt(user.avatar_asset_id)
+
+
+    await mediaservices.transform_image(
+        grpcmedia,
+        public=True,
+        bucket_id=s.user_id,
+        asset_id=user.avatar_asset_id,
+        mime_in=icon.content_type,
+        mime_out=CONF_AVATAR_CONTENT_TYPE,
+        data=await icon.read()
+    )
+
+    return PublicAsset(
+        asset_id=puuid_uuid(user.avatar_asset_id) or unwrap(),
+        bucket_id=s.user_id,
+        public=True
+    )
+

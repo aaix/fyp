@@ -7,6 +7,8 @@ use tonic_tracing_opentelemetry::middleware::server::OtelGrpcLayer;
 use init_tracing_opentelemetry::resource::DetectResource;
 
 
+const MAX_FRAME_SIZE: u32 = 16 * 1000 * 1000; // 16 MB
+
 #[tokio::main]
 async fn main() {
     println!("Hello, world!");
@@ -39,8 +41,9 @@ async fn main() {
     let tracer = OtelGrpcLayer::default();
 
     Server::builder()
+        .max_frame_size(MAX_FRAME_SIZE)
         .layer(tracer)
-        .add_service(TransformerServer::server())
+        .add_service(TransformerServer::server().max_decoding_message_size(MAX_FRAME_SIZE as usize))
         .serve(addr)
         .await.unwrap();
 

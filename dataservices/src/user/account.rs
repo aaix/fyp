@@ -178,19 +178,31 @@ impl ScyllaUserService {
 
         let unpacked = request.into_inner();
 
+        if unpacked.username.is_some() {
+            return Err(Status::unimplemented("Username updates not supported yet").into());
+        }
 
         let username = MaybeUnset::from_option(unpacked.username);
-        let avatar: MaybeUnset<Uuid> = MaybeUnset::from_option(unpacked.avatar_asset_id.map(|id| id.into()));
+
+        let avatar_id = if let Some(v) = unpacked.opt_make_avatar_asset_id {
+            if !v {
+                return Err(Status::invalid_argument("Unexpected false value").into())
+            };
+
+            MaybeUnset::Set(gen_timeuuid())
+        } else {
+            MaybeUnset::Unset
+        };
 
 
 
         db().await.execute_unpaged(
             &self.update_user_prepared,
-            (&username, &avatar, &user_id)
+            (&username, &avatar_id, &user_id)
         ).await?;
 
 
-        todo!()
+        Ok(Response::new(self._read_user_reuse(user_id).await?))
     }
 
     async fn delete_user_impl(

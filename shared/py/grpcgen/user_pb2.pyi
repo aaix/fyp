@@ -1,4 +1,5 @@
 import plib_pb2 as _plib_pb2
+from google.protobuf import wrappers_pb2 as _wrappers_pb2
 from google.protobuf.internal import containers as _containers
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
@@ -50,14 +51,14 @@ class CreateUserRequest(_message.Message):
     def __init__(self, username: _Optional[str] = ..., email: _Optional[str] = ..., public_key: _Optional[bytes] = ...) -> None: ...
 
 class UpdateUserRequest(_message.Message):
-    __slots__ = ("user_id", "username", "avatar_asset_id")
+    __slots__ = ("user_id", "username", "opt_make_avatar_asset_id")
     USER_ID_FIELD_NUMBER: _ClassVar[int]
     USERNAME_FIELD_NUMBER: _ClassVar[int]
-    AVATAR_ASSET_ID_FIELD_NUMBER: _ClassVar[int]
+    OPT_MAKE_AVATAR_ASSET_ID_FIELD_NUMBER: _ClassVar[int]
     user_id: _plib_pb2.pUUID
     username: str
-    avatar_asset_id: _plib_pb2.pUUID
-    def __init__(self, user_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., username: _Optional[str] = ..., avatar_asset_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ...) -> None: ...
+    opt_make_avatar_asset_id: _wrappers_pb2.BoolValue
+    def __init__(self, user_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., username: _Optional[str] = ..., opt_make_avatar_asset_id: _Optional[_Union[_wrappers_pb2.BoolValue, _Mapping]] = ...) -> None: ...
 
 class DeleteUserRequest(_message.Message):
     __slots__ = ("user_id",)

@@ -18,6 +18,9 @@ class DiscoveryManager(SingletonMixin):
     def discover_dataservices(self) -> str:
         return environ["DATASERVICES_URI"]
     
+    def discover_mediaservices(self) -> str:
+        return environ["MEDIASERVICES_URI"]
+
     def discover_otel(self) -> str:
         return environ["OTEL_URI"]
     

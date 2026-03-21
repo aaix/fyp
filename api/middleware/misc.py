@@ -16,7 +16,10 @@ class HeaderValidationMiddleware(InstrumentedMiddleware):
         if path.startswith("/docs") or path.startswith("/openapi.json") or path.startswith("/redoc"):
             return await call_next(request)
 
-        if not (content_type := request.headers.get("content-type")) or content_type != "application/json":
-            return errors.UnsupportedMediaType("Excpected application/json content type")
+        if not (content_type := request.headers.get("content-type")):
+            return errors.UnsupportedMediaType("Unexpected missing content type")
+
+        if not content_type.startswith("multipart/form-data") and content_type != "application/json":
+            return errors.UnsupportedMediaType("Unexpected content type, execting application/json or multipart/form-data")
 
         return await call_next(request)

@@ -36,7 +36,7 @@ bigpicture = BigPictureClient()
 middlewares = ( # outer
     Middleware(
         CORSMiddleware, 
-        allow_origins=["http://localhost:5500", "http://localhost:5173"],
+        allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
         allow_methods=["*"],
         allow_headers=["Authorization"],
     ),

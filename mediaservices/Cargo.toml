@@ -6,7 +6,7 @@ edition = "2024"
 [dependencies]
 tokio = { version = "1.40", features=["rt-multi-thread", "sync"]}
 tokio-util = { version = "0.7.18", features = ["io", "io-util"]}
-tonic = { version = "0.14.2", features = ["server"] }
+tonic = { version = "0.14.2", features = ["server", "gzip"] }
 tonic-prost = "0.14.2"
 prost = "0.14.1"
 prost-types="0.14.1"
