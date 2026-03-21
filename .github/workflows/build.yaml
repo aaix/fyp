@@ -10,13 +10,12 @@ env:
   PROJECT_ID: fyp-25coc251
   REGION: europe-west2
   REPOSITORY: az7-backend
+  # Must match REGION/PROJECT_ID/REPOSITORY — api/gateway push shared here for buildx to pull BASE_IMAGE.
+  SHARED_BASE_IMAGE: europe-west2-docker.pkg.dev/fyp-25coc251/az7-backend/shared-base
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
-    env:
-      # api/gateway push shared here so buildx (docker-container) can pull BASE_IMAGE; enables GHA cache (unsupported on docker driver).
-      SHARED_BASE_IMAGE: ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/shared-base
     strategy:
       matrix:
         service: [dataservices, database, api, gateway, discoverystore, mediaservices]
