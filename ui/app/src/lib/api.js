@@ -1,4 +1,4 @@
-const BASE_URI = 'http://192.168.172.208:8000'
+const BASE_URI = '/api'
 
 /**
  * @class APIResponse
