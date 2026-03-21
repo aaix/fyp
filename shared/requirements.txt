@@ -4,6 +4,7 @@ grpcio==1.76.0
 protobuf==6.33.5
 valkey-glide==2.2.7
 uhashring==2.4
+aioboto3==15.5.0
 
 opentelemetry-api
 opentelemetry-sdk

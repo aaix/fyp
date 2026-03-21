@@ -66,12 +66,18 @@ services:
       - shared-network
     image: az-api:latest
     environment:
-        DATASERVICES_URI: "dataservices-0:3114"
-        OTEL_URI: "http://jaeger:4317"
-        API_SESSION_SIGNING_KEY: ${SECRET_KEY_API_SESSION_SIGN}
-        API_SESSION_ENCRYPTION_KEY: ${SECRET_KEY_API_SESSION_ENCRYPT}
-        VALKEY_URI: discoverystore-0:6379
-        MEDIASERVICES_URI: mediaservices-0:3119
+      DATASERVICES_URI: "dataservices-0:3114"
+      OTEL_URI: "http://jaeger:4317"
+      API_SESSION_SIGNING_KEY: ${SECRET_KEY_API_SESSION_SIGN}
+      API_SESSION_ENCRYPTION_KEY: ${SECRET_KEY_API_SESSION_ENCRYPT}
+      VALKEY_URI: discoverystore-0:6379
+      MEDIASERVICES_URI: mediaservices-0:3119
+
+      S3_PUBLIC_BUCKET: az7-dev-public
+      S3_PRIVATE_BUCKET: az7-dev-private
+      S3_ENDPOINT_URL: https://f2254f3b9e16dcc38a23d6ffc5db10a8.r2.cloudflarestorage.com
+      S3_ACCESS_KEY_ID: ${SECRET_S3_ACCESS_KEY_ID}
+      S3_ACCESS_KEY_SECRET: ${SECRET_S3_ACCESS_KEY_SECRET}
 
     depends_on:
       - dataservices-0

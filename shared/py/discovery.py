@@ -23,6 +23,12 @@ class DiscoveryManager(SingletonMixin):
 
     def discover_otel(self) -> str:
         return environ["OTEL_URI"]
+
+    def find_s3_creds(self) -> tuple[str, str, str]:
+        return (environ["S3_ENDPOINT_URL"], self.find_key("S3_ACCESS_KEY_ID"), self.find_key("S3_ACCESS_KEY_SECRET"))
+    
+    def find_s3_buckets(self) -> tuple[str, str]:
+        return (environ["S3_PUBLIC_BUCKET"], environ["S3_PRIVATE_BUCKET"])
     
     def find_key(self, key_name: str) -> str:
         try:
