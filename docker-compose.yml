@@ -123,7 +123,7 @@ services:
         target: /etc/scylla/scylla.yaml
     networks:
       shared-network:
-          ipv4_address: 172.31.0.7
+          ipv4_address: 172.31.0.203
 
   scylla-node2:
     <<: *scylla-base
@@ -138,7 +138,7 @@ services:
         target: /etc/scylla/scylla.yaml
     networks:
       shared-network:
-          ipv4_address: 172.31.0.4
+          ipv4_address: 172.31.0.202
 
   scylla-node3:
     <<: *scylla-base
@@ -153,7 +153,7 @@ services:
         target: /etc/scylla/scylla.yaml
     networks:
       shared-network:
-          ipv4_address: 172.31.0.5
+          ipv4_address: 172.31.0.201
 
   scylla-node4:
     <<: *scylla-base
@@ -168,4 +168,4 @@ services:
         target: /etc/scylla/scylla.yaml
     networks:
       shared-network:
-          ipv4_address: 172.31.0.6
+          ipv4_address: 172.31.0.200
