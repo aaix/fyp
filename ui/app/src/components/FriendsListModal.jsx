@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { relationshipManager, userManager } from '../lib/user.js'
 import { getAvatarUrl } from '../lib/utils.js'
 import ModalCloseButton from './ModalCloseButton.jsx'
+import UserAvatar from './UserAvatar.jsx'
 import useEscapeToClose from './useEscapeToClose.js'
 
 const FRIENDS = 3
@@ -120,15 +121,12 @@ export default function FriendsListModal({ open, onClose }) {
                   className={rowBase}
                   onClick={onClose}
                 >
-                  {friend.icon_url ? (
-                    <img
-                      src={friend.icon_url}
-                      alt={friend.username ? `${friend.username}'s avatar` : 'User avatar'}
-                      className="h-11 w-11 flex-shrink-0 rounded-full border border-[color:var(--card-border)] object-cover"
-                    />
-                  ) : (
-                    <div className="h-11 w-11 flex-shrink-0 rounded-full border border-[color:var(--card-border)] bg-[color:var(--card-bg)]" />
-                  )}
+                  <UserAvatar
+                    userId={friend.user_id}
+                    src={friend.icon_url}
+                    alt={friend.username ? `${friend.username}'s avatar` : 'User avatar'}
+                    className="h-11 w-11 flex-shrink-0 rounded-full border border-[color:var(--card-border)] object-cover"
+                  />
                   <span className="font-medium">@{friend.username || 'user'}</span>
                 </Link>
               </li>

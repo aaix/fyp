@@ -1,5 +1,6 @@
 import { memo } from 'react'
 import { userContentUrl } from '../lib/utils.js'
+import UserAvatar from './UserAvatar.jsx'
 
 // Extract a Unix timestamp (ms) from a time-based UUID (UUID v1 / "timeuuid").
 // Works with UUIDs generated from Scylla/UUID time-based schemes.
@@ -95,15 +96,12 @@ function Message({ message, author, isOwn }) {
   return (
     <li className={`flex w-full ${isOwn ? 'justify-end' : 'justify-start'}`}>
       <div className={`flex w-full min-w-0 gap-2 ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
-        {avatarUrl ? (
-          <img
-            src={avatarUrl}
-            alt=""
-            className="mt-1 h-8 w-8 flex-shrink-0 rounded-full border border-[color:var(--card-border)] object-cover"
-          />
-        ) : (
-          <div className="mt-1 h-8 w-8 flex-shrink-0 rounded-full border border-[color:var(--card-border)] bg-[color:var(--card-bg)]" />
-        )}
+        <UserAvatar
+          userId={author?.user_id}
+          src={avatarUrl}
+          alt=""
+          className="mt-1 h-8 w-8 flex-shrink-0 rounded-full border border-[color:var(--card-border)] object-cover"
+        />
 
         <div
           className={`min-w-0 max-w-[80%] rounded-card border border-[color:var(--card-border)] px-3 py-2 flex-shrink ${

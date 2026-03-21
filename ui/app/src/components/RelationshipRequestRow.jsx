@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import Button from './Button.jsx'
+import UserAvatar from './UserAvatar.jsx'
 
 const rowBase =
   'flex w-full items-center gap-3 border-b border-[color:var(--card-border)] px-1 py-2 text-left text-sm text-[color:var(--text-primary)]'
@@ -20,15 +21,12 @@ export default function RelationshipRequestRow({
 }) {
   const content = (
     <>
-      {iconUrl ? (
-        <img
-          src={iconUrl}
-          alt={username ? `${username}'s avatar` : 'User avatar'}
-          className="h-11 w-11 flex-shrink-0 rounded-full border border-[color:var(--card-border)] object-cover"
-        />
-      ) : (
-        <div className="h-11 w-11 flex-shrink-0 rounded-full border border-[color:var(--card-border)] bg-[color:var(--card-bg)]" />
-      )}
+      <UserAvatar
+        userId={peerId}
+        src={iconUrl}
+        alt={username ? `${username}'s avatar` : 'User avatar'}
+        className="h-11 w-11 flex-shrink-0 rounded-full border border-[color:var(--card-border)] object-cover"
+      />
       <span className="min-w-0 flex-1 font-medium truncate">@{username || 'user'}</span>
       {variant === 'incoming' && (
         <div className="flex flex-shrink-0 gap-2">

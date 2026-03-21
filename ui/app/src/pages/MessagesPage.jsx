@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import PageContainer from '../components/PageContainer.jsx'
 import Card from '../components/Card.jsx'
 import CreateChannelModal from '../components/CreateChannelModal.jsx'
+import UserAvatar from '../components/UserAvatar.jsx'
 import AddChannelMembersModal from '../components/AddChannelMembersModal.jsx'
 import ContextMenu from '../components/ContextMenu.jsx'
 import ConfirmModal from '../components/ConfirmModal.jsx'
@@ -1241,15 +1242,12 @@ export default function MessagesPage() {
                         {selectedMembers.map((m) => (
                           <li key={m.user_id} className="relative">
                             <div className="flex items-center gap-3 rounded-button px-2 py-2 hover:bg-[color:var(--card-bg)]">
-                              {m.icon_url ? (
-                                <img
-                                  src={m.icon_url}
-                                  alt=""
-                                  className="h-9 w-9 flex-shrink-0 rounded-full border border-[color:var(--card-border)] object-cover"
-                                />
-                              ) : (
-                                <div className="h-9 w-9 flex-shrink-0 rounded-full border border-[color:var(--card-border)] bg-[color:var(--card-bg)]" />
-                              )}
+                              <UserAvatar
+                                userId={m.user_id}
+                                src={m.icon_url}
+                                alt=""
+                                className="h-9 w-9 flex-shrink-0 rounded-full border border-[color:var(--card-border)] object-cover"
+                              />
                               <div className="min-w-0 flex-1">
                                 <div className="truncate text-sm font-medium text-[color:var(--text-primary)]">
                                   @{m.username || 'user'}

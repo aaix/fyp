@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { relationshipManager, userManager } from '../lib/user.js'
 import { getAvatarUrl } from '../lib/utils.js'
+import UserAvatar from './UserAvatar.jsx'
 import Button from './Button.jsx'
 
 /**
@@ -171,15 +172,12 @@ export default function FriendMultiSelect({
                   disabled={disableRow}
                   aria-pressed={checked}
                 >
-                  {getAvatarUrl(friend) ? (
-                    <img
-                      src={getAvatarUrl(friend)}
-                      alt={friend?.username ? `${friend.username}'s avatar` : 'User avatar'}
-                      className="h-10 w-10 flex-shrink-0 rounded-full border border-[color:var(--card-border)] object-cover"
-                    />
-                  ) : (
-                    <div className="h-10 w-10 flex-shrink-0 rounded-full border border-[color:var(--card-border)] bg-[color:var(--card-bg)]" />
-                  )}
+                  <UserAvatar
+                    userId={friend.user_id}
+                    src={getAvatarUrl(friend)}
+                    alt={friend?.username ? `${friend.username}'s avatar` : 'User avatar'}
+                    className="h-10 w-10 flex-shrink-0 rounded-full border border-[color:var(--card-border)] object-cover"
+                  />
                   <div className="min-w-0 flex-1">
                     <div className="truncate font-medium">@{friend?.username ?? 'user'}</div>
                   </div>

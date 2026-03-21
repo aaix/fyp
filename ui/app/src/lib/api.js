@@ -1,4 +1,4 @@
-const BASE_URI = '/api'
+const BASE_URI = 'http://192.168.172.208:8000'
 
 /**
  * @class APIResponse
@@ -23,15 +23,16 @@ const defaultOptions = {
   useSession: true,
 }
 
-async function _api(uri, method, body = undefined, options = {}) {
-  body =
-    method !== 'GET' && method !== 'HEAD' ? JSON.stringify(body) : undefined
+async function _api(uri, method, body = undefined, _options = {}) {
 
   const authorization = localStorage.getItem("session_key");
-  options = { ...defaultOptions, ...options }
+  const options = { ...defaultOptions, ..._options }
 
-  const headers = {
-    'content-type': 'application/json',
+  const headers = {}
+
+  if (!options.useForm) {
+    headers['content-type'] = 'application/json';
+    body = method !== 'GET' && method !== 'HEAD' ? JSON.stringify(body) : undefined
   }
 
   if (authorization && options.useSession) {

@@ -1,4 +1,6 @@
-const USER_CONTENT_BASE = "https://usercontent.az7.chat"
+const PUBLIC_BASE = "https://userpublic.dev.az7.chat";
+const PRIVATE_BASE = "https://userprivate.dev.az7.chat";
+
 
 export async function blobToB64(blob) {
   const dataUrl = await new Promise((resolve, reject) => {
@@ -38,8 +40,14 @@ export function timeFromUUIDv1(uuid) {
   return new Date(unixTimestamp);
 }
 
-export function userContentUrl(bucket, asset_id, extension) {
-  return `${USER_CONTENT_BASE}/${bucket}/${asset_id}.${extension}`
+export function userContentUrl(is_public, bucket, asset_id) {
+  let base;
+  if (is_public) {
+    base = PUBLIC_BASE;
+  } else {
+    base = PRIVATE_BASE;
+  }
+  return `${base}/${bucket}/${asset_id}`
 }
 
 export function getAvatarUrl(user) {
@@ -47,7 +55,7 @@ export function getAvatarUrl(user) {
     return getDefaultAvatarUrl(user.user_id);
   }
 
-  return userContentUrl(user.user_id, user.avatar_asset_id, "webp");
+  return userContentUrl(true, user.user_id, user.avatar_asset_id);
 
 }
 

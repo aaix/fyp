@@ -4,6 +4,7 @@ import { userManager, mapSearchResponseToUserList } from '../lib/user.js'
 import { useDebouncedValue } from '../lib/useDebounce.js'
 import PageContainer from '../components/PageContainer.jsx'
 import Button from '../components/Button.jsx'
+import UserAvatar from '../components/UserAvatar.jsx'
 
 const SEARCH_DEBOUNCE_MS = 150
 const MIN_QUERY_LENGTH = 2
@@ -105,15 +106,12 @@ export default function SearchPage() {
                   className="w-full justify-start gap-3 rounded-none border-b border-[color:var(--card-border)] px-1 py-2 text-left text-sm text-[color:var(--text-primary)] hover:bg-[color:var(--card-bg)]"
                   onClick={() => handleUserClick(user)}
                 >
-                  {user.icon_url ? (
-                    <img
-                      src={user.icon_url}
-                      alt={user.username ? `${user.username}'s avatar` : 'User avatar'}
-                      className="h-11 w-11 flex-shrink-0 rounded-full border border-[color:var(--card-border)] object-cover"
-                    />
-                  ) : (
-                    <div className="h-11 w-11 flex-shrink-0 rounded-full border border-[color:var(--card-border)] bg-[color:var(--card-bg)]" />
-                  )}
+                  <UserAvatar
+                    userId={user.user_id}
+                    src={user.icon_url}
+                    alt={user.username ? `${user.username}'s avatar` : 'User avatar'}
+                    className="h-11 w-11 flex-shrink-0 rounded-full border border-[color:var(--card-border)] object-cover"
+                  />
                   <span className="font-medium">@{user.username}</span>
                 </Button>
               </li>

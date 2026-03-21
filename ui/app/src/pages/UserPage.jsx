@@ -12,12 +12,17 @@ const FRIENDS = 3
 const PEER_BLOCKED_CURRENT = 5
 const CURRENT_BLOCKED_PEER = 6
 
-function userToProfile(user) {
-  if (!user) return { username: '', iconUrl: null, friendsCount: 0 }
+function userToProfile(user, routeUserId) {
+  const uid = user?.user_id ?? routeUserId ?? null
+  if (!user && !routeUserId) return { username: '', iconUrl: null, friendsCount: 0, userId: null }
+  if (!user) {
+    return { username: '', iconUrl: null, friendsCount: 0, userId: uid ? String(uid) : null }
+  }
   return {
     username: user.username ?? '',
     iconUrl: user.icon_url ?? (user.user_id ? getAvatarUrl(user) : null),
     friendsCount: 0,
+    userId: user.user_id ?? (routeUserId != null ? String(routeUserId) : null),
   }
 }
 
@@ -31,7 +36,7 @@ export default function UserPage() {
   const stateUser = location.state?.user
 
   const [currentUserId, setCurrentUserId] = useState(null)
-  const [profile, setProfile] = useState(() => userToProfile(stateUser))
+  const [profile, setProfile] = useState(() => userToProfile(stateUser, userId))
   const [relationship, setRelationship] = useState(null)
   const [blockRelationship, setBlockRelationship] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -83,6 +88,7 @@ export default function UserPage() {
             username: user?.username ?? '',
             iconUrl: user ? getAvatarUrl(user) : null,
             friendsCount: 0,
+            userId: user?.user_id ?? userId ?? null,
           })
         } else if (profileRes?.data) {
           const user = profileRes.data?.user ?? profileRes.data
@@ -90,6 +96,7 @@ export default function UserPage() {
             username: user?.username ?? '',
             iconUrl: user ? getAvatarUrl(user) : null,
             friendsCount: 0,
+            userId: user?.user_id ?? userId ?? null,
           })
         }
 

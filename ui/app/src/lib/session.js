@@ -100,13 +100,7 @@ class KeyStore {
 export const keyStore = new KeyStore()
 
 
-export function getCurrentSession() {
-  if (getCurrentSession._session !== undefined) {
-    return getCurrentSession._session;
-  }
-  getCurrentSession._session = new Session()
-  return getCurrentSession._session;
-}
+
 export class Session {
   constructor() {
     this.session_key = localStorage.getItem("session_key");
@@ -123,6 +117,13 @@ export class Session {
     localStorage.removeItem("user_id");
   }
 
+
+  async setMyAvatar(data) {
+    let form = new FormData();
+    form.append('icon', data);
+
+    return await API.PUT("account/@me/icon", form, {useForm : true})
+  }
 
   
   async doAccountKeyHandshake(username_or_id, extractable = false) {
@@ -280,3 +281,9 @@ export class DeviceManager {
     return res;
   }
 }
+
+export function getCurrentSession() {
+  return _session;
+}
+
+let _session = new Session();
