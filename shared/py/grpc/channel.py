@@ -30,7 +30,7 @@ async def edit_channel(
     *,
     channel_name: MaybeUnset[bytes | None] = UNSET,
     icon_id: MaybeUnset[UUID | None] = UNSET,
-    latest_bucket: int | None = None,
+    latest_bucket: MaybeUnset[int] = UNSET,
     members: Iterable[pUUID] = (),
 ) -> channel_pb2.ChannelObjectResponse:
     
@@ -40,7 +40,10 @@ async def edit_channel(
     if icon_id is not UNSET:
         update_mask.append("opt_channel_icon_asset_id")
     
-
+    if latest_bucket is not UNSET:
+        latest_bucket_v = latest_bucket
+    else:
+        latest_bucket_v = None
 
     msg = channel_pb2.UpdateChannelRequest(
         channel_id=id_puuid(channel_id),
@@ -48,7 +51,7 @@ async def edit_channel(
         opt_channel_name=channel_name if channel_name else None,
         update_mask=FieldMask(paths=update_mask),
         members_to_update=members,
-        last_bucket=latest_bucket
+        last_bucket=latest_bucket_v
     )
 
     return cast(channel_pb2.ChannelObjectResponse, await lazy.stub.UpdateChannel(msg))
