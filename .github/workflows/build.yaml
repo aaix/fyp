@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       # api/gateway push shared here so buildx (docker-container) can pull BASE_IMAGE; enables GHA cache (unsupported on docker driver).
-      SHARED_BASE_IMAGE: ${{ format('{0}-docker.pkg.dev/{1}/{2}/shared-base', env.REGION, env.PROJECT_ID, env.REPOSITORY) }}
+      SHARED_BASE_IMAGE: ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/shared-base
     strategy:
       matrix:
         service: [dataservices, database, api, gateway, discoverystore, mediaservices]
