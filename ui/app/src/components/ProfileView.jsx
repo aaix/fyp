@@ -56,7 +56,7 @@ export default function ProfileView({
 
   const avatarBlock =
     onAvatarFileSelected != null ? (
-      <div className="group relative h-48 w-48 shrink-0">
+      <div className="group relative max-sm:h-24 max-sm:w-24 sm:h-48 sm:w-48 shrink-0">
         <input
           ref={fileInputRef}
           type="file"
@@ -105,7 +105,7 @@ export default function ProfileView({
         src={iconUrl}
         alt={avatarAlt}
         loading={loading}
-        className="aspect-square h-48 w-48 rounded-full border-2 border-[color:var(--card-border)] object-cover"
+        className="aspect-square max-sm:h-24 max-sm:w-24 min-md:h-48 min-md:w-48 rounded-full border-2 border-[color:var(--card-border)] object-cover"
       />
     )
 
