@@ -71,6 +71,7 @@ services:
         API_SESSION_SIGNING_KEY: ${SECRET_KEY_API_SESSION_SIGN}
         API_SESSION_ENCRYPTION_KEY: ${SECRET_KEY_API_SESSION_ENCRYPT}
         VALKEY_URI: discoverystore-0:6379
+        MEDIASERVICES_URI: mediaservices-0:3119
 
     depends_on:
       - dataservices-0

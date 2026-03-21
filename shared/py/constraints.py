@@ -23,3 +23,5 @@ CHANNEL_MAX_NUM_MEMBERS: Final[int] = 15
 USER_MAX_NUM_DEVICES: Final[int] = 15
 
 MAX_MESSAGES_QUERYABLE: Final[int] = 50
+
+ICON_MAX_UPLOAD_SIZE: Final[int] = 10 * 1000 * 1000  # 10 million bytes

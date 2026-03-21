@@ -10,11 +10,17 @@ from api.responses import errors
 from api.responses.status_codes import ERROR_SESSION_EXPIRED
 from api.utils import now
 
+from shared.py.discovery import DiscoveryManager
 from shared.py.grpc.id import id_compare
-from shared.py.grpcgen import user_pb2
+from shared.py.grpc.lazy import LazyGRPC
+from shared.py.grpc.user import get_user
+from shared.py.grpcgen import user_pb2, user_pb2_grpc
 
 CONF_SESSION_DURATION = 4 * 60 * 60 # 4 hours
 
+
+discovery = DiscoveryManager()
+grpcuser = LazyGRPC(discovery.discover_dataservices(), user_pb2_grpc.UserServiceStub)
 
 
 @dataclass
@@ -22,6 +28,10 @@ class Session:
     issued: float
     version: int
     user_id: UUID
+
+    async def full_user(self) -> user_pb2.ReadUserResponse:
+        return await get_user(grpcuser, self.user_id)
+
 
     def to_encode(self) -> bytes:
         return cast(bytes, msgpack.packb({

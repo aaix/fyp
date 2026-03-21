@@ -178,9 +178,6 @@ impl ScyllaUserService {
 
         let unpacked = request.into_inner();
 
-        if unpacked.username.is_some() {
-            return Err(Status::unimplemented("Username updates not supported yet").into());
-        }
 
         let username = MaybeUnset::from_option(unpacked.username);
         let avatar: MaybeUnset<Uuid> = MaybeUnset::from_option(unpacked.avatar_asset_id.map(|id| id.into()));

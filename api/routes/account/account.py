@@ -1,8 +1,9 @@
-from typing import cast
+from typing import Annotated, cast
 
 from uuid import UUID
+import uuid
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, File, Request, UploadFile
 from grpc import StatusCode
 
 from api import *
@@ -10,7 +11,8 @@ from api import *
 from api.routes.account.models import *
 from api.utils import RpcErrHandler, unwrap, ResourceNotFoundRpcHandler
 
-from shared.py.constraints import USER_MAX_NUM_DEVICES
+from shared.py import asset
+from shared.py.constraints import ICON_MAX_UPLOAD_SIZE, USER_MAX_NUM_DEVICES
 from shared.py.intraservice.client import BigPictureClient
 from shared.py.grpc.id import id_compare, puuid_uuid, id_t, uuid_puuid
 from shared.py.grpc.user import get_user, get_user_by_username
@@ -160,7 +162,7 @@ async def patch_device(s: SessionParam, device_id: UUID, body: UpdateDeviceBody)
 
 @AccountRouter.get("/@me")
 async def my_account(s: SessionParam) -> AccountResponse:
-    res = await get_user(grpcuser, s.user_id)
+    res = await s.full_user()
 
     gateway = await bigpicture.get_node(s.user_id)
 
@@ -175,3 +177,9 @@ async def my_account(s: SessionParam) -> AccountResponse:
     )
 
 
+@AccountRouter.put("/@me/icon")
+async def set_my_icon(s: SessionParam, icon: Annotated[UploadFile, File(max_length=ICON_MAX_UPLOAD_SIZE)]) -> UUID:
+    user = await s.full_user()
+    if user.HasField("avatar_asset_id"):
+        await asset.delete_asset(public=True, bucket_id=s.user_id, asset_id=user.avatar_asset_id)
+    asset_id = uuid.uuid1()
