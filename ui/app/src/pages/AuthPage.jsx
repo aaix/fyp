@@ -15,6 +15,7 @@ export default function AuthPage({ onLogin }) {
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(false)
   const [info, setInfo] = useState(null)
+  const [pairingDetails, setPairingDetails] = useState(null)
 
   useEffect(() => {
     document.title = 'az7 | Sign in'
@@ -25,12 +26,14 @@ export default function AuthPage({ onLogin }) {
     setFormData((prev) => ({ ...prev, [name]: value }))
     setError(null)
     setInfo(null)
+    setPairingDetails(null)
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError(null)
     setInfo(null)
+    setPairingDetails(null)
     setLoading(true)
 
     const session = getCurrentSession();
@@ -56,18 +59,18 @@ export default function AuthPage({ onLogin }) {
               : err?.reason
               ? `Gateway error: ${err.reason}`
               : 'Something went wrong with the device handshake')
+          setPairingDetails(null)
           setError(message)
           setLoading(false)
         }
 
         const otCallback = (oneTimeCode, digest) => {
-          setInfo(
-            `On your other device, choose the option to add this device and enter the following one-time code: ${oneTimeCode}. ` +
-            `After entering the code, check that the following matches on the other device: ${digest}.`
-          )
+          setInfo(null)
+          setPairingDetails({ code: String(oneTimeCode), digest: String(digest) })
         }
 
         const successCallback = () => {
+          setPairingDetails(null)
           setInfo('This device has been added successfully. You can now log in from this device.')
           setLoading(false)
         }
@@ -99,6 +102,7 @@ export default function AuthPage({ onLogin }) {
       }
     } catch (err) {
       console.error(err);
+      setPairingDetails(null)
       setError(err.message || 'Something went wrong')
     } finally {
       setLoading(false)
@@ -125,7 +129,10 @@ export default function AuthPage({ onLogin }) {
                   ? 'border-[color:var(--accent)] bg-[color:var(--tab-active-bg)] text-[color:var(--accent)]'
                   : 'border-transparent'
               }`}
-              onClick={() => setMode('login')}
+              onClick={() => {
+                setMode('login')
+                setPairingDetails(null)
+              }}
             >
               Continue on this device
             </Button>
@@ -138,7 +145,10 @@ export default function AuthPage({ onLogin }) {
                   ? 'border-[color:var(--accent)] bg-[color:var(--tab-active-bg)] text-[color:var(--accent)]'
                   : 'border-transparent'
               }`}
-              onClick={() => setMode('signup')}
+              onClick={() => {
+                setMode('signup')
+                setPairingDetails(null)
+              }}
             >
               Sign up
             </Button>
@@ -151,7 +161,10 @@ export default function AuthPage({ onLogin }) {
                   ? 'border-[color:var(--accent)] bg-[color:var(--tab-active-bg)] text-[color:var(--accent)]'
                   : 'border-transparent'
               }`}
-              onClick={() => setMode('otherDevice')}
+              onClick={() => {
+                setMode('otherDevice')
+                setPairingDetails(null)
+              }}
             >
               Log in from other device
             </Button>
@@ -167,7 +180,62 @@ export default function AuthPage({ onLogin }) {
               {error}
             </div>
           )}
-          {info && !error && (
+          {pairingDetails && !error && (
+            <section
+              className="rounded-button border border-[color:var(--accent)]/40 bg-[color:var(--card-bg)] px-4 py-4"
+              role="status"
+              aria-labelledby="pairing-region-title"
+              aria-live="polite"
+            >
+              <h2
+                id="pairing-region-title"
+                className="sr-only"
+              >
+                Add this device: enter the one-time code on your other device
+              </h2>
+              <p
+                id="pairing-instructions"
+                className="m-0 text-sm leading-relaxed text-[color:var(--text-primary)]"
+              >
+                <span className="sr-only">
+                  On your signed-in device, go to Account, then Settings, then Devices.{' '}
+                </span>
+                On your signed-in device, go to{' '}
+                <span className="font-semibold">Account</span>
+                <span className="text-[color:var(--text-muted)]" aria-hidden="true">
+                  {' '}
+                  &gt;{' '}
+                </span>
+                <span className="font-semibold">Settings</span>
+                <span className="text-[color:var(--text-muted)]" aria-hidden="true">
+                  {' '}
+                  &gt;{' '}
+                </span>
+                <span className="font-semibold">Devices</span>
+                , then register this device and enter this code:
+              </p>
+              <div className="mt-4 flex flex-col items-center gap-1">
+                <p
+                  className="m-0 text-xs font-medium uppercase tracking-[0.14em] text-[color:var(--text-muted)]"
+                >
+                  One-time code
+                </p>
+                <p
+                  className="m-0 max-w-full break-all text-center font-mono text-3xl font-semibold leading-tight tracking-[0.12em] text-[color:var(--accent)] sm:text-4xl"
+                >
+                  {pairingDetails.code}
+                </p>
+              </div>
+              <p className="m-0 mt-4 text-[0.7rem] leading-snug text-[color:var(--text-muted)] opacity-80">
+                After you enter the code, do NOT add the device if the following fingerprint does not match:
+                {' '}
+                <span className="break-all font-mono text-[0.65rem] font-normal text-[color:var(--text-muted)] opacity-70">
+                  {pairingDetails.digest}
+                </span>
+              </p>
+            </section>
+          )}
+          {info && !error && !pairingDetails && (
             <div
               className="rounded-button border border-[color:var(--card-border)] bg-[color:var(--card-bg)] px-3 py-2 text-sm text-[color:var(--text-muted)]"
               role="status"
