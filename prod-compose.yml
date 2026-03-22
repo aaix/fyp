@@ -34,11 +34,10 @@ services:
 
   dataservices-0:
     networks:
-      shared-network:
-        ipv4_address: 172.31.0.10
+      - shared-network
     image: europe-west2-docker.pkg.dev/fyp-25coc251/az7-backend/dataservices:latest
     environment:
-      - SCYLLA_URI=172.31.0.2
+      - SCYLLA_URI=172.31.0.199
       - OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://172.31.0.254:4317
     depends_on:
       scylla-seed:
@@ -46,8 +45,7 @@ services:
 
   gateway-0:
     networks:
-      shared-network:
-        ipv4_address: 172.31.0.30
+      - shared-network
     image: europe-west2-docker.pkg.dev/fyp-25coc251/az7-backend/gateway:latest
     environment:
         DEPLOYMENT_MODE: prod
@@ -63,8 +61,7 @@ services:
   
   api-0:
     networks:
-      shared-network:
-        ipv4_address: 172.31.0.20
+      - shared-network
     image: europe-west2-docker.pkg.dev/fyp-25coc251/az7-backend/api:latest
     environment:
       DEPLOYMENT_MODE: prod
@@ -105,7 +102,7 @@ services:
   scylla-seed:
     networks:
       shared-network:
-        ipv4_address: 172.31.0.2
+        ipv4_address: 172.31.0.199
       
     image: europe-west2-docker.pkg.dev/fyp-25coc251/az7-backend/database:latest
     volumes:
@@ -128,4 +125,4 @@ services:
         target: /etc/scylla/scylla.yaml
     networks:
       shared-network:
-          ipv4_address: 172.31.0.3
+          ipv4_address: 172.31.0.200
