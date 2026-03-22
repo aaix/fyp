@@ -58,6 +58,7 @@ class MessageCreateEvent(BaseEvent):
     message_type: int
     attachment_id: UUID | None
     author_id: UUID
+    in_reply_to: UUID | None
 
 class UserTypingEvent(BaseEvent):
     intent: Literal["user_typing"] = "user_typing"

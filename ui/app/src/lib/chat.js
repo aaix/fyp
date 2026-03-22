@@ -277,7 +277,7 @@ class MessageManager {
         return res;
     }
 
-    async sendMessage(channel, message) {
+    async sendMessage(channel, message, in_reply_to_message_id = null) {
 
         if (message.attachment || message.attachment_type) {
             throw new Error("Attachments not yet supported")
@@ -299,6 +299,7 @@ class MessageManager {
         return await API.POST(`chat/channel/${channel.channel_id}/message`, {
             content: ciphertext,
             message_type: 0,
+            in_reply_to: in_reply_to_message_id,
         })
 
     }

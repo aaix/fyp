@@ -98,6 +98,9 @@ class ChannelsResponse(BaseModel):
 
 class NewMessageBody(BaseModel):
     message_type: int
+    # we deliberately dont check this in case the message has been DELETED
+    # at the same time as the message being sent
+    in_reply_to: UUID | None
     content: Annotated[Base64Input, Field(min_length=1)]
 
 class NewMessageResponse(BaseModel):
@@ -112,7 +115,8 @@ class NewMessageResponse(BaseModel):
             last_edited=rpc.opt_last_edited,
             content=rpc.opt_content,
             attachment_asset_id=puuid_uuid(rpc.opt_attachment_asset_id),
-            author_id=puuid_uuid(rpc.author_id) or unwrap()
+            author_id=puuid_uuid(rpc.author_id) or unwrap(),
+            in_reply_to=puuid_uuid(rpc.opt_in_reply_to)
         )
 
 
@@ -124,6 +128,7 @@ class NewMessageResponse(BaseModel):
     content: Base64Output | None
     attachment_asset_id: UUID | None
     author_id: UUID
+    in_reply_to: UUID | None
 
 class MessagesResponse(BaseModel):
     messages: list[NewMessageResponse]

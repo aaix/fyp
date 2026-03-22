@@ -22,6 +22,7 @@ message CreateMessageRequest {
     optional int64 opt_last_edited = 3;
     optional bytes opt_content = 4;
     optional plib.pUUID opt_attachment_asset_id = 5;
+    optional plib.pUUID opt_in_reply_to = 7;
 }
 
 message MessageObject {
@@ -33,16 +34,13 @@ message MessageObject {
     optional int64 opt_last_edited = 5;
     optional bytes opt_content = 6;
     optional plib.pUUID opt_attachment_asset_id = 7;
+    optional plib.pUUID opt_in_reply_to = 9;
 }
 
 message UpdateMessageRequest {
     plib.pUUID channel_id = 1;
     plib.pUUID message_id = 3;
-    int32 message_type = 4;
-    optional int64 opt_last_edited = 5;
-    optional bytes opt_content = 6;
-    optional plib.pUUID opt_attachment_asset_id = 7;
-    google.protobuf.FieldMask update_mask = 8;
+    bytes content = 6;
 }
 
 message ReadMessageRequest {

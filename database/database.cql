@@ -118,7 +118,7 @@ CREATE TABLE dataservices.message (
     opt_last_edited TIMESTAMP,
     opt_content BLOB,
     opt_attachment_asset_id TIMEUUID,
-    -- opt_in_reply_to TIMEUUID,
+    opt_in_reply_to TIMEUUID,
 
     -- we must know the bucket, however we can derive this from
     -- the message timestamp

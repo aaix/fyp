@@ -38,6 +38,8 @@ async def create_message(s: SessionParam, channel: ChannelParam, body: NewMessag
     
     author_id = uuid_puuid(s.user_id)
 
+    in_reply_to = uuid_puuid(body.in_reply_to) if body.in_reply_to else None
+
     message = cast(message_pb2.MessageObject, await grpcmessage.stub.CreateMessage(message_pb2.CreateMessageRequest(
         channel_id=channel.channel_id,
         message_type=body.message_type,
@@ -45,6 +47,7 @@ async def create_message(s: SessionParam, channel: ChannelParam, body: NewMessag
         opt_content=body.content,
         opt_attachment_asset_id=None,
         author_id=author_id,
+        opt_in_reply_to=in_reply_to
     )))
 
     await intraclient.fan_out(channel.channel_id, channel.channel_members, "message_create", lambda m_id: internalmessage_pb2.EventMessageCreate(
@@ -54,6 +57,7 @@ async def create_message(s: SessionParam, channel: ChannelParam, body: NewMessag
         channel_id=channel.channel_id,
         message_id=message.message_id,
         attachment_id=None,
+        in_reply_to=in_reply_to,
     ))
 
     if message.bucket != channel.latest_bucket:

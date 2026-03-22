@@ -1,0 +1,1 @@
+ALTER TABLE dataservices.message ADD (opt_in_reply_to TIMEUUID);
