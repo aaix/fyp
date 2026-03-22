@@ -50,6 +50,35 @@ CREATE TABLE dataservices.relationship (
     PRIMARY KEY (user_id_a, user_id_b, relationship_type)
 );
 
+CREATE TABLE dataservices.relationship_v2 (
+    user_id_a TIMEUUID,
+    user_id_b TIMEUUID,
+    created_at TIMESTAMP,
+    relationship_type INT,
+    -- 0 reserved
+
+    -- 1 a requesting b
+    -- 2 b requesting a
+
+    -- 3 a friends with b
+
+    -- 5 b blocked a
+    -- 6 a blocked by b
+    -- 7 a following b
+    -- 8 b following a
+    PRIMARY KEY (user_id_a, relationship_type, user_id_b)
+);
+
+
+CREATE TABLE dataservices.user_profile (
+    user_id TIMEUUID,
+    bio TEXT,
+    num_friends INT,
+    num_followers INT,
+
+    PRIMARY KEY (user_id)
+);
+
 
 CREATE TABLE dataservices.channel (
     channel_id TIMEUUID,
@@ -89,6 +118,7 @@ CREATE TABLE dataservices.message (
     opt_last_edited TIMESTAMP,
     opt_content BLOB,
     opt_attachment_asset_id TIMEUUID,
+    -- opt_in_reply_to TIMEUUID,
 
     -- we must know the bucket, however we can derive this from
     -- the message timestamp

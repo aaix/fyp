@@ -23,6 +23,9 @@ class RelationshipType(IntEnum):
     PEER_BLOCKED_CURRENT = 5
     CURRENT_BLOCKED_PEER = 6
 
+    CURRENT_FOLLOWING_PEER = 5
+    PEER_FOLLOWING_CURRENT = 6
+
 BLOCKED_RELATIONSHIPS = (RelationshipType.CURRENT_BLOCKED_PEER, RelationshipType.PEER_BLOCKED_CURRENT)
 
 async def create_relationship(
@@ -39,10 +42,11 @@ async def create_relationship(
         b_to_a_type=b_to_a_type.value,
     )))
 
-async def read_relationship(lazy: LazyGRPC[UserRelationshipServiceStub], user_id_a: id_t, user_id_b: id_t) -> user_pb2.ReadRelationshipResponse:
+async def read_relationship(lazy: LazyGRPC[UserRelationshipServiceStub], user_id_a: id_t, user_id_b: id_t, r_types: Iterable[RelationshipType]) -> user_pb2.ReadRelationshipResponse:
     return cast(user_pb2.ReadRelationshipResponse, await lazy.stub.ReadRelationship(user_pb2.ReadRelationshipRequest(
         user_id_a=id_puuid(user_id_a),
         user_id_b=id_puuid(user_id_b),
+        relationship_types=(r.value for r in r_types)
     )))
 
 async def test_relationship(lazy: LazyGRPC[UserRelationshipServiceStub], user_id_a: id_t, user_id_b: id_t, relationship_type: RelationshipType) -> user_pb2.RelationshipTestResponse:
@@ -58,7 +62,7 @@ async def test_many_relationships(lazy: LazyGRPC[UserRelationshipServiceStub], u
         tests=tests
     )))
 
-async def read_relationships(lazy: LazyGRPC[UserRelationshipServiceStub], user_id: id_t) -> user_pb2.RelationshipsResponse:
+async def read_relationships(lazy: LazyGRPC[UserRelationshipServiceStub], user_id: id_t, r_type: RelationshipType) -> user_pb2.RelationshipsResponse:
     return cast(user_pb2.RelationshipsResponse, await lazy.stub.ReadRelationships(user_pb2.ReadRelationshipsRequest(
         user_id=id_puuid(user_id)
     )))
@@ -80,25 +84,32 @@ async def delete_relationship(
 
 class PeerRelationshipManager:
     """Helper class for simplifying business logic of user relationships"""
-    def __init__(self, lazy: LazyGRPC[UserRelationshipServiceStub], current_user_id: id_t, peer_user_id: id_t, fetch_on_enter = True):
+    def __init__(
+            self,
+            lazy: LazyGRPC[UserRelationshipServiceStub],
+            current_user_id: id_t,
+            peer_user_id: id_t,
+            fetch_on_enter: Iterable[RelationshipType] | None = None
+        ):
         self.lazy: LazyGRPC[UserRelationshipServiceStub] = lazy
         self.current_id: id_t = current_user_id
         self.peer_id: id_t = peer_user_id
         self.relationships: None | Iterable[user_pb2.RelationshipObject] = None
-        self.fetch_on_enter: bool = fetch_on_enter
+        self.fetch_on_enter: Iterable[RelationshipType] | None = fetch_on_enter
     
     async def __aenter__(self) -> Self:
         if self.fetch_on_enter:
-            await self._get_relationship()
+            await self._get_relationship(self.fetch_on_enter)
         return self
     
     async def __aexit__(self, exc_type, exc, tb): ...
 
 
-    async def _get_relationship(self) -> Iterable[user_pb2.RelationshipObject]:
+    async def _get_relationship(self, r_types: Iterable[RelationshipType]) -> Iterable[user_pb2.RelationshipObject]:
+
         if self.relationships is not None:
             return self.relationships
-        res = await read_relationship(self.lazy, self.current_id, self.peer_id)
+        res = await read_relationship(self.lazy, self.current_id, self.peer_id, r_types)
         self.relationships =  res.relationships
         return self.relationships
 
@@ -119,42 +130,30 @@ class PeerRelationshipManager:
             peer_to_current_type,
         )
     
+    async def _do_test(self, r_type: RelationshipType) -> bool:
+        if self.fetch_on_enter and self.relationships is not None and r_type in self.fetch_on_enter:
+            return any((
+                rel.relationship_type == r_type for rel in self.relationships
+            ))
+        return await self._test_relationship(r_type)
+
+    
 
     async def are_friends(self) -> bool:
         """By key test of user friendship"""
-        if self.relationships is not None:
-            return any((
-                rel.relationship_type == RelationshipType.FRIENDS for rel in self.relationships
-            ))
-
-        return await self._test_relationship(RelationshipType.FRIENDS)
+        return await self._do_test(RelationshipType.FRIENDS)
 
     async def peer_blocked_current(self) -> bool:
-        relationships = await self._get_relationship()
-        return any((
-            rel.relationship_type == RelationshipType.PEER_BLOCKED_CURRENT for rel in relationships
-        ))
+        return await self._do_test(RelationshipType.PEER_BLOCKED_CURRENT)
 
-    async def is_blocked(self) -> bool:
-        """Test if either user has blocked the other"""
-        relationships = await self._get_relationship()
-        return any((
-            rel.relationship_type in BLOCKED_RELATIONSHIPS for rel in relationships
-        ))
+    async def current_blocked_peer(self) -> bool:
+        return await self._do_test(RelationshipType.CURRENT_BLOCKED_PEER)
     
     async def is_peer_requesting(self) -> bool:
-        r = await self._get_relationship()
-
-        return any((
-            rel.relationship_type == RelationshipType.PEER_REQUESTING_CURRENT for rel in r
-        ))
+        return await self._do_test(RelationshipType.PEER_REQUESTING_CURRENT)
 
     async def is_current_requesting(self) -> bool:
-        r = await self._get_relationship()
-
-        return any((
-            rel.relationship_type == RelationshipType.CURRENT_REQUESTING_PEER for rel in r
-        ))
+        return await self._do_test(RelationshipType.CURRENT_REQUESTING_PEER)
     
     async def set_friends(self) -> user_pb2.RelationshipObject:
         return await self._create_relationship(RelationshipType.FRIENDS, RelationshipType.FRIENDS)

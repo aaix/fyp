@@ -1,7 +1,7 @@
-from typing import cast
+from typing import Annotated, cast
 
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 
 from api import *
 
@@ -46,9 +46,9 @@ async def get_user_profile(s: SessionParam, user: UserParam) -> UserProfileRespo
     )
 
 @UserRouter.get("/relationships")
-async def my_relationships(s: SessionParam) -> RelationshipsResponse:
-    
-    res = await read_relationships(grpcrelationship, s.user_id)
+async def my_relationships(s: SessionParam, t: Annotated[RelationshipType, Query()]) -> RelationshipsResponse:
+
+    res = await read_relationships(grpcrelationship, s.user_id, t)
 
     out: list[UserRelationshipResponse] = []
 
@@ -56,11 +56,31 @@ async def my_relationships(s: SessionParam) -> RelationshipsResponse:
         out.append(
             UserRelationshipResponse(
                 peer_id=puuid_uuid(r.user_id_b) or unwrap(),
-                relationship=RelationshipType(r.relationship_type),
-                created_at=r.created_at
+                created_at=r.created_at,
+                relationship=t
             )
         )
     return RelationshipsResponse(relationships=out)
+
+@UserRouter.get("/relationship/{user_id}")
+async def get_relationships_with_user(s: SessionParam, peer: UserParam, types: Annotated[list[RelationshipType], Query()]) -> list[UserRelationshipResponse]:
+    s.assert_user_isnt_self(peer)
+
+    out: list[UserRelationshipResponse] = []
+
+    async with PeerRelationshipManager(grpcrelationship, s.user_id, peer.user_id, types) as m:
+        for r in m.relationships or unwrap():
+            out.append(
+                UserRelationshipResponse(
+                    peer_id=puuid_uuid(r.user_id_b) or unwrap(),
+                    created_at=r.created_at,
+                    relationship=RelationshipType(r.relationship_type)
+                )
+            )
+    
+    return out
+
+
 
 
 @UserRouter.put("/relationship/{user_id}/friend")
@@ -70,8 +90,17 @@ async def friend_user(s: SessionParam, peer: UserParam) -> UserRelationshipRespo
     
     peer_id = puuid_uuid(peer.user_id) or unwrap()
 
-    async with PeerRelationshipManager(grpcrelationship, s.user_id, peer.user_id) as r:
-        if await r.is_blocked():
+    fetch_on_enter = (
+        RelationshipType.FRIENDS,
+        RelationshipType.PEER_BLOCKED_CURRENT,
+        RelationshipType.CURRENT_BLOCKED_PEER,
+        RelationshipType.PEER_REQUESTING_CURRENT,
+    )
+
+    async with PeerRelationshipManager(grpcrelationship, s.user_id, peer.user_id, fetch_on_enter) as r:
+        if await r.current_blocked_peer():
+            raise ApiErrExc(errors.BadRequest("You have blocked that user"))
+        if await r.peer_blocked_current():
             raise ApiErrExc(errors.Forbidden("User is blocked"))
         if await r.are_friends():
             raise ApiErrExc(errors.BadRequest("Users are already friends", api_error_code=errors.ERROR_ALREADY_EXISTS))
@@ -94,8 +123,13 @@ async def friend_user(s: SessionParam, peer: UserParam) -> UserRelationshipRespo
 async def unfriend_user(s: SessionParam, peer: UserParam) -> None:
     s.assert_user_isnt_self(peer)
 
+    fetch_on_enter = (
+        RelationshipType.FRIENDS,
+        RelationshipType.PEER_REQUESTING_CURRENT,
+        RelationshipType.CURRENT_REQUESTING_PEER,
+    )
 
-    async with PeerRelationshipManager(grpcrelationship, s.user_id, peer.user_id) as r:
+    async with PeerRelationshipManager(grpcrelationship, s.user_id, peer.user_id, fetch_on_enter) as r:
         if await r.is_peer_requesting():
             await send_friend_update(peer.user_id, s.user_id, None)
             await PeerRelationshipManager(grpcrelationship, peer.user_id, s.user_id).cancel_request_to_peer()
@@ -118,10 +152,13 @@ async def block_user(s: SessionParam, peer: UserParam) -> UserRelationshipRespon
 
     peer_id = puuid_uuid(peer.user_id) or unwrap()
 
-    if peer_id == s.user_id:
-        raise ApiErrExc(errors.BadRequest("Cannot friend yourself", api_error_code=errors.ERROR_BAD_REQUEST))
+    fetch_on_enter = (
+        RelationshipType.FRIENDS,
+        RelationshipType.PEER_REQUESTING_CURRENT,
+        RelationshipType.CURRENT_REQUESTING_PEER,
+    )
 
-    async with PeerRelationshipManager(grpcrelationship, s.user_id, peer.user_id) as r:
+    async with PeerRelationshipManager(grpcrelationship, s.user_id, peer.user_id, fetch_on_enter) as r:
 
         if await r.are_friends():
             await r.unfriend()
@@ -147,9 +184,6 @@ async def unblock_user(s: SessionParam, peer: UserParam) -> None:
 
 
     async with PeerRelationshipManager(grpcrelationship, s.user_id, peer.user_id) as r:
-        # if they blocked us dont send them an update
-        if await r.is_blocked() and not await r.peer_blocked_current():
-            await send_friend_update(peer.user_id, s.user_id, RelationshipType.PEER_BLOCKED_CURRENT)
         await r.unblock()
 
 
