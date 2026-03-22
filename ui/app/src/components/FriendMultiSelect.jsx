@@ -6,7 +6,7 @@ import Button from './Button.jsx'
 
 /**
  * Friend picker that only searches within your existing friends.
- * - Sources friend IDs from relationshipManager.getRelationships()
+ * - Sources friend IDs from relationshipManager.getRelationships(FRIENDS)
  * - Hydrates via userManager.fetchUsersBulk() (full user objects, including public_key).
  * - value/onChange are arrays of those full user objects.
  */

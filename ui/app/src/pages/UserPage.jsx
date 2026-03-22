@@ -12,6 +12,30 @@ const FRIENDS = 3
 const PEER_BLOCKED_CURRENT = 5
 const CURRENT_BLOCKED_PEER = 6
 
+/** @typedef {{ blockedByMe: boolean, blockedByThem: boolean, isFriends: boolean, isIncomingRequest: boolean, isOutgoingRequest: boolean }} PeerRelFlags */
+
+function emptyPeerRel() {
+  return {
+    blockedByMe: false,
+    blockedByThem: false,
+    isFriends: false,
+    isIncomingRequest: false,
+    isOutgoingRequest: false,
+  }
+}
+
+/** @param {number[]|undefined} types */
+function peerRelFlagsFromTypes(types) {
+  const s = new Set(types ?? [])
+  return {
+    blockedByMe: s.has(CURRENT_BLOCKED_PEER),
+    blockedByThem: s.has(PEER_BLOCKED_CURRENT),
+    isFriends: s.has(FRIENDS),
+    isIncomingRequest: s.has(PEER_REQUESTING_CURRENT),
+    isOutgoingRequest: s.has(CURRENT_REQUESTING_PEER),
+  }
+}
+
 function userToProfile(user, routeUserId) {
   const uid = user?.user_id ?? routeUserId ?? null
   if (!user && !routeUserId) return { username: '', iconUrl: null, friendsCount: 0, userId: null }
@@ -37,8 +61,7 @@ export default function UserPage() {
 
   const [currentUserId, setCurrentUserId] = useState(null)
   const [profile, setProfile] = useState(() => userToProfile(stateUser, userId))
-  const [relationship, setRelationship] = useState(null)
-  const [blockRelationship, setBlockRelationship] = useState(null)
+  const [peerRel, setPeerRel] = useState(() => emptyPeerRel())
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [actionLoading, setActionLoading] = useState(false)
@@ -48,33 +71,14 @@ export default function UserPage() {
 
     let cancelled = false
     ;(async () => {
-      const mapRelationshipType = (relType) => {
-        if (relType == null) {
-          return { relationship: null, blockRelationship: null }
-        }
-        if (relType === CURRENT_BLOCKED_PEER || relType === PEER_BLOCKED_CURRENT) {
-          return {
-            relationship: null,
-            blockRelationship: relType,
-          }
-        }
-        if (relType === CURRENT_REQUESTING_PEER || relType === PEER_REQUESTING_CURRENT || relType === FRIENDS) {
-          return {
-            relationship: relType,
-            blockRelationship: null,
-          }
-        }
-        return { relationship: null, blockRelationship: null }
-      }
-
       try {
         if (cancelled) return
         setLoading(true)
         setError(null)
         const session = getCurrentSession()
-        const [profileRes, relType, meRes] = await Promise.all([
+        const [profileRes, relTypes, meRes] = await Promise.all([
           userManager.getUserProfile(userId),
-          relationshipManager.getRelationshipWithUser(userId),
+          relationshipManager.resolveRelationshipWithUser(userId),
           session.getCurrentAccount(),
         ])
         if (cancelled) return
@@ -104,11 +108,7 @@ export default function UserPage() {
           setError('User not found')
         }
 
-        const { relationship, blockRelationship } = mapRelationshipType(
-          relType != null ? Number(relType) : null,
-        )
-        setRelationship(relationship)
-        setBlockRelationship(blockRelationship)
+        setPeerRel(peerRelFlagsFromTypes(relTypes))
       } catch (e) {
         console.error(e);
         if (!cancelled) setError(e?.message ?? 'Could not load profile')
@@ -128,12 +128,15 @@ export default function UserPage() {
   }, [profile.username, stateUser?.username, userId])
 
   const handleFriendAction = async () => {
-    if (!userId || relationship === FRIENDS) return
+    if (!userId || peerRel.isFriends) return
     setActionLoading(true)
     try {
       const res = await relationshipManager.friendUser(userId)
       if (res?.success) {
-        setRelationship(res?.data?.relationship != null ? Number(res.data.relationship) : FRIENDS)
+        setPeerRel({
+          ...emptyPeerRel(),
+          isFriends: true,
+        })
       }
     } finally {
       setActionLoading(false)
@@ -141,12 +144,12 @@ export default function UserPage() {
   }
 
   const handleUnfriendAction = async () => {
-    if (!userId || relationship !== FRIENDS) return
+    if (!userId || !peerRel.isFriends) return
     setActionLoading(true)
     try {
       const res = await relationshipManager.unfriendUser(userId)
       if (res?.success) {
-        setRelationship(null)
+        setPeerRel(emptyPeerRel())
       }
     } finally {
       setActionLoading(false)
@@ -154,12 +157,12 @@ export default function UserPage() {
   }
 
   const handleCancelRequest = async () => {
-    if (!userId || relationship !== CURRENT_REQUESTING_PEER) return
+    if (!userId || !peerRel.isOutgoingRequest) return
     setActionLoading(true)
     try {
       const res = await relationshipManager.unfriendUser(userId)
       if (res?.success) {
-        setRelationship(null)
+        setPeerRel(emptyPeerRel())
       }
     } finally {
       setActionLoading(false)
@@ -170,13 +173,19 @@ export default function UserPage() {
     if (!userId) return
     setActionLoading(true)
     try {
-      const isBlocked = blockRelationship === CURRENT_BLOCKED_PEER
+      const isBlocked = peerRel.blockedByMe
       const res = isBlocked
         ? await relationshipManager.unblockUser(userId)
         : await relationshipManager.blockUser(userId)
       if (res?.success) {
-        setBlockRelationship(isBlocked ? null : CURRENT_BLOCKED_PEER)
-        setRelationship(null)
+        if (isBlocked) {
+          setPeerRel((p) => ({ ...p, blockedByMe: false }))
+        } else {
+          setPeerRel({
+            ...emptyPeerRel(),
+            blockedByMe: true,
+          })
+        }
       }
     } finally {
       setActionLoading(false)
@@ -187,13 +196,9 @@ export default function UserPage() {
     return <Navigate to="/account" replace />
   }
 
-  const isIncoming = relationship === PEER_REQUESTING_CURRENT
-  const isSent = relationship === CURRENT_REQUESTING_PEER
-  const isFriends = relationship === FRIENDS
-  const isBlockedByMe = blockRelationship === CURRENT_BLOCKED_PEER
-  const isBlockedByThem = blockRelationship === PEER_BLOCKED_CURRENT
-  const isBlocked = isBlockedByMe || isBlockedByThem
-  const showSendOrAccept = (relationship == null || isIncoming) && !isBlocked
+  const isBlocked = peerRel.blockedByMe || peerRel.blockedByThem
+  const showSendOrAccept =
+    (peerRel.isIncomingRequest || (!peerRel.isFriends && !peerRel.isOutgoingRequest)) && !isBlocked
 
   const profileActions =
     !loading && !error ? (
@@ -202,12 +207,12 @@ export default function UserPage() {
           <Button
             onClick={handleFriendAction}
             disabled={actionLoading || isBlocked}
-            aria-label={isIncoming ? 'Accept friend request' : 'Send friend request'}
+            aria-label={peerRel.isIncomingRequest ? 'Accept friend request' : 'Send friend request'}
           >
-            {isIncoming ? 'Accept' : 'Send friend request'}
+            {peerRel.isIncomingRequest ? 'Accept' : 'Send friend request'}
           </Button>
         )}
-        {isSent && (
+        {peerRel.isOutgoingRequest && (
           <Button
             variant="ghost"
             onClick={handleCancelRequest}
@@ -217,7 +222,7 @@ export default function UserPage() {
             Cancel friend request
           </Button>
         )}
-        {isFriends && (
+        {peerRel.isFriends && (
           <Button
             variant="ghost"
             onClick={handleUnfriendAction}
@@ -227,7 +232,7 @@ export default function UserPage() {
             Remove friend
           </Button>
         )}
-        {isBlockedByMe && (
+        {peerRel.blockedByMe && (
           <Button
             variant="ghost"
             onClick={handleBlockAction}
@@ -237,12 +242,12 @@ export default function UserPage() {
             Unblock
           </Button>
         )}
-        {!isBlockedByMe && !isBlockedByThem && (
+        {!peerRel.blockedByMe && !peerRel.blockedByThem && (
           <Button variant="ghost" onClick={handleBlockAction} disabled={actionLoading} aria-label="Block user">
             Block
           </Button>
         )}
-        {isBlockedByThem && (
+        {peerRel.blockedByThem && (
           <span className="text-sm font-medium text-[color:var(--text-muted)]">
             You are blocked
           </span>

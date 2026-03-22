@@ -12,8 +12,7 @@ export default function MemberContextMenu({
 }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
-  const [relationship, setRelationship] = useState(null)
-  const [blockRelationship, setBlockRelationship] = useState(null)
+  const [relFlags, setRelFlags] = useState({ isFriends: false, blockedByMe: false })
   const [actionLoading, setActionLoading] = useState(false)
   const [removeError, setRemoveError] = useState(null)
 
@@ -23,38 +22,14 @@ export default function MemberContextMenu({
       setLoading(true)
       setError(null)
 
-      const mapRelationshipType = (relType) => {
-        if (relType == null) {
-          return { relationship: null, blockRelationship: null }
-        }
-        if (
-          relType === relationshipManager.CURRENT_BLOCKED_PEER ||
-          relType === relationshipManager.PEER_BLOCKED_CURRENT
-        ) {
-          return {
-            relationship: null,
-            blockRelationship: relType,
-          }
-        }
-        if (
-          relType === relationshipManager.CURRENT_REQUESTING_PEER ||
-          relType === relationshipManager.PEER_REQUESTING_CURRENT ||
-          relType === relationshipManager.FRIENDS
-        ) {
-          return {
-            relationship: relType,
-            blockRelationship: null,
-          }
-        }
-        return { relationship: null, blockRelationship: null }
-      }
-
       try {
-        const relType = await relationshipManager.getRelationshipWithUser(userId)
+        const relTypes = await relationshipManager.resolveRelationshipWithUser(userId)
         if (cancelled) return
-        const mapped = mapRelationshipType(relType != null ? Number(relType) : null)
-        setRelationship(mapped.relationship)
-        setBlockRelationship(mapped.blockRelationship)
+        const s = new Set(relTypes ?? [])
+        setRelFlags({
+          isFriends: s.has(relationshipManager.FRIENDS),
+          blockedByMe: s.has(relationshipManager.CURRENT_BLOCKED_PEER),
+        })
       } catch (e) {
         console.error(e);
         if (!cancelled) setError(e?.message ?? 'Could not load relationship')
@@ -67,8 +42,7 @@ export default function MemberContextMenu({
     }
   }, [userId])
 
-  const isFriends = relationship === relationshipManager.FRIENDS
-  const isBlockedByMe = blockRelationship === relationshipManager.CURRENT_BLOCKED_PEER
+  const { isFriends, blockedByMe } = relFlags
 
   const handleRemoveFromChannel = async () => {
     if (!userId || !channelId) return
@@ -97,12 +71,12 @@ export default function MemberContextMenu({
       if (isFriends) {
         const res = await relationshipManager.unfriendUser(userId)
         if (res?.success) {
-          setRelationship(null)
+          setRelFlags((f) => ({ ...f, isFriends: false }))
         }
       } else {
         const res = await relationshipManager.friendUser(userId)
         if (res?.success) {
-          setRelationship(relationshipManager.FRIENDS)
+          setRelFlags({ isFriends: true, blockedByMe: false })
         }
       }
     } finally {
@@ -114,13 +88,14 @@ export default function MemberContextMenu({
     if (!userId) return
     setActionLoading(true)
     try {
-      const res = isBlockedByMe
+      const res = blockedByMe
         ? await relationshipManager.unblockUser(userId)
         : await relationshipManager.blockUser(userId)
       if (res?.success) {
-        setBlockRelationship(isBlockedByMe ? null : relationshipManager.CURRENT_BLOCKED_PEER)
-        if (!isBlockedByMe) {
-          setRelationship(null)
+        if (blockedByMe) {
+          setRelFlags((f) => ({ ...f, blockedByMe: false }))
+        } else {
+          setRelFlags({ isFriends: false, blockedByMe: true })
         }
       }
     } finally {
@@ -168,11 +143,10 @@ export default function MemberContextMenu({
             onClick={handleBlockToggle}
             disabled={actionLoading}
           >
-            {isBlockedByMe ? 'Unblock' : 'Block'}
+            {blockedByMe ? 'Unblock' : 'Block'}
           </MenuActionItem>
         </>
       )}
     </div>
   )
 }
-

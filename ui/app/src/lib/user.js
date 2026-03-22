@@ -33,20 +33,22 @@ export class UserManager {
 
 export const userManager = new UserManager();
 
+export const PEER_PROFILE_RELATIONSHIP_TYPES = Object.freeze([1, 2, 3, 5, 6]);
+
 export class RelationshipManager {
 
-    _createPromise() {
-        this.relationships = new Promise((resolve, reject) => {
-            this._fetchRelationships().then((v) => resolve(v)).catch((e) => reject(e));
-        });
-    }
-
+    /**
+     * @constructor
+     */
     constructor() {
-        this._createPromise();
-
+        /** @type {Record<string, Set<number>>} */
         this.richRelationships = {};
+        /** @type {Map<number, Promise<unknown>>} */
+        this._inFlightByType = new Map();
+        /** @type {Map<string, Promise<number[]>>} */
+        this._inFlightPeerResolve = new Map();
     }
-    
+
     CURRENT_REQUESTING_PEER = 1
     PEER_REQUESTING_CURRENT = 2
 
@@ -55,67 +57,269 @@ export class RelationshipManager {
     PEER_BLOCKED_CURRENT = 5
     CURRENT_BLOCKED_PEER = 6
 
+    CURRENT_FOLLOWING_PEER = 7
+    PEER_FOLLOWING_CURRENT = 8
+
+    _peerKey(peer_id) {
+        return peer_id == null ? "" : String(peer_id);
+    }
+
+    /**
+     * @param {string} key
+     * @returns {Set<number>|undefined}
+     */
+    _getTypeSetForPeerKey(key) {
+        const v = this.richRelationships[key];
+        if (v instanceof Set) return v;
+        if (typeof v === "number") {
+            return new Set([v]);
+        }
+        return undefined;
+    }
+
+    _peerHasType(peerKey, relType) {
+        const t = Number(relType);
+        const v = this.richRelationships[peerKey];
+        if (v instanceof Set) return v.has(t);
+        if (typeof v === "number") return v === t;
+        return false;
+    }
+
+    /**
+     * @returns {number[]|undefined} sorted unique types for this peer (copy)
+     */
+    getPeerRelationshipTypes(user_id) {
+        const key = this._peerKey(user_id);
+        const v = this.richRelationships[key];
+        if (v instanceof Set) {
+            if (v.size === 0) return undefined;
+            return [...v].sort((a, b) => a - b);
+        }
+        if (typeof v === "number") {
+            return [v];
+        }
+        return undefined;
+    }
+
+    /**
+     * Replaces all known types for this peer with a single type (mutations, gateway events).
+     * Pass `null` to clear the peer entry.
+     */
     updateRelationships(peer_id, new_relationship_type) {
+        const key = this._peerKey(peer_id);
         if (!new_relationship_type) {
-            delete this.richRelationships[peer_id];
+            delete this.richRelationships[key];
+            return;
         }
 
-        this.richRelationships[peer_id] = new_relationship_type;
+        this.richRelationships[key] = new Set([Number(new_relationship_type)]);
     }
 
-    async getRelationships(rel_type) {
-        let res = await this.relationships;
+    /**
+     * Adds or removes one relationship type for a peer when merging a typed list from the API.
+     */
+    _addRelationshipTypeForPeer(peerKey, relType) {
+        const t = Number(relType);
+        const raw = this.richRelationships[peerKey];
+        let set;
+        if (raw instanceof Set) {
+            set = raw;
+        } else if (typeof raw === "number") {
+            set = new Set([raw]);
+            this.richRelationships[peerKey] = set;
+        } else {
+            set = new Set();
+            this.richRelationships[peerKey] = set;
+        }
+        set.add(t);
+    }
 
-        // retry errors
-        if (!res?.success) {
-            this._createPromise();
-            res = await this.relationships;
-
-            if (!res?.success) return res;
-
-        };
-
-        const relationships = Object.entries(relationshipManager.richRelationships).map(([peer_id, relationship]) => ({
-            peer_id,
-            relationship,
-        }))
-
-        const relTypeNum = rel_type == null ? null : Number(rel_type)
-        const filtered =
-        relTypeNum == null || Number.isNaN(relTypeNum)
-            ? relationships
-            : relationships.filter((r) => Number(r.relationship) === relTypeNum)
-
-        return {
-            ...res,
-            data: {
-                ...(res.data ?? {}),
-                relationships: filtered,
-            },
+    _removeRelationshipTypeForPeer(peerKey, relType) {
+        const t = Number(relType);
+        const raw = this.richRelationships[peerKey];
+        let set;
+        if (raw instanceof Set) {
+            set = raw;
+        } else if (typeof raw === "number") {
+            set = new Set([raw]);
+            this.richRelationships[peerKey] = set;
+        } else {
+            return;
+        }
+        set.delete(t);
+        if (set.size === 0) {
+            delete this.richRelationships[peerKey];
         }
     }
 
+    _mergeRelationshipsForType(relType, items) {
+        const t = Number(relType);
+        const list = items ?? [];
+        const newPeerIds = new Set(list.map((r) => this._peerKey(r.peer_id)));
 
+        for (const k of Object.keys(this.richRelationships)) {
+            if (this._peerHasType(k, t) && !newPeerIds.has(k)) {
+                this._removeRelationshipTypeForPeer(k, t);
+            }
+        }
 
-    async _fetchRelationships() {
-        const res = await API.GET("user/relationships");
+        for (const r of list) {
+            const pk = this._peerKey(r.peer_id);
+            const rel = r.relationship != null ? Number(r.relationship) : t;
+            this._addRelationshipTypeForPeer(pk, rel);
+        }
+    }
+
+    async _doFetchRelationshipsForType(relType) {
+        const t = Number(relType);
+        const res = await API.GET(`user/relationships?t=${encodeURIComponent(t)}`);
 
         if (!res.success) return res;
 
-        for (let rel of res.data.relationships) {
-            this.updateRelationships(rel.peer_id, rel.relationship)
-        }
+        const rels = res.data?.relationships ?? [];
+        this._mergeRelationshipsForType(t, rels);
         return res;
     }
-    
 
-    async getRelationshipWithUser(user_id) {
-        const res = await this.getRelationships();
-        if (!res.success) {
-            throw new Error(res.error.message);
+    _ensureRelationshipsForType(relType) {
+        const t = Number(relType);
+        if (Number.isNaN(t)) {
+            return Promise.resolve({ success: false, error: { message: "Invalid relationship type" } });
         }
 
-        return this.richRelationships[user_id];
+        const existing = this._inFlightByType.get(t);
+        if (existing) return existing;
+
+        const p = this._doFetchRelationshipsForType(t).finally(() => {
+            this._inFlightByType.delete(t);
+        });
+
+        this._inFlightByType.set(t, p);
+        return p;
+    }
+
+    _successResponseFromStore(relTypeFilter) {
+        const ft = Number(relTypeFilter);
+        const relationships = [];
+
+        for (const peer_id of Object.keys(this.richRelationships)) {
+            const set = this._getTypeSetForPeerKey(peer_id);
+            if (set && set.has(ft)) {
+                relationships.push({ peer_id, relationship: ft });
+            }
+        }
+
+        return {
+            success: true,
+            data: {
+                relationships,
+            },
+        };
+    }
+
+    /**
+     * Fetches one relationship list from the API for the given type and merges into `richRelationships`.
+     * Concurrent callers for the same type share one in-flight request.
+     *
+     * @param {number} rel_type - Required. There is no “fetch all types” mode in the manager.
+     */
+    async getRelationships(rel_type) {
+        const relTypeNum =
+            rel_type === null || rel_type === undefined || rel_type === "" ? NaN : Number(rel_type);
+
+        if (Number.isNaN(relTypeNum)) {
+            return { success: false, error: { message: "relationship type is required" } };
+        }
+
+        const res = await this._ensureRelationshipsForType(relTypeNum);
+        if (!res.success) return res;
+        return this._successResponseFromStore(relTypeNum);
+    }
+
+    /**
+     * @returns {number[]|undefined} All cached relationship types with this peer (sorted copy).
+     */
+    getRelationshipWithUser(user_id) {
+        return this.getPeerRelationshipTypes(user_id);
+    }
+
+    /**
+     * Merges `GET /user/relationship/{user_id}` response into `richRelationships` for that peer.
+     * @param {string} peerUserId
+     * @param {object|null|undefined} data - API `data` payload
+     */
+    _applyPeerRelationshipFetchData(peerUserId, data) {
+        const key = this._peerKey(peerUserId);
+        if (!data) {
+            delete this.richRelationships[key];
+            return;
+        }
+        if (data.relationship != null && data.relationships == null) {
+            this.richRelationships[key] = new Set([Number(data.relationship)]);
+            return;
+        }
+        const rels = data.relationships ?? [];
+        if (rels.length === 0) {
+            delete this.richRelationships[key];
+            return;
+        }
+        const types = new Set(rels.map((r) => Number(r.relationship)));
+        this.richRelationships[key] = types;
+    }
+
+    /**
+     * `GET /user/relationship/{user_id}?types=…&types=…` — reads relationship with one peer for the given type(s).
+     * Does not update the cache; use `resolveRelationshipWithUser` for cache + fallback.
+     *
+     * @param {string} user_id - Peer user id
+     * @param {number[]} relationship_types - RelationshipType values to query
+     */
+    async fetchRelationshipWithUser(user_id, relationship_types) {
+        const types = Array.isArray(relationship_types) ? relationship_types : [relationship_types];
+        const params = new URLSearchParams();
+        for (const t of types) {
+            params.append("types", String(t));
+        }
+        const q = params.toString();
+        const path = `user/relationship/${user_id}${q ? `?${q}` : ""}`;
+        return await API.GET(path);
+    }
+
+    /**
+     * Cached types if present; otherwise one `GET /user/relationship/{id}` with `PEER_PROFILE_RELATIONSHIP_TYPES`.
+     *
+     * @param {string} user_id
+     * @param {number[]} [relationship_types] - Defaults to `PEER_PROFILE_RELATIONSHIP_TYPES` (all 5).
+     * @returns {Promise<number[]>} Sorted unique types (empty array if none)
+     */
+    async resolveRelationshipWithUser(user_id, relationship_types = PEER_PROFILE_RELATIONSHIP_TYPES) {
+        const key = this._peerKey(user_id);
+        const cached = this.getPeerRelationshipTypes(user_id);
+        if (cached?.length) {
+            return cached;
+        }
+
+        const existing = this._inFlightPeerResolve.get(key);
+        if (existing) return existing;
+
+        const typesToFetch =
+            relationship_types != null && relationship_types.length > 0
+                ? relationship_types
+                : PEER_PROFILE_RELATIONSHIP_TYPES;
+
+        const p = (async () => {
+            const res = await this.fetchRelationshipWithUser(user_id, typesToFetch);
+            if (!res.success) {
+                throw new Error(res.error?.message ?? "Failed to load relationship");
+            }
+            this._applyPeerRelationshipFetchData(user_id, res.data);
+            return this.getPeerRelationshipTypes(user_id) ?? [];
+        })().finally(() => {
+            this._inFlightPeerResolve.delete(key);
+        });
+
+        this._inFlightPeerResolve.set(key, p);
+        return p;
     }
 
     async blockUser(user_id) {

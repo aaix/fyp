@@ -16,15 +16,13 @@ export default function NotificationsPage() {
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await relationshipManager.getRelationships()
-      if (!res?.success) return
-      const relationships = res?.data?.relationships ?? []
-      const incomingPeers = relationships
-        .filter((r) => Number(r.relationship) === PEER_REQUESTING_CURRENT)
-        .map((r) => r.peer_id)
-      const sentPeers = relationships
-        .filter((r) => Number(r.relationship) === CURRENT_REQUESTING_PEER)
-        .map((r) => r.peer_id)
+      const [resIncoming, resSent] = await Promise.all([
+        relationshipManager.getRelationships(PEER_REQUESTING_CURRENT),
+        relationshipManager.getRelationships(CURRENT_REQUESTING_PEER),
+      ])
+      if (!resIncoming?.success || !resSent?.success) return
+      const incomingPeers = (resIncoming?.data?.relationships ?? []).map((r) => r.peer_id)
+      const sentPeers = (resSent?.data?.relationships ?? []).map((r) => r.peer_id)
 
       const allPeerIds = [...new Set([...incomingPeers, ...sentPeers])]
 
