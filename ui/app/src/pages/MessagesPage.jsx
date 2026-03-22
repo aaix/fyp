@@ -1330,6 +1330,19 @@ export default function MessagesPage() {
           <MemberContextMenu
             userId={memberMenu.userId}
             channelId={selectedChannelId}
+            currentUserId={currentUserId}
+            memberUsername={memberMenu.username}
+            onRequestLeave={() => {
+              setMemberMenu(null)
+              setLeaveError(null)
+              setLeaveConfirm({
+                channelId: selectedChannelId,
+                name:
+                  selectedChannel?.channel_name ||
+                  selectedChannelId ||
+                  'this channel',
+              })
+            }}
             onMemberRemoved={handleMemberRemoved}
             canManageMembers={canManageMembers}
             onClose={() => setMemberMenu(null)}

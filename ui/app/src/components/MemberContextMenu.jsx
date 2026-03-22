@@ -1,22 +1,43 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { relationshipManager } from '../lib/user.js'
 import { channelManager } from '../lib/chat.js'
 import MenuActionItem from './MenuActionItem.jsx'
 
+function normId(id) {
+  return String(id ?? '').toLowerCase()
+}
+
 export default function MemberContextMenu({
   userId,
   channelId,
+  currentUserId,
+  memberUsername,
   onClose,
   onMemberRemoved,
   canManageMembers = false,
+  onRequestLeave,
 }) {
-  const [loading, setLoading] = useState(false)
+  const navigate = useNavigate()
   const [error, setError] = useState(null)
   const [relFlags, setRelFlags] = useState({ isFriends: false, blockedByMe: false })
   const [actionLoading, setActionLoading] = useState(false)
   const [removeError, setRemoveError] = useState(null)
 
+  const isSelf =
+    currentUserId != null &&
+    userId != null &&
+    normId(currentUserId) === normId(userId)
+
+  const [loading, setLoading] = useState(!isSelf)
+
   useEffect(() => {
+    if (isSelf) {
+      setLoading(false)
+      setError(null)
+      return
+    }
+
     let cancelled = false
     ;(async () => {
       setLoading(true)
@@ -40,9 +61,23 @@ export default function MemberContextMenu({
     return () => {
       cancelled = true
     }
-  }, [userId])
+  }, [userId, isSelf])
 
   const { isFriends, blockedByMe } = relFlags
+
+  const goToProfile = () => {
+    onClose?.()
+    navigate(`/user/${encodeURIComponent(String(userId))}`, {
+      state: memberUsername
+        ? { user: { user_id: userId, username: memberUsername } }
+        : undefined,
+    })
+  }
+
+  const handleLeaveGroup = () => {
+    onClose?.()
+    onRequestLeave?.()
+  }
 
   const handleRemoveFromChannel = async () => {
     if (!userId || !channelId) return
@@ -108,18 +143,38 @@ export default function MemberContextMenu({
       className="min-w-[180px] rounded-card border border-[color:var(--card-border)] bg-[color:var(--card-bg)] py-1 text-sm text-[color:var(--text-primary)] shadow-card"
       role="menu"
     >
-      {loading && (
+      <MenuActionItem
+        type="button"
+        className="justify-start hover:bg-[color:var(--tab-active-bg)] active:bg-[color:var(--text-primary)]/[0.08]"
+        onClick={goToProfile}
+        disabled={actionLoading}
+      >
+        View profile
+      </MenuActionItem>
+
+      {isSelf && typeof onRequestLeave === 'function' && (
+        <MenuActionItem
+          type="button"
+          className="justify-start text-red-500 hover:bg-red-500/10"
+          onClick={handleLeaveGroup}
+          disabled={actionLoading}
+        >
+          Leave group
+        </MenuActionItem>
+      )}
+
+      {!isSelf && loading && (
         <div className="px-3 py-2 text-xs text-[color:var(--text-muted)]">Loading…</div>
       )}
-      {!loading && error && (
+      {!isSelf && !loading && error && (
         <div className="px-3 py-2 text-xs text-[color:var(--text-muted)]">{error}</div>
       )}
-      {!loading && !error && removeError && (
+      {!isSelf && !loading && !error && removeError && (
         <div className="px-3 py-2 text-xs text-red-500" role="alert">
           {removeError}
         </div>
       )}
-      {!loading && !error && (
+      {!isSelf && !loading && !error && (
         <>
           <MenuActionItem
             type="button"
@@ -131,7 +186,7 @@ export default function MemberContextMenu({
           </MenuActionItem>
           <MenuActionItem
             type="button"
-            className="justify-start hover:bg-[color:var(--card-bg)]/80"
+            className="justify-start hover:bg-[color:var(--tab-active-bg)] active:bg-[color:var(--text-primary)]/[0.08]"
             onClick={handleFriendToggle}
             disabled={actionLoading}
           >
