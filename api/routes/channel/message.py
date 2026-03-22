@@ -7,7 +7,7 @@ from api import *
 from api.middleware.auth import SessionParam
 from api.routes.channel.models import *
 
-from api.types.params import ChannelParam
+from api.types.params import ChannelParam, MessageParam
 from api.utils import ResourceNotFoundRpcHandler
 from shared.py.grpc.channel import edit_channel
 from shared.py.grpc.id import uuid_puuid
@@ -65,6 +65,14 @@ async def create_message(s: SessionParam, channel: ChannelParam, body: NewMessag
         await edit_channel(grpcchannel, channel.channel_id, latest_bucket=message.bucket)
 
     return NewMessageResponse.from_rpc(message)
+
+@MessageRouter.patch("/channel/{channel_id}/message/{message_id}")
+async def edit_message(s: SessionParam, channel: ChannelParam, message: MessageParam) -> NewMessageResponse:
+    ...
+
+@MessageRouter.delete("/channel/{channel_id}/message/{message_id}")
+async def delete_message(s: SessionParam, channel: ChannelParam, message: MessageParam) -> None:
+    ...
 
 
 @MessageRouter.get("/channel/{channel_id}/messages")
