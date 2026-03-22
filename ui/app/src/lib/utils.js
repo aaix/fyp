@@ -1,5 +1,11 @@
-const PUBLIC_BASE = "https://userpublic.az7.chat";
-const PRIVATE_BASE = "https://userprivate.az7.chat";
+let PUBLIC_BASE = "https://userpublic.az7.chat";
+let PRIVATE_BASE = "https://userprivate.az7.chat";
+
+if (window.location.hostname == "127.0.0.1") {
+  PUBLIC_BASE = "https://userpublic.dev.az7.chat";
+  PRIVATE_BASE = "https://userprivate.dev.az7.chat";
+} else {}
+
 
 
 export async function blobToB64(blob) {
