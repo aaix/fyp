@@ -244,21 +244,37 @@ export class RelationshipManager {
     }
 
     /**
+     * Normalizes relationship list from `GET /user/relationship/{user_id}`.
+     * API may return `data` as a bare array, or `{ relationships: [...] }`, or `{ relationship: n }`.
+     */
+    _relationshipRowsFromResponseData(data) {
+        if (data == null) return [];
+        if (Array.isArray(data)) return data;
+        if (Array.isArray(data.relationships)) return data.relationships;
+        return [];
+    }
+
+    /**
      * Merges `GET /user/relationship/{user_id}` response into `richRelationships` for that peer.
      * @param {string} peerUserId
-     * @param {object|null|undefined} data - API `data` payload
+     * @param {object|null|undefined} data - API `data` payload (often a JSON array of rows)
      */
     _applyPeerRelationshipFetchData(peerUserId, data) {
         const key = this._peerKey(peerUserId);
-        if (!data) {
+        if (data == null) {
             delete this.richRelationships[key];
             return;
         }
-        if (data.relationship != null && data.relationships == null) {
+        if (
+            !Array.isArray(data) &&
+            data.relationship != null &&
+            data.relationships == null &&
+            !Array.isArray(data.relationships)
+        ) {
             this.richRelationships[key] = new Set([Number(data.relationship)]);
             return;
         }
-        const rels = data.relationships ?? [];
+        const rels = this._relationshipRowsFromResponseData(data);
         if (rels.length === 0) {
             delete this.richRelationships[key];
             return;
@@ -281,8 +297,19 @@ export class RelationshipManager {
             params.append("types", String(t));
         }
         const q = params.toString();
-        const path = `user/relationship/${user_id}${q ? `?${q}` : ""}`;
+        const idSeg = encodeURIComponent(String(user_id));
+        const path = `user/relationship/${idSeg}${q ? `?${q}` : ""}`;
         return await API.GET(path);
+    }
+
+    /**
+     * Clears cached relationship data for a peer so the next resolve fetches from the API.
+     * Use on profile views to avoid showing incomplete state from partial list caches.
+     */
+    invalidatePeerRelationship(user_id) {
+        const key = this._peerKey(user_id);
+        delete this.richRelationships[key];
+        this._inFlightPeerResolve.delete(key);
     }
 
     /**
@@ -290,10 +317,15 @@ export class RelationshipManager {
      *
      * @param {string} user_id
      * @param {number[]} [relationship_types] - Defaults to `PEER_PROFILE_RELATIONSHIP_TYPES` (all 5).
+     * @param {{ force?: boolean }} [options] - If `force`, skips cache and refetches.
      * @returns {Promise<number[]>} Sorted unique types (empty array if none)
      */
-    async resolveRelationshipWithUser(user_id, relationship_types = PEER_PROFILE_RELATIONSHIP_TYPES) {
+    async resolveRelationshipWithUser(user_id, relationship_types = PEER_PROFILE_RELATIONSHIP_TYPES, options = {}) {
         const key = this._peerKey(user_id);
+        if (options.force) {
+            this.invalidatePeerRelationship(user_id);
+        }
+
         const cached = this.getPeerRelationshipTypes(user_id);
         if (cached?.length) {
             return cached;
@@ -320,6 +352,13 @@ export class RelationshipManager {
 
         this._inFlightPeerResolve.set(key, p);
         return p;
+    }
+
+    /**
+     * Drops any cache for this peer and loads relationship types from the API (full profile query set).
+     */
+    async refreshPeerRelationshipWithUser(user_id, relationship_types = PEER_PROFILE_RELATIONSHIP_TYPES) {
+        return this.resolveRelationshipWithUser(user_id, relationship_types, { force: true });
     }
 
     async blockUser(user_id) {

@@ -24,16 +24,49 @@ function emptyPeerRel() {
   }
 }
 
-/** @param {number[]|undefined} types */
+/**
+ * One UI state from API types (priority: block → friends → incoming request → outgoing request).
+ * Avoids contradictory flags when the raw set contains multiple edges.
+ */
 function peerRelFlagsFromTypes(types) {
   const s = new Set(types ?? [])
-  return {
-    blockedByMe: s.has(CURRENT_BLOCKED_PEER),
-    blockedByThem: s.has(PEER_BLOCKED_CURRENT),
-    isFriends: s.has(FRIENDS),
-    isIncomingRequest: s.has(PEER_REQUESTING_CURRENT),
-    isOutgoingRequest: s.has(CURRENT_REQUESTING_PEER),
+  if (s.has(CURRENT_BLOCKED_PEER) || s.has(PEER_BLOCKED_CURRENT)) {
+    return {
+      blockedByMe: s.has(CURRENT_BLOCKED_PEER),
+      blockedByThem: s.has(PEER_BLOCKED_CURRENT),
+      isFriends: false,
+      isIncomingRequest: false,
+      isOutgoingRequest: false,
+    }
   }
+  if (s.has(FRIENDS)) {
+    return {
+      blockedByMe: false,
+      blockedByThem: false,
+      isFriends: true,
+      isIncomingRequest: false,
+      isOutgoingRequest: false,
+    }
+  }
+  if (s.has(PEER_REQUESTING_CURRENT)) {
+    return {
+      blockedByMe: false,
+      blockedByThem: false,
+      isFriends: false,
+      isIncomingRequest: true,
+      isOutgoingRequest: false,
+    }
+  }
+  if (s.has(CURRENT_REQUESTING_PEER)) {
+    return {
+      blockedByMe: false,
+      blockedByThem: false,
+      isFriends: false,
+      isIncomingRequest: false,
+      isOutgoingRequest: true,
+    }
+  }
+  return emptyPeerRel()
 }
 
 function userToProfile(user, routeUserId) {
@@ -78,7 +111,7 @@ export default function UserPage() {
         const session = getCurrentSession()
         const [profileRes, relTypes, meRes] = await Promise.all([
           userManager.getUserProfile(userId),
-          relationshipManager.resolveRelationshipWithUser(userId),
+          relationshipManager.refreshPeerRelationshipWithUser(userId),
           session.getCurrentAccount(),
         ])
         if (cancelled) return
@@ -127,16 +160,19 @@ export default function UserPage() {
     document.title = `az7 | ${username ? `@${username}` : 'Profile'}`
   }, [profile.username, stateUser?.username, userId])
 
+  const syncPeerRelFromManager = () => {
+    setPeerRel(
+      peerRelFlagsFromTypes(relationshipManager.getPeerRelationshipTypes(userId) ?? []),
+    )
+  }
+
   const handleFriendAction = async () => {
     if (!userId || peerRel.isFriends) return
     setActionLoading(true)
     try {
       const res = await relationshipManager.friendUser(userId)
       if (res?.success) {
-        setPeerRel({
-          ...emptyPeerRel(),
-          isFriends: true,
-        })
+        syncPeerRelFromManager()
       }
     } finally {
       setActionLoading(false)
@@ -149,7 +185,7 @@ export default function UserPage() {
     try {
       const res = await relationshipManager.unfriendUser(userId)
       if (res?.success) {
-        setPeerRel(emptyPeerRel())
+        syncPeerRelFromManager()
       }
     } finally {
       setActionLoading(false)
@@ -162,7 +198,7 @@ export default function UserPage() {
     try {
       const res = await relationshipManager.unfriendUser(userId)
       if (res?.success) {
-        setPeerRel(emptyPeerRel())
+        syncPeerRelFromManager()
       }
     } finally {
       setActionLoading(false)
@@ -178,14 +214,7 @@ export default function UserPage() {
         ? await relationshipManager.unblockUser(userId)
         : await relationshipManager.blockUser(userId)
       if (res?.success) {
-        if (isBlocked) {
-          setPeerRel((p) => ({ ...p, blockedByMe: false }))
-        } else {
-          setPeerRel({
-            ...emptyPeerRel(),
-            blockedByMe: true,
-          })
-        }
+        syncPeerRelFromManager()
       }
     } finally {
       setActionLoading(false)
