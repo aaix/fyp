@@ -27,7 +27,7 @@ impl ScyllaUserRelationshipService {
     pub async fn server() -> Option<UserRelationshipServiceServer<Self>> {
         let server = Self::new().await;
         if let Err(e) = &server {
-            eprintln!("Error creating UserRelationshipService server: {:?}", e);
+            tracing::error!("Error creating UserRelationshipService server: {:?}", e);
             None
         } else {
             Some(UserRelationshipServiceServer::new(server.unwrap()))

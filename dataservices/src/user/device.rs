@@ -28,7 +28,7 @@ impl ScyallaUserDeviceService {
     pub async fn server() -> Option<UserDeviceServiceServer<Self>> {
         let server = Self::new().await;
         if let Err(e) = &server {
-            eprintln!("Error creating UserDeviceService server: {:?}", e);
+            tracing::error!("Error creating UserDeviceService server: {:?}", e);
         };
         server.ok()
     }

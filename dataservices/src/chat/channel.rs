@@ -37,7 +37,7 @@ impl ScyllaChannelServiceServer {
     pub async fn server() -> Option<ChannelServiceServer<Self>> {
         let server = Self::new().await;
         if let Err(e) = &server {
-            eprintln!("Error creating ChannelService server: {:?}", e);
+            tracing::error!("Error creating ChannelService server: {:?}", e);
             None
         } else {
             Some(ChannelServiceServer::new(server.unwrap()))

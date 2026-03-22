@@ -52,7 +52,7 @@ impl ScyllaMessageServiceServer {
     pub async fn server() -> Option<MessageServiceServer<Self>> {
         let server = Self::new().await;
         if let Err(e) = &server {
-            eprintln!("Error creating MessageService server: {:?}", e);
+            tracing::error!("Error creating MessageService server: {:?}", e);
             None
         } else {
             Some(MessageServiceServer::new(server.unwrap()))

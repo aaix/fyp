@@ -42,7 +42,7 @@ impl ScyllaUserService {
     pub async fn server() -> Option<UserServiceServer<Self>> {
         let server = Self::new().await;
         if let Err(e) = &server {
-            eprintln!("Error creating UserService server: {:?}", e);
+            tracing::error!("Error creating UserService server: {:?}", e);
             None
         } else {
             Some(UserServiceServer::new(server.unwrap()))
