@@ -1,6 +1,8 @@
-from ipaddress import IPv4Address, IPv6Address, ip_address
+
 from typing import Any, Literal, Never, overload
 
+from ipaddress import IPv4Address, IPv6Address, ip_address
+import traceback
 
 from collections.abc import Callable
 from datetime import datetime, UTC
@@ -9,6 +11,7 @@ from fastapi import Request
 from grpc import RpcError, StatusCode
 
 from api.responses import ErrorResponse, errors, ApiErrExc
+from api.tracing import tracer
 from api.types.extensions import SupportsStr
 
 
@@ -17,6 +20,9 @@ __all__ = (
 )
 
 def unwrap() -> Never:
+    with tracer.start_as_current_span("unwrap info") as span:
+        stack = '\n'.join(traceback.format_stack())
+        span.set_attribute("az.api.unwrap.exc_stack", stack)
     raise ApiErrExc(errors.InternalServerError("Illegal state occured"))
 
 def now() -> int:
