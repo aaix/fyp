@@ -67,7 +67,7 @@ async def create_message(s: SessionParam, channel: ChannelParam, body: NewMessag
     return NewMessageResponse.from_rpc(message)
 
 @MessageRouter.patch("/channel/{channel_id}/message/{message_id}")
-async def edit_message(s: SessionParam, channel: ChannelParam, message: MessageParam) -> NewMessageResponse:
+async def edit_message(s: SessionParam, channel: ChannelParam, message: MessageParam, body: EditMessageBody) -> NewMessageResponse:
     ...
 
 @MessageRouter.delete("/channel/{channel_id}/message/{message_id}")

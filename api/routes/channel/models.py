@@ -25,6 +25,7 @@ __all__ = (
     "NewMessageBody",
     "NewMessageResponse",
     "MessagesResponse",
+    "EditMessageBody",
 )
 
 
@@ -132,3 +133,6 @@ class NewMessageResponse(BaseModel):
 
 class MessagesResponse(BaseModel):
     messages: list[NewMessageResponse]
+
+class EditMessageBody(BaseModel):
+    content: Base64Input
