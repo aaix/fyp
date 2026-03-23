@@ -1,4 +1,7 @@
+import asyncio
 import aioboto3
+
+
 from shared.py.discovery import DiscoveryManager
 from shared.py.grpc.id import id_t, id_uuid
 from shared.py.tracing import tracer
@@ -13,6 +16,18 @@ session = aioboto3.Session(
     aws_secret_access_key=ACCESS_KEY_SECRET,
 )
 
+
+_client = None
+_lock = asyncio.Lock()
+async def client():
+    global _client
+    if _client is not None: return _client
+
+    async with _lock:
+        if _client is not None: return _client
+        _client = await session.client("s3", endpoint_url=ENDPOINT_URL, region_name="auto").__aenter__()
+    return _client
+
 @tracer.start_as_current_span("s3.delete_asset")
 async def delete_asset(*, public: bool, bucket_id: id_t, asset_id: id_t):
 
@@ -24,8 +39,8 @@ async def delete_asset(*, public: bool, bucket_id: id_t, asset_id: id_t):
 
     path = asset_path(bucket_id=bucket_id, asset_id=asset_id)
 
-    async with session.client("s3", endpoint_url=ENDPOINT_URL, region_name="auto") as s3: # type: ignore
-        await s3.delete_object(Bucket=bucket, Key=path)
+    s3 = await client()
+    await s3.delete_object(Bucket=bucket, Key=path)
 
 
 def asset_path(*, bucket_id: id_t, asset_id: id_t) -> str:
