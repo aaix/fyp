@@ -1,5 +1,5 @@
 
-from typing import Any, Literal, Never, overload
+from typing import Any, Literal, LiteralString, Never, Self, overload
 
 from ipaddress import IPv4Address, IPv6Address, ip_address
 import traceback
@@ -38,8 +38,8 @@ class RpcErrHandler:
         self.__code = code
         self.__callback = callback
 
-    def __enter__(self):
-        pass
+    def __enter__(self) -> Self:
+        return self
 
     @overload # add these overloads so that the typechecker knows no exceptions are supressed
     def __exit__(self, exc_type: None, exc: None, tb: None) -> Literal[True]: ...
@@ -56,22 +56,24 @@ class RpcErrHandler:
             return False
 
         if exc.code() == self.__code:
-            raise ApiErrExc(self.__callback())
+            self.do_raise()
         
         return False # dont suppress other rpc errors
 
+    def do_raise(self) -> Never:
+        raise ApiErrExc(self.__callback())
 
 class ResourceNotFoundRpcHandler(RpcErrHandler):
     """Special case for mapping rpc not found to 404 user not found error"""
 
     @staticmethod
-    def make_error(resource_id: SupportsStr) -> errors.NotFound:
-        return errors.NotFound(f"Resource {resource_id} not found", api_error_code=errors.ERROR_NO_SUCH_RESOURCE)
+    def make_error(param_type: LiteralString, resource_id: SupportsStr) -> errors.NotFound:
+        return errors.NotFound(f"Resource {param_type} {resource_id} not found", api_error_code=errors.ERROR_NO_SUCH_RESOURCE)
 
-    def __init__(self, resource_id: SupportsStr):
+    def __init__(self, param_type: LiteralString, resource_id: SupportsStr):
         super().__init__(
             StatusCode.NOT_FOUND,
-            lambda: self.make_error(resource_id)
+            lambda: self.make_error(param_type, resource_id)
         )
 
 def get_ip_from_request(request: Request) -> IPv4Address | IPv6Address | None:

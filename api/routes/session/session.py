@@ -24,7 +24,7 @@ grpcuser = LazyGRPC(discovery.discover_dataservices(), user_pb2_grpc.UserService
 
 @SessionRouter.post("/login")
 async def login(r: Request, body: LoginBody) -> LoginResponse:
-    with ResourceNotFoundRpcHandler(body.username):
+    with ResourceNotFoundRpcHandler("username", body.username):
         user = await get_user_by_username(grpcuser, body.username)
 
     user_id = puuid_uuid(user.user_id) or unwrap()

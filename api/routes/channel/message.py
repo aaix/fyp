@@ -7,11 +7,12 @@ from api import *
 from api.middleware.auth import SessionParam
 from api.routes.channel.models import *
 
-from api.types.params import ChannelParam, MessageParam
+from api.types.params import ChannelAsMemberParam, MessageParam
 from api.utils import ResourceNotFoundRpcHandler
 from shared.py.grpc.channel import edit_channel
-from shared.py.grpc.id import uuid_puuid
+from shared.py.grpc.id import id_compare, uuid_puuid, id_t
 from shared.py.grpc.lazy import LazyGRPC
+from shared.py.grpc.message import edit_message
 from shared.py.grpcgen import channel_pb2_grpc, internalmessage_pb2, message_pb2, message_pb2_grpc
 from shared.py.constraints import MAX_MESSAGES_QUERYABLE
 from shared.py.intraservice import client as intraclient
@@ -25,16 +26,8 @@ grpcchannel = LazyGRPC(discovery.discover_dataservices(), channel_pb2_grpc.Chann
 MessageRouter = APIRouter()
 
 
-def channel_membership_check(s: SessionParam, channel: ChannelParam):
-    if not uuid_puuid(s.user_id) in channel.channel_members:
-        raise ApiErrExc(ResourceNotFoundRpcHandler.make_error(channel.channel_id))
-
-
-
 @MessageRouter.post("/channel/{channel_id}/message")
-async def create_message(s: SessionParam, channel: ChannelParam, body: NewMessageBody) -> NewMessageResponse:
-
-    channel_membership_check(s, channel)
+async def create_message(s: SessionParam, channel: ChannelAsMemberParam, body: NewMessageBody) -> NewMessageResponse:
     
     author_id = uuid_puuid(s.user_id)
 
@@ -66,24 +59,38 @@ async def create_message(s: SessionParam, channel: ChannelParam, body: NewMessag
 
     return NewMessageResponse.from_rpc(message)
 
+
+def assert_user_is_author(current_user_id: id_t, message: MessageParam):
+    if not id_compare(message.author_id, current_user_id):
+        raise ApiErrExc(errors.Forbidden("Cannot delete a message you are not the author of"))
+        
+
 @MessageRouter.patch("/channel/{channel_id}/message/{message_id}")
-async def edit_message(s: SessionParam, channel: ChannelParam, message: MessageParam, body: EditMessageBody) -> NewMessageResponse:
-    ...
+async def r_edit_message(s: SessionParam, channel: ChannelAsMemberParam, message: MessageParam, body: EditMessageBody) -> NewMessageResponse:
+    assert_user_is_author(s.user_id, message)
+
+    rpc = await edit_message(grpcmessage, channel.channel_id, message.message_id, content=body.content)
+    return NewMessageResponse.from_rpc(rpc)
 
 @MessageRouter.delete("/channel/{channel_id}/message/{message_id}")
-async def delete_message(s: SessionParam, channel: ChannelParam, message: MessageParam) -> None:
-    ...
+async def delete_message(s: SessionParam, channel: ChannelAsMemberParam, message: MessageParam) -> None:
+    assert_user_is_author(s.user_id, message)
+    
+    cast(message_pb2.DeleteMessageResponse, await grpcmessage.stub.DeleteMessage(message_pb2.DeleteMessageRequest(
+        channel_id=channel.channel_id,
+        message_id=message.message_id,
+    )))
+    
+    
 
 
 @MessageRouter.get("/channel/{channel_id}/messages")
 async def get_messages(
     s: SessionParam,
-    channel: ChannelParam,
+    channel: ChannelAsMemberParam,
     before: Annotated[UUID | None, Query()] = None,
     count: Annotated[int, Query(le=MAX_MESSAGES_QUERYABLE)] = MAX_MESSAGES_QUERYABLE
 ) -> MessagesResponse:
-
-    channel_membership_check(s, channel)
 
     messages = cast(message_pb2.ReadMessagesResponse, await grpcmessage.stub.ReadMessages(message_pb2.ReadMessagesRequest(
         channel_id=channel.channel_id,

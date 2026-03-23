@@ -77,7 +77,7 @@ async def signup(r: Request, body: SignupBody) -> SignupResponse:
 @AccountRouter.get("/devicehandshake/{user_identifier}/{device_id}")
 async def device_key_handshake(r: Request, user_identifier: Username | UUID, device_id: UUID) -> DeviceKeyResponse:
 
-    with ResourceNotFoundRpcHandler(user_identifier):
+    with ResourceNotFoundRpcHandler("user", user_identifier):
         if isinstance(user_identifier, str):
             user = await get_user_by_username(grpcuser, user_identifier)
         else:

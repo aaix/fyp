@@ -6,7 +6,7 @@ from api import *
 from api.middleware.auth import SessionParam
 from api.routes.channel.models import *
 
-from api.types.params import ChannelParam, UserParam
+from api.types.params import ChannelAsMemberParam, UserParam
 from api.utils import ResourceNotFoundRpcHandler, unwrap
 
 from shared.py.intraservice import client as intraclient
@@ -117,11 +117,11 @@ async def get_my_channels(s: SessionParam) -> ChannelsResponse:
     )
 
 @ChannelRouter.get("/channel/{channel_id}")
-async def get_channel(s: SessionParam, channel: ChannelParam) -> ChannelResponse:
+async def get_channel(s: SessionParam, channel: ChannelAsMemberParam) -> ChannelResponse:
     return ChannelResponse.from_rpc(channel)
 
 @ChannelRouter.put("/channel/{channel_id}/typing")
-async def user_channel_typing(s: SessionParam, channel: ChannelParam) -> None:
+async def user_channel_typing(s: SessionParam, channel: ChannelAsMemberParam) -> None:
     await intraclient.fan_out(
         channel.channel_id, channel.channel_members, "user_typing",
         lambda _: internalmessage_pb2.EventUserTyping(
@@ -131,7 +131,7 @@ async def user_channel_typing(s: SessionParam, channel: ChannelParam) -> None:
     )
 
 @ChannelRouter.patch("/channel/{channel_id}")
-async def patch_channel(s: SessionParam, channel: ChannelParam, body: EditChannelBody) -> ChannelResponse:
+async def patch_channel(s: SessionParam, channel: ChannelAsMemberParam, body: EditChannelBody) -> ChannelResponse:
     channel_id = channel.channel_id
 
     channel_name = body.channel_name if "channel_name" in body.model_fields_set else UNSET
@@ -153,7 +153,7 @@ async def patch_channel(s: SessionParam, channel: ChannelParam, body: EditChanne
     return ChannelResponse.from_rpc(rpc)
 
 @ChannelRouter.post("/channel/{channel_id}/members")
-async def r_add_channel_members(s: SessionParam, channel: ChannelParam, body: AddChannelMembersRequest) -> None:
+async def r_add_channel_members(s: SessionParam, channel: ChannelAsMemberParam, body: AddChannelMembersRequest) -> None:
     member_ids = set(cm.user_id for cm in body.members_to_add)
 
 
@@ -207,15 +207,10 @@ async def r_add_channel_members(s: SessionParam, channel: ChannelParam, body: Ad
 
 
 @ChannelRouter.delete("/channel/{channel_id}/members/{user_id}")
-async def remove_channel_member(s: SessionParam, channel: ChannelParam, user: UserParam) -> None:
+async def remove_channel_member(s: SessionParam, channel: ChannelAsMemberParam, user: UserParam) -> None:
 
     removing_self = id_compare(user.user_id, s.user_id)
-    current_is_member = any(id_compare(s.user_id, m_id) for m_id in channel.channel_members)
 
-    if not removing_self and not current_is_member:
-        # send not found (the same way as the param would) to not allow channel enumeration
-        raise ApiErrExc(ResourceNotFoundRpcHandler.make_error(channel.channel_id))
-    
     # protected channels only self can be removed
     if not removing_self and not channel.channel_type == ChannelType.REGULAR:
         raise ApiErrExc(errors.BadRequest("Channel type does not support removing members", api_error_code=errors.ERROR_BAD_REQUEST))
