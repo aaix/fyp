@@ -69,6 +69,9 @@ async def get_relationships_with_user(s: SessionParam, peer: UserParam, types: A
     out: list[UserRelationshipResponse] = []
 
     async with PeerRelationshipManager(grpcrelationship, s.user_id, peer.user_id, types) as m:
+        if m.relationships is not None and not m.relationships:
+            return [] # we have no relationships
+
         for r in m.relationships or unwrap():
             out.append(
                 UserRelationshipResponse(
