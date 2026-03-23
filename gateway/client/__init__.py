@@ -143,6 +143,25 @@ class GatewayClient:
                 await self.handle_internal_message_create(e.payload)
             case "user_typing":
                 await self.handle_internal_user_typing(e.payload)
+            case "message_update":
+                await self.handle_internal_message_update(e.payload)
+            case "message_delete":
+                await self.handle_internal_message_delete(e.payload)
+        
+    @tracer.start_as_current_span("Client.handle_internal::message_update")
+    async def handle_internal_message_update(self, d: internalmessage_pb2.EventMessageUpdate):
+        await self.send_event(events.MessageUpdateEvent(
+            channel_id=puuid_uuid(d.channel_id) or unwrap(),
+            message_id=puuid_uuid(d.message_id) or unwrap(),
+            new_content=d.new_content,
+        ))
+
+    @tracer.start_as_current_span("Client.handle_internal::message_delete")
+    async def handle_internal_message_delete(self, d: internalmessage_pb2.EventMessageDelete):
+        await self.send_event(events.MessageDeleteEvent(
+            channel_id=puuid_uuid(d.channel_id) or unwrap(),
+            message_id=puuid_uuid(d.message_id) or unwrap(),
+        ))
 
     @tracer.start_as_current_span("Client.handle_internal::user_typing")
     async def handle_internal_user_typing(self, d: internalmessage_pb2.EventUserTyping):

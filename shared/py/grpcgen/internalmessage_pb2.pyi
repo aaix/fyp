@@ -8,7 +8,7 @@ from typing import ClassVar as _ClassVar, Optional as _Optional, Union as _Union
 DESCRIPTOR: _descriptor.FileDescriptor
 
 class IntraMessage(_message.Message):
-    __slots__ = ("to", "traceparent", "session_create", "channel_create", "friendship_update", "message_create", "user_typing")
+    __slots__ = ("to", "traceparent", "session_create", "channel_create", "friendship_update", "message_create", "user_typing", "message_delete", "message_update")
     TO_FIELD_NUMBER: _ClassVar[int]
     TRACEPARENT_FIELD_NUMBER: _ClassVar[int]
     SESSION_CREATE_FIELD_NUMBER: _ClassVar[int]
@@ -16,6 +16,8 @@ class IntraMessage(_message.Message):
     FRIENDSHIP_UPDATE_FIELD_NUMBER: _ClassVar[int]
     MESSAGE_CREATE_FIELD_NUMBER: _ClassVar[int]
     USER_TYPING_FIELD_NUMBER: _ClassVar[int]
+    MESSAGE_DELETE_FIELD_NUMBER: _ClassVar[int]
+    MESSAGE_UPDATE_FIELD_NUMBER: _ClassVar[int]
     to: _plib_pb2.pUUID
     traceparent: _traceparent_pb2.TraceParent
     session_create: EventSessionCreate
@@ -23,7 +25,9 @@ class IntraMessage(_message.Message):
     friendship_update: EventFriendshipUpdate
     message_create: EventMessageCreate
     user_typing: EventUserTyping
-    def __init__(self, to: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., traceparent: _Optional[_Union[_traceparent_pb2.TraceParent, _Mapping]] = ..., session_create: _Optional[_Union[EventSessionCreate, _Mapping]] = ..., channel_create: _Optional[_Union[EventChannelCreate, _Mapping]] = ..., friendship_update: _Optional[_Union[EventFriendshipUpdate, _Mapping]] = ..., message_create: _Optional[_Union[EventMessageCreate, _Mapping]] = ..., user_typing: _Optional[_Union[EventUserTyping, _Mapping]] = ...) -> None: ...
+    message_delete: EventMessageDelete
+    message_update: EventMessageUpdate
+    def __init__(self, to: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., traceparent: _Optional[_Union[_traceparent_pb2.TraceParent, _Mapping]] = ..., session_create: _Optional[_Union[EventSessionCreate, _Mapping]] = ..., channel_create: _Optional[_Union[EventChannelCreate, _Mapping]] = ..., friendship_update: _Optional[_Union[EventFriendshipUpdate, _Mapping]] = ..., message_create: _Optional[_Union[EventMessageCreate, _Mapping]] = ..., user_typing: _Optional[_Union[EventUserTyping, _Mapping]] = ..., message_delete: _Optional[_Union[EventMessageDelete, _Mapping]] = ..., message_update: _Optional[_Union[EventMessageUpdate, _Mapping]] = ...) -> None: ...
 
 class EventSessionCreate(_message.Message):
     __slots__ = ("ipaddress",)
@@ -66,6 +70,24 @@ class EventMessageCreate(_message.Message):
     attachment_id: _plib_pb2.pUUID
     in_reply_to: _plib_pb2.pUUID
     def __init__(self, author_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., message_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., channel_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., content: _Optional[bytes] = ..., message_type: _Optional[int] = ..., attachment_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., in_reply_to: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ...) -> None: ...
+
+class EventMessageUpdate(_message.Message):
+    __slots__ = ("message_id", "channel_id", "new_content")
+    MESSAGE_ID_FIELD_NUMBER: _ClassVar[int]
+    CHANNEL_ID_FIELD_NUMBER: _ClassVar[int]
+    NEW_CONTENT_FIELD_NUMBER: _ClassVar[int]
+    message_id: _plib_pb2.pUUID
+    channel_id: _plib_pb2.pUUID
+    new_content: bytes
+    def __init__(self, message_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., channel_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., new_content: _Optional[bytes] = ...) -> None: ...
+
+class EventMessageDelete(_message.Message):
+    __slots__ = ("message_id", "channel_id")
+    MESSAGE_ID_FIELD_NUMBER: _ClassVar[int]
+    CHANNEL_ID_FIELD_NUMBER: _ClassVar[int]
+    message_id: _plib_pb2.pUUID
+    channel_id: _plib_pb2.pUUID
+    def __init__(self, message_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., channel_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ...) -> None: ...
 
 class EventUserTyping(_message.Message):
     __slots__ = ("author_id", "channel_id")

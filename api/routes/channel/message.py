@@ -8,11 +8,10 @@ from api.middleware.auth import SessionParam
 from api.routes.channel.models import *
 
 from api.types.params import ChannelAsMemberParam, MessageParam
-from api.utils import ResourceNotFoundRpcHandler
 from shared.py.grpc.channel import edit_channel
 from shared.py.grpc.id import id_compare, uuid_puuid, id_t
 from shared.py.grpc.lazy import LazyGRPC
-from shared.py.grpc.message import edit_message
+from shared.py.grpc.message import create_message, edit_message
 from shared.py.grpcgen import channel_pb2_grpc, internalmessage_pb2, message_pb2, message_pb2_grpc
 from shared.py.constraints import MAX_MESSAGES_QUERYABLE
 from shared.py.intraservice import client as intraclient
@@ -27,21 +26,25 @@ MessageRouter = APIRouter()
 
 
 @MessageRouter.post("/channel/{channel_id}/message")
-async def create_message(s: SessionParam, channel: ChannelAsMemberParam, body: NewMessageBody) -> NewMessageResponse:
+async def r_create_message(s: SessionParam, channel: ChannelAsMemberParam, body: NewMessageBody) -> NewMessageResponse:
     
+    if not body.message_type.is_user:
+        raise ApiErrExc(errors.BadRequest("Unexpected non user message type", api_error_code=errors.ERROR_INVALID_BODY_PARTS))
+
     author_id = uuid_puuid(s.user_id)
 
     in_reply_to = uuid_puuid(body.in_reply_to) if body.in_reply_to else None
 
-    message = cast(message_pb2.MessageObject, await grpcmessage.stub.CreateMessage(message_pb2.CreateMessageRequest(
-        channel_id=channel.channel_id,
+    message = await create_message(
+        grpcmessage,
+        channel.channel_id,
         message_type=body.message_type,
-        opt_last_edited=None,
-        opt_content=body.content,
-        opt_attachment_asset_id=None,
+        last_edited=None,
+        content=body.content,
+        attachment_asset_id=None,
         author_id=author_id,
-        opt_in_reply_to=in_reply_to
-    )))
+        in_reply_to=in_reply_to
+    )
 
     await intraclient.fan_out(channel.channel_id, channel.channel_members, "message_create", lambda m_id: internalmessage_pb2.EventMessageCreate(
         author_id=author_id,
@@ -75,6 +78,14 @@ async def r_edit_message(s: SessionParam, channel: ChannelAsMemberParam, message
     assert_user_is_author(s.user_id, message)
 
     rpc = await edit_message(grpcmessage, channel.channel_id, message.message_id, content=body.content)
+
+
+    await intraclient.fan_out(channel.channel_id, channel.channel_members, "message_update", lambda _: internalmessage_pb2.EventMessageUpdate(
+        channel_id=channel.channel_id,
+        message_id=message.message_id,
+        new_content=body.content,
+    ))
+
     return NewMessageResponse.from_rpc(rpc)
 
 
@@ -86,6 +97,11 @@ async def delete_message(s: SessionParam, channel: ChannelAsMemberParam, message
         channel_id=channel.channel_id,
         message_id=message.message_id,
     )))
+
+    await intraclient.fan_out(channel.channel_id, channel.channel_members, "message_delete", lambda _: internalmessage_pb2.EventMessageDelete(
+        channel_id=channel.channel_id,
+        message_id=message.message_id,
+    ))
 
 
 @MessageRouter.get("/channel/{channel_id}/messages")

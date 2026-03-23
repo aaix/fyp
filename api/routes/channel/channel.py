@@ -6,9 +6,11 @@ from api import *
 from api.middleware.auth import SessionParam
 from api.routes.channel.models import *
 
+from api.routes.channel.system import create_system_message
 from api.types.params import ChannelAsMemberParam, UserParam
 from api.utils import ResourceNotFoundRpcHandler, unwrap
 
+from shared.py.grpc.message import MessageType
 from shared.py.intraservice import client as intraclient
 from shared.py.grpc.channel import ChannelType, add_channel_members, edit_channel, remove_channel_members
 from shared.py.grpc.id import id_compare, puuid_opt, puuid_uuid, uuid_puuid
@@ -98,6 +100,8 @@ async def new_channel(s: SessionParam, body: NewChannelBody) -> ChannelResponse:
         encrypted_channel_key=encrypted_map.get(user_id)
     ))
 
+    await create_system_message(channel, s.user_id, MessageType.SYSTEM_CREATE_CHANNEL, fan_out=False)
+
     return ChannelResponse(
         channel_id=puuid_uuid(channel.channel_id) or unwrap(),
         channel_name=channel.opt_channel_name,
@@ -135,13 +139,11 @@ async def patch_channel(s: SessionParam, channel: ChannelAsMemberParam, body: Ed
     channel_id = channel.channel_id
 
     channel_name = body.channel_name if "channel_name" in body.model_fields_set else UNSET
-    channel_icon = UNSET
 
     rpc = await edit_channel(
         grpcchannel,
         channel_id,
         channel_name=channel_name,
-        icon_id=channel_icon,
         members=channel.channel_members
     )
 
@@ -149,6 +151,8 @@ async def patch_channel(s: SessionParam, channel: ChannelAsMemberParam, body: Ed
         channel_id=channel_id,
         encrypted_channel_name=rpc.opt_channel_name,
     ))
+    
+    await create_system_message(channel, s.user_id, MessageType.SYSTEM_EDIT_CHANNEL_NAME)
 
     return ChannelResponse.from_rpc(rpc)
 
@@ -215,11 +219,7 @@ async def remove_channel_member(s: SessionParam, channel: ChannelAsMemberParam, 
 
     removing_self = id_compare(user.user_id, s.user_id)
 
-    # protected channels only self can be removed
-    if not removing_self and not channel.channel_type == ChannelType.REGULAR:
-        raise ApiErrExc(errors.BadRequest("Channel type does not support removing members", api_error_code=errors.ERROR_BAD_REQUEST))
-    
-    if not ChannelType(channel.channel_type).supports_editing:
+    if not (removing_self or ChannelType(channel.channel_type).supports_editing):
         raise ApiErrExc(errors.BadRequest("Channel type does not support editing members"))
 
 
@@ -228,4 +228,8 @@ async def remove_channel_member(s: SessionParam, channel: ChannelAsMemberParam, 
         channel.channel_id,
         (user.user_id,)
     )
+
+    await create_system_message(channel, s.user_id, MessageType.SYSTEM_REMOVE_MEMBER)
+
+    
 

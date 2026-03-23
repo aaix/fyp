@@ -8,6 +8,11 @@ from shared.py.grpcgen import message_pb2, message_pb2_grpc
 from shared.py.types import UNSET, MaybeUnset
 
 class MessageType(IntEnum):
+
+    @property
+    def is_user(self):
+        return self.value in (self.USER_REGULAR, self.USER_MEDIA)
+
     USER_REGULAR = 0
     USER_MEDIA = 1
 
@@ -15,6 +20,7 @@ class MessageType(IntEnum):
     SYSTEM_REMOVE_MEMBER = 3
     SYSTEM_EDIT_CHANNEL_NAME = 4
     SYSTEM_EDIT_CHANNEL_ICON = 5
+    SYSTEM_CREATE_CHANNEL = 6
 
 
 async def get_message(lazy: LazyGRPC[message_pb2_grpc.MessageServiceStub], channel_id: id_t, message_id: id_t) -> message_pb2.MessageObject:
@@ -37,4 +43,26 @@ async def edit_message(
         channel_id=id_puuid(channel_id),
         message_id=id_puuid(message_id),
         content=content if content else None
+    )))
+
+
+async def create_message(
+    lazy: LazyGRPC[message_pb2_grpc.MessageServiceStub],
+    channel_id: id_t,
+    *,
+    message_type: MessageType,
+    last_edited:  int | None,
+    content: bytes | None,
+    attachment_asset_id: id_t | None,
+    author_id: id_t,
+    in_reply_to: id_t | None
+) -> message_pb2.MessageObject:
+    return cast(message_pb2.MessageObject, await lazy.stub.CreateMessage(message_pb2.CreateMessageRequest(
+        channel_id=id_puuid(channel_id),
+        message_type=message_type,
+        opt_last_edited=last_edited,
+        opt_content=content,
+        opt_attachment_asset_id=id_puuid(attachment_asset_id) if attachment_asset_id else None,
+        author_id=id_puuid(author_id),
+        opt_in_reply_to=id_puuid(in_reply_to) if in_reply_to else None
     )))

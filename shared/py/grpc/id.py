@@ -2,6 +2,10 @@ from uuid import UUID
 
 from shared.py.grpcgen.plib_pb2 import pUUID
 
+# explicitly import id_t so the editor can suggest it as an import
+__all__ = ("id_t",)
+
+
 type id_t = str | pUUID | UUID
 
 def puuid_int(uuid: pUUID) -> int | None:

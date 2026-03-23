@@ -60,6 +60,7 @@ async def _channel_dependency_with_member(s: SessionParam, channel_id: Annotated
 ChannelAsMemberParam = Annotated[channel_pb2.ChannelObjectResponse, Depends(_channel_dependency_with_member)]
 
 async def _message_dependency(channel_id: Annotated[UUID, Path()], message_id: Annotated[UUID, Path()]) -> message_pb2.MessageObject:
-    return await get_message(grpcmessage, channel_id, message_id)
+    with ResourceNotFoundRpcHandler("message_id", message_id):
+        return await get_message(grpcmessage, channel_id, message_id)
 
 MessageParam = Annotated[message_pb2.MessageObject, Depends(_message_dependency)]
