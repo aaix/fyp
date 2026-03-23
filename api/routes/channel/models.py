@@ -49,9 +49,7 @@ class NewChannelBody(BaseModel):
     channel_members: ChannelMembers
 
 class EditChannelBody(BaseModel):
-    channel_name: ChannelNameIn | None
-    # TODO
-    # channel_icon: PrivateImage
+    channel_name: ChannelNameIn
 
 class AddChannelMembersRequest(BaseModel):
     members_to_add: ChannelMembers

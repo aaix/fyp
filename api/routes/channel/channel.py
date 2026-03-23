@@ -20,7 +20,6 @@ from shared.py.grpcgen import channel_pb2, internalmessage_pb2
 from shared.py.grpcgen.channel_pb2_grpc import ChannelServiceStub
 from shared.py.grpcgen.user_pb2 import TestManyRelationshipEntry
 from shared.py.grpcgen.user_pb2_grpc import UserRelationshipServiceStub
-from shared.py.types import UNSET
 
 
 
@@ -138,7 +137,7 @@ async def user_channel_typing(s: SessionParam, channel: ChannelAsMemberParam) ->
 async def patch_channel(s: SessionParam, channel: ChannelAsMemberParam, body: EditChannelBody) -> ChannelResponse:
     channel_id = channel.channel_id
 
-    channel_name = body.channel_name if "channel_name" in body.model_fields_set else UNSET
+    channel_name = body.channel_name
 
     rpc = await edit_channel(
         grpcchannel,
@@ -152,7 +151,7 @@ async def patch_channel(s: SessionParam, channel: ChannelAsMemberParam, body: Ed
         encrypted_channel_name=rpc.opt_channel_name,
     ))
     
-    await create_system_message(channel, s.user_id, MessageType.SYSTEM_EDIT_CHANNEL_NAME)
+    await create_system_message(channel, s.user_id, MessageType.SYSTEM_EDIT_CHANNEL_NAME, content=channel_name)
 
     return ChannelResponse.from_rpc(rpc)
 
@@ -229,7 +228,9 @@ async def remove_channel_member(s: SessionParam, channel: ChannelAsMemberParam, 
         (user.user_id,)
     )
 
-    await create_system_message(channel, s.user_id, MessageType.SYSTEM_REMOVE_MEMBER)
+    content = str(puuid_uuid(user.user_id) or unwrap()).replace('-', '')
+
+    await create_system_message(channel, s.user_id, MessageType.SYSTEM_REMOVE_MEMBER, content=content.encode('ascii'))
 
     
 

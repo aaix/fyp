@@ -16,9 +16,9 @@ class MessageType(IntEnum):
     USER_REGULAR = 0
     USER_MEDIA = 1
 
-    SYSTEM_ADD_MEMBER = 2
-    SYSTEM_REMOVE_MEMBER = 3
-    SYSTEM_EDIT_CHANNEL_NAME = 4
+    SYSTEM_ADD_MEMBERS = 2
+    SYSTEM_REMOVE_MEMBER = 3 # content should be user id removed
+    SYSTEM_EDIT_CHANNEL_NAME = 4 # content should be new name
     SYSTEM_EDIT_CHANNEL_ICON = 5
     SYSTEM_CREATE_CHANNEL = 6
 
