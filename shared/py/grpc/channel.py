@@ -17,6 +17,10 @@ class ChannelType(IntEnum):
     REGULAR = 0
     RESTRICTED_EXPANSION = 1
 
+    @property
+    def supports_editing(self):
+        return self.value in (0,)
+
 
 
 async def get_channel(lazy: LazyGRPC[ChannelServiceStub], channel_id: id_t) -> channel_pb2.ChannelObjectResponse:

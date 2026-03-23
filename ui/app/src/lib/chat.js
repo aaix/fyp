@@ -301,7 +301,31 @@ class MessageManager {
             message_type: 0,
             in_reply_to: in_reply_to_message_id,
         })
+    }
 
+    async getMessage(channel, message_id) {
+        return API.GET(`chat/channel/${channel.channel_id}/message/${message_id}`);
+    }
+
+    async editMessage(channel, new_content) {
+        const key = channel.shared_key;
+
+        if (!key) {
+            throw new Error("Missing channel key");
+        }
+
+        
+        const ciphertext = await encryptSymB64(new_content, key);
+
+        return await API.PATCH(`chat/channel/${channel.channel_id}/message/${message_id}`,
+            {
+                content:ciphertext
+            }
+        );
+    }
+
+    deleteMessage(channel, message_id) {
+        return API.DELETE(`chat/channel/${channel.channel_id}/message/${message_id}`);
     }
 }
 

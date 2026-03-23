@@ -85,7 +85,7 @@ impl ScyllaMessageServiceServer {
         ).await?;
 
         let update_message_prepared = db().await.prepare(
-            "UPDATE dataservices.message SET opt_content = ? WHERE channel_id = ? AND bucket = ? AND message_id = ?"
+            "UPDATE dataservices.message SET opt_content = ?, opt_last_edited = ? WHERE channel_id = ? AND bucket = ? AND message_id = ?"
         ).await?;
 
         Ok(Self {
@@ -292,7 +292,7 @@ impl ScyllaMessageServiceServer {
 
         db().await.execute_unpaged(
             &self.update_message_prepared, 
-            (channel_id, bucket, message_id, new_content, updated_at)
+            (new_content, updated_at, channel_id, bucket, message_id)
         ).await?;
 
         

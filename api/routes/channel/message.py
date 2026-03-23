@@ -65,12 +65,18 @@ def assert_user_is_author(current_user_id: id_t, message: MessageParam):
         raise ApiErrExc(errors.Forbidden("Cannot delete a message you are not the author of"))
         
 
+@MessageRouter.get("/channel/{channel_id}/message/{message_id}")
+async def r_get_message(s: SessionParam, channel: ChannelAsMemberParam, message: MessageParam) -> NewMessageResponse:
+    return NewMessageResponse.from_rpc(message)
+
+
 @MessageRouter.patch("/channel/{channel_id}/message/{message_id}")
 async def r_edit_message(s: SessionParam, channel: ChannelAsMemberParam, message: MessageParam, body: EditMessageBody) -> NewMessageResponse:
     assert_user_is_author(s.user_id, message)
 
     rpc = await edit_message(grpcmessage, channel.channel_id, message.message_id, content=body.content)
     return NewMessageResponse.from_rpc(rpc)
+
 
 @MessageRouter.delete("/channel/{channel_id}/message/{message_id}")
 async def delete_message(s: SessionParam, channel: ChannelAsMemberParam, message: MessageParam) -> None:
@@ -80,8 +86,6 @@ async def delete_message(s: SessionParam, channel: ChannelAsMemberParam, message
         channel_id=channel.channel_id,
         message_id=message.message_id,
     )))
-    
-    
 
 
 @MessageRouter.get("/channel/{channel_id}/messages")

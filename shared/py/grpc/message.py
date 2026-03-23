@@ -1,10 +1,20 @@
 
+from enum import IntEnum
 from typing import cast
 
 from shared.py.grpc.id import id_puuid, id_t
 from shared.py.grpc.lazy import LazyGRPC
 from shared.py.grpcgen import message_pb2, message_pb2_grpc
 from shared.py.types import UNSET, MaybeUnset
+
+class MessageType(IntEnum):
+    USER_REGULAR = 0
+    USER_MEDIA = 1
+
+    SYSTEM_ADD_MEMBER = 2
+    SYSTEM_REMOVE_MEMBER = 3
+    SYSTEM_EDIT_CHANNEL_NAME = 4
+    SYSTEM_EDIT_CHANNEL_ICON = 5
 
 
 async def get_message(lazy: LazyGRPC[message_pb2_grpc.MessageServiceStub], channel_id: id_t, message_id: id_t) -> message_pb2.MessageObject:

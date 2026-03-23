@@ -7,6 +7,7 @@ from api.utils import unwrap
 from shared.py.constraints import CHANNEL_MAX_NUM_MEMBERS
 from shared.py.grpc.channel import ChannelType
 from shared.py.grpc.id import puuid_uuid
+from shared.py.grpc.message import MessageType
 from shared.py.grpcgen import channel_pb2, message_pb2
 from shared.py.pydantic.base64 import Base64Input, Base64Output
 from shared.py.pydantic.common import ChannelNameIn, ChannelNameOut, RSA4096CiphertextIn, RSA4096CiphertextOut
@@ -98,7 +99,7 @@ class ChannelsResponse(BaseModel):
 
 
 class NewMessageBody(BaseModel):
-    message_type: int
+    message_type: MessageType
     # we deliberately dont check this in case the message has been DELETED
     # at the same time as the message being sent
     in_reply_to: UUID | None

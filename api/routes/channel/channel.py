@@ -157,6 +157,10 @@ async def r_add_channel_members(s: SessionParam, channel: ChannelAsMemberParam, 
     member_ids = set(cm.user_id for cm in body.members_to_add)
 
 
+    if not ChannelType(channel.channel_type).supports_editing:
+        raise ApiErrExc(errors.BadRequest("Channel type does not support editing members"))
+
+
     if not len(member_ids) == len(body.members_to_add):
         raise ApiErrExc(errors.BadRequest("Channel members should not contain duplicates", api_error_code=errors.ERROR_INVALID_BODY_PARTS))    
 
@@ -215,6 +219,10 @@ async def remove_channel_member(s: SessionParam, channel: ChannelAsMemberParam, 
     if not removing_self and not channel.channel_type == ChannelType.REGULAR:
         raise ApiErrExc(errors.BadRequest("Channel type does not support removing members", api_error_code=errors.ERROR_BAD_REQUEST))
     
+    if not ChannelType(channel.channel_type).supports_editing:
+        raise ApiErrExc(errors.BadRequest("Channel type does not support editing members"))
+
+
     await remove_channel_members(
         grpcchannel,
         channel.channel_id,
