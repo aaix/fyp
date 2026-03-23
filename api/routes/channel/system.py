@@ -31,6 +31,7 @@ async def create_system_message(channel: channel_pb2.ChannelObjectResponse, auth
         author_id=id_puuid(author_id),
         message_id=message.message_id,
         channel_id=channel.channel_id,
+        message_type=message_type.value,
         content=content,
     ))
     return message
