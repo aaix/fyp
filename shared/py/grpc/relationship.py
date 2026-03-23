@@ -64,7 +64,8 @@ async def test_many_relationships(lazy: LazyGRPC[UserRelationshipServiceStub], u
 
 async def read_relationships(lazy: LazyGRPC[UserRelationshipServiceStub], user_id: id_t, r_type: RelationshipType) -> user_pb2.RelationshipsResponse:
     return cast(user_pb2.RelationshipsResponse, await lazy.stub.ReadRelationships(user_pb2.ReadRelationshipsRequest(
-        user_id=id_puuid(user_id)
+        user_id=id_puuid(user_id),
+        relationship_type=r_type.value,
     )))
 
 async def delete_relationship(
