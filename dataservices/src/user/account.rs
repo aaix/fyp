@@ -20,7 +20,6 @@ use tonic::{Request, Response, Status};
 use user_service::user_service_server::{UserService, UserServiceServer};
 use user_service::{CreateUserRequest, ReadUserResponse};
 use user_service::{DeleteUserRequest, DeleteUserResponse, ReadUserRequest, UpdateUserRequest};
-use uuid::Uuid;
 
 
 
