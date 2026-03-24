@@ -1,9 +1,8 @@
-use std::{fs::File, io::BufReader};
+use std::io::BufReader;
 
 use aws_sdk_s3::primitives::ByteStream;
 use image::ImageFormat;
 use init_tracing_opentelemetry::tracing_opentelemetry::OpenTelemetrySpanExt;
-use tokio_util::io::SyncIoBridge;
 use tonic::{Response, async_trait};
 use tracing::Instrument;
 

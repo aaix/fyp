@@ -4,6 +4,7 @@ use aws_sdk_s3::{error::SdkError, operation::put_object::PutObjectError};
 use image::{ImageError, error::{DecodingError, EncodingError, LimitErrorKind, UnsupportedErrorKind}};
 use tokio::task::JoinError;
 use tonic::Status;
+use webp::AnimEncodeError;
 
 
 pub type MSResult<T> = Result<T, MSError>;
@@ -59,21 +60,19 @@ impl From<ConversionError> for Status {
         match value {
             ConversionError::IoError(error_kind) =>
                 Status::internal(format!("{error_kind:?}")),
-
             ConversionError::UnknownInputFormat(decoding_error) =>
                 Status::invalid_argument(format!("{decoding_error:?}")),
-        
             ConversionError::UnsupportedInput(unsupported_error_kind) => 
                 Status::invalid_argument(format!("{unsupported_error_kind:?}")),
-
             ConversionError::IncompatibleFormats(encoding_error) =>
                 Status::invalid_argument(format!("{encoding_error:?}")),
-
             ConversionError::ResourceConstraint(limit_error_kind) =>
                 Status::invalid_argument(format!("{limit_error_kind:?}")),
-
             ConversionError::Unknown=>
                 Status::internal("Unknown conversion error"),
+            ConversionError::NoInputFormat => Status::invalid_argument("Unkown format"),
+
+            ConversionError::BadFrame(m) => Status::invalid_argument(m)
         }
     }
 }
@@ -90,12 +89,23 @@ pub enum ConversionError {
     /// Out of resources
     ResourceConstraint(LimitErrorKind),
 
+    // could not parse a frame
+    BadFrame(String),
+
+    NoInputFormat,
+
     Unknown,
 }
 
 impl From<Error> for ConversionError {
     fn from(value: Error) -> Self {
         Self::IoError(value.kind())
+    }
+}
+
+impl From<AnimEncodeError> for ConversionError {
+    fn from(value: AnimEncodeError) -> Self {
+        Self::BadFrame(format!("{value:?}"))
     }
 }
 
