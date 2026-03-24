@@ -55,6 +55,15 @@ function uuidFrom32Hex(key) {
   return `${key.slice(0, 8)}-${key.slice(8, 12)}-${key.slice(12, 16)}-${key.slice(16, 20)}-${key.slice(20)}`
 }
 
+/** SYSTEM_ADD_MEMBERS content: comma-separated user ids (32-char hex, no hyphens). */
+function parseCommaSeparatedUserIds(rawText) {
+  if (!rawText?.trim()) return []
+  return rawText
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+}
+
 /**
  * @returns {string|null} `@username` or null if not in members/profiles (caller may fetch).
  */
@@ -89,6 +98,76 @@ function SystemMessage({ message, selectedMembers, authorProfilesById }) {
   const type = message?.message_type
 
   const [removalResolvedLabel, setRemovalResolvedLabel] = useState(null)
+  const [addMembersFetchedLine, setAddMembersFetchedLine] = useState(null)
+
+  const addMembersLineSync = useMemo(() => {
+    if (type !== SYSTEM_MSG_ADD_MEMBERS || !rawText?.trim()) return null
+    const ids = parseCommaSeparatedUserIds(rawText)
+    if (ids.length === 0) return null
+    const labels = ids.map((id) => resolveUserLabel(id, selectedMembers, authorProfilesById))
+    if (!labels.every(Boolean)) return null
+    return labels.join(', ')
+  }, [type, rawText, selectedMembers, authorProfilesById])
+
+  useEffect(() => {
+    const clear = () => queueMicrotask(() => setAddMembersFetchedLine(null))
+
+    if (type !== SYSTEM_MSG_ADD_MEMBERS) {
+      clear()
+      return
+    }
+    if (addMembersLineSync) {
+      clear()
+      return
+    }
+
+    const ids = parseCommaSeparatedUserIds(rawText)
+    if (ids.length === 0) {
+      clear()
+      return
+    }
+
+    const syncLabels = ids.map((id) => resolveUserLabel(id, selectedMembers, authorProfilesById))
+    const missingCanon = []
+    for (let i = 0; i < ids.length; i++) {
+      if (syncLabels[i]) continue
+      const key = uuidHexKey(ids[i])
+      if (key.length === 32 && /^[0-9a-f]+$/.test(key)) {
+        const c = uuidFrom32Hex(key)
+        if (c) missingCanon.push(c)
+      }
+    }
+
+    let cancelled = false
+    if (missingCanon.length === 0) {
+      const fallback = ids.map((id, i) => syncLabels[i] ?? `@${ids[i].slice(0, 8)}…`)
+      queueMicrotask(() => setAddMembersFetchedLine(fallback.join(', ')))
+      return () => {
+        cancelled = true
+      }
+    }
+
+    ;(async () => {
+      try {
+        const users = await userManager.fetchUsersBulk(missingCanon)
+        const byKey = new Map(users.map((u) => [uuidHexKey(u.user_id), u]))
+        const labels = ids.map((id, i) => {
+          if (syncLabels[i]) return syncLabels[i]
+          const u = byKey.get(uuidHexKey(id))
+          return u?.username ? `@${u.username}` : `@${uuidHexKey(id).slice(0, 8)}…`
+        })
+        if (!cancelled) queueMicrotask(() => setAddMembersFetchedLine(labels.join(', ')))
+      } catch {
+        if (!cancelled) {
+          const fallback = ids.map((id, i) => syncLabels[i] ?? `@${ids[i].slice(0, 8)}…`)
+          queueMicrotask(() => setAddMembersFetchedLine(fallback.join(', ')))
+        }
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [type, rawText, selectedMembers, authorProfilesById, addMembersLineSync])
 
   useEffect(() => {
     const clear = () => queueMicrotask(() => setRemovalResolvedLabel(null))
@@ -143,11 +222,13 @@ function SystemMessage({ message, selectedMembers, authorProfilesById }) {
       ? 'Someone'
       : resolveUserLabel(String(message.author_id), selectedMembers, authorProfilesById) ?? 'Someone'
 
+  const addMembersDisplay = addMembersLineSync ?? addMembersFetchedLine
+
   const line = useMemo(() => {
     switch (type) {
       case SYSTEM_MSG_ADD_MEMBERS:
-        return rawText
-          ? `${actorLabel} added members · ${rawText}`
+        return addMembersDisplay
+          ? `${actorLabel} added ${addMembersDisplay} to the channel.`
           : `${actorLabel} added members to the channel.`
       case SYSTEM_MSG_REMOVE_MEMBER: {
         const uid = rawText?.trim()
@@ -168,7 +249,7 @@ function SystemMessage({ message, selectedMembers, authorProfilesById }) {
       default:
         return rawText ? `${actorLabel}: ${rawText}` : `${actorLabel} — system message`
     }
-  }, [type, rawText, selectedMembers, authorProfilesById, actorLabel, removalResolvedLabel])
+  }, [type, rawText, selectedMembers, authorProfilesById, actorLabel, removalResolvedLabel, addMembersDisplay])
 
   return (
     <li className="flex w-full min-w-0 max-w-full justify-center overflow-x-hidden py-1" role="listitem">
