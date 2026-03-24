@@ -210,6 +210,9 @@ async def r_add_channel_members(s: SessionParam, channel: ChannelAsMemberParam, 
         encrypted_channel_name=channel.opt_channel_name,
         encrypted_channel_key=encrypted_map.get(user_id)
     ))
+    content = ','.join(str(u).replace('-', '') for u in member_ids)
+
+    await create_system_message(channel, s.user_id, MessageType.SYSTEM_ADD_MEMBERS, content=content.encode('ascii'))
 
 
 

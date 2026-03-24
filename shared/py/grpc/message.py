@@ -16,7 +16,7 @@ class MessageType(IntEnum):
     USER_REGULAR = 0
     USER_MEDIA = 1
 
-    SYSTEM_ADD_MEMBERS = 2
+    SYSTEM_ADD_MEMBERS = 2 # content is csv of user ids
     SYSTEM_REMOVE_MEMBER = 3 # content should be user id removed
     SYSTEM_EDIT_CHANNEL_NAME = 4 # content should be new name
     SYSTEM_EDIT_CHANNEL_ICON = 5
