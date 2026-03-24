@@ -4,7 +4,7 @@ from uuid import UUID
 from pydantic import BaseModel, Field
 
 from api.utils import unwrap
-from shared.py.constraints import CHANNEL_MAX_NUM_MEMBERS
+from shared.py.constraints import CHANNEL_MAX_NUM_MEMBERS, MESSAGE_CONTENT_MAX_LENGTH
 from shared.py.grpc.channel import ChannelType
 from shared.py.grpc.id import puuid_uuid
 from shared.py.grpc.message import MessageType
@@ -101,7 +101,7 @@ class NewMessageBody(BaseModel):
     # we deliberately dont check this in case the message has been DELETED
     # at the same time as the message being sent
     in_reply_to: UUID | None
-    content: Annotated[Base64Input, Field(min_length=1)]
+    content: Annotated[Base64Input, Field(min_length=1, max_length=MESSAGE_CONTENT_MAX_LENGTH)]
 
 class NewMessageResponse(BaseModel):
 
