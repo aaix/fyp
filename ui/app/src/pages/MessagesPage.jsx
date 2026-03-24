@@ -10,12 +10,35 @@ import Button from '../components/Button.jsx'
 import ClickableRow from '../components/ClickableRow.jsx'
 import MenuActionItem from '../components/MenuActionItem.jsx'
 import Message from '../components/Message.jsx'
+import SystemMessage from '../components/SystemMessage.jsx'
 import { getCurrentSession } from '../lib/session.js'
-import { channelManager, messageManager } from '../lib/chat.js'
+import { channelManager, isUserMessageType, messageManager } from '../lib/chat.js'
 import { decryptB64Sym } from '../lib/keyhandler.js'
 import { userManager } from '../lib/user.js'
 import { getAvatarUrl, getDefaultChannelUrl, userContentUrl } from '../lib/utils.js'
 import MemberContextMenu from '../components/MemberContextMenu.jsx'
+
+function decodeReplyPreviewContent(content) {
+  if (!content) return null
+  try {
+    if (typeof content === 'string') return content
+    if (content instanceof ArrayBuffer) {
+      return new TextDecoder().decode(new Uint8Array(content))
+    }
+    if (ArrayBuffer.isView(content)) {
+      return new TextDecoder().decode(content)
+    }
+    return String(content)
+  } catch {
+    return null
+  }
+}
+
+function truncateReplyPreview(s, n = 200) {
+  if (!s) return ''
+  const t = s.replace(/\s+/g, ' ').trim()
+  return t.length > n ? `${t.slice(0, n)}…` : t
+}
 
 export default function MessagesPage() {
   const [channels, setChannels] = useState([])
@@ -77,6 +100,65 @@ export default function MessagesPage() {
   const messageInputRef = useRef(null)
   const authorLookupInFlightRef = useRef(new Set())
 
+  const [replyingTo, setReplyingTo] = useState(null)
+  const [deletedMessageIds, setDeletedMessageIds] = useState(() => new Set())
+
+  const messagesById = useMemo(() => {
+    const o = {}
+    for (const m of messages ?? []) {
+      o[String(m.message_id)] = m
+    }
+    return o
+  }, [messages])
+
+  const replyPreviewText = useMemo(() => {
+    if (!replyingTo) return null
+    const raw = decodeReplyPreviewContent(replyingTo.content)
+    return raw ? truncateReplyPreview(raw) : null
+  }, [replyingTo])
+
+  const handleReply = useCallback((m) => {
+    setReplyingTo(m)
+    messageInputRef.current?.focus?.()
+  }, [])
+
+  const handleMessagePatched = useCallback((updated) => {
+    setMessages((prev) =>
+      (prev ?? []).map((row) =>
+        String(row.message_id) === String(updated.message_id) ? { ...row, ...updated } : row,
+      ),
+    )
+  }, [])
+
+  const handleMessageDeleted = useCallback((messageId) => {
+    const sid = String(messageId)
+    setMessages((prev) => (prev ?? []).filter((m) => String(m.message_id) !== sid))
+    setDeletedMessageIds((prev) => {
+      const next = new Set(prev)
+      next.add(sid)
+      return next
+    })
+    setReplyingTo((r) => (r && String(r.message_id) === sid ? null : r))
+  }, [])
+
+  const handleRemoteMessageEdit = useCallback((payload) => {
+    const ts = Math.floor(Date.now() / 1000)
+    setMessages((prev) =>
+      (prev ?? []).map((row) =>
+        String(row.message_id) === String(payload.message_id)
+          ? { ...row, content: payload.content, last_edited: ts }
+          : row,
+      ),
+    )
+  }, [])
+
+  const handleRemoteMessageDelete = useCallback(
+    (payload) => {
+      handleMessageDeleted(payload.message_id)
+    },
+    [handleMessageDeleted],
+  )
+
   const handleIncomingMessage = useCallback((incomingMessage) => {
     if (!incomingMessage?.message_id) return
 
@@ -99,7 +181,7 @@ export default function MessagesPage() {
 
     setMessages((prev) => {
       const prevList = prev ?? []
-      if (prevList.some((m) => m.message_id === incomingMessage.message_id)) return prevList
+      if (prevList.some((m) => String(m.message_id) === String(incomingMessage.message_id))) return prevList
       // Only auto-scroll if the user is already at/near the bottom.
       const el = messagesScrollRef.current
       const atBottom = el ? el.scrollHeight - el.scrollTop - el.clientHeight < 120 : true
@@ -224,6 +306,8 @@ export default function MessagesPage() {
     setAuthorProfilesById({})
     authorLookupInFlightRef.current.clear()
     shouldAutoScrollRef.current = false
+    setReplyingTo(null)
+    setDeletedMessageIds(new Set())
   }, [selectedChannelId])
 
   useEffect(() => {
@@ -362,6 +446,20 @@ export default function MessagesPage() {
       messageManager.setOnMessageCreate(null)
     }
   }, [handleIncomingMessage])
+
+  useEffect(() => {
+    messageManager.setOnMessageEdit(handleRemoteMessageEdit)
+    return () => {
+      messageManager.setOnMessageEdit(null)
+    }
+  }, [handleRemoteMessageEdit])
+
+  useEffect(() => {
+    messageManager.setOnMessageDelete(handleRemoteMessageDelete)
+    return () => {
+      messageManager.setOnMessageDelete(null)
+    }
+  }, [handleRemoteMessageDelete])
 
   useEffect(() => {
     channelManager.setOnUserTyping(handleUserTyping)
@@ -716,6 +814,8 @@ export default function MessagesPage() {
         setDraft('')
         setSendError(null)
         setSendLoading(false)
+        setReplyingTo(null)
+        setDeletedMessageIds(new Set())
         clearAttachment()
       }
       setLeaveConfirm(null)
@@ -918,12 +1018,12 @@ export default function MessagesPage() {
                 </div>
               </div>
 
-              <div className="flex min-h-0 flex-1 overflow-hidden">
-                <div className="flex min-h-0 flex-1 flex-col">
+              <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden">
+                <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden">
                   <div
                     ref={messagesScrollRef}
                     onScroll={handleMessagesScroll}
-                    className="min-h-0 flex-1 overflow-y-auto px-4 py-4"
+                    className="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto px-4 py-4"
                   >
                     {messagesLoading && (
                       <div className="space-y-2" aria-label="Loading messages">
@@ -953,14 +1053,40 @@ export default function MessagesPage() {
                     )}
 
                     {!messagesLoading && !messagesError && messages.length > 0 && (
-                      <ul className="space-y-2" role="list" aria-label="Messages">
+                      <ul className="w-full min-w-0 max-w-full space-y-2" role="list" aria-label="Messages">
                         {messages.map((m) => {
+                          if (!isUserMessageType(m.message_type)) {
+                            return (
+                              <SystemMessage
+                                key={m.message_id}
+                                message={m}
+                                selectedMembers={selectedMembers}
+                                authorProfilesById={authorProfilesById}
+                              />
+                            )
+                          }
                           const author =
                             selectedMembers.find((u) => u.user_id === m.author_id) ??
                             authorProfilesById[String(m.author_id)] ??
                             null
                           const isOwn = currentUserId && m.author_id === currentUserId
-                          return <Message key={m.message_id} message={m} author={author} isOwn={!!isOwn} />
+                          return (
+                            <Message
+                              key={m.message_id}
+                              message={m}
+                              author={author}
+                              isOwn={!!isOwn}
+                              channel={selectedChannel}
+                              currentUserId={currentUserId}
+                              messagesById={messagesById}
+                              deletedMessageIds={deletedMessageIds}
+                              selectedMembers={selectedMembers}
+                              authorProfilesById={authorProfilesById}
+                              onReply={handleReply}
+                              onMessagePatched={handleMessagePatched}
+                              onMessageDeleted={handleMessageDeleted}
+                            />
+                          )
                         })}
                         <li ref={bottomRef} className="h-0 list-none" />
                       </ul>
@@ -996,7 +1122,13 @@ export default function MessagesPage() {
 
                       setSendLoading(true)
                       Promise.resolve()
-                        .then(() => messageManager.sendMessage(selectedChannel, payload))
+                        .then(() =>
+                          messageManager.sendMessage(
+                            selectedChannel,
+                            payload,
+                            replyingTo?.message_id ?? null,
+                          ),
+                        )
                         .then(async (res) => {
                           if (!res?.success) {
                             setSendError(res?.error?.message ?? 'Could not send message')
@@ -1022,7 +1154,7 @@ export default function MessagesPage() {
 
                           setMessages((prev) => {
                             const prevList = prev ?? []
-                            if (prevList.some((m) => m.message_id === newMessage.message_id)) {
+                            if (prevList.some((m) => String(m.message_id) === String(newMessage.message_id))) {
                               return prevList
                             }
                             // `messageManager.getMessages()` returns oldest-first, so append.
@@ -1032,6 +1164,7 @@ export default function MessagesPage() {
                           })
 
                           setDraft('')
+                          setReplyingTo(null)
                           clearAttachment()
                         })
                         .catch((err) => {
@@ -1074,7 +1207,47 @@ export default function MessagesPage() {
                       }}
                     />
 
-                    <div className="flex items-center gap-2">
+                    {replyingTo ? (
+                      <div className="mb-2 flex items-start justify-between gap-2 rounded-button border border-[color:var(--card-border)] bg-[color:var(--card-bg)] px-3 py-2">
+                        <div className="min-w-0 flex-1">
+                          <div className="text-xs text-[color:var(--text-muted)]">
+                            Replying to{' '}
+                            <span className="font-medium text-[color:var(--text-primary)]">
+                              {(() => {
+                                const rid = replyingTo?.author_id
+                                const u =
+                                  selectedMembers.find((x) => x.user_id === rid) ??
+                                  authorProfilesById[String(rid)]
+                                return u?.username ? `@${u.username}` : 'message'
+                              })()}
+                            </span>
+                          </div>
+                          {replyPreviewText ? (
+                            <div className="mt-1 line-clamp-3 whitespace-pre-wrap break-words text-xs text-[color:var(--text-primary)]">
+                              {replyPreviewText}
+                            </div>
+                          ) : replyingTo?.attachment_asset_id ? (
+                            <div className="mt-1 text-xs italic text-[color:var(--text-muted)]">
+                              Attachment
+                            </div>
+                          ) : null}
+                        </div>
+                        <Button
+                          type="button"
+                          variant="text"
+                          size="iconSm"
+                          className="h-7 w-7 flex-shrink-0 text-[color:var(--text-muted)]"
+                          aria-label="Cancel reply"
+                          onClick={() => setReplyingTo(null)}
+                        >
+                          <span className="material-symbols-outlined text-base" aria-hidden>
+                            close
+                          </span>
+                        </Button>
+                      </div>
+                    ) : null}
+
+                    <div className="flex items-end gap-2">
                       <Button
                         type="button"
                         size="iconSm"
@@ -1101,13 +1274,19 @@ export default function MessagesPage() {
                         </span>
                       </Button>
 
-                      <input
-                        type="text"
-                        className="w-full rounded-button border border-[color:var(--card-border)] bg-[color:var(--card-bg)] px-3 py-2 text-sm text-[color:var(--text-primary)] placeholder:text-[color:var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[color:var(--accent)] disabled:opacity-60"
+                      <textarea
+                        rows={1}
+                        className="box-border min-h-[2.75rem] min-w-0 max-h-[calc(5lh+1rem)] flex-1 resize-y overflow-y-auto rounded-button border border-[color:var(--card-border)] bg-[color:var(--card-bg)] px-3 py-2 text-sm leading-normal text-[color:var(--text-primary)] [field-sizing:content] placeholder:text-[color:var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[color:var(--accent)] disabled:opacity-60"
                         placeholder="Message"
+                        title="Enter to send, Shift+Enter for new line"
                         value={draft}
                         disabled={!selectedChannel || sendLoading}
                         ref={messageInputRef}
+                        onKeyDown={(e) => {
+                          if (e.key !== 'Enter' || e.shiftKey || e.nativeEvent.isComposing) return
+                          e.preventDefault()
+                          e.currentTarget.form?.requestSubmit()
+                        }}
                         onChange={(e) => {
                           const next = e.target.value
                           setDraft(next)
@@ -1115,7 +1294,6 @@ export default function MessagesPage() {
 
                           if (!selectedChannel) return
 
-                          const prevTrimmed = (draft ?? '').trim()
                           const nextTrimmed = (next ?? '').trim()
 
                           if (!nextTrimmed) return
