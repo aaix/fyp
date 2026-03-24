@@ -392,6 +392,12 @@ class Gateway {
             case 'message_create':
                 messageManager.onMessage(event);
                 break;
+            case 'message_update':
+                messageManager.onMessageEdit(event);
+                break;
+            case 'message_delete':
+                messageManager.onMessageDelete(event);
+                break;
             case 'user_typing':
                 channelManager.onUserTyping(event.channel_id, event.author_id)
                 break;

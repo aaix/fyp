@@ -3,6 +3,21 @@ import { decryptB64Sym, encryptSymB64, importFromPem, RSAUnwrapSym, RSAWrapSym }
 import { getCurrentSession } from "./session";
 import { B64toUint8Array, blobToB64 } from "./utils";
 
+
+const MESSAGE_TYPE_USER_REGULAR = 0;
+const MESSAGE_TYPE_USER_MEDIA = 1;
+const MESSAGE_TYPE_SYSTEM_EDIT_CHANNEL_NAME = 4;
+
+/* channel name message contains the channel name ciphertext and needs to be decrypted */
+function messageHasCiphertext(messageType) {
+    return isUserMessageType(messageType) || messageType === MESSAGE_TYPE_SYSTEM_EDIT_CHANNEL_NAME;
+}
+
+function isUserMessageType(messageType) {
+    return messageType === MESSAGE_TYPE_USER_REGULAR || messageType === MESSAGE_TYPE_USER_MEDIA;
+}
+
+
 class ChannelManager {
     constructor() {
         // Cache per-channel encrypted keys so we can decrypt later updates
@@ -192,6 +207,8 @@ class MessageManager {
     constructor() {
         this.activeChannel = null;
         this.onMessageCreateCb = null;
+        this.onMessageEditCb = null;
+        this.onMessageDeleteCb = null;
     }
 
     setActiveChannel(channel) {
@@ -202,7 +219,19 @@ class MessageManager {
         this.onMessageCreateCb = fn ?? null;
     }
 
+    setOnMessageEdit(fn) {
+        this.onMessageEditCb = fn ?? null;
+    }
+
+    setOnMessageDelete(fn) {
+        this.onMessageDeleteCb = fn ?? null;
+    }
+
     async populateEncryptedMessageFields(key, message) {
+
+        if (!messageHasCiphertext(message.message_type)) {
+            return message;
+        }
 
         const ciphertext = message.content;
 
@@ -219,17 +248,23 @@ class MessageManager {
 
         const channel = this.activeChannel;
         if (!channel) return;
-        if (event.channel_id !== channel.channel_id) return;
+        if (String(event.channel_id) !== String(channel.channel_id)) return;
 
         const key = channel.shared_key;
         if (!key) return;
 
+        // fan out includes:
+        // channel_id, message_id, content, message_type, attachment_id, author_id, in_reply_to
+        // bucket is not useful to the ui
+        // last_edited is assumed null because the message was just created
         let decryptedContent = null;
-        if (event.content) {
+        if (event.content && messageHasCiphertext(event.message_type)) {
             decryptedContent = await decryptB64Sym(event.content, key);
+        } else if (event.content != null) {
+            decryptedContent = event.content;
         }
 
-        const uiMessage = {
+        const message = {
             channel_id: event.channel_id,
             bucket: null,
             message_id: event.message_id,
@@ -238,10 +273,10 @@ class MessageManager {
             content: decryptedContent,
             attachment_asset_id: event.attachment_id ?? null,
             author_id: event.author_id ?? null,
+            in_reply_to: event.in_reply_to ?? null,
         };
 
-        this.onMessageCreateCb?.(uiMessage);
-
+        this.onMessageCreateCb?.(message);
     }
 
 
@@ -303,11 +338,21 @@ class MessageManager {
         })
     }
 
-    async getMessage(channel, message_id) {
+    async fetchMessage(channel, message_id) {
         return API.GET(`chat/channel/${channel.channel_id}/message/${message_id}`);
     }
 
-    async editMessage(channel, new_content) {
+    async getMessage(channel, message_id) {
+        const res = await this.fetchMessage(channel, message_id);
+        if (!res.success) return res;
+        const key = channel.shared_key;
+        if (!key) return res;
+        const m = { ...res.data };
+        await this.populateEncryptedMessageFields(key, m);
+        return { ...res, data: m };
+    }
+
+    async editMessage(channel, message_id, new_content) {
         const key = channel.shared_key;
 
         if (!key) {
@@ -327,7 +372,39 @@ class MessageManager {
     deleteMessage(channel, message_id) {
         return API.DELETE(`chat/channel/${channel.channel_id}/message/${message_id}`);
     }
+
+    async onMessageEdit(event) {
+        const channel = this.activeChannel;
+        if (!channel) return;
+        if (String(event.channel_id) !== String(channel.channel_id)) return;
+
+        const key = channel.shared_key;
+        if (!key) return;
+
+        let decryptedContent = null;
+        if (event.new_content) {
+            decryptedContent = await decryptB64Sym(event.new_content, key);
+        }
+
+        this.onMessageEditCb?.({
+            channel_id: event.channel_id,
+            message_id: event.message_id,
+            content: decryptedContent,
+        });
+    }
+
+    onMessageDelete(event) {
+        const channel = this.activeChannel;
+        if (!channel) return;
+        if (String(event.channel_id) !== String(channel.channel_id)) return;
+
+        this.onMessageDeleteCb?.({
+            channel_id: event.channel_id,
+            message_id: event.message_id,
+        });
+    }
 }
 
 export const channelManager = new ChannelManager();
 export const messageManager = new MessageManager();
+export { isUserMessageType, MESSAGE_TYPE_USER_REGULAR, MESSAGE_TYPE_USER_MEDIA };
