@@ -84,8 +84,7 @@ where A: AnimationDecoder<'i>, W: io::Seek + io::Write + 'o
     match output_format {
         ImageFormat::WebP  => {
             let mut config = WebPConfig::new().map_err(|_| {ConversionError::Unknown})?;
-            config.near_lossless = 1;
-            config.alpha_compression = 0;
+            config.alpha_compression = 1;
             config.quality = 75f32;
             let mut encoder = AnimEncoder::new(width, height, &config);
 
@@ -97,8 +96,8 @@ where A: AnimationDecoder<'i>, W: io::Seek + io::Write + 'o
                 let image = DynamicImage::from(f.into_buffer());
 
                 let r = (image, timestamp.clone());
-                timestamp += (delay.0 * 1000) / (delay.1 * 1000);
-
+                let delay_ms = (delay.0 as f32 / delay.1 as f32) as u32;
+                timestamp += delay_ms;
                 Ok::<(DynamicImage, u32), ImageError>(r)
 
             }).collect::<Result<Vec<(DynamicImage, u32)>, ImageError>>()?;
