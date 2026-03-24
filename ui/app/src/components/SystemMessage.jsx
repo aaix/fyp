@@ -1,12 +1,16 @@
 import { memo, useEffect, useMemo, useState } from 'react'
 import { userManager } from '../lib/user.js'
-
-/** Align with shared/py/grpc/message.py MessageType */
-export const SYSTEM_MSG_ADD_MEMBERS = 2
-export const SYSTEM_MSG_REMOVE_MEMBER = 3
-export const SYSTEM_MSG_EDIT_CHANNEL_NAME = 4
-export const SYSTEM_MSG_EDIT_CHANNEL_ICON = 5
-export const SYSTEM_MSG_CREATE_CHANNEL = 6
+import {
+  SYSTEM_MSG_ADD_MEMBERS,
+  SYSTEM_MSG_REMOVE_MEMBER,
+  SYSTEM_MSG_EDIT_CHANNEL_NAME,
+  SYSTEM_MSG_EDIT_CHANNEL_ICON,
+  SYSTEM_MSG_CREATE_CHANNEL,
+  decodeSystemMessageContent,
+  parseCommaSeparatedUserIds,
+  uuidHexKey,
+  uuidFrom32Hex,
+} from '../utils/systemMessageContent.js'
 
 function uuidTimeToUnixMs(uuid) {
   if (!uuid || typeof uuid !== 'string') return null
@@ -22,46 +26,6 @@ function uuidTimeToUnixMs(uuid) {
   const unix100ns = timestamp100ns - UUID_EPOCH_OFFSET_100NS
   if (unix100ns < 0n) return null
   return Number(unix100ns / 10000n)
-}
-
-// Synchronous decode for initial render (content from API is base64 string)
-function decodeSystemContentSync(content) {
-  if (content == null) return null
-  try {
-    if (typeof content === 'string') {
-      const bytes = Uint8Array.from(atob(content), (c) => c.charCodeAt(0))
-      return new TextDecoder().decode(bytes)
-    }
-    if (content instanceof ArrayBuffer) {
-      return new TextDecoder().decode(new Uint8Array(content))
-    }
-    if (ArrayBuffer.isView(content)) {
-      return new TextDecoder().decode(content)
-    }
-    return String(content)
-  } catch {
-    return null
-  }
-}
-
-/** Compare UUIDs whether stored as `xxxxxxxx-xxxx-...` or 32-char hex (remove-member system messages use hex). */
-function uuidHexKey(s) {
-  if (s == null) return ''
-  return String(s).trim().toLowerCase().replace(/-/g, '')
-}
-
-function uuidFrom32Hex(key) {
-  if (!key || key.length !== 32) return null
-  return `${key.slice(0, 8)}-${key.slice(8, 12)}-${key.slice(12, 16)}-${key.slice(16, 20)}-${key.slice(20)}`
-}
-
-/** SYSTEM_ADD_MEMBERS content: comma-separated user ids (32-char hex, no hyphens). */
-function parseCommaSeparatedUserIds(rawText) {
-  if (!rawText?.trim()) return []
-  return rawText
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean)
 }
 
 /**
@@ -94,7 +58,7 @@ function SystemMessage({ message, selectedMembers, authorProfilesById }) {
     ? new Date(createdMs).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hour12: false })
     : ''
 
-  const rawText = decodeSystemContentSync(message?.content)
+  const rawText = decodeSystemMessageContent(message?.content)
   const type = message?.message_type
 
   const [removalResolvedLabel, setRemovalResolvedLabel] = useState(null)

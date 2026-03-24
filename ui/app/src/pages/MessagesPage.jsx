@@ -11,6 +11,14 @@ import ClickableRow from '../components/ClickableRow.jsx'
 import MenuActionItem from '../components/MenuActionItem.jsx'
 import Message from '../components/Message.jsx'
 import SystemMessage from '../components/SystemMessage.jsx'
+import {
+  SYSTEM_MSG_ADD_MEMBERS,
+  SYSTEM_MSG_REMOVE_MEMBER,
+  decodeSystemMessageContent,
+  parseCommaSeparatedUserIds,
+  uuidHexKey,
+  uuidFrom32Hex,
+} from '../utils/systemMessageContent.js'
 import { getCurrentSession } from '../lib/session.js'
 import { channelManager, isUserMessageType, messageManager } from '../lib/chat.js'
 import { decryptB64Sym } from '../lib/keyhandler.js'
@@ -38,6 +46,14 @@ function truncateReplyPreview(s, n = 200) {
   if (!s) return ''
   const t = s.replace(/\s+/g, ' ').trim()
   return t.length > n ? `${t.slice(0, n)}…` : t
+}
+
+function canonicalChannelMemberId(raw) {
+  const key = uuidHexKey(raw)
+  if (key.length === 32 && /^[0-9a-f]+$/.test(key)) {
+    return uuidFrom32Hex(key) ?? String(raw).trim()
+  }
+  return String(raw).trim()
 }
 
 export default function MessagesPage() {
@@ -102,6 +118,7 @@ export default function MessagesPage() {
 
   const [replyingTo, setReplyingTo] = useState(null)
   const [deletedMessageIds, setDeletedMessageIds] = useState(() => new Set())
+  const appliedMemberSystemMsgIdsRef = useRef(new Set())
 
   const messagesById = useMemo(() => {
     const o = {}
@@ -159,6 +176,97 @@ export default function MessagesPage() {
     [handleMessageDeleted],
   )
 
+  const applyMemberDeltaFromSystemMessage = useCallback((incomingMessage) => {
+    const mid = String(incomingMessage.message_id)
+    if (appliedMemberSystemMsgIdsRef.current.has(mid)) return
+    appliedMemberSystemMsgIdsRef.current.add(mid)
+
+    const mt = incomingMessage.message_type
+    if (mt === SYSTEM_MSG_ADD_MEMBERS) {
+      const rawText = decodeSystemMessageContent(incomingMessage.content)
+      const segments = parseCommaSeparatedUserIds(rawText ?? '')
+      const seen = new Set()
+      const unique = []
+      for (const s of segments) {
+        const canon = canonicalChannelMemberId(s)
+        if (!canon) continue
+        const k = uuidHexKey(canon)
+        if (seen.has(k)) continue
+        seen.add(k)
+        unique.push(canon)
+      }
+      if (unique.length === 0) return
+
+      void (async () => {
+        try {
+          const users = await userManager.fetchUsersBulk(unique)
+          setSelectedChannel((prev) => {
+            if (!prev) return prev
+            const prevMembers = prev.channel_members ?? []
+            const byHex = new Set(prevMembers.map((x) => uuidHexKey(x)))
+            const mergedIds = [...prevMembers]
+            for (const id of unique) {
+              const k = uuidHexKey(id)
+              if (!byHex.has(k)) {
+                byHex.add(k)
+                mergedIds.push(id)
+              }
+            }
+            return { ...prev, channel_members: mergedIds }
+          })
+          setSelectedMembers((prev) => {
+            const existingById = new Map((prev ?? []).map((m) => [uuidHexKey(m.user_id), m]))
+            for (const u of users ?? []) {
+              if (!u?.user_id) continue
+              const k = uuidHexKey(u.user_id)
+              existingById.set(k, {
+                user_id: u.user_id,
+                username: u?.username ?? '',
+                icon_url: u ? getAvatarUrl(u) : null,
+              })
+            }
+            const merged = Array.from(existingById.values())
+            merged.sort((a, b) =>
+              (a.username || '').localeCompare(b.username || '', undefined, { sensitivity: 'base' }),
+            )
+            return merged
+          })
+        } catch {
+          setSelectedChannel((prev) => {
+            if (!prev) return prev
+            const prevMembers = prev.channel_members ?? []
+            const byHex = new Set(prevMembers.map((x) => uuidHexKey(x)))
+            const mergedIds = [...prevMembers]
+            for (const id of unique) {
+              const k = uuidHexKey(id)
+              if (!byHex.has(k)) {
+                byHex.add(k)
+                mergedIds.push(id)
+              }
+            }
+            return { ...prev, channel_members: mergedIds }
+          })
+        }
+      })()
+      return
+    }
+
+    if (mt === SYSTEM_MSG_REMOVE_MEMBER) {
+      const rawText = decodeSystemMessageContent(incomingMessage.content)
+      const uid = rawText?.trim()
+      if (!uid) return
+      const key = uuidHexKey(uid)
+      setSelectedChannel((prev) => {
+        if (!prev) return prev
+        return {
+          ...prev,
+          channel_members: (prev.channel_members ?? []).filter((id) => uuidHexKey(id) !== key),
+        }
+      })
+      setSelectedMembers((prev) => prev.filter((m) => uuidHexKey(m.user_id) !== key))
+    }
+  }, [])
+
   const handleIncomingMessage = useCallback((incomingMessage) => {
     if (!incomingMessage?.message_id) return
 
@@ -179,6 +287,7 @@ export default function MessagesPage() {
       })
     }
 
+    let shouldApplyMemberDelta = false
     setMessages((prev) => {
       const prevList = prev ?? []
       if (prevList.some((m) => String(m.message_id) === String(incomingMessage.message_id))) return prevList
@@ -189,9 +298,22 @@ export default function MessagesPage() {
         nextScrollBehaviorRef.current = 'smooth'
         shouldAutoScrollRef.current = true
       }
+      const mt = incomingMessage.message_type
+      const ch = incomingMessage.channel_id
+      if (
+        (mt === SYSTEM_MSG_ADD_MEMBERS || mt === SYSTEM_MSG_REMOVE_MEMBER) &&
+        activeChannelId &&
+        ch != null &&
+        String(ch) === String(activeChannelId)
+      ) {
+        shouldApplyMemberDelta = true
+      }
       return [...prevList, incomingMessage]
     })
-  }, [])
+    if (shouldApplyMemberDelta) {
+      queueMicrotask(() => applyMemberDeltaFromSystemMessage(incomingMessage))
+    }
+  }, [applyMemberDeltaFromSystemMessage])
 
   const handleUserTyping = useCallback(
     (channelId, userId) => {
@@ -308,6 +430,7 @@ export default function MessagesPage() {
     shouldAutoScrollRef.current = false
     setReplyingTo(null)
     setDeletedMessageIds(new Set())
+    appliedMemberSystemMsgIdsRef.current.clear()
   }, [selectedChannelId])
 
   useEffect(() => {
