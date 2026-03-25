@@ -321,7 +321,6 @@ class MessageManager {
         }
 
         const plaintextContent = `${content_type};${file_name}`;
-        console.log(plaintextContent);
         const content = await encryptSymB64(new TextEncoder().encode(plaintextContent).buffer, key);
 
         const ciphertext = await encryptSymAttachment(attachment_arraybuff, key);
