@@ -396,6 +396,7 @@ class MessageManager {
             content: ciphertext,
             message_type: MESSAGE_TYPE_USER_REGULAR,
             in_reply_to: in_reply_to_message_id,
+            attachment_request: null,
         })
     }
 
@@ -454,6 +455,10 @@ class MessageManager {
             new_message_type:
                 event.new_message_type !== undefined && event.new_message_type !== null
                     ? event.new_message_type
+                    : undefined,
+            attachment_url:
+                event.attachment_url != null && event.attachment_url !== ''
+                    ? event.attachment_url
                     : undefined,
         });
     }
