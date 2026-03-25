@@ -178,11 +178,16 @@ export default function MessagesPage() {
     setMessages((prev) =>
       (prev ?? []).map((row) => {
         if (String(row.message_id) !== String(payload.message_id)) return row
-        const next = { ...row, content: payload.content, last_edited: ts }
-        if (payload.new_message_type != null) {
+        const next = { ...row, last_edited: ts }
+        // Only apply fields present on the event. PATCH often omits `new_content`; sending
+        // `content: null` used to wipe decrypted `mime;fileName` and break attachment display.
+        if (Object.prototype.hasOwnProperty.call(payload, 'content')) {
+          next.content = payload.content
+        }
+        if (payload.new_message_type !== undefined && payload.new_message_type !== null) {
           next.message_type = payload.new_message_type
         }
-        if (payload.attachment_url) {
+        if (payload.attachment_url != null && payload.attachment_url !== '') {
           next.attachment_url = payload.attachment_url
         }
         return next

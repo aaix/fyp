@@ -442,15 +442,9 @@ class MessageManager {
         const key = channel.shared_key;
         if (!key) return;
 
-        let decryptedContent = null;
-        if (event.new_content) {
-            decryptedContent = await decryptB64Sym(event.new_content, key);
-        }
-
-        this.onMessageEditCb?.({
+        const patch = {
             channel_id: event.channel_id,
             message_id: event.message_id,
-            content: decryptedContent,
             new_message_type:
                 event.new_message_type !== undefined && event.new_message_type !== null
                     ? event.new_message_type
@@ -459,7 +453,13 @@ class MessageManager {
                 event.attachment_url != null && event.attachment_url !== ''
                     ? event.attachment_url
                     : undefined,
-        });
+        };
+
+        if (event.new_content) {
+            patch.content = await decryptB64Sym(event.new_content, key);
+        }
+
+        this.onMessageEditCb?.(patch);
     }
 
     onMessageDelete(event) {
