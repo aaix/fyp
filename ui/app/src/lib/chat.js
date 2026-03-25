@@ -1,11 +1,12 @@
 import API from "./api";
-import { decryptB64Sym, encryptSymB64, importFromPem, RSAUnwrapSym, RSAWrapSym } from "./keyhandler";
+import { decryptB64Sym, encryptSymAttachment, encryptSymB64, importFromPem, RSAUnwrapSym, RSAWrapSym } from "./keyhandler";
 import { getCurrentSession } from "./session";
 import { B64toUint8Array, blobToB64 } from "./utils";
 
 
 const MESSAGE_TYPE_USER_REGULAR = 0;
 const MESSAGE_TYPE_USER_MEDIA = 1;
+const MESSAGE_TYPE_USER_MEDIA_PENDING = 9;
 const MESSAGE_TYPE_SYSTEM_EDIT_CHANNEL_NAME = 4;
 
 /* channel name message contains the channel name ciphertext and needs to be decrypted */
@@ -14,7 +15,7 @@ function messageHasCiphertext(messageType) {
 }
 
 function isUserMessageType(messageType) {
-    return messageType === MESSAGE_TYPE_USER_REGULAR || messageType === MESSAGE_TYPE_USER_MEDIA;
+    return messageType === MESSAGE_TYPE_USER_REGULAR || messageType === MESSAGE_TYPE_USER_MEDIA || messageType === MESSAGE_TYPE_USER_MEDIA_PENDING;
 }
 
 
@@ -271,7 +272,7 @@ class MessageManager {
             message_type: event.message_type,
             last_edited: null,
             content: decryptedContent,
-            attachment_asset_id: event.attachment_id ?? null,
+            attachment_url: null,
             author_id: event.author_id ?? null,
             in_reply_to: event.in_reply_to ?? null,
         };
@@ -312,6 +313,66 @@ class MessageManager {
         return res;
     }
 
+    async sendMessageAttachment(channel, attachment_arraybuff, content_type, file_name, in_reply_to = null) {
+        const key = channel.shared_key;
+
+        if (!key) {
+            throw new Error("Missing channel key");
+        }
+
+        const plaintextContent = `${content_type};${file_name}`;
+        console.log(plaintextContent);
+        const content = await encryptSymB64(new TextEncoder().encode(plaintextContent).buffer, key);
+
+        const ciphertext = await encryptSymAttachment(attachment_arraybuff, key);
+        const upload_len = ciphertext.size;
+
+        const createRes = await API.POST(`chat/channel/${channel.channel_id}/message`, {
+            content: content,
+            message_type: MESSAGE_TYPE_USER_MEDIA_PENDING,
+            in_reply_to: in_reply_to,
+            attachment_request: {
+                content_type: "application/octet-stream",
+                content_len: upload_len,
+            }
+        });
+
+        if (!createRes.success) {
+            return createRes
+        }
+
+        const uploadUrl = createRes.data.asset_upload_url;
+
+        const uploadResp = await fetch(uploadUrl, {
+            method: "PUT",
+            body: ciphertext,
+            headers: {
+                "Content-Type": "application/octet-stream"
+            }
+        });
+
+        if (!uploadResp.ok) {
+            return {
+                success: false,
+                status_code: uploadResp.status,
+                data: null,
+                error: { message: `Upload failed (${uploadResp.status})` },
+                headers: uploadResp.headers,
+            };
+        }
+
+        const patchRes = await API.PATCH(
+            `chat/channel/${channel.channel_id}/message/${createRes.data.message_id}`,
+            {
+                content: null,
+                message_type: MESSAGE_TYPE_USER_MEDIA,
+            },
+        );
+
+        return patchRes;
+    }
+
+
     async sendMessage(channel, message, in_reply_to_message_id = null) {
 
         if (message.attachment || message.attachment_type) {
@@ -333,7 +394,7 @@ class MessageManager {
 
         return await API.POST(`chat/channel/${channel.channel_id}/message`, {
             content: ciphertext,
-            message_type: 0,
+            message_type: MESSAGE_TYPE_USER_REGULAR,
             in_reply_to: in_reply_to_message_id,
         })
     }
@@ -390,6 +451,10 @@ class MessageManager {
             channel_id: event.channel_id,
             message_id: event.message_id,
             content: decryptedContent,
+            new_message_type:
+                event.new_message_type !== undefined && event.new_message_type !== null
+                    ? event.new_message_type
+                    : undefined,
         });
     }
 
@@ -407,4 +472,9 @@ class MessageManager {
 
 export const channelManager = new ChannelManager();
 export const messageManager = new MessageManager();
-export { isUserMessageType, MESSAGE_TYPE_USER_REGULAR, MESSAGE_TYPE_USER_MEDIA };
+export {
+    isUserMessageType,
+    MESSAGE_TYPE_USER_REGULAR,
+    MESSAGE_TYPE_USER_MEDIA,
+    MESSAGE_TYPE_USER_MEDIA_PENDING,
+};

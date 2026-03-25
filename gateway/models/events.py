@@ -64,7 +64,8 @@ class MessageUpdateEvent(BaseEvent):
     intent: Literal["message_update"] = "message_update"
     channel_id: UUID
     message_id: UUID
-    new_content: Base64Output
+    new_content: Base64Output | None
+    new_message_type: int | None
 
 class MessageDeleteEvent(BaseEvent):
     intent: Literal["message_delete"] = "message_delete"

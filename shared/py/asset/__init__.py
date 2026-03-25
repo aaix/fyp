@@ -1,5 +1,8 @@
+from typing import LiteralString
+
 import asyncio
 import aioboto3
+from pydantic import BaseModel
 
 
 from shared.py.discovery import DiscoveryManager
@@ -10,6 +13,13 @@ discovery = DiscoveryManager()
 
 ENDPOINT_URL, ACCESS_KEY_ID, ACCESS_KEY_SECRET = discovery.find_s3_creds()
 PUBLIC_BUCKET, PRIVATE_BUCKET = discovery.find_s3_buckets()
+
+__all__ = (
+    "client",
+    "PUBLIC_BUCKET",
+    "PRIVATE_BUCKET",
+    "generate_signed_put",
+)
 
 session = aioboto3.Session(
     aws_access_key_id=ACCESS_KEY_ID,
@@ -45,3 +55,82 @@ async def delete_asset(*, public: bool, bucket_id: id_t, asset_id: id_t):
 
 def asset_path(*, bucket_id: id_t, asset_id: id_t) -> str:
     return f"{id_uuid(bucket_id)}/{id_uuid(asset_id)}"
+
+
+async def generate_signed_get(
+    *,
+    public: bool,
+    bucket_id: id_t,
+    asset_id: id_t,
+    duration: int = 120,
+) -> str:
+    s3 = await client()
+
+    path = asset_path(
+        bucket_id=bucket_id,
+        asset_id=asset_id
+    )
+
+    if public:
+        bucket = PUBLIC_BUCKET
+    else:
+        bucket = PRIVATE_BUCKET
+
+
+    with tracer.start_as_current_span("s3.generate_signed") as span:
+        presigned =  await s3.generate_presigned_url(
+            'get_object',
+            Params={
+                "Bucket": bucket,
+                "Key": path,
+            },
+            ExpiresIn=duration,
+        )
+        span.set_attribute("az.shared.s3.signed", str(presigned))
+    
+    return presigned
+
+
+
+
+async def generate_signed_put(
+    *,
+    public: bool,
+    bucket_id: id_t,
+    asset_id: id_t,
+    duration: int = 120,
+    mime_type: str,
+    size: int,
+) -> str:
+    s3 = await client()
+
+    path = asset_path(
+        bucket_id=bucket_id,
+        asset_id=asset_id
+    )
+
+    if public:
+        bucket = PUBLIC_BUCKET
+    else:
+        bucket = PRIVATE_BUCKET
+
+
+    with tracer.start_as_current_span("s3.generate_signed") as span:
+        presigned =  await s3.generate_presigned_url(
+            'put_object',
+            Params={
+                "Bucket": bucket,
+                "Key": path,
+                "ContentType":mime_type,
+                "ContentLength": size,
+            },
+            ExpiresIn=duration,
+        )
+        span.set_attribute("az.shared.s3.signed", str(presigned))
+    
+    return presigned
+
+
+class PresignedParams(BaseModel):
+    url: str
+    fields: dict[str, str]

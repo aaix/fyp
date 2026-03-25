@@ -3,6 +3,7 @@ syntax = "proto3";
 package dataservices.messageproto;
 import "plib.proto";
 import "google/protobuf/field_mask.proto";
+import "google/protobuf/wrappers.proto";
 
 
 service MessageService {
@@ -21,7 +22,7 @@ message CreateMessageRequest {
     plib.pUUID author_id = 6;
     optional int64 opt_last_edited = 3;
     optional bytes opt_content = 4;
-    optional plib.pUUID opt_attachment_asset_id = 5;
+    optional google.protobuf.BoolValue request_asset = 5;
     optional plib.pUUID opt_in_reply_to = 7;
 }
 
@@ -40,7 +41,8 @@ message MessageObject {
 message UpdateMessageRequest {
     plib.pUUID channel_id = 1;
     plib.pUUID message_id = 3;
-    bytes content = 6;
+    google.protobuf.BytesValue content = 6;
+    google.protobuf.Int32Value message_type = 7;
 }
 
 message ReadMessageRequest {

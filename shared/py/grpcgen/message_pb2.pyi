@@ -1,5 +1,6 @@
 import plib_pb2 as _plib_pb2
 from google.protobuf import field_mask_pb2 as _field_mask_pb2
+from google.protobuf import wrappers_pb2 as _wrappers_pb2
 from google.protobuf.internal import containers as _containers
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
@@ -9,22 +10,22 @@ from typing import ClassVar as _ClassVar, Optional as _Optional, Union as _Union
 DESCRIPTOR: _descriptor.FileDescriptor
 
 class CreateMessageRequest(_message.Message):
-    __slots__ = ("channel_id", "message_type", "author_id", "opt_last_edited", "opt_content", "opt_attachment_asset_id", "opt_in_reply_to")
+    __slots__ = ("channel_id", "message_type", "author_id", "opt_last_edited", "opt_content", "request_asset", "opt_in_reply_to")
     CHANNEL_ID_FIELD_NUMBER: _ClassVar[int]
     MESSAGE_TYPE_FIELD_NUMBER: _ClassVar[int]
     AUTHOR_ID_FIELD_NUMBER: _ClassVar[int]
     OPT_LAST_EDITED_FIELD_NUMBER: _ClassVar[int]
     OPT_CONTENT_FIELD_NUMBER: _ClassVar[int]
-    OPT_ATTACHMENT_ASSET_ID_FIELD_NUMBER: _ClassVar[int]
+    REQUEST_ASSET_FIELD_NUMBER: _ClassVar[int]
     OPT_IN_REPLY_TO_FIELD_NUMBER: _ClassVar[int]
     channel_id: _plib_pb2.pUUID
     message_type: int
     author_id: _plib_pb2.pUUID
     opt_last_edited: int
     opt_content: bytes
-    opt_attachment_asset_id: _plib_pb2.pUUID
+    request_asset: _wrappers_pb2.BoolValue
     opt_in_reply_to: _plib_pb2.pUUID
-    def __init__(self, channel_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., message_type: _Optional[int] = ..., author_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., opt_last_edited: _Optional[int] = ..., opt_content: _Optional[bytes] = ..., opt_attachment_asset_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., opt_in_reply_to: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ...) -> None: ...
+    def __init__(self, channel_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., message_type: _Optional[int] = ..., author_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., opt_last_edited: _Optional[int] = ..., opt_content: _Optional[bytes] = ..., request_asset: _Optional[_Union[_wrappers_pb2.BoolValue, _Mapping]] = ..., opt_in_reply_to: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ...) -> None: ...
 
 class MessageObject(_message.Message):
     __slots__ = ("channel_id", "bucket", "message_id", "message_type", "author_id", "opt_last_edited", "opt_content", "opt_attachment_asset_id", "opt_in_reply_to")
@@ -49,14 +50,16 @@ class MessageObject(_message.Message):
     def __init__(self, channel_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., bucket: _Optional[int] = ..., message_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., message_type: _Optional[int] = ..., author_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., opt_last_edited: _Optional[int] = ..., opt_content: _Optional[bytes] = ..., opt_attachment_asset_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., opt_in_reply_to: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ...) -> None: ...
 
 class UpdateMessageRequest(_message.Message):
-    __slots__ = ("channel_id", "message_id", "content")
+    __slots__ = ("channel_id", "message_id", "content", "message_type")
     CHANNEL_ID_FIELD_NUMBER: _ClassVar[int]
     MESSAGE_ID_FIELD_NUMBER: _ClassVar[int]
     CONTENT_FIELD_NUMBER: _ClassVar[int]
+    MESSAGE_TYPE_FIELD_NUMBER: _ClassVar[int]
     channel_id: _plib_pb2.pUUID
     message_id: _plib_pb2.pUUID
-    content: bytes
-    def __init__(self, channel_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., message_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., content: _Optional[bytes] = ...) -> None: ...
+    content: _wrappers_pb2.BytesValue
+    message_type: _wrappers_pb2.Int32Value
+    def __init__(self, channel_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., message_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., content: _Optional[_Union[_wrappers_pb2.BytesValue, _Mapping]] = ..., message_type: _Optional[_Union[_wrappers_pb2.Int32Value, _Mapping]] = ...) -> None: ...
 
 class ReadMessageRequest(_message.Message):
     __slots__ = ("channel_id", "message_id")

@@ -50,7 +50,8 @@ message EventMessageCreate {
 message EventMessageUpdate {
     plib.pUUID message_id = 1;
     plib.pUUID channel_id = 2;
-    bytes new_content = 3;
+    optional bytes new_content = 3;
+    optional int32 new_message_type = 4;
 }
 
 message EventMessageDelete {

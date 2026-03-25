@@ -20,7 +20,7 @@ async def create_system_message(channel: channel_pb2.ChannelObjectResponse, auth
         message_type=message_type,
         last_edited=None,
         content=content,
-        attachment_asset_id=None,
+        request_asset=None,
         author_id=author_id,
         in_reply_to=None
     )

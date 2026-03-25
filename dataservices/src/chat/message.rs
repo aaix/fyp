@@ -1,7 +1,7 @@
 use futures::StreamExt;
 use init_tracing_opentelemetry::tracing_opentelemetry::OpenTelemetrySpanExt;
-use scylla::{statement::prepared::PreparedStatement, value::CqlTimeuuid};
-use tonic::{Request, Response, async_trait};
+use scylla::{statement::prepared::PreparedStatement, value::{CqlTimeuuid, MaybeUnset}};
+use tonic::{Request, Response, Status, async_trait};
 use uuid::Uuid;
 
 use crate::{db_conn::db, errors::DSResult, helpers::{gen_timeuuid, time_now}, models::message::Message, profile_statement, protos::dataservices::message_service::{
@@ -85,7 +85,7 @@ impl ScyllaMessageServiceServer {
         ).await?;
 
         let update_message_prepared = db().await.prepare(
-            "UPDATE dataservices.message SET opt_content = ?, opt_last_edited = ? WHERE channel_id = ? AND bucket = ? AND message_id = ?"
+            "UPDATE dataservices.message SET opt_content = ?, message_type = ?, opt_last_edited = ? WHERE channel_id = ? AND bucket = ? AND message_id = ?"
         ).await?;
 
         Ok(Self {
@@ -135,7 +135,17 @@ impl ScyllaMessageServiceServer {
         let message_type = inner.message_type;
         let last_edited = inner.opt_last_edited;
         let content = inner.opt_content;
-        let attachment_asset_id: Option<CqlTimeuuid> = inner.opt_attachment_asset_id.map(Into::into);
+
+        let attachment_asset_id: Option<CqlTimeuuid> = if let Some(request_asset) = inner.request_asset {
+            if !request_asset {
+                return Err(Status::invalid_argument("Unexpected false asset request").into());                    
+            }
+            Some(gen_timeuuid())
+        } else {
+            None
+        };
+
+
         let in_reply_to: Option<CqlTimeuuid> = inner.opt_in_reply_to.map(Into::into);
 
         db().await.execute_unpaged(
@@ -147,7 +157,7 @@ impl ScyllaMessageServiceServer {
                 message_type,
                 last_edited,
                 &content,
-                attachment_asset_id,
+                MaybeUnset::from_option(attachment_asset_id),
                 author_id,
                 in_reply_to,
             )
@@ -287,12 +297,21 @@ impl ScyllaMessageServiceServer {
 
         let bucket = calc_message_bucket(message_id);
 
-        let new_content = &request.get_ref().content;
+        let inner = request.get_ref();
+
+        if inner.content.is_none() && inner.message_type.is_none() {
+            return Err(Status::invalid_argument("Missing param to update").into());
+        }
+
+        let new_content = MaybeUnset::from_option(inner.content.as_ref());
+        let new_message_type = MaybeUnset::from_option(inner.message_type);
+
+
         let updated_at = time_now();
 
         db().await.execute_unpaged(
             &self.update_message_prepared, 
-            (new_content, updated_at, channel_id, bucket, message_id)
+            (new_content, new_message_type, updated_at, channel_id, bucket, message_id)
         ).await?;
 
         

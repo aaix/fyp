@@ -1,5 +1,7 @@
 from typing import cast
 
+import asyncio
+
 from fastapi import APIRouter
 
 from api import *
@@ -115,13 +117,14 @@ async def get_my_channels(s: SessionParam) -> ChannelsResponse:
         user_id=uuid_puuid(s.user_id) or unwrap()
     )))
 
+    channels = await asyncio.gather(*map(UserChannelEntry.from_rpc, res.channels))
     return ChannelsResponse(
-        channels=list(map(UserChannelEntry.from_rpc, res.channels))
+        channels=channels
     )
 
 @ChannelRouter.get("/channel/{channel_id}")
 async def get_channel(s: SessionParam, channel: ChannelAsMemberParam) -> ChannelResponse:
-    return ChannelResponse.from_rpc(channel)
+    return await ChannelResponse.from_rpc(channel)
 
 @ChannelRouter.put("/channel/{channel_id}/typing")
 async def user_channel_typing(s: SessionParam, channel: ChannelAsMemberParam) -> None:
@@ -153,7 +156,7 @@ async def patch_channel(s: SessionParam, channel: ChannelAsMemberParam, body: Ed
     
     await create_system_message(channel, s.user_id, MessageType.SYSTEM_EDIT_CHANNEL_NAME, content=channel_name)
 
-    return ChannelResponse.from_rpc(rpc)
+    return await ChannelResponse.from_rpc(rpc)
 
 @ChannelRouter.post("/channel/{channel_id}/members")
 async def r_add_channel_members(s: SessionParam, channel: ChannelAsMemberParam, body: AddChannelMembersRequest) -> None:

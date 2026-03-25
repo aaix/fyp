@@ -13,7 +13,7 @@ from api.types.asset import PublicAsset
 from api.utils import RpcErrHandler, unwrap, ResourceNotFoundRpcHandler
 
 from shared.py import asset
-from shared.py.constraints import ASSET_MIN_SIZE, ICON_MAX_UPLOAD_SIZE, USER_MAX_NUM_DEVICES
+from shared.py.constraints import ICON_MIN_SIZE, ICON_MAX_UPLOAD_SIZE, USER_MAX_NUM_DEVICES
 from shared.py.grpc import mediaservices
 from shared.py.intraservice.client import BigPictureClient
 from shared.py.grpc.id import id_compare, puuid_opt, puuid_uuid, id_t, uuid_puuid
@@ -185,7 +185,7 @@ async def my_account(s: SessionParam) -> AccountResponse:
 @AccountRouter.put("/@me/icon")
 async def set_my_icon(
     s: SessionParam,
-    content_length: Annotated[int | None, Header(lt=ICON_MAX_UPLOAD_SIZE, gt=ASSET_MIN_SIZE)],
+    content_length: Annotated[int | None, Header(lt=ICON_MAX_UPLOAD_SIZE, gt=ICON_MIN_SIZE)],
     icon: Annotated[UploadFile, File()]
 ) -> PublicAsset:
     user = await s.full_user()
