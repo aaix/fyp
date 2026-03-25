@@ -108,7 +108,6 @@ export default function MessagesPage() {
   const typingTimersRef = useRef(new Map()) // user_id(string) -> { timeoutId, seq }
   const lastTypingSentAtRef = useRef(0)
 
-  // For now attachments/images are UI-only; `messageManager.sendMessage()` does not upload them.
   const [attachment, setAttachment] = useState(null) // { kind: 'file'|'image', file, previewUrl? }
   const fileInputRef = useRef(null)
   const imageInputRef = useRef(null)
@@ -161,11 +160,14 @@ export default function MessagesPage() {
   const handleRemoteMessageEdit = useCallback((payload) => {
     const ts = Math.floor(Date.now() / 1000)
     setMessages((prev) =>
-      (prev ?? []).map((row) =>
-        String(row.message_id) === String(payload.message_id)
-          ? { ...row, content: payload.content, last_edited: ts }
-          : row,
-      ),
+      (prev ?? []).map((row) => {
+        if (String(row.message_id) !== String(payload.message_id)) return row
+        const next = { ...row, content: payload.content, last_edited: ts }
+        if (payload.new_message_type != null) {
+          next.message_type = payload.new_message_type
+        }
+        return next
+      }),
     )
   }, [])
 
@@ -1224,83 +1226,98 @@ export default function MessagesPage() {
 
                   <form
                     className="border-t border-[color:var(--card-border)] p-3"
-                    onSubmit={(e) => {
+                    onSubmit={async (e) => {
                       e.preventDefault()
-                      if (!selectedChannel) return
-                      if (sendLoading) return
+                      if (!selectedChannel || sendLoading) return
 
                       setSendError(null)
                       const trimmed = (draft ?? '').trim()
-                      let finalText = trimmed
+                      const hasAttachment = Boolean(attachment?.file)
+                      if (!trimmed && !hasAttachment) return
 
-                      if (!finalText && attachment?.file?.name) {
-                        finalText = attachment.file.name
-                      }
+                      const replyId = replyingTo?.message_id ?? null
 
-                      if (!finalText) return
-
-                      const payload = {
-                        content: new TextEncoder().encode(finalText).buffer,
+                      const appendDecryptedMessage = async (created) => {
+                        let decryptedContent = created?.content ?? null
+                        try {
+                          if (decryptedContent && selectedChannel?.shared_key) {
+                            decryptedContent = await decryptB64Sym(
+                              decryptedContent,
+                              selectedChannel.shared_key,
+                            )
+                          }
+                        } catch {
+                          decryptedContent = null
+                        }
+                        const newMessage = { ...created, content: decryptedContent }
+                        setMessages((prev) => {
+                          const prevList = prev ?? []
+                          if (prevList.some((m) => String(m.message_id) === String(newMessage.message_id))) {
+                            return prevList
+                          }
+                          nextScrollBehaviorRef.current = 'smooth'
+                          shouldAutoScrollRef.current = true
+                          return [...prevList, newMessage]
+                        })
                       }
 
                       setSendLoading(true)
-                      Promise.resolve()
-                        .then(() =>
-                          messageManager.sendMessage(
+                      try {
+                        if (hasAttachment) {
+                          const file = attachment.file
+                          const buf = await file.arrayBuffer()
+                          const contentType = file.type || 'application/octet-stream'
+
+                          if (trimmed) {
+                            const textRes = await messageManager.sendMessage(
+                              selectedChannel,
+                              { content: new TextEncoder().encode(trimmed).buffer },
+                              replyId,
+                            )
+                            if (!textRes?.success) {
+                              setSendError(textRes?.error?.message ?? 'Could not send message')
+                              return
+                            }
+                            await appendDecryptedMessage(textRes.data)
+                          }
+
+                          const mediaRes = await messageManager.sendMessageAttachment(
                             selectedChannel,
-                            payload,
-                            replyingTo?.message_id ?? null,
-                          ),
-                        )
-                        .then(async (res) => {
+                            buf,
+                            contentType,
+                            file.name || '',
+                            replyId,
+                          )
+                          if (!mediaRes?.success) {
+                            setSendError(mediaRes?.error?.message ?? 'Could not send attachment')
+                            return
+                          }
+                          await appendDecryptedMessage(mediaRes.data)
+                        } else {
+                          const res = await messageManager.sendMessage(
+                            selectedChannel,
+                            { content: new TextEncoder().encode(trimmed).buffer },
+                            replyId,
+                          )
                           if (!res?.success) {
                             setSendError(res?.error?.message ?? 'Could not send message')
                             return
                           }
+                          await appendDecryptedMessage(res.data)
+                        }
 
-                          // Avoid re-fetching the whole message history: decrypt + append locally.
-                          const created = res?.data
-
-                          let decryptedContent = created?.content ?? null
-                          try {
-                            if (decryptedContent && selectedChannel?.shared_key) {
-                              decryptedContent = await decryptB64Sym(
-                                decryptedContent,
-                                selectedChannel.shared_key,
-                              )
-                            }
-                          } catch {
-                            decryptedContent = null
-                          }
-
-                          const newMessage = { ...created, content: decryptedContent }
-
-                          setMessages((prev) => {
-                            const prevList = prev ?? []
-                            if (prevList.some((m) => String(m.message_id) === String(newMessage.message_id))) {
-                              return prevList
-                            }
-                            // `messageManager.getMessages()` returns oldest-first, so append.
-                            nextScrollBehaviorRef.current = 'smooth'
-                            shouldAutoScrollRef.current = true
-                            return [...prevList, newMessage]
-                          })
-
-                          setDraft('')
-                          setReplyingTo(null)
-                          clearAttachment()
-                        })
-                        .catch((err) => {
-                          console.error(err)
-                          setSendError(err?.message ?? 'Could not send message')
-                        })
-                        .finally(() => {
-                          setSendLoading(false)
-                          // Focus after send finishes and the input is enabled again.
-                          setTimeout(() => {
-                            messageInputRef.current?.focus?.()
-                          }, 0)
-                        })
+                        setDraft('')
+                        setReplyingTo(null)
+                        clearAttachment()
+                      } catch (err) {
+                        console.error(err)
+                        setSendError(err?.message ?? 'Could not send message')
+                      } finally {
+                        setSendLoading(false)
+                        setTimeout(() => {
+                          messageInputRef.current?.focus?.()
+                        }, 0)
+                      }
                     }}
                   >
                     <input
@@ -1349,7 +1366,7 @@ export default function MessagesPage() {
                             <div className="mt-1 line-clamp-3 whitespace-pre-wrap break-words text-xs text-[color:var(--text-primary)]">
                               {replyPreviewText}
                             </div>
-                          ) : replyingTo?.attachment_asset_id ? (
+                          ) : replyingTo?.attachment_url ? (
                             <div className="mt-1 text-xs italic text-[color:var(--text-muted)]">
                               Attachment
                             </div>
@@ -1437,7 +1454,7 @@ export default function MessagesPage() {
                       <Button
                         type="submit"
                         size="sm"
-                        disabled={!selectedChannel || sendLoading || (!draft?.trim() && !attachment?.file?.name)}
+                        disabled={!selectedChannel || sendLoading || (!draft?.trim() && !attachment?.file)}
                       >
                         Send
                       </Button>
@@ -1460,12 +1477,12 @@ export default function MessagesPage() {
                             </div>
                           )}
                           <div className="min-w-0">
-                            <div className="truncate text-sm font-medium text-[color:var(--text-primary)]">{attachment.file.name}</div>
-                            {(!draft || !draft.trim()) && (
-                              <div className="text-xs text-[color:var(--text-muted)]">
-                                Upload not supported yet; sending filename as text.
-                              </div>
-                            )}
+                            <div className="truncate text-sm font-medium text-[color:var(--text-primary)]">
+                              {attachment.file.name}
+                            </div>
+                            {attachment.file.type ? (
+                              <div className="text-xs text-[color:var(--text-muted)]">{attachment.file.type}</div>
+                            ) : null}
                           </div>
                         </div>
                         <Button

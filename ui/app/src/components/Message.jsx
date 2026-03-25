@@ -1,6 +1,10 @@
 import { memo, useCallback, useEffect, useState } from 'react'
-import { userContentUrl } from '../lib/utils.js'
-import { messageManager } from '../lib/chat.js'
+import {
+  messageManager,
+  MESSAGE_TYPE_USER_MEDIA,
+  MESSAGE_TYPE_USER_MEDIA_PENDING,
+} from '../lib/chat.js'
+import MessageChannelAttachment from './MessageChannelAttachment.jsx'
 import { decryptB64Sym } from '../lib/keyhandler.js'
 import UserAvatar from './UserAvatar.jsx'
 import ContextMenu from './ContextMenu.jsx'
@@ -65,6 +69,15 @@ function decodeMessageContent(content) {
   }
 }
 
+/** Encrypted attachment metadata: `mime;fileName` (see sendMessageAttachment). */
+function parseAttachmentContentEnvelope(raw) {
+  const s = (raw ?? '').trim()
+  if (!s) return { mime: '', fileName: '' }
+  const i = s.indexOf(';')
+  if (i === -1) return { mime: s, fileName: '' }
+  return { mime: s.slice(0, i).trim(), fileName: s.slice(i + 1).trim() }
+}
+
 function truncateSnippet(s, n = 80) {
   if (!s) return ''
   const t = s.replace(/\s+/g, ' ').trim()
@@ -120,9 +133,12 @@ function Message({
   const avatarUrl = author?.icon_url || null
   const authorLabel = author?.username ? `@${author.username}` : 'Unknown'
 
-  const hasAttachment = !!message?.attachment_asset_id
-  const maybeImage = hasAttachment && message?.message_type === 1
+  const isUploadPending = message?.message_type === MESSAGE_TYPE_USER_MEDIA_PENDING
+  const attachmentEnvelope = parseAttachmentContentEnvelope(decodeMessageContent(message?.content))
+  const contentMimeType = attachmentEnvelope.mime
+  const attachmentFileName = attachmentEnvelope.fileName
 
+  const [hydratedAttachmentUrl, setHydratedAttachmentUrl] = useState(null)
   const [parentPreview, setParentPreview] = useState(null)
   const [menu, setMenu] = useState(null)
   const [editing, setEditing] = useState(false)
@@ -130,6 +146,38 @@ function Message({
   const [editSaving, setEditSaving] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [deleteLoading, setDeleteLoading] = useState(false)
+
+  useEffect(() => {
+    if (message?.message_type !== MESSAGE_TYPE_USER_MEDIA) {
+      setHydratedAttachmentUrl(null)
+      return
+    }
+    if (message?.attachment_url) {
+      setHydratedAttachmentUrl(null)
+      return
+    }
+    if (!channel?.channel_id || !channel?.shared_key || !message?.message_id) return
+
+    let cancelled = false
+    ;(async () => {
+      const res = await messageManager.getMessage(channel, message.message_id)
+      if (cancelled || !res?.success || !res?.data?.attachment_url) return
+      setHydratedAttachmentUrl(res.data.attachment_url)
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [message?.message_id, message?.message_type, message?.attachment_url, channel])
+
+  const effectiveAttachmentUrl = message.attachment_url ?? hydratedAttachmentUrl
+  const hasDecryptedAttachment =
+    message?.message_type === MESSAGE_TYPE_USER_MEDIA && Boolean(effectiveAttachmentUrl)
+
+  const showTextBody =
+    Boolean(text) &&
+    !isUploadPending &&
+    !(message?.message_type === MESSAGE_TYPE_USER_MEDIA && hasDecryptedAttachment)
 
   useEffect(() => {
     if (!replyToId || !channel?.shared_key) {
@@ -355,26 +403,55 @@ function Message({
               </div>
             ) : (
               <>
-                {text ? (
+                {isUploadPending ? (
+                  <div className="mt-1 text-sm text-[color:var(--text-muted)]">
+                    {isOwn ? (
+                      <>
+                        You are uploading
+                        {attachmentFileName ? (
+                          <>
+                            {' '}
+                            <span className="font-medium text-[color:var(--text-primary)]">
+                              {attachmentFileName}
+                            </span>
+                          </>
+                        ) : (
+                          ' an attachment'
+                        )}
+                        {contentMimeType ? ` (${contentMimeType})` : ''}…
+                      </>
+                    ) : (
+                      <>
+                        {authorLabel} is uploading
+                        {attachmentFileName ? (
+                          <>
+                            {' '}
+                            <span className="font-medium text-[color:var(--text-primary)]">
+                              {attachmentFileName}
+                            </span>
+                          </>
+                        ) : (
+                          ' an attachment'
+                        )}
+                        {contentMimeType ? ` (${contentMimeType})` : ''}…
+                      </>
+                    )}
+                  </div>
+                ) : null}
+
+                {showTextBody ? (
                   <div className="mt-1 min-w-0 max-w-full whitespace-pre-wrap break-words [overflow-wrap:anywhere] text-base text-[color:var(--text-primary)]">
                     {text}
                   </div>
                 ) : null}
 
-                {hasAttachment ? (
-                  <div className="mt-2">
-                    {maybeImage ? (
-                      <img
-                        src={userContentUrl(message.channel_id, message.attachment_asset_id, 'webp')}
-                        alt="Attachment"
-                        className="max-h-64 w-full rounded-button border border-[color:var(--card-border)] object-contain"
-                      />
-                    ) : (
-                      <div className="text-base text-[color:var(--text-muted)]">
-                        Attachment: {String(message.attachment_asset_id)}
-                      </div>
-                    )}
-                  </div>
+                {hasDecryptedAttachment ? (
+                  <MessageChannelAttachment
+                    attachmentUrl={effectiveAttachmentUrl}
+                    sharedKey={channel?.shared_key}
+                    contentMimeType={contentMimeType}
+                    fileName={attachmentFileName}
+                  />
                 ) : null}
               </>
             )}
