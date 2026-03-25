@@ -108,6 +108,7 @@ function Message({
   onReply,
   onMessagePatched,
   onMessageDeleted,
+  onAttachmentDisplayReady,
 }) {
   const replyToId = message?.in_reply_to != null ? String(message.in_reply_to) : null
   const parentFromList = replyToId ? messagesById?.[replyToId] : undefined
@@ -451,6 +452,7 @@ function Message({
                     sharedKey={channel?.shared_key}
                     contentMimeType={contentMimeType}
                     fileName={attachmentFileName}
+                    onDisplayReady={onAttachmentDisplayReady}
                   />
                 ) : null}
               </>

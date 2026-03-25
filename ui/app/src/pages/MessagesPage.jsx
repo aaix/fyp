@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import PageContainer from '../components/PageContainer.jsx'
 import Card from '../components/Card.jsx'
 import CreateChannelModal from '../components/CreateChannelModal.jsx'
@@ -56,6 +56,9 @@ function canonicalChannelMemberId(raw) {
   return String(raw).trim()
 }
 
+/** Pixels from bottom to treat as “still at bottom” for auto-scroll. */
+const SCROLL_BOTTOM_THRESHOLD_PX = 120
+
 export default function MessagesPage() {
   const [channels, setChannels] = useState([])
   const [loading, setLoading] = useState(false)
@@ -93,6 +96,8 @@ export default function MessagesPage() {
   const [olderMessagesLoading, setOlderMessagesLoading] = useState(false)
 
   const messagesScrollRef = useRef(null)
+  /** True while the user is at/near the bottom; updated on scroll. Used to avoid jumping when reading history. */
+  const userPinnedToBottomRef = useRef(true)
   const shouldAutoScrollRef = useRef(false)
   const scrollLockUntilRef = useRef(0)
   const nextScrollBehaviorRef = useRef('smooth')
@@ -114,6 +119,8 @@ export default function MessagesPage() {
   const imageInputRef = useRef(null)
   const bottomRef = useRef(null)
   const messageInputRef = useRef(null)
+  const sendButtonRef = useRef(null)
+  const messagesListContentRef = useRef(null)
   const authorLookupInFlightRef = useRef(new Set())
 
   const [replyingTo, setReplyingTo] = useState(null)
@@ -140,6 +147,10 @@ export default function MessagesPage() {
   }, [])
 
   const handleMessagePatched = useCallback((updated) => {
+    if (userPinnedToBottomRef.current) {
+      nextScrollBehaviorRef.current = 'smooth'
+      shouldAutoScrollRef.current = true
+    }
     setMessages((prev) =>
       (prev ?? []).map((row) =>
         String(row.message_id) === String(updated.message_id) ? { ...row, ...updated } : row,
@@ -159,6 +170,10 @@ export default function MessagesPage() {
   }, [])
 
   const handleRemoteMessageEdit = useCallback((payload) => {
+    if (userPinnedToBottomRef.current) {
+      nextScrollBehaviorRef.current = 'smooth'
+      shouldAutoScrollRef.current = true
+    }
     const ts = Math.floor(Date.now() / 1000)
     setMessages((prev) =>
       (prev ?? []).map((row) => {
@@ -166,6 +181,9 @@ export default function MessagesPage() {
         const next = { ...row, content: payload.content, last_edited: ts }
         if (payload.new_message_type != null) {
           next.message_type = payload.new_message_type
+        }
+        if (payload.attachment_url) {
+          next.attachment_url = payload.attachment_url
         }
         return next
       }),
@@ -294,10 +312,7 @@ export default function MessagesPage() {
     setMessages((prev) => {
       const prevList = prev ?? []
       if (prevList.some((m) => String(m.message_id) === String(incomingMessage.message_id))) return prevList
-      // Only auto-scroll if the user is already at/near the bottom.
-      const el = messagesScrollRef.current
-      const atBottom = el ? el.scrollHeight - el.scrollTop - el.clientHeight < 120 : true
-      if (atBottom) {
+      if (userPinnedToBottomRef.current) {
         nextScrollBehaviorRef.current = 'smooth'
         shouldAutoScrollRef.current = true
       }
@@ -438,9 +453,24 @@ export default function MessagesPage() {
       const file = e.dataTransfer.files?.[0]
       if (!file) return
       setAttachmentFromFile(file)
+      requestAnimationFrame(() => {
+        sendButtonRef.current?.focus?.()
+      })
     },
     [selectedChannel, sendLoading, setAttachmentFromFile],
   )
+
+  const scrollToBottomIfPinned = useCallback(() => {
+    requestAnimationFrame(() => {
+      if (!userPinnedToBottomRef.current) return
+      const root = messagesScrollRef.current
+      if (!root || !bottomRef.current) return
+      scrollLockUntilRef.current = Date.now() + 300
+      bottomRef.current.scrollIntoView({ behavior: 'auto', block: 'end' })
+      userPinnedToBottomRef.current =
+        root.scrollHeight - root.scrollTop - root.clientHeight < SCROLL_BOTTOM_THRESHOLD_PX
+    })
+  }, [])
 
   const oldestMessageId = messages[0]?.message_id
   const lastMessageId = messages[messages.length - 1]?.message_id
@@ -467,6 +497,7 @@ export default function MessagesPage() {
       setHasMoreBefore(ok.length === PAGE_SIZE && ok.length > 0)
       nextScrollBehaviorRef.current = 'auto'
       shouldAutoScrollRef.current = true
+      userPinnedToBottomRef.current = true
     } catch (e) {
       console.error(e)
       setMessagesError(e?.message ?? 'Could not load messages')
@@ -492,6 +523,7 @@ export default function MessagesPage() {
     setAuthorProfilesById({})
     authorLookupInFlightRef.current.clear()
     shouldAutoScrollRef.current = false
+    userPinnedToBottomRef.current = true
     setReplyingTo(null)
     setDeletedMessageIds(new Set())
     appliedMemberSystemMsgIdsRef.current.clear()
@@ -606,13 +638,18 @@ export default function MessagesPage() {
   }, [PAGE_SIZE, hasMoreBefore, oldestMessageId, olderMessagesLoading])
 
   const handleMessagesScroll = useCallback(() => {
-    // Load older history only when user scrolls near the top.
     const root = messagesScrollRef.current
     if (!root) return
+    // While we are programmatically scrolling (initial open, append, etc.), ignore scroll events —
+    // otherwise intermediate positions (e.g. scrollTop 0 before scrollIntoView) clear "pinned to bottom".
     if (Date.now() < scrollLockUntilRef.current) return
+    if (shouldAutoScrollRef.current) return
+    userPinnedToBottomRef.current =
+      root.scrollHeight - root.scrollTop - root.clientHeight < SCROLL_BOTTOM_THRESHOLD_PX
+
+    // Load older history only when user scrolls near the top.
     if (messagesLoading) return
     if (olderMessagesLoading) return
-    if (shouldAutoScrollRef.current) return
     if (root.scrollHeight <= root.clientHeight + 1) return
     if (root.scrollTop > 80) return
     void loadOlderMessages()
@@ -663,7 +700,7 @@ export default function MessagesPage() {
     return () => clearTimeout(t)
   }, [selectedChannelId, selectedChannel?.shared_key])
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!bottomRef.current) return
     if (messagesLoading) return
     if (!shouldAutoScrollRef.current) return
@@ -675,9 +712,40 @@ export default function MessagesPage() {
 
     requestAnimationFrame(() => {
       bottomRef.current?.scrollIntoView({ behavior: nextScrollBehaviorRef.current, block: 'end' })
-      shouldAutoScrollRef.current = false
+      // Second frame: media that laid out after decrypt can grow `scrollHeight`; snap again if needed.
+      requestAnimationFrame(() => {
+        bottomRef.current?.scrollIntoView({ behavior: 'auto', block: 'end' })
+        shouldAutoScrollRef.current = false
+        const root = messagesScrollRef.current
+        if (root) {
+          userPinnedToBottomRef.current =
+            root.scrollHeight - root.scrollTop - root.clientHeight < SCROLL_BOTTOM_THRESHOLD_PX
+        }
+      })
     })
-  }, [messagesLoading, lastMessageId, hasMoreBefore, olderMessagesLoading, loadOlderMessages])
+  }, [messages, messagesLoading, lastMessageId, hasMoreBefore, olderMessagesLoading, loadOlderMessages])
+
+  // When images/videos finish decoding and grow the thread, keep the view pinned if the user was at bottom.
+  useEffect(() => {
+    const list = messagesListContentRef.current
+    if (!list) return
+
+    let raf = null
+    const scheduleScroll = () => {
+      if (raf) cancelAnimationFrame(raf)
+      raf = requestAnimationFrame(() => {
+        raf = null
+        scrollToBottomIfPinned()
+      })
+    }
+
+    const ro = new ResizeObserver(scheduleScroll)
+    ro.observe(list)
+    return () => {
+      ro.disconnect()
+      if (raf) cancelAnimationFrame(raf)
+    }
+  }, [scrollToBottomIfPinned, messages.length, selectedChannelId, messagesLoading, messagesError])
 
   // If the screen is tall, keep fetching older pages until we actually fill the viewport.
   // We stop as soon as we either run out of history or the user scrolls away from the bottom.
@@ -1256,7 +1324,12 @@ export default function MessagesPage() {
                     )}
 
                     {!messagesLoading && !messagesError && messages.length > 0 && (
-                      <ul className="w-full min-w-0 max-w-full space-y-2" role="list" aria-label="Messages">
+                      <ul
+                        ref={messagesListContentRef}
+                        className="w-full min-w-0 max-w-full space-y-2"
+                        role="list"
+                        aria-label="Messages"
+                      >
                         {messages.map((m) => {
                           if (!isUserMessageType(m.message_type)) {
                             return (
@@ -1288,6 +1361,7 @@ export default function MessagesPage() {
                               onReply={handleReply}
                               onMessagePatched={handleMessagePatched}
                               onMessageDeleted={handleMessageDeleted}
+                              onAttachmentDisplayReady={scrollToBottomIfPinned}
                             />
                           )
                         })}
@@ -1407,6 +1481,9 @@ export default function MessagesPage() {
                         if (!file) return
                         setAttachmentFromFile(file)
                         e.target.value = ''
+                        requestAnimationFrame(() => {
+                          sendButtonRef.current?.focus?.()
+                        })
                       }}
                     />
                     <input
@@ -1419,6 +1496,9 @@ export default function MessagesPage() {
                         if (!file) return
                         setAttachmentFromFile(file)
                         e.target.value = ''
+                        requestAnimationFrame(() => {
+                          sendButtonRef.current?.focus?.()
+                        })
                       }}
                     />
 
@@ -1527,6 +1607,7 @@ export default function MessagesPage() {
                       />
 
                       <Button
+                        ref={sendButtonRef}
                         type="submit"
                         size="sm"
                         disabled={!selectedChannel || sendLoading || (!draft?.trim() && !attachment?.file)}

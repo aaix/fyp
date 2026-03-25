@@ -8,7 +8,13 @@ import MediaLightboxModal from './MediaLightboxModal.jsx'
  * an image, video, or download link depending on `contentMimeType`.
  * `fileName` comes from message content envelope `mime;fileName`.
  */
-export default function MessageChannelAttachment({ attachmentUrl, sharedKey, contentMimeType, fileName }) {
+export default function MessageChannelAttachment({
+  attachmentUrl,
+  sharedKey,
+  contentMimeType,
+  fileName,
+  onDisplayReady,
+}) {
   const [previewUrl, setPreviewUrl] = useState(null)
   const [error, setError] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -61,6 +67,14 @@ export default function MessageChannelAttachment({ attachmentUrl, sharedKey, con
     }
   }, [attachmentUrl, sharedKey, contentMimeType, fileName])
 
+  useEffect(() => {
+    if (!previewUrl || loading || error) return
+    const mime = (contentMimeType || '').trim()
+    const isVisual = mime.startsWith('image/') || mime.startsWith('video/')
+    if (isVisual) return
+    onDisplayReady?.()
+  }, [previewUrl, loading, error, contentMimeType, onDisplayReady])
+
   const openLightbox = () => {
     inlineVideoRef.current?.pause?.()
     setLightboxOpen(true)
@@ -103,6 +117,8 @@ export default function MessageChannelAttachment({ attachmentUrl, sharedKey, con
                 src={previewUrl}
                 alt={displayName || 'Attachment'}
                 className="max-h-64 w-full object-contain"
+                onLoad={() => onDisplayReady?.()}
+                decoding="async"
               />
             </button>
           ) : (
@@ -112,7 +128,9 @@ export default function MessageChannelAttachment({ attachmentUrl, sharedKey, con
                 src={previewUrl}
                 controls
                 playsInline
+                preload="metadata"
                 className="max-h-64 w-full rounded-button border border-[color:var(--card-border)] object-contain"
+                onLoadedData={() => onDisplayReady?.()}
               />
               <div className="absolute right-2 top-2">
                 <Button
