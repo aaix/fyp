@@ -108,7 +108,8 @@ export default function MessagesPage() {
   const typingTimersRef = useRef(new Map()) // user_id(string) -> { timeoutId, seq }
   const lastTypingSentAtRef = useRef(0)
 
-  const [attachment, setAttachment] = useState(null) // { kind: 'file'|'image', file, previewUrl? }
+  const [attachment, setAttachment] = useState(null) // { kind: 'file'|'image'|'video', file, previewUrl? }
+  const [fileDragOver, setFileDragOver] = useState(false)
   const fileInputRef = useRef(null)
   const imageInputRef = useRef(null)
   const bottomRef = useRef(null)
@@ -379,6 +380,67 @@ export default function MessagesPage() {
       return null
     })
   }, [])
+
+  const setAttachmentFromFile = useCallback((file) => {
+    if (!file) return
+    setAttachment((prev) => {
+      if (prev?.previewUrl) {
+        try {
+          URL.revokeObjectURL(prev.previewUrl)
+        } catch {
+          // Ignore
+        }
+      }
+      const kind = file.type.startsWith('image/')
+        ? 'image'
+        : file.type.startsWith('video/')
+          ? 'video'
+          : 'file'
+      const previewUrl =
+        kind === 'image' || kind === 'video' ? URL.createObjectURL(file) : undefined
+      return { kind, file, previewUrl }
+    })
+  }, [])
+
+  const handleChannelDragEnter = useCallback(
+    (e) => {
+      if (!selectedChannel || sendLoading) return
+      if (![...e.dataTransfer.types].includes('Files')) return
+      e.preventDefault()
+      setFileDragOver(true)
+    },
+    [selectedChannel, sendLoading],
+  )
+
+  const handleChannelDragOver = useCallback(
+    (e) => {
+      if (!selectedChannel || sendLoading) return
+      if (![...e.dataTransfer.types].includes('Files')) return
+      e.preventDefault()
+      e.dataTransfer.dropEffect = 'copy'
+      setFileDragOver(true)
+    },
+    [selectedChannel, sendLoading],
+  )
+
+  const handleChannelDragLeave = useCallback((e) => {
+    const el = e.currentTarget
+    const next = e.relatedTarget
+    if (next && el.contains(next)) return
+    setFileDragOver(false)
+  }, [])
+
+  const handleChannelDrop = useCallback(
+    (e) => {
+      e.preventDefault()
+      setFileDragOver(false)
+      if (!selectedChannel || sendLoading) return
+      const file = e.dataTransfer.files?.[0]
+      if (!file) return
+      setAttachmentFromFile(file)
+    },
+    [selectedChannel, sendLoading, setAttachmentFromFile],
+  )
 
   const oldestMessageId = messages[0]?.message_id
   const lastMessageId = messages[messages.length - 1]?.message_id
@@ -1144,7 +1206,23 @@ export default function MessagesPage() {
               </div>
 
               <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden">
-                <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden">
+                <div
+                  className={`relative flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden${fileDragOver ? ' ring-2 ring-inset ring-[color:var(--accent)]' : ''}`}
+                  onDragEnter={handleChannelDragEnter}
+                  onDragOver={handleChannelDragOver}
+                  onDragLeave={handleChannelDragLeave}
+                  onDrop={handleChannelDrop}
+                >
+                  {fileDragOver && selectedChannel ? (
+                    <div
+                      className="pointer-events-none absolute inset-0 z-50 flex items-center justify-center bg-[color:var(--card-bg)]/40 backdrop-blur-[2px]"
+                      aria-hidden
+                    >
+                      <div className="rounded-button border border-dashed border-[color:var(--accent)] bg-[color:var(--card-bg)]/95 px-4 py-3 text-sm font-medium text-[color:var(--text-primary)] shadow-card">
+                        Drop file to attach
+                      </div>
+                    </div>
+                  ) : null}
                   <div
                     ref={messagesScrollRef}
                     onScroll={handleMessagesScroll}
@@ -1327,22 +1405,19 @@ export default function MessagesPage() {
                       onChange={(e) => {
                         const file = e.target.files?.[0]
                         if (!file) return
-                        clearAttachment()
-                        setAttachment({ kind: 'file', file })
+                        setAttachmentFromFile(file)
                         e.target.value = ''
                       }}
                     />
                     <input
                       ref={imageInputRef}
                       type="file"
-                      accept="image/*"
+                      accept="image/*,video/*,.mp4,.webm,.mov,.mkv,.ogv,.m4v"
                       className="hidden"
                       onChange={(e) => {
                         const file = e.target.files?.[0]
                         if (!file) return
-                        clearAttachment()
-                        const previewUrl = URL.createObjectURL(file)
-                        setAttachment({ kind: 'image', file, previewUrl })
+                        setAttachmentFromFile(file)
                         e.target.value = ''
                       }}
                     />
@@ -1405,7 +1480,7 @@ export default function MessagesPage() {
                         type="button"
                         size="iconSm"
                         variant="ghost"
-                        aria-label="Attach image"
+                        aria-label="Attach image or video"
                         disabled={!selectedChannel || sendLoading}
                         onClick={() => imageInputRef.current?.click()}
                       >
@@ -1468,6 +1543,15 @@ export default function MessagesPage() {
                               src={attachment.previewUrl}
                               alt=""
                               className="h-10 w-10 rounded-button border border-[color:var(--card-border)] object-cover"
+                            />
+                          ) : attachment.kind === 'video' && attachment.previewUrl ? (
+                            <video
+                              src={attachment.previewUrl}
+                              muted
+                              playsInline
+                              preload="metadata"
+                              className="h-10 w-10 rounded-button border border-[color:var(--card-border)] object-cover bg-black"
+                              aria-hidden
                             />
                           ) : (
                             <div className="flex h-10 w-10 items-center justify-center rounded-button border border-[color:var(--card-border)] bg-[color:var(--card-bg)]">
