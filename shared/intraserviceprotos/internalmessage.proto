@@ -52,6 +52,7 @@ message EventMessageUpdate {
     plib.pUUID channel_id = 2;
     optional bytes new_content = 3;
     optional int32 new_message_type = 4;
+    optional string attachment_url = 5;
 }
 
 message EventMessageDelete {

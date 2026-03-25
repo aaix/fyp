@@ -72,16 +72,18 @@ class EventMessageCreate(_message.Message):
     def __init__(self, author_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., message_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., channel_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., content: _Optional[bytes] = ..., message_type: _Optional[int] = ..., attachment_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., in_reply_to: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ...) -> None: ...
 
 class EventMessageUpdate(_message.Message):
-    __slots__ = ("message_id", "channel_id", "new_content", "new_message_type")
+    __slots__ = ("message_id", "channel_id", "new_content", "new_message_type", "attachment_url")
     MESSAGE_ID_FIELD_NUMBER: _ClassVar[int]
     CHANNEL_ID_FIELD_NUMBER: _ClassVar[int]
     NEW_CONTENT_FIELD_NUMBER: _ClassVar[int]
     NEW_MESSAGE_TYPE_FIELD_NUMBER: _ClassVar[int]
+    ATTACHMENT_URL_FIELD_NUMBER: _ClassVar[int]
     message_id: _plib_pb2.pUUID
     channel_id: _plib_pb2.pUUID
     new_content: bytes
     new_message_type: int
-    def __init__(self, message_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., channel_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., new_content: _Optional[bytes] = ..., new_message_type: _Optional[int] = ...) -> None: ...
+    attachment_url: str
+    def __init__(self, message_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., channel_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., new_content: _Optional[bytes] = ..., new_message_type: _Optional[int] = ..., attachment_url: _Optional[str] = ...) -> None: ...
 
 class EventMessageDelete(_message.Message):
     __slots__ = ("message_id", "channel_id")

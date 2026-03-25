@@ -155,6 +155,7 @@ class GatewayClient:
             message_id=puuid_uuid(d.message_id) or unwrap(),
             new_content=d.new_content,
             new_message_type=d.new_message_type,
+            attachment_url=d.attachment_url
         ))
 
     @tracer.start_as_current_span("Client.handle_internal::message_delete")

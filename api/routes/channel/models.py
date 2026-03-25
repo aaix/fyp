@@ -29,6 +29,7 @@ __all__ = (
     "MessageResponse",
     "MessagesResponse",
     "EditMessageBody",
+    "create_channel_presigned",
 )
 
 async def create_channel_presigned(channel_id: pUUID, asset_id: pUUID) -> str | None:

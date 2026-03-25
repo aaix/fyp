@@ -118,11 +118,13 @@ async def r_edit_message(s: SessionParam, channel: ChannelAsMemberParam, message
     )
 
 
+    attachment_url = await create_channel_presigned(channel.channel_id, rpc.opt_attachment_asset_id)
     await intraclient.fan_out(channel.channel_id, channel.channel_members, "message_update", lambda _: internalmessage_pb2.EventMessageUpdate(
         channel_id=channel.channel_id,
         message_id=message.message_id,
         new_content=body.content,
         new_message_type=body.message_type,
+        attachment_url=attachment_url,
     ))
 
     return await MessageResponse.from_rpc(rpc)

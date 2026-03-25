@@ -66,6 +66,7 @@ class MessageUpdateEvent(BaseEvent):
     message_id: UUID
     new_content: Base64Output | None
     new_message_type: int | None
+    attachment_url: str | None
 
 class MessageDeleteEvent(BaseEvent):
     intent: Literal["message_delete"] = "message_delete"
