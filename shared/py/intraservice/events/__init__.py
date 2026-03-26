@@ -10,12 +10,13 @@ from opentelemetry import trace
 from shared.py.grpc.id import id_puuid, id_t, puuid_uuid
 from shared.py.grpc.traceparent import get_current_traceparent
 from shared.py.grpcgen.internalmessage_pb2 import IntraMessage
+from shared.py.intraservice.discoverystore import GATEWAY_SERVICE
 from shared.py.intraservice.discoverystore.client import BigPictureClient
 from shared.py.intraservice.mpi.client import Pub
 from shared.py.tracing import tracer
 
 publisher = Pub()
-bigpicture = BigPictureClient()
+gateway_bigpicture = BigPictureClient(GATEWAY_SERVICE)
 
 
 @tracer.start_as_current_span("shared.send_to_remote")
@@ -36,7 +37,9 @@ async def send_to_remote(to: id_t, key: str, value: Message):
         return
     
     payload = event.SerializeToString()
-    node = await bigpicture.get_node(uuid)
+    node = await gateway_bigpicture.get_node(uuid)
+    if node is None:
+        return
 
 
     if (span := trace.get_current_span()).is_recording():

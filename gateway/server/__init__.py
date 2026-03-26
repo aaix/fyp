@@ -24,6 +24,7 @@ from shared.py.grpc.id import puuid_uuid
 from shared.py.grpc.traceparent import span_from_traceparent
 from shared.py.grpcgen.internalmessage_pb2 import IntraMessage
 from shared.py.intraservice import server as intraserver
+from shared.py.intraservice.discoverystore import GATEWAY_SERVICE
 
 
 discovery = DiscoveryManager()
@@ -42,7 +43,7 @@ class GatewayController:
 
         # distributed system
         self.__address = get_current_node_ip()
-        self.__big_picture = intraserver.BigPictureNode(discovery.discover_valkey(), self.__address)
+        self.__big_picture = intraserver.BigPictureNode(discovery.discover_valkey(), self.__address, GATEWAY_SERVICE)
         self.__sublisher = intraserver.Sub(self.__loop)
         self.__internal_burnt = 0
         self.__internal_fanned = 0

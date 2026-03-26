@@ -1,6 +1,13 @@
-from typing import Final, Literal
+from typing import Final, Literal, LiteralString
+from dataclasses import dataclass
 
 
-CHANNEL_GATEWAY_JOIN: Final[Literal["gateway.join"]] = "gateway.join"
-CHANNEL_GATEWAY_LEAVE: Final[Literal["gateway.leave"]] = "gateway.leave"
-GATEWAY_SET: Final[Literal["gateway.members"]] = "gateway.members"
+@dataclass
+class BigPictureService:
+    join_channel: LiteralString
+    leave_channel: LiteralString
+    state_set: LiteralString
+
+
+GATEWAY_SERVICE = BigPictureService("gateway.join", "gateway.leave", "gateway.members")
+DATASERVICES_SERVICE = BigPictureService("dataservices.join", "dataservices.leave", "dataservices.members")

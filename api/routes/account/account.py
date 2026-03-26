@@ -18,6 +18,7 @@ from shared.py.grpc import mediaservices
 from shared.py.intraservice.client import BigPictureClient
 from shared.py.grpc.id import id_compare, puuid_opt, puuid_uuid, id_t, uuid_puuid
 from shared.py.grpc.user import edit_user, get_user, get_user_by_username
+from shared.py.intraservice.discoverystore import GATEWAY_SERVICE
 from shared.py.pydantic.pem import PEMPublicKey
 from shared.py.pydantic.common import Username
 from shared.py.grpc.lazy import LazyGRPC
@@ -30,7 +31,7 @@ CONF_AVATAR_CONTENT_TYPE = "image/webp"
 
 
 discovery = DiscoveryManager()
-bigpicture = BigPictureClient()
+gateway_bigpicture = BigPictureClient(GATEWAY_SERVICE)
 
 AccountRouter = APIRouter()
 
@@ -169,7 +170,7 @@ async def patch_device(s: SessionParam, device_id: UUID, body: UpdateDeviceBody)
 async def my_account(s: SessionParam) -> AccountResponse:
     res = await s.full_user()
 
-    gateway = await bigpicture.get_node(s.user_id)
+    gateway = await gateway_bigpicture.get_node(s.user_id)
 
     return AccountResponse(
         user_id=s.user_id,

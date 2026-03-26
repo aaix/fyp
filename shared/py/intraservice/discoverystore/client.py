@@ -5,7 +5,7 @@ from uuid import UUID
 from glide import GlideClusterClientConfiguration, NodeAddress, GlideClusterClient, PubSubMsg
 from uhashring import HashRing
 
-from shared.py.intraservice.discoverystore import CHANNEL_GATEWAY_JOIN, CHANNEL_GATEWAY_LEAVE, GATEWAY_SET
+from shared.py.intraservice.discoverystore import BigPictureService
 from shared.py.discovery import DiscoveryManager
 from shared.py.types import SingletonMixin
 
@@ -15,12 +15,14 @@ discovery = DiscoveryManager()
 class BigPictureClient(SingletonMixin):
     """Uses a hash ring to build a consistent big picture of the distributed system"""
     
-    def __init__(self):
+    def __init__(self, service: BigPictureService):
         address = discovery.discover_valkey()
         self.valkey_addresses = [NodeAddress(*address),]
-        self.sub_patterns = {CHANNEL_GATEWAY_JOIN, CHANNEL_GATEWAY_LEAVE}
+        self.sub_patterns = {service.join_channel, service.leave_channel}
+        self.member_set = service.state_set
         self.ring_built = asyncio.Event()
-        self.ring = HashRing() # TODO: this is NOT thread safe
+        
+        self.ring = HashRing() # TODO: this is NOT thread safe (relies on GIL)
     
 
     async def valkey_connect(self) -> None:
@@ -36,11 +38,11 @@ class BigPictureClient(SingletonMixin):
             )
         )
         self.store = await GlideClusterClient.create(config)
-        members = await self.store.smembers(GATEWAY_SET)
+        members = await self.store.smembers(self.member_set)
         for node in members:
             self.ring.add_node(node.decode())
         self.ring_built.set()
-        print(f"BigPictureClient: built ring of size {len(self.ring.get_nodes())}", flush=True)
+        print(f"BigPictureClient({self.member_set}): built ring of size {len(self.ring.get_nodes())}", flush=True)
 
 
     def on_message(self, msg: PubSubMsg, _context: Any):
