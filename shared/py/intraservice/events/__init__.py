@@ -11,12 +11,12 @@ from shared.py.grpc.id import id_puuid, id_t, puuid_uuid
 from shared.py.grpc.traceparent import get_current_traceparent
 from shared.py.grpcgen.internalmessage_pb2 import IntraMessage
 from shared.py.intraservice.discoverystore import GATEWAY_SERVICE
-from shared.py.intraservice.discoverystore.client import BigPictureClient
+from shared.py.intraservice.discoverystore.client import BigPictureClientServiceFactory
 from shared.py.intraservice.mpi.client import Pub
 from shared.py.tracing import tracer
 
 publisher = Pub()
-gateway_bigpicture = BigPictureClient(GATEWAY_SERVICE)
+gateway_bigpicture = BigPictureClientServiceFactory(GATEWAY_SERVICE)
 
 
 @tracer.start_as_current_span("shared.send_to_remote")

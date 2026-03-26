@@ -25,13 +25,14 @@ from api.routes.user.user import UserRouter
 from api.routes.channel.channel import ChannelRouter
 
 # shared
-from shared.py.intraservice.client import BigPictureClient
-from shared.py.intraservice.discoverystore import GATEWAY_SERVICE
+from shared.py.intraservice.discoverystore import DATASERVICES_SERVICE, GATEWAY_SERVICE
+from shared.py.intraservice.discoverystore.client import BigPictureClientServiceFactory
 
 loop = asyncio.get_event_loop()
 
 discovery = DiscoveryManager()
-gateway_bigpicture = BigPictureClient(GATEWAY_SERVICE)
+gateway_bigpicture = BigPictureClientServiceFactory(GATEWAY_SERVICE)
+dataservices_bigpicture = BigPictureClientServiceFactory(DATASERVICES_SERVICE) 
 
 # middlewares
 middlewares = ( # outer
@@ -52,6 +53,7 @@ app = FastAPI(
     default_response_class=SuccessResponse,
     on_startup=(
         gateway_bigpicture.valkey_connect,
+        dataservices_bigpicture.valkey_connect
     )
 )
 

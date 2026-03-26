@@ -1,4 +1,5 @@
 import asyncio
+import threading
 from typing import Any, cast
 from uuid import UUID
 
@@ -12,8 +13,9 @@ from shared.py.types import SingletonMixin
 
 discovery = DiscoveryManager()
 
-class BigPictureClient(SingletonMixin):
+class BigPictureClient:
     """Uses a hash ring to build a consistent big picture of the distributed system"""
+    SERVICE: BigPictureService
     
     def __init__(self, service: BigPictureService):
         address = discovery.discover_valkey()
@@ -65,3 +67,12 @@ class BigPictureClient(SingletonMixin):
             
 
 
+_by_service: dict[BigPictureService, BigPictureClient] = {}
+_by_service_lock = threading.Lock()
+def BigPictureClientServiceFactory(service: BigPictureService) -> BigPictureClient:
+    with _by_service_lock:
+        if client := _by_service.get(service, None):
+            return client
+        client = BigPictureClient(service)
+        _by_service[service] = client
+    return client

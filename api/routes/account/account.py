@@ -15,7 +15,7 @@ from api.utils import RpcErrHandler, unwrap, ResourceNotFoundRpcHandler
 from shared.py import asset
 from shared.py.constraints import ICON_MIN_SIZE, ICON_MAX_UPLOAD_SIZE, USER_MAX_NUM_DEVICES
 from shared.py.grpc import mediaservices
-from shared.py.intraservice.client import BigPictureClient
+from shared.py.intraservice.client import BigPictureClientServiceFactory
 from shared.py.grpc.id import id_compare, puuid_opt, puuid_uuid, id_t, uuid_puuid
 from shared.py.grpc.user import edit_user, get_user, get_user_by_username
 from shared.py.intraservice.discoverystore import GATEWAY_SERVICE
@@ -31,7 +31,7 @@ CONF_AVATAR_CONTENT_TYPE = "image/webp"
 
 
 discovery = DiscoveryManager()
-gateway_bigpicture = BigPictureClient(GATEWAY_SERVICE)
+gateway_bigpicture = BigPictureClientServiceFactory(GATEWAY_SERVICE)
 
 AccountRouter = APIRouter()
 
