@@ -40,8 +40,10 @@ services:
       - shared-network
     image: az-dataservices:latest
     environment:
-      - SCYLLA_URI=172.31.0.199
-      - OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://jaeger:4317
+      SCYLLA_URI: 172.31.0.199
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://jaeger:4317
+      VALKEY_URI: redis://discoverystore-0:6379
+
     depends_on:
       scylla-seed:
         condition: service_healthy

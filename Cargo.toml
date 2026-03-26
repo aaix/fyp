@@ -1,3 +1,7 @@
 [workspace]
-members = ["mediaservices", "dataservices"]
+members = [
+    "mediaservices",
+    "dataservices",
+    "shared/rs/bigpicture"
+]
 resolver = "3"

@@ -8,7 +8,8 @@ COPY ./requirements.txt /az7/gateway/
 RUN python3 -m pip install --no-cache-dir -r /az7/gateway/requirements.txt
 
 
-COPY --from=shared . /az7/shared/
+COPY --from=shared ./__init__.py /az7/shared/
+COPY --from=shared ./py /az7/shared/py
 
 COPY . /az7/gateway/
 
