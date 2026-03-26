@@ -20,9 +20,6 @@ async fn main() {
     let valkey_uri = std::env::var("VALKEY_URI").expect("Could not get valkey uri");
     let current_ip = local_ip_address::local_ip().expect("Could not get IP addr");
 
-
-    println!("{valkey_uri:?}");
-
     let bigpicturenode = BigPictureNode::new(
         &valkey_uri,
         "dataservices.join",
