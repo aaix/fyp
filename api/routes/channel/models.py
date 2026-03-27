@@ -21,7 +21,6 @@ __all__ = (
     "ChannelMemberParamIn",
     "ChannelMemberParamOut",
     "ChannelsResponse",
-    "UserChannelEntry",
     "AddChannelMembersRequest",
     "EditChannelBody",
 
@@ -47,10 +46,6 @@ type ChannelMembers = Annotated[list[ChannelMemberParamIn], Field(max_length=CHA
 class ChannelMemberParamIn(BaseModel):
     user_id: UUID
     encrypted_shared_key: RSA4096CiphertextIn
-
-class ChannelMemberParamOut(BaseModel):
-    user_id: UUID
-    encrypted_shared_key: RSA4096CiphertextOut
 
 
 class NewChannelBody(BaseModel):
@@ -85,11 +80,11 @@ class ChannelResponse(BaseModel):
             channel_type=rpc.channel_type
         )
 
-class UserChannelEntry(BaseModel):
+class ChannelMemberParamOut(BaseModel):
     channel_id: UUID
 
     encrypted_channel_key: Base64Output
-    last_accessed: int
+    last_acked_message_id: UUID | None
 
     channel_name: ChannelNameOut
     channel_icon: str | None
@@ -100,14 +95,14 @@ class UserChannelEntry(BaseModel):
         return cls(
             channel_id=puuid_uuid(rpc.channel_id) or unwrap(),
             encrypted_channel_key=rpc.encrypted_channel_key,
-            last_accessed=rpc.last_accessed,
+            last_acked_message_id=puuid_uuid(rpc.last_acked_message_id),
             channel_name=rpc.opt_channel_name,
             channel_icon=channel_icon,
         )
 
 
 class ChannelsResponse(BaseModel):
-    channels: list[UserChannelEntry]
+    channels: list[ChannelMemberParamOut]
 
 
 class AttachmentRequestBody(BaseModel):

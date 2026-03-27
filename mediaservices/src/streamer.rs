@@ -83,7 +83,7 @@ impl Read for SyncStreamer<MediaInput> {
             msg_len
         };
 
-        buf.write(&d[start..start+to_write]);
+        buf.write(&d[start..start+to_write])?;
 
         Ok(to_write)
 

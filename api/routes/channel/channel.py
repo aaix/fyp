@@ -1,6 +1,7 @@
 from typing import cast
 
 import asyncio
+from uuid import UUID
 
 from fastapi import APIRouter
 
@@ -38,8 +39,9 @@ async def new_channel(s: SessionParam, body: NewChannelBody) -> ChannelResponse:
     member_ids = set(cm.user_id for cm in body.channel_members)
 
     # create a copy so we can add ourself as an out param so we dont b64 convert
-    member_objects: list[ChannelMemberParamIn | ChannelMemberParamOut] = []
-    member_objects.extend(body.channel_members)
+    member_objects: list[tuple[UUID, bytes]] = []
+    for m in body.channel_members:
+        member_objects.append((m.user_id, m.encrypted_shared_key))
 
     if not len(member_ids) == len(member_objects):
         raise ApiErrExc(errors.BadRequest("Channel members should not contain duplicates", api_error_code=errors.ERROR_INVALID_BODY_PARTS))    
@@ -63,10 +65,7 @@ async def new_channel(s: SessionParam, body: NewChannelBody) -> ChannelResponse:
 
     # current user needs to be a member of the channel
     member_objects.append(
-        ChannelMemberParamOut(
-            user_id=s.user_id,
-            encrypted_shared_key=body.encrypted_shared_key,
-        )
+        (s.user_id, body.encrypted_shared_key)
     )
 
     # create the channel
@@ -85,15 +84,15 @@ async def new_channel(s: SessionParam, body: NewChannelBody) -> ChannelResponse:
         channel_request,
         (
             channel_pb2.AddChannelMemberRequest(
-                user_id=uuid_puuid(m.user_id),
-                encrypted_channel_key=m.encrypted_shared_key,
+                user_id=uuid_puuid(m[0]),
+                encrypted_channel_key=m[1],
             ) for m in member_objects
         )
     )
 
     member_ids.add(s.user_id)
 
-    encrypted_map = {m.user_id : m.encrypted_shared_key for m in member_objects}
+    encrypted_map = {m[0] : m[1] for m in member_objects}
 
     await intraclient.fan_out(channel.channel_id, member_ids, "channel_create", lambda user_id: internalmessage_pb2.EventChannelCreate(
         channel_id=channel.channel_id,
@@ -117,7 +116,7 @@ async def get_my_channels(s: SessionParam) -> ChannelsResponse:
         user_id=uuid_puuid(s.user_id) or unwrap()
     )))
 
-    channels = await asyncio.gather(*map(UserChannelEntry.from_rpc, res.channels))
+    channels = await asyncio.gather(*map(ChannelMemberParamOut.from_rpc, res.channels))
     return ChannelsResponse(
         channels=channels
     )

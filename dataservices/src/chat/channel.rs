@@ -10,7 +10,7 @@ use futures::{StreamExt, future::join_all};
 use scylla::{statement::prepared::PreparedStatement, value::{CqlTimeuuid, MaybeUnset}};
 use tonic::{Response, Status, async_trait};
 
-use crate::{db_conn::db, errors::DSResult, helpers::{gen_timeuuid, time_now}, maybe_opt_field, maybe_opt_field_into, models::{channel::Channel, user_channel::UserChannel}, profile_statement, protos::dataservices::channel_service::{AddChannelMembersRequest, AddChannelMembersResponse, ChannelMemberObject, ChannelObjectResponse, CreateChannelRequest, DeleteChannelResponse, GetUserChannelsRequest, ReadChannelRequest, RemoveChannelMembersRequest, RemoveChannelMembersResponse, UpdateChannelMemberRequest, UpdateChannelMemberResponse, UpdateChannelRequest, UserChannelsResponse, channel_service_server::{ChannelService, ChannelServiceServer}}, req_ref, req_tuuid};
+use crate::{db_conn::db, errors::DSResult, helpers::{gen_timeuuid}, maybe_opt_field, maybe_opt_field_into, models::{channel::Channel, user_channel::UserChannel}, profile_statement, protos::dataservices::channel_service::{AddChannelMembersRequest, AddChannelMembersResponse, ChannelMemberObject, ChannelObjectResponse, CreateChannelRequest, DeleteChannelResponse, GetUserChannelsRequest, ReadChannelRequest, RemoveChannelMembersRequest, RemoveChannelMembersResponse, UpdateChannelMemberRequest, UpdateChannelMemberResponse, UpdateChannelRequest, UserChannelsResponse, channel_service_server::{ChannelService, ChannelServiceServer}}, req_ref, req_tuuid};
 
 
 #[derive(Debug)]
@@ -67,7 +67,7 @@ impl ScyllaChannelServiceServer {
 
         let add_user_channel_prepared = db().await.prepare(
             "INSERT INTO dataservices.user_channel \
-            (user_id, channel_id, encrypted_channel_key, last_accessed, opt_channel_name, opt_channel_icon_asset_id) \
+            (user_id, channel_id, encrypted_channel_key, opt_last_acked_message_id, opt_channel_name, opt_channel_icon_asset_id) \
             VALUES (?, ?, ?, ?, ?, ?)"
         ).await?;
 
@@ -93,7 +93,7 @@ impl ScyllaChannelServiceServer {
         ).await?;
 
         let update_user_channel_norm_prepared = db().await.prepare(
-            "UPDATE dataservices.user_channel SET last_accessed = ? WHERE user_id = ? AND channel_id = ?"
+            "UPDATE dataservices.user_channel SET opt_last_acked_message_id = ? WHERE user_id = ? AND channel_id = ?"
         ).await?;
 
         Ok(Self {
@@ -247,7 +247,7 @@ impl ScyllaChannelServiceServer {
             return Err(Status::invalid_argument("member ids are not all Some").into());
         }
 
-        let last_accessed = time_now();
+        let last_acked_message_id: Option<CqlTimeuuid> = None;
 
         db().await.execute_unpaged(
             &self.add_channel_members_prepared,
@@ -266,7 +266,7 @@ impl ScyllaChannelServiceServer {
                         user_id,
                         channel_id,
                         &r.encrypted_channel_key,
-                        last_accessed,
+                        last_acked_message_id,
                         &channel.opt_channel_name,
                         channel.opt_channel_icon_asset_id.map(Into::<CqlTimeuuid>::into)
                     )
@@ -303,7 +303,7 @@ impl ScyllaChannelServiceServer {
                     channel_id: Some(channel.channel_id.into()),
                     user_id: None,
                     encrypted_channel_key: channel.encrypted_channel_key,
-                    last_accessed: channel.last_accessed.0,
+                    last_acked_message_id: channel.opt_last_acked_message_id.map(Into::into),
                     opt_channel_name: channel.opt_channel_name,
                     opt_channel_icon_asset_id: channel.opt_channel_icon_asset_id.map(Into::into),
                 }
@@ -361,13 +361,13 @@ impl ScyllaChannelServiceServer {
 
         let inner = request.get_ref();
 
-        let last_accessed = MaybeUnset::from_option(inner.last_accessed);
+        let last_acked_message_id: MaybeUnset<CqlTimeuuid> = MaybeUnset::from_option(inner.last_acked_message_id.map(Into::into));
 
 
         db().await.execute_unpaged(
             &self.update_user_channel_norm_prepared,
             (
-                last_accessed,
+                last_acked_message_id,
                 user_id,
                 channel_id,
             )

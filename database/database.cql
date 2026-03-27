@@ -96,17 +96,18 @@ CREATE TABLE dataservices.user_channel (
     user_id TIMEUUID,
     channel_id TIMEUUID,
 
+    opt_last_acked_message_id TIMEUUID,
+
     encrypted_channel_key BLOB,
-
-    -- not a partition key otherwise would be able to be modified
-    -- therefore we cant sort it, we will have to limit it to server side
-    last_accessed TIMESTAMP,
-
     opt_channel_name BLOB,
     opt_channel_icon_asset_id TIMEUUID,
 
     PRIMARY KEY (user_id, channel_id)
 );
+
+-- CREATE TABLE dataservices.read_state (
+
+-- );
 
 
 CREATE TABLE dataservices.message (

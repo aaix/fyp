@@ -50,7 +50,6 @@ class ChannelManager {
             this.channelStore.set(channel_id, { encrypted_channel_key, shared_key: null });
 
             await this.populateEncryptedChannelFields(channel);
-            channel.last_accessed = channel.last_accessed ?? Math.floor(Date.now() / 1000);
         }
 
         // else we need to merge the channel with the cached channel list to get the key
@@ -226,6 +225,10 @@ class MessageManager {
 
     setOnMessageDelete(fn) {
         this.onMessageDeleteCb = fn ?? null;
+    }
+
+    ackMessageAsRead(channel_id, message_id) {
+        return API.PUT(`chat/channel/${channel_id}/message/${message_id}/ack`);
     }
 
     async populateEncryptedMessageFields(key, message) {

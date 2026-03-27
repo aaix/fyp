@@ -87,20 +87,20 @@ class AddChannelMemberRequest(_message.Message):
     def __init__(self, user_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., encrypted_channel_key: _Optional[bytes] = ...) -> None: ...
 
 class ChannelMemberObject(_message.Message):
-    __slots__ = ("user_id", "channel_id", "encrypted_channel_key", "last_accessed", "opt_channel_name", "opt_channel_icon_asset_id")
+    __slots__ = ("user_id", "channel_id", "encrypted_channel_key", "last_acked_message_id", "opt_channel_name", "opt_channel_icon_asset_id")
     USER_ID_FIELD_NUMBER: _ClassVar[int]
     CHANNEL_ID_FIELD_NUMBER: _ClassVar[int]
     ENCRYPTED_CHANNEL_KEY_FIELD_NUMBER: _ClassVar[int]
-    LAST_ACCESSED_FIELD_NUMBER: _ClassVar[int]
+    LAST_ACKED_MESSAGE_ID_FIELD_NUMBER: _ClassVar[int]
     OPT_CHANNEL_NAME_FIELD_NUMBER: _ClassVar[int]
     OPT_CHANNEL_ICON_ASSET_ID_FIELD_NUMBER: _ClassVar[int]
     user_id: _plib_pb2.pUUID
     channel_id: _plib_pb2.pUUID
     encrypted_channel_key: bytes
-    last_accessed: int
+    last_acked_message_id: _plib_pb2.pUUID
     opt_channel_name: bytes
     opt_channel_icon_asset_id: _plib_pb2.pUUID
-    def __init__(self, user_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., channel_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., encrypted_channel_key: _Optional[bytes] = ..., last_accessed: _Optional[int] = ..., opt_channel_name: _Optional[bytes] = ..., opt_channel_icon_asset_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ...) -> None: ...
+    def __init__(self, user_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., channel_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., encrypted_channel_key: _Optional[bytes] = ..., last_acked_message_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., opt_channel_name: _Optional[bytes] = ..., opt_channel_icon_asset_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ...) -> None: ...
 
 class AddChannelMembersRequest(_message.Message):
     __slots__ = ("channel_id", "channel", "requests")
@@ -129,14 +129,14 @@ class RemoveChannelMembersResponse(_message.Message):
     def __init__(self) -> None: ...
 
 class UpdateChannelMemberRequest(_message.Message):
-    __slots__ = ("user_id", "channel_id", "last_accessed")
+    __slots__ = ("user_id", "channel_id", "last_acked_message_id")
     USER_ID_FIELD_NUMBER: _ClassVar[int]
     CHANNEL_ID_FIELD_NUMBER: _ClassVar[int]
-    LAST_ACCESSED_FIELD_NUMBER: _ClassVar[int]
+    LAST_ACKED_MESSAGE_ID_FIELD_NUMBER: _ClassVar[int]
     user_id: _plib_pb2.pUUID
     channel_id: _plib_pb2.pUUID
-    last_accessed: int
-    def __init__(self, user_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., channel_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., last_accessed: _Optional[int] = ...) -> None: ...
+    last_acked_message_id: _plib_pb2.pUUID
+    def __init__(self, user_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., channel_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., last_acked_message_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ...) -> None: ...
 
 class UpdateChannelMemberResponse(_message.Message):
     __slots__ = ()

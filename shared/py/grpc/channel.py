@@ -87,3 +87,30 @@ async def remove_channel_members(
         channel_id=pchannel_id,
         members=filter(None, map(id_puuid, user_ids))
     )))
+
+
+async def edit_channel_member(
+    lazy: LazyGRPC[ChannelServiceStub],
+    user_id: id_t,
+    channel_id: id_t,
+    *,
+    last_message_acked_id: MaybeUnset[id_t] = UNSET,
+) -> channel_pb2.UpdateChannelMemberResponse:
+    return  cast(channel_pb2.UpdateChannelMemberResponse, await lazy.stub.UpdateChannelMember(channel_pb2.UpdateChannelMemberRequest(
+        user_id=id_puuid(user_id),
+        channel_id=id_puuid(channel_id),
+        last_acked_message_id=id_puuid(last_message_acked_id) if last_message_acked_id else None
+    )))
+
+async def set_last_acked_message_id(
+    lazy: LazyGRPC[ChannelServiceStub],
+    user_id: id_t,
+    channel_id: id_t,
+    message_id: id_t,
+):
+    await edit_channel_member(
+        lazy,
+        user_id,
+        channel_id,
+        last_message_acked_id=message_id
+    )

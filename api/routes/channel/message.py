@@ -11,7 +11,7 @@ from api.routes.channel.models import *
 
 from api.types.params import ChannelAsMemberParam, MessageParam
 from shared.py import asset
-from shared.py.grpc.channel import edit_channel
+from shared.py.grpc.channel import edit_channel, edit_channel_member, set_last_acked_message_id
 from shared.py.grpc.id import id_compare, puuid_opt, uuid_puuid, id_t
 from shared.py.grpc.lazy import LazyGRPC
 from shared.py.grpc.message import MessageType, create_message, edit_message
@@ -28,6 +28,10 @@ grpcchannel = LazyGRPC(discovery.discover_dataservices(), channel_pb2_grpc.Chann
 
 MessageRouter = APIRouter()
 
+def assert_user_is_author(current_user_id: id_t, message: MessageParam):
+    if not id_compare(message.author_id, current_user_id):
+        raise ApiErrExc(errors.Forbidden("Cannot delete a message you are not the author of"))
+        
 
 @MessageRouter.post("/channel/{channel_id}/message")
 async def r_create_message(s: SessionParam, channel: ChannelAsMemberParam, body: NewMessageBody) -> MessageResponse:
@@ -59,6 +63,8 @@ async def r_create_message(s: SessionParam, channel: ChannelAsMemberParam, body:
         in_reply_to=in_reply_to
     )
 
+    await set_last_acked_message_id(grpcchannel, s.user_id, channel.channel_id, message.message_id)
+
     await intraclient.fan_out(channel.channel_id, channel.channel_members, "message_create", lambda m_id: internalmessage_pb2.EventMessageCreate(
         author_id=author_id,
         content=body.content,
@@ -89,15 +95,20 @@ async def r_create_message(s: SessionParam, channel: ChannelAsMemberParam, body:
     return await MessageResponse.from_rpc(message, signed_url)
 
 
-def assert_user_is_author(current_user_id: id_t, message: MessageParam):
-    if not id_compare(message.author_id, current_user_id):
-        raise ApiErrExc(errors.Forbidden("Cannot delete a message you are not the author of"))
-        
+
 
 @MessageRouter.get("/channel/{channel_id}/message/{message_id}")
 async def r_get_message(s: SessionParam, channel: ChannelAsMemberParam, message: MessageParam) -> MessageResponse:
     return await MessageResponse.from_rpc(message)
 
+@MessageRouter.put("/channel/{channel_id}/message/{message_id}/ack")
+async def ack_message(s: SessionParam, channel: ChannelAsMemberParam, message_id: UUID) -> None:
+    """Ack a message as read"""
+    if not message_id.version == 1:
+        raise ApiErrExc(errors.BadRequest(f"Invalid message id {message_id} to ack"))
+
+    await set_last_acked_message_id(grpcchannel, s.user_id, channel.channel_id, message_id)
+    
 
 @MessageRouter.patch("/channel/{channel_id}/message/{message_id}")
 async def r_edit_message(s: SessionParam, channel: ChannelAsMemberParam, message: MessageParam, body: EditMessageBody) -> MessageResponse:

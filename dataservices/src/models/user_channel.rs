@@ -6,8 +6,8 @@ use scylla::value;
 pub struct UserChannel {
     pub user_id: value::CqlTimeuuid,
     pub channel_id: value::CqlTimeuuid,
+    pub opt_last_acked_message_id: Option<value::CqlTimeuuid>,
     pub encrypted_channel_key: Vec<u8>,
-    pub last_accessed: value::CqlTimestamp,
     pub opt_channel_name: Option<Vec<u8>>,
     pub opt_channel_icon_asset_id: Option<value::CqlTimeuuid>,
 }
