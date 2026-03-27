@@ -154,6 +154,8 @@ class Gateway {
 
     async reconnect() {
         this.socket.close()
+        const acc = await getCurrentSession().getCurrentAccount();
+        this.gatewayUrl = acc.data.assigned_gateway;
         await new Promise((resolve) => {
             const socket = new WebSocket(this.gatewayUrl);
             socket.addEventListener("open", () => {
@@ -163,6 +165,9 @@ class Gateway {
                 this.handshake_promise = new Promise((resolve) => {this.handshake_promise_resolver = resolve});
                 socket.addEventListener("message", (event) => {
                     this.onMessage(event);
+                })
+                socket.addEventListener("close", (event) => {
+                    this.onClose(event);
                 })
                 resolve();
             })
@@ -206,6 +211,7 @@ class Gateway {
             getCurrentSession().clearSession();
         }
         await this.reconnect();
+        await this.handshake();
     }
 
     async handshake(newdeviceok) {
