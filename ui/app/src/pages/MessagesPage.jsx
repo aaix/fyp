@@ -23,8 +23,9 @@ import { getCurrentSession } from '../lib/session.js'
 import { channelManager, isUserMessageType, messageManager } from '../lib/chat.js'
 import { decryptB64Sym } from '../lib/keyhandler.js'
 import { userManager } from '../lib/user.js'
-import { getAvatarUrl, getDefaultChannelUrl, userContentUrl } from '../lib/utils.js'
+import { getAvatarUrl } from '../lib/utils.js'
 import MemberContextMenu from '../components/MemberContextMenu.jsx'
+import ChannelIcon from '../components/ChannelIcon.jsx'
 
 function decodeReplyPreviewContent(content) {
   if (!content) return null
@@ -149,6 +150,8 @@ export default function MessagesPage() {
   const [leaveError, setLeaveError] = useState(null)
   const [channelMenu, setChannelMenu] = useState(null)
   const [leaveConfirm, setLeaveConfirm] = useState(null)
+  const [channelIconLoading, setChannelIconLoading] = useState(false)
+  const [channelIconError, setChannelIconError] = useState(null)
 
   const currentUserId = getCurrentSession()?.user_id
 
@@ -183,6 +186,7 @@ export default function MessagesPage() {
   const [fileDragOver, setFileDragOver] = useState(false)
   const fileInputRef = useRef(null)
   const imageInputRef = useRef(null)
+  const channelIconInputRef = useRef(null)
   const bottomRef = useRef(null)
   const messageInputRef = useRef(null)
   const sendButtonRef = useRef(null)
@@ -731,6 +735,7 @@ export default function MessagesPage() {
     setDeletedMessageIds(new Set())
     appliedMemberSystemMsgIdsRef.current.clear()
     typingAckStartedRef.current = false
+    setChannelIconError(null)
   }, [selectedChannelId])
 
   useEffect(() => {
@@ -1079,13 +1084,6 @@ export default function MessagesPage() {
     return () => media.removeEventListener?.('change', update)
   }, [])
 
-  const getChannelIconSrc = useCallback((ch) => {
-    if (ch?.channel_icon) {
-      return userContentUrl(ch.channel_id, ch.channel_icon, 'webp')
-    }
-    return getDefaultChannelUrl(ch.channel_id)
-  }, [])
-
   const selectedChannelName = selectedChannel?.channel_name ?? ''
   useEffect(() => {
     if (!isDesktop) return
@@ -1098,13 +1096,6 @@ export default function MessagesPage() {
       document.title = 'az7 | Messages'
     }
   }, [isDesktop, selectedChannelName])
-
-  const selectedChannelIconSrc = useMemo(() => {
-    if (!selectedChannelId) return null
-    const ch = selectedChannel || channels.find((c) => c.channel_id === selectedChannelId)
-    if (!ch) return null
-    return getChannelIconSrc(ch)
-  }, [channels, getChannelIconSrc, selectedChannel, selectedChannelId])
 
   const canManageMembers = useMemo(() => {
     if (!selectedChannel) return false
@@ -1209,6 +1200,53 @@ export default function MessagesPage() {
     setEditingName(false)
     setEditName(selectedChannel?.channel_name ?? '')
     setEditNameError(null)
+  }
+
+  const handleChannelIconFileChange = async (e) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file || !selectedChannel?.shared_key) return
+    setChannelIconError(null)
+    setChannelIconLoading(true)
+    try {
+      const buf = await file.arrayBuffer()
+      const ct = file.type || 'image/png'
+      const res = await channelManager.editChannelIcon(selectedChannel, buf, ct)
+      if (!res?.success) {
+        setChannelIconError(res?.error?.message ?? 'Could not update channel icon')
+        return
+      }
+      const updated = res?.data
+      const cid = selectedChannel.channel_id
+      if (updated && cid != null) {
+        setSelectedChannel((prev) =>
+          prev && String(prev.channel_id) === String(cid)
+            ? {
+                ...prev,
+                ...updated,
+                shared_key: prev.shared_key ?? updated.shared_key,
+                last_acked_message_id: updated.last_acked_message_id ?? prev.last_acked_message_id,
+              }
+            : prev,
+        )
+        setChannels((prev) =>
+          (prev ?? []).map((ch) =>
+            String(ch.channel_id) === String(cid)
+              ? {
+                  ...ch,
+                  ...updated,
+                  last_acked_message_id: updated.last_acked_message_id ?? ch.last_acked_message_id,
+                }
+              : ch,
+          ),
+        )
+      }
+    } catch (err) {
+      console.error(err)
+      setChannelIconError(err?.message ?? 'Could not update channel icon')
+    } finally {
+      setChannelIconLoading(false)
+    }
   }
 
   const handleSubmitEditName = async () => {
@@ -1350,7 +1388,6 @@ export default function MessagesPage() {
             <ul className="space-y-2 overflow-x-hidden" role="list" aria-label="Channels">
               {channels.map((ch) => {
                 const isSelected = isDesktop && selectedChannelId === ch.channel_id
-                const iconSrc = getChannelIconSrc(ch)
                 return (
                   <li key={ch.channel_id} className="min-w-0">
                     <ClickableRow
@@ -1372,8 +1409,8 @@ export default function MessagesPage() {
                         className={`w-full overflow-hidden px-4 py-3 transition-colors hover:bg-[color:var(--tab-active-bg)]/60 ${isSelected ? 'border-[color:var(--accent)]' : ''}`}
                       >
                         <div className="flex items-center gap-3">
-                          <img
-                            src={iconSrc}
+                          <ChannelIcon
+                            channel={ch}
                             alt=""
                             className="h-10 w-10 flex-shrink-0 rounded-full border border-[color:var(--card-border)] object-cover"
                           />
@@ -1411,15 +1448,43 @@ export default function MessagesPage() {
           {selectedChannelId && (
             <Card className="flex min-h-0 flex-1 flex-col overflow-hidden" data-channel-panel tabIndex={-1}>
               <div className="flex items-center gap-3 border-b border-[color:var(--card-border)] px-4 py-3">
-                {selectedChannelIconSrc ? (
-                  <img
-                    src={selectedChannelIconSrc}
-                    alt=""
-                    className="h-10 w-10 flex-shrink-0 rounded-full border border-[color:var(--card-border)] object-cover"
-                  />
-                ) : (
-                  <div className="h-10 w-10 flex-shrink-0 rounded-full border border-[color:var(--card-border)] bg-[color:var(--card-bg)]" />
-                )}
+                <input
+                  ref={channelIconInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => void handleChannelIconFileChange(e)}
+                />
+                <div className="group relative h-10 w-10 flex-shrink-0">
+                  {selectedChannel ? (
+                    <ChannelIcon
+                      channel={selectedChannel}
+                      sharedKey={selectedChannel.shared_key}
+                      alt=""
+                      className="h-10 w-10 rounded-full border border-[color:var(--card-border)] object-cover"
+                    />
+                  ) : (
+                    <div className="h-10 w-10 rounded-full border border-[color:var(--card-border)] bg-[color:var(--card-bg)]" />
+                  )}
+                  <button
+                    type="button"
+                    className="absolute inset-0 flex items-center justify-center rounded-full bg-black/45 opacity-0 transition-opacity group-hover:opacity-100 focus:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] disabled:pointer-events-none disabled:opacity-0"
+                    title="Change channel icon"
+                    aria-label="Change channel icon"
+                    disabled={channelIconLoading || !selectedChannel?.shared_key}
+                    onClick={() => channelIconInputRef.current?.click()}
+                  >
+                    {channelIconLoading ? (
+                      <span className="material-symbols-outlined text-lg text-white animate-spin" aria-hidden>
+                        sync
+                      </span>
+                    ) : (
+                      <span className="material-symbols-outlined text-lg text-white" aria-hidden>
+                        edit
+                      </span>
+                    )}
+                  </button>
+                </div>
                 <div className="min-w-0 flex-1">
                   {!editingName && (
                     <Button
@@ -1489,6 +1554,11 @@ export default function MessagesPage() {
                   {editNameError && (
                     <div className="mt-0.5 text-xs text-red-500" role="alert">
                       {editNameError}
+                    </div>
+                  )}
+                  {channelIconError && (
+                    <div className="mt-0.5 text-xs text-red-500" role="alert">
+                      {channelIconError}
                     </div>
                   )}
                   <div className="mt-0.5 text-xs text-[color:var(--text-muted)]">
@@ -1685,21 +1755,9 @@ export default function MessagesPage() {
                           const buf = await file.arrayBuffer()
                           const contentType = file.type || 'application/octet-stream'
 
-                          if (trimmed) {
-                            const textRes = await messageManager.sendMessage(
-                              selectedChannel,
-                              { content: new TextEncoder().encode(trimmed).buffer },
-                              replyId,
-                            )
-                            if (!textRes?.success) {
-                              setSendError(textRes?.error?.message ?? 'Could not send message')
-                              return
-                            }
-                            await appendDecryptedMessage(textRes.data)
-                          }
-
                           const mediaRes = await messageManager.sendMessageAttachment(
                             selectedChannel,
+                            trimmed,
                             buf,
                             contentType,
                             file.name || '',

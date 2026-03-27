@@ -69,13 +69,45 @@ function decodeMessageContent(content) {
   }
 }
 
-/** Encrypted attachment metadata: `mime;fileName` (see sendMessageAttachment). */
+/** Encrypted attachment metadata in message content: `mime;fileName` (pending / legacy; v4 blob metadata preferred when present). */
 function parseAttachmentContentEnvelope(raw) {
   const s = (raw ?? '').trim()
   if (!s) return { mime: '', fileName: '' }
   const i = s.indexOf(';')
   if (i === -1) return { mime: s, fileName: '' }
   return { mime: s.slice(0, i).trim(), fileName: s.slice(i + 1).trim() }
+}
+
+/** Pending: first line `mime;fileName`, optional body = caption. Complete: caption-only, or legacy single-line envelope. */
+function parseUserMediaMessageContent(raw, isUploadPending, messageType) {
+  const s = (raw ?? '').trimEnd()
+  if (!s) return { mime: '', fileName: '', caption: '' }
+  const isMedia =
+    messageType === MESSAGE_TYPE_USER_MEDIA || messageType === MESSAGE_TYPE_USER_MEDIA_PENDING
+
+  if (!isMedia) return { mime: '', fileName: '', caption: s }
+
+  if (isUploadPending) {
+    const nl = s.indexOf('\n')
+    const head = nl === -1 ? s : s.slice(0, nl)
+    const caption = nl === -1 ? '' : s.slice(nl + 1)
+    const { mime, fileName } = parseAttachmentContentEnvelope(head)
+    return { mime, fileName, caption: caption.trim() }
+  }
+
+  const nl = s.indexOf('\n')
+  if (nl !== -1) {
+    const head = s.slice(0, nl)
+    const caption = s.slice(nl + 1)
+    const { mime, fileName } = parseAttachmentContentEnvelope(head)
+    return { mime, fileName, caption: caption.trim() }
+  }
+
+  const { mime, fileName } = parseAttachmentContentEnvelope(s)
+  if (mime && mime.includes('/')) {
+    return { mime, fileName, caption: '' }
+  }
+  return { mime: '', fileName: '', caption: s }
 }
 
 function truncateSnippet(s, n = 80) {
@@ -114,6 +146,16 @@ function Message({
   const parentFromList = replyToId ? messagesById?.[replyToId] : undefined
 
   const text = decodeMessageContent(message?.content)
+  const isUploadPending = message?.message_type === MESSAGE_TYPE_USER_MEDIA_PENDING
+  const isMediaMessage =
+    message?.message_type === MESSAGE_TYPE_USER_MEDIA ||
+    message?.message_type === MESSAGE_TYPE_USER_MEDIA_PENDING
+  const mediaParsed = isMediaMessage
+    ? parseUserMediaMessageContent(text, isUploadPending, message?.message_type)
+    : { mime: '', fileName: '', caption: '' }
+  const contentMimeType = mediaParsed.mime
+  const attachmentFileName = mediaParsed.fileName
+
   const createdMs = uuidTimeToUnixMs(message?.message_id)
   const { label: timeLabel, full: fullTimeLabel } = formatMessageTimestamp(createdMs)
   const lastEditedMs =
@@ -133,11 +175,6 @@ function Message({
 
   const avatarUrl = author?.icon_url || null
   const authorLabel = author?.username ? `@${author.username}` : 'Unknown'
-
-  const isUploadPending = message?.message_type === MESSAGE_TYPE_USER_MEDIA_PENDING
-  const attachmentEnvelope = parseAttachmentContentEnvelope(decodeMessageContent(message?.content))
-  const contentMimeType = attachmentEnvelope.mime
-  const attachmentFileName = attachmentEnvelope.fileName
 
   const [hydratedAttachmentUrl, setHydratedAttachmentUrl] = useState(null)
   const [parentPreview, setParentPreview] = useState(null)
@@ -175,10 +212,9 @@ function Message({
   const hasDecryptedAttachment =
     message?.message_type === MESSAGE_TYPE_USER_MEDIA && Boolean(effectiveAttachmentUrl)
 
-  const showTextBody =
-    Boolean(text) &&
-    !isUploadPending &&
-    !(message?.message_type === MESSAGE_TYPE_USER_MEDIA && hasDecryptedAttachment)
+  const showTextBody = isMediaMessage
+    ? Boolean((mediaParsed.caption ?? '').trim())
+    : Boolean(text)
 
   useEffect(() => {
     if (!replyToId || !channel?.shared_key) {
@@ -261,9 +297,11 @@ function Message({
 
   const startEdit = useCallback(() => {
     setMenu(null)
-    setEditDraft(text ?? '')
+    setEditDraft(
+      isMediaMessage ? (mediaParsed.caption || text || '') : (text ?? ''),
+    )
     setEditing(true)
-  }, [text])
+  }, [text, isMediaMessage, mediaParsed.caption])
 
   const cancelEdit = useCallback(() => {
     setEditing(false)
@@ -404,6 +442,12 @@ function Message({
               </div>
             ) : (
               <>
+                {showTextBody ? (
+                  <div className="mt-1 min-w-0 max-w-full whitespace-pre-wrap break-words [overflow-wrap:anywhere] text-base text-[color:var(--text-primary)]">
+                    {isMediaMessage ? mediaParsed.caption : text}
+                  </div>
+                ) : null}
+
                 {isUploadPending ? (
                   <div className="mt-1 text-sm text-[color:var(--text-muted)]">
                     {isOwn ? (
@@ -437,12 +481,6 @@ function Message({
                         {contentMimeType ? ` (${contentMimeType})` : ''}…
                       </>
                     )}
-                  </div>
-                ) : null}
-
-                {showTextBody ? (
-                  <div className="mt-1 min-w-0 max-w-full whitespace-pre-wrap break-words [overflow-wrap:anywhere] text-base text-[color:var(--text-primary)]">
-                    {text}
                   </div>
                 ) : null}
 

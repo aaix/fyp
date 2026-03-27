@@ -5,8 +5,9 @@ import MediaLightboxModal from './MediaLightboxModal.jsx'
 
 /**
  * Fetches ciphertext from `attachmentUrl`, decrypts with the channel symmetric key, and renders
- * an image, video, or download link depending on `contentMimeType`.
- * `fileName` comes from message content envelope `mime;fileName`.
+ * an image, video, or download link. MIME and file name prefer v4 metadata embedded in the
+ * ciphertext; `contentMimeType` / `fileName` props (message `mime;fileName` envelope) are fallback
+ * for legacy attachments and upload-pending rows.
  */
 export default function MessageChannelAttachment({
   attachmentUrl,
@@ -15,6 +16,7 @@ export default function MessageChannelAttachment({
   fileName,
   onDisplayReady,
 }) {
+  const [blobMeta, setBlobMeta] = useState({ contentType: null, fileName: null })
   const [previewUrl, setPreviewUrl] = useState(null)
   const [error, setError] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -33,19 +35,23 @@ export default function MessageChannelAttachment({
     setLoading(true)
     setError(false)
     setPreviewUrl(null)
+    setBlobMeta({ contentType: null, fileName: null })
 
     ;(async () => {
       try {
         const resp = await fetch(attachmentUrl)
         if (!resp.ok) throw new Error('fetch failed')
         const encrypted = await resp.arrayBuffer()
-        const plain = await decryptSymAttachment(encrypted, sharedKey)
-        const mime = (contentMimeType || 'application/octet-stream').trim() || 'application/octet-stream'
-        const blob = new Blob([plain], { type: mime })
+        const { plaintext, contentType: ctFromBlob, fileName: fnFromBlob } =
+          await decryptSymAttachment(encrypted, sharedKey)
+        const mimeForBlob =
+          (ctFromBlob ?? contentMimeType ?? 'application/octet-stream').trim() || 'application/octet-stream'
+        const blob = new Blob([plaintext], { type: mimeForBlob })
         const ou = URL.createObjectURL(blob)
         if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current)
         objectUrlRef.current = ou
         if (!cancelled) {
+          setBlobMeta({ contentType: ctFromBlob ?? null, fileName: fnFromBlob ?? null })
           setPreviewUrl(ou)
           setLoading(false)
         }
@@ -69,11 +75,11 @@ export default function MessageChannelAttachment({
 
   useEffect(() => {
     if (!previewUrl || loading || error) return
-    const mime = (contentMimeType || '').trim()
+    const mime = (blobMeta.contentType ?? contentMimeType ?? '').trim()
     const isVisual = mime.startsWith('image/') || mime.startsWith('video/')
     if (isVisual) return
     onDisplayReady?.()
-  }, [previewUrl, loading, error, contentMimeType, onDisplayReady])
+  }, [previewUrl, loading, error, blobMeta.contentType, contentMimeType, onDisplayReady])
 
   const openLightbox = () => {
     inlineVideoRef.current?.pause?.()
@@ -90,11 +96,11 @@ export default function MessageChannelAttachment({
     return <div className="mt-2 text-sm text-[color:var(--text-muted)]">Could not load attachment.</div>
   }
 
-  const mime = (contentMimeType || '').trim()
+  const mime = (blobMeta.contentType ?? contentMimeType ?? '').trim()
   const isImage = mime.startsWith('image/')
   const isVideo = mime.startsWith('video/')
   const isVisualMedia = isImage || isVideo
-  const displayName = (fileName || '').trim()
+  const displayName = (blobMeta.fileName ?? fileName ?? '').trim()
   const downloadName = displayName || 'attachment'
 
   if (isVisualMedia) {
