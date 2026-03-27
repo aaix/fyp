@@ -383,7 +383,7 @@ class Gateway {
                     console.warn(event.errors);
                 }
                 break;
-            case 'channel_update':
+            case 'channel_create':
                 channelManager.processNewChannel(event.channel_id, event.channel_name, event.encrypted_channel_key);
                 break;
             case 'friendship_update':
