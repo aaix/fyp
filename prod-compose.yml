@@ -37,10 +37,13 @@ services:
       - shared-network
     image: europe-west2-docker.pkg.dev/fyp-25coc251/az7-backend/dataservices:latest
     environment:
-      - SCYLLA_URI=172.31.0.199
-      - OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://172.31.0.254:4317
+      SCYLLA_URIl: 172.31.0.199
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://172.31.0.254:4317
+      VALKEY_URI: redis://discoverystore-0:6379
     depends_on:
       scylla-seed:
+        condition: service_healthy
+      discoverystore-0:
         condition: service_healthy
 
   gateway-0:
@@ -54,8 +57,10 @@ services:
         VALKEY_URI: discoverystore-0:6379
 
     depends_on:
-      - dataservices-0
-      - discoverystore-0
+      discoverystore-0:
+        condition: service_healthy
+      dataservices-0:
+        condition: service_started
     ports:
       - 8081:8081
   
@@ -80,7 +85,10 @@ services:
     ports:
       - "80:80"
     depends_on:
-      - discoverystore-0
+      discoverystore-0:
+        condition: service_healthy
+      dataservices-0:
+        condition: service_started
 
 
   mediaservices-0:
