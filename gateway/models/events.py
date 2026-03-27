@@ -34,7 +34,7 @@ class SessionCreateEvent(BaseEvent):
     ip_address: str
 
 class ChannelCreateEvent(BaseEvent):
-    intent: Literal["channel_update"] = "channel_update"
+    intent: Literal["channel_create"] = "channel_create"
     channel_id: UUID
     channel_name: ChannelNameOut | None
     encrypted_channel_key: Base64Output | None
