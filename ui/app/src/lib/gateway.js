@@ -4,25 +4,44 @@ import { keyStore } from "./session";
 import { channelManager, messageManager } from "./chat";
 import { B64toUint8Array, blobToB64, hexFromBuffer } from "./utils";
 import { relationshipManager} from "./user.js"
+import API from "./api.js";
 
 
 
 export function gatewayFactory(gatewayUrl) {
-    if (window._gatewayPromise !== undefined) {
-        return window._gatewayPromise;
-    }
-    if (!gatewayUrl) {
+    const url = gatewayUrl ?? window.gateway?.gatewayUrl;
+    if (!url) {
         throw new Error("Unknown gateway");
     }
+    if (
+        window._gatewayPromise !== undefined &&
+        window._gatewayConnectUrl === url
+    ) {
+        return window._gatewayPromise;
+    }
+    window._gatewayConnectUrl = url;
     window._gatewayPromise = new Promise((resolve) => {
-        let socket = new WebSocket(gatewayUrl);
+        let socket = new WebSocket(url);
 
         socket.addEventListener("open", () => {
-            resolve(new Gateway(socket, gatewayUrl))
+            resolve(new Gateway(socket, url))
         })
 
     })
     return window._gatewayPromise;
+}
+
+export async function findGatewayForUser(username) {
+    const res = await API.GET(
+        `session/gateway/${encodeURIComponent(username)}`,
+        { useSession: false }
+    );
+    if (!res.success || res.data == null || res.data === "") {
+        throw new Error(
+            res.error?.message ?? "Failed to resolve gateway for this user"
+        );
+    }
+    return res.data;
 }
 
 class UserStore {
@@ -133,7 +152,7 @@ class UserStore {
  * @param {WebSocket} socket - The WebSocket instance to manage
  */
 class Gateway {
-    constructor(socket, gatewayUrl = DEFAULT_GATEWAY_URL) {
+    constructor(socket, gatewayUrl) {
         this.socket = socket;
         this.gatewayUrl = gatewayUrl;
         this.handshake_complete = false;

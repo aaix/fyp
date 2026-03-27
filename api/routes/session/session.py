@@ -13,8 +13,12 @@ from shared.py.grpc.user import get_user_by_username
 from shared.py.grpcgen import user_pb2_grpc
 from shared.py.grpc.id import puuid_uuid
 from shared.py.grpcgen.internalmessage_pb2 import EventSessionCreate
+from shared.py.intraservice.discoverystore import GATEWAY_SERVICE
+from shared.py.intraservice.discoverystore.client import BigPictureClientServiceFactory
+from shared.py.pydantic.common import Username
 
 discovery = DiscoveryManager()
+gateway_bigpicture = BigPictureClientServiceFactory(GATEWAY_SERVICE)
 
 SessionRouter = APIRouter()
 
@@ -43,7 +47,14 @@ async def login(r: Request, body: LoginBody) -> LoginResponse:
         user_id=session.user_id
     )
     
-@SessionRouter.get("/renew")
-async def renew(request: Request, s: SessionParam):
-    log(f"Session is {s}")
-    return
+@SessionRouter.get("/gateway/{username}")
+async def find_gateway(username: Username) -> str:
+    with ResourceNotFoundRpcHandler("user", username):
+        user = await get_user_by_username(grpcuser, username)
+    
+
+
+    node = await gateway_bigpicture.get_node(puuid_uuid(user.user_id) or unwrap())
+
+    return discovery.transform_gateway_to_external(node)
+    

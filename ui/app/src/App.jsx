@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import AuthPage from './pages/AuthPage.jsx'
 import AppLayout from './components/AppLayout.jsx'
@@ -44,7 +44,20 @@ function useAuth() {
     }
   }, [])
 
-  return [isLoggedIn, gatewayUrl, () => setIsLoggedIn(true)]
+  const completeLogin = useCallback(async () => {
+    try {
+      const session = getCurrentSession()
+      const res = await session.getCurrentAccount()
+      setGatewayUrl(res?.data?.assigned_gateway ?? null)
+      setIsLoggedIn(!!res?.success)
+    } catch (e) {
+      console.error(e)
+      setGatewayUrl(null)
+      setIsLoggedIn(false)
+    }
+  }, [])
+
+  return [isLoggedIn, gatewayUrl, completeLogin]
 }
 
 function getTitleFromPathname(pathname) {
@@ -70,7 +83,7 @@ function getTitleFromPathname(pathname) {
 }
 
 function App() {
-  const [isLoggedIn, gatewayUrl, setLoggedIn] = useAuth()
+  const [isLoggedIn, gatewayUrl, completeLogin] = useAuth()
   const location = useLocation()
 
   useEffect(() => {
@@ -111,7 +124,7 @@ function App() {
   }
 
   if (!isLoggedIn) {
-    return <AuthPage onLogin={() => setLoggedIn()} />
+    return <AuthPage onLogin={completeLogin} />
   }
 
   return (

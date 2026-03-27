@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { getCurrentSession } from '../lib/session.js'
-import { gatewayFactory } from '../lib/gateway.js'
+import { findGatewayForUser, gatewayFactory } from '../lib/gateway.js'
 import Button from '../components/Button.jsx'
 import FormInput from '../components/FormInput.jsx'
 import Card from '../components/Card.jsx'
@@ -49,7 +49,14 @@ export default function AuthPage({ onLogin }) {
         setFormData((prev) => ({ ...prev, email: '' }))
         setInfo('Account created. You can now log in.')
       } else if (mode === 'otherDevice') {
-        const gateway = await gatewayFactory()
+        const trimmedUsername = formData.username.trim()
+        if (!trimmedUsername) {
+          setError('Username is required')
+          setLoading(false)
+          return
+        }
+        const gatewayUrl = await findGatewayForUser(trimmedUsername)
+        const gateway = await gatewayFactory(gatewayUrl)
 
         const errCallback = (err) => {
           const message =
@@ -95,7 +102,7 @@ export default function AuthPage({ onLogin }) {
         }
         const loginResult = await session.login(formData.username)
         if (loginResult === true) {
-          onLogin()
+          await onLogin()
         } else {
           setError(loginResult || 'Login failed')
         }
