@@ -111,6 +111,16 @@ function sortChannelsByLastAcked(list) {
   })
 }
 
+function countUnreadMessages(msgs, ackId) {
+  const ackTicks = uuidV1Ticks(ackId)
+  return (msgs ?? []).filter((m) => {
+    const t = uuidV1Ticks(m.message_id)
+    if (t === null) return false
+    if (ackTicks === null) return true
+    return t > ackTicks
+  }).length
+}
+
 /** Pixels from bottom to treat as “still at bottom” for auto-scroll. */
 const SCROLL_BOTTOM_THRESHOLD_PX = 120
 
@@ -178,6 +188,7 @@ export default function MessagesPage() {
   const sendButtonRef = useRef(null)
   const messagesListContentRef = useRef(null)
   const messagesRef = useRef([])
+  const channelsRef = useRef([])
   const authorLookupInFlightRef = useRef(new Set())
 
   const [replyingTo, setReplyingTo] = useState(null)
@@ -242,6 +253,10 @@ export default function MessagesPage() {
     messagesRef.current = messages
   }, [messages])
 
+  useEffect(() => {
+    channelsRef.current = channels
+  }, [channels])
+
   const applyChannelAckUpdate = useCallback((messageId) => {
     setSelectedChannel((prev) => (prev ? { ...prev, last_acked_message_id: messageId } : prev))
     const cid = selectedChannelIdRef.current
@@ -261,7 +276,10 @@ export default function MessagesPage() {
     const msgs = messagesRef.current ?? []
     const last = msgs[msgs.length - 1]
     if (!last?.message_id) return
-    const ackTicks = uuidV1Ticks(channel.last_acked_message_id)
+    const cid = selectedChannelIdRef.current
+    const fromList = cid != null ? (channelsRef.current ?? []).find((c) => String(c.channel_id) === String(cid)) : null
+    const ackId = channel.last_acked_message_id ?? fromList?.last_acked_message_id ?? null
+    const ackTicks = uuidV1Ticks(ackId)
     const lastTicks = uuidV1Ticks(last.message_id)
     if (lastTicks === null) return
     if (ackTicks !== null && lastTicks <= ackTicks) return
@@ -273,6 +291,35 @@ export default function MessagesPage() {
       console.error(e)
     }
   }, [applyChannelAckUpdate])
+
+  const scrollChatToBottom = useCallback(() => {
+    requestAnimationFrame(() => {
+      const root = messagesScrollRef.current
+      if (!root || !bottomRef.current) return
+      scrollLockUntilRef.current = Date.now() + 400
+      bottomRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' })
+      requestAnimationFrame(() => {
+        const r = messagesScrollRef.current
+        if (!r) return
+        userPinnedToBottomRef.current =
+          r.scrollHeight - r.scrollTop - r.clientHeight < SCROLL_BOTTOM_THRESHOLD_PX
+      })
+    })
+  }, [])
+
+  const handleEscapeInChannel = useCallback(() => {
+    const channel = selectedChannelRef.current
+    const cid = selectedChannelIdRef.current
+    if (!channel?.channel_id || !cid) return
+    const fromList = (channelsRef.current ?? []).find((c) => String(c.channel_id) === String(cid))
+    const ackId = channel.last_acked_message_id ?? fromList?.last_acked_message_id ?? null
+    const msgs = messagesRef.current ?? []
+    if (countUnreadMessages(msgs, ackId) > 0) {
+      void ackLastMessageIfUnread()
+    } else {
+      scrollChatToBottom()
+    }
+  }, [ackLastMessageIfUnread, scrollChatToBottom])
 
   useEffect(() => {
     if (!selectedChannelId || !selectedChannel) return
@@ -286,11 +333,11 @@ export default function MessagesPage() {
       if (!panel || !panel.contains(t)) return
       if (messageInputRef.current && t === messageInputRef.current) return
       e.preventDefault()
-      void ackLastMessageIfUnread()
+      handleEscapeInChannel()
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [selectedChannelId, selectedChannel, editingName, ackLastMessageIfUnread])
+  }, [selectedChannelId, selectedChannel, editingName, handleEscapeInChannel])
 
   const handleReply = useCallback((m) => {
     setReplyingTo(m)
@@ -1799,7 +1846,7 @@ export default function MessagesPage() {
                           if (e.key === 'Escape' && !e.nativeEvent.isComposing) {
                             e.preventDefault()
                             e.stopPropagation()
-                            void ackLastMessageIfUnread()
+                            handleEscapeInChannel()
                             return
                           }
                           if (e.key !== 'Enter' || e.shiftKey || e.nativeEvent.isComposing) return
