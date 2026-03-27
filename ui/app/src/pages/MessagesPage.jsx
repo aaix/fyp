@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import PageContainer from '../components/PageContainer.jsx'
 import Card from '../components/Card.jsx'
 import CreateChannelModal from '../components/CreateChannelModal.jsx'
@@ -54,6 +54,61 @@ function canonicalChannelMemberId(raw) {
     return uuidFrom32Hex(key) ?? String(raw).trim()
   }
   return String(raw).trim()
+}
+
+/** 100ns ticks since UUID epoch (RFC 4122 v1); used to compare message ids when the acked row is missing. */
+function uuidV1Ticks(uuid) {
+  if (uuid == null || uuid === '') return null
+  const hex = String(uuid).replace(/-/g, '').toLowerCase()
+  if (hex.length !== 32) return null
+  const version = parseInt(hex[12], 16)
+  if (version !== 1) return null
+  const timeLow = BigInt(`0x${hex.slice(0, 8)}`)
+  const timeMid = BigInt(`0x${hex.slice(8, 12)}`)
+  const timeHiAndVersion = BigInt(`0x${hex.slice(12, 16)}`)
+  return (timeHiAndVersion & 0x0fffn) << 48n | timeMid << 32n | timeLow
+}
+
+const UUID_V1_UNIX_OFFSET_100NS = 122192928000000000n
+
+function uuidV1UnixMs(uuid) {
+  const ticks = uuidV1Ticks(uuid)
+  if (ticks === null) return null
+  const unix100ns = ticks - UUID_V1_UNIX_OFFSET_100NS
+  if (unix100ns < 0n) return null
+  return Number(unix100ns / 10000n)
+}
+
+function sameCalendarDay(a, b) {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  )
+}
+
+/** Label for “since …” in the unread banner (today: time only; else yesterday / date + time). */
+function formatAckedSinceForUnreadBar(ms) {
+  const d = new Date(ms)
+  const now = new Date()
+  const timeStr = d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
+  if (sameCalendarDay(d, now)) return timeStr
+  const yesterday = new Date(now)
+  yesterday.setDate(now.getDate() - 1)
+  if (sameCalendarDay(d, yesterday)) return `yesterday at ${timeStr}`
+  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
+function sortChannelsByLastAcked(list) {
+  return [...list].sort((a, b) => {
+    const ta = uuidV1Ticks(a.last_acked_message_id)
+    const tb = uuidV1Ticks(b.last_acked_message_id)
+    const va = ta ?? 0n
+    const vb = tb ?? 0n
+    if (vb > va) return 1
+    if (vb < va) return -1
+    return 0
+  })
 }
 
 /** Pixels from bottom to treat as “still at bottom” for auto-scroll. */
@@ -112,6 +167,7 @@ export default function MessagesPage() {
   const [typingByUserId, setTypingByUserId] = useState({})
   const typingTimersRef = useRef(new Map()) // user_id(string) -> { timeoutId, seq }
   const lastTypingSentAtRef = useRef(0)
+  const typingAckStartedRef = useRef(false)
 
   const [attachment, setAttachment] = useState(null) // { kind: 'file'|'image'|'video', file, previewUrl? }
   const [fileDragOver, setFileDragOver] = useState(false)
@@ -121,6 +177,7 @@ export default function MessagesPage() {
   const messageInputRef = useRef(null)
   const sendButtonRef = useRef(null)
   const messagesListContentRef = useRef(null)
+  const messagesRef = useRef([])
   const authorLookupInFlightRef = useRef(new Set())
 
   const [replyingTo, setReplyingTo] = useState(null)
@@ -140,6 +197,100 @@ export default function MessagesPage() {
     const raw = decodeReplyPreviewContent(replyingTo.content)
     return raw ? truncateReplyPreview(raw) : null
   }, [replyingTo])
+
+  const unreadInfo = useMemo(() => {
+    const msgs = messages ?? []
+    const fromList =
+      selectedChannelId != null
+        ? (channels ?? []).find((c) => String(c.channel_id) === String(selectedChannelId))
+        : null
+    const ackId =
+      selectedChannel?.last_acked_message_id ?? fromList?.last_acked_message_id ?? null
+    const ackTicks = uuidV1Ticks(ackId)
+    const ackMs = ackId != null ? uuidV1UnixMs(ackId) : null
+    const sinceLabel = ackMs != null ? formatAckedSinceForUnreadBar(ackMs) : null
+
+    const isUnread = (m) => {
+      const t = uuidV1Ticks(m.message_id)
+      if (t === null) return false
+      if (ackTicks === null) return true
+      return t > ackTicks
+    }
+
+    const unreadCount = msgs.filter(isUnread).length
+    if (unreadCount === 0) {
+      return { unreadCount: 0, showPlus: false, sepBeforeIndex: null, sinceLabel: null }
+    }
+
+    const sepBeforeIndex = msgs.findIndex(isUnread)
+    const ackIdx = ackId != null ? msgs.findIndex((m) => String(m.message_id) === String(ackId)) : -1
+    const ackInView = ackIdx >= 0
+    const allRenderedUnread = unreadCount === msgs.length && msgs.length > 0
+    const showPlus =
+      unreadCount > 0 &&
+      ((allRenderedUnread && hasMoreBefore) || (!ackInView && ackId != null && hasMoreBefore))
+
+    return {
+      unreadCount,
+      showPlus,
+      sepBeforeIndex: sepBeforeIndex >= 0 ? sepBeforeIndex : null,
+      sinceLabel,
+    }
+  }, [messages, selectedChannel?.last_acked_message_id, selectedChannelId, channels, hasMoreBefore])
+
+  useEffect(() => {
+    messagesRef.current = messages
+  }, [messages])
+
+  const applyChannelAckUpdate = useCallback((messageId) => {
+    setSelectedChannel((prev) => (prev ? { ...prev, last_acked_message_id: messageId } : prev))
+    const cid = selectedChannelIdRef.current
+    if (!cid) return
+    setChannels((prev) =>
+      sortChannelsByLastAcked(
+        (prev ?? []).map((c) =>
+          String(c.channel_id) === String(cid) ? { ...c, last_acked_message_id: messageId } : c,
+        ),
+      ),
+    )
+  }, [])
+
+  const ackLastMessageIfUnread = useCallback(async () => {
+    const channel = selectedChannelRef.current
+    if (!channel?.channel_id) return
+    const msgs = messagesRef.current ?? []
+    const last = msgs[msgs.length - 1]
+    if (!last?.message_id) return
+    const ackTicks = uuidV1Ticks(channel.last_acked_message_id)
+    const lastTicks = uuidV1Ticks(last.message_id)
+    if (lastTicks === null) return
+    if (ackTicks !== null && lastTicks <= ackTicks) return
+    try {
+      const res = await messageManager.ackMessageAsRead(channel.channel_id, last.message_id)
+      if (!res?.success) return
+      applyChannelAckUpdate(last.message_id)
+    } catch (e) {
+      console.error(e)
+    }
+  }, [applyChannelAckUpdate])
+
+  useEffect(() => {
+    if (!selectedChannelId || !selectedChannel) return
+    const onKeyDown = (e) => {
+      if (e.key !== 'Escape') return
+      if (editingName) return
+      const t = e.target
+      if (!(t instanceof HTMLElement)) return
+      if (t.closest('[role="dialog"]')) return
+      const panel = document.querySelector('[data-channel-panel]')
+      if (!panel || !panel.contains(t)) return
+      if (messageInputRef.current && t === messageInputRef.current) return
+      e.preventDefault()
+      void ackLastMessageIfUnread()
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [selectedChannelId, selectedChannel, editingName, ackLastMessageIfUnread])
 
   const handleReply = useCallback((m) => {
     setReplyingTo(m)
@@ -532,6 +683,7 @@ export default function MessagesPage() {
     setReplyingTo(null)
     setDeletedMessageIds(new Set())
     appliedMemberSystemMsgIdsRef.current.clear()
+    typingAckStartedRef.current = false
   }, [selectedChannelId])
 
   useEffect(() => {
@@ -795,8 +947,7 @@ export default function MessagesPage() {
         setChannels([])
         return
       }
-      const list = res?.data?.channels ?? []
-      list.sort((a, b) => (b.last_accessed || 0) - (a.last_accessed || 0))
+      const list = sortChannelsByLastAcked(res?.data?.channels ?? [])
       setChannels(list)
     } catch (e) {
       console.error(e);
@@ -824,13 +975,10 @@ export default function MessagesPage() {
         const list = prev ?? []
         if (isNew) {
           if (list.some((c) => c.channel_id === channel.channel_id)) return list
-          const next = [...list, { ...channel, last_accessed: channel.last_accessed ?? Math.floor(Date.now() / 1000) }]
-          next.sort((a, b) => (b.last_accessed || 0) - (a.last_accessed || 0))
-          return next
+          return sortChannelsByLastAcked([...list, channel])
         }
         const next = list.map((c) => (c.channel_id === channel.channel_id ? { ...c, ...channel } : c))
-        next.sort((a, b) => (b.last_accessed || 0) - (a.last_accessed || 0))
-        return next
+        return sortChannelsByLastAcked(next)
       })
 
       // If the currently open channel is updated by the gateway, ensure we
@@ -843,6 +991,7 @@ export default function MessagesPage() {
             ...channel,
             shared_key: prev.shared_key,
             encrypted_channel_key: prev.encrypted_channel_key ?? channel.encrypted_channel_key,
+            last_acked_message_id: channel.last_acked_message_id ?? prev.last_acked_message_id,
           }
         })
       }
@@ -956,7 +1105,14 @@ export default function MessagesPage() {
           setChannelError(res?.error?.message ?? 'Could not load channel')
           return
         }
-        const channel = res?.data
+        const raw = res?.data
+        const channel = raw
+          ? {
+              ...raw,
+              last_acked_message_id:
+                raw.last_acked_message_id ?? channelFromList?.last_acked_message_id ?? null,
+            }
+          : null
         setSelectedChannel(channel)
         setEditName(channel?.channel_name ?? '')
 
@@ -1025,10 +1181,23 @@ export default function MessagesPage() {
       }
       const updated = res?.data
       setSelectedChannel((prev) =>
-        prev && updated ? { ...updated, shared_key: updated.shared_key ?? prev.shared_key } : updated,
+        prev && updated
+          ? {
+              ...updated,
+              shared_key: updated.shared_key ?? prev.shared_key,
+              last_acked_message_id: updated.last_acked_message_id ?? prev.last_acked_message_id,
+            }
+          : updated,
       )
       setChannels((prev) =>
-        (prev ?? []).map((ch) => (ch.channel_id === updated.channel_id ? updated : ch)),
+        (prev ?? []).map((ch) =>
+          ch.channel_id === updated.channel_id
+            ? {
+                ...updated,
+                last_acked_message_id: updated.last_acked_message_id ?? ch.last_acked_message_id,
+              }
+            : ch,
+        ),
       )
       setEditingName(false)
     } catch (e) {
@@ -1169,7 +1338,10 @@ export default function MessagesPage() {
                               {ch.channel_name}
                             </div>
                             <div className="mt-0.5 text-xs text-[color:var(--text-muted)]">
-                              {ch.last_accessed ? `Last opened: ${formatRelativeFromSeconds(ch.last_accessed)}` : ''}
+                              {(() => {
+                                const ms = uuidV1UnixMs(ch.last_acked_message_id)
+                                return ms != null ? `Last read: ${formatRelativeFromSeconds(Math.floor(ms / 1000))}` : ''
+                              })()}
                             </div>
                           </div>
                         </div>
@@ -1190,7 +1362,7 @@ export default function MessagesPage() {
           )}
 
           {selectedChannelId && (
-            <Card className="flex min-h-0 flex-1 flex-col overflow-hidden">
+            <Card className="flex min-h-0 flex-1 flex-col overflow-hidden" data-channel-panel tabIndex={-1}>
               <div className="flex items-center gap-3 border-b border-[color:var(--card-border)] px-4 py-3">
                 {selectedChannelIconSrc ? (
                   <img
@@ -1335,15 +1507,50 @@ export default function MessagesPage() {
                         role="list"
                         aria-label="Messages"
                       >
-                        {messages.map((m) => {
+                        {!sendLoading && unreadInfo.unreadCount > 0 && (
+                          <li className="sticky top-0 z-10 list-none py-1">
+                            <div
+                              className="rounded-button border border-[color:var(--accent)]/40 bg-[color:var(--accent)]/10 px-3 py-1.5 text-center text-xs font-medium text-[color:var(--text-primary)]"
+                              role="status"
+                              aria-live="polite"
+                            >
+                              {(() => {
+                                const n = unreadInfo.unreadCount
+                                const plus = unreadInfo.showPlus
+                                const since = unreadInfo.sinceLabel
+                                const countPart = plus ? `${n}+` : String(n)
+                                const noun = !plus && n === 1 ? 'message' : 'messages'
+                                const sincePart = since ? ` since ${since}` : ''
+                                return `${countPart} ${noun} unread${sincePart}`
+                              })()}
+                            </div>
+                          </li>
+                        )}
+                        {messages.map((m, i) => {
+                          const sep =
+                            unreadInfo.sepBeforeIndex === i ? (
+                              <li
+                                key={`unread-sep-${String(m.message_id)}`}
+                                className="flex w-full list-none justify-center py-1"
+                                role="separator"
+                                aria-label="Unread messages below"
+                              >
+                                <span className="rounded-full border border-[color:var(--card-border)] bg-[color:var(--card-bg)] px-3 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-[color:var(--text-muted)]">
+                                  Unread
+                                </span>
+                              </li>
+                            ) : null
+
                           if (!isUserMessageType(m.message_type)) {
                             return (
-                              <SystemMessage
-                                key={m.message_id}
-                                message={m}
-                                selectedMembers={selectedMembers}
-                                authorProfilesById={authorProfilesById}
-                              />
+                              <Fragment key={String(m.message_id)}>
+                                {sep}
+                                <SystemMessage
+                                  message={m}
+                                  selectedMembers={selectedMembers}
+                                  authorProfilesById={authorProfilesById}
+                                />
+                              </Fragment>
                             )
                           }
                           const author =
@@ -1352,22 +1559,24 @@ export default function MessagesPage() {
                             null
                           const isOwn = currentUserId && m.author_id === currentUserId
                           return (
-                            <Message
-                              key={m.message_id}
-                              message={m}
-                              author={author}
-                              isOwn={!!isOwn}
-                              channel={selectedChannel}
-                              currentUserId={currentUserId}
-                              messagesById={messagesById}
-                              deletedMessageIds={deletedMessageIds}
-                              selectedMembers={selectedMembers}
-                              authorProfilesById={authorProfilesById}
-                              onReply={handleReply}
-                              onMessagePatched={handleMessagePatched}
-                              onMessageDeleted={handleMessageDeleted}
-                              onAttachmentDisplayReady={scrollToBottomIfPinned}
-                            />
+                            <Fragment key={String(m.message_id)}>
+                              {sep}
+                              <Message
+                                message={m}
+                                author={author}
+                                isOwn={!!isOwn}
+                                channel={selectedChannel}
+                                currentUserId={currentUserId}
+                                messagesById={messagesById}
+                                deletedMessageIds={deletedMessageIds}
+                                selectedMembers={selectedMembers}
+                                authorProfilesById={authorProfilesById}
+                                onReply={handleReply}
+                                onMessagePatched={handleMessagePatched}
+                                onMessageDeleted={handleMessageDeleted}
+                                onAttachmentDisplayReady={scrollToBottomIfPinned}
+                              />
+                            </Fragment>
                           )
                         })}
                         <li ref={bottomRef} className="h-0 list-none" />
@@ -1395,6 +1604,10 @@ export default function MessagesPage() {
                       const replyId = replyingTo?.message_id ?? null
 
                       const appendDecryptedMessage = async (created) => {
+                        if (created?.message_id) {
+                          // Keep local read state in sync without an extra ack request.
+                          applyChannelAckUpdate(created.message_id)
+                        }
                         let decryptedContent = created?.content ?? null
                         try {
                           if (decryptedContent && selectedChannel?.shared_key) {
@@ -1583,12 +1796,24 @@ export default function MessagesPage() {
                         disabled={!selectedChannel || sendLoading}
                         ref={messageInputRef}
                         onKeyDown={(e) => {
+                          if (e.key === 'Escape' && !e.nativeEvent.isComposing) {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            void ackLastMessageIfUnread()
+                            return
+                          }
                           if (e.key !== 'Enter' || e.shiftKey || e.nativeEvent.isComposing) return
                           e.preventDefault()
                           e.currentTarget.form?.requestSubmit()
                         }}
                         onChange={(e) => {
                           const next = e.target.value
+                          if ((next ?? '').length === 0) {
+                            typingAckStartedRef.current = false
+                          } else if ((draft ?? '').length === 0 && next.length > 0 && !typingAckStartedRef.current) {
+                            typingAckStartedRef.current = true
+                            void ackLastMessageIfUnread()
+                          }
                           setDraft(next)
                           setSendError(null)
 
