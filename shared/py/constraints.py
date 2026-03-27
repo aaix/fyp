@@ -29,4 +29,4 @@ MAX_MESSAGES_QUERYABLE: Final[int] = 50
 ICON_MIN_SIZE: Final[int] = 512 # 512 bytes, anything smaller is probably junk
 
 ICON_MAX_UPLOAD_SIZE: Final[int] = 10 * 1000 * 1000  # 10 million bytes
-CHAT_ATTACHMENT_MAX_SIZE: Final[int] = 50 * 1000 * 100 # 50 million bytes
+CHAT_ATTACHMENT_MAX_SIZE: Final[int] = 50 * 1000 * 1000 # 50 million bytes

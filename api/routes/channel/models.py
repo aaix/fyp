@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 
 from api.utils import unwrap
 from shared.py.asset import generate_signed_get
-from shared.py.constraints import CHANNEL_MAX_NUM_MEMBERS, CHAT_ATTACHMENT_MAX_SIZE, MESSAGE_CONTENT_MAX_LENGTH
+from shared.py.constraints import CHANNEL_MAX_NUM_MEMBERS, CHAT_ATTACHMENT_MAX_SIZE, ICON_MAX_UPLOAD_SIZE, MESSAGE_CONTENT_MAX_LENGTH
 from shared.py.grpc.channel import ChannelType
 from shared.py.grpc.id import id_puuid, id_t, puuid_opt, puuid_uuid
 from shared.py.grpc.message import MessageType
@@ -110,6 +110,10 @@ class ChannelsResponse(BaseModel):
 
 class AttachmentRequestBody(BaseModel):
     content_len: Annotated[int, Field(le=CHAT_ATTACHMENT_MAX_SIZE, ge=1)]
+    content_type: str
+
+class IconRequestBody(BaseModel):
+    content_len: Annotated[int, Field(le=ICON_MAX_UPLOAD_SIZE, ge=1)]
     content_type: str
 
 class NewMessageBody(BaseModel):
