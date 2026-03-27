@@ -20,7 +20,8 @@ class BigPictureClient:
     def __init__(self, service: BigPictureService):
         address = discovery.discover_valkey()
         self.valkey_addresses = [NodeAddress(*address),]
-        self.sub_patterns = {service.join_channel, service.leave_channel}
+        self.join_channel = service.join_channel
+        self.leave_channel = service.leave_channel
         self.member_set = service.state_set
         self.ring_built = asyncio.Event()
         
@@ -33,7 +34,7 @@ class BigPictureClient:
             request_timeout=500,
             pubsub_subscriptions=GlideClusterClientConfiguration.PubSubSubscriptions(
                 channels_and_patterns={
-                    GlideClusterClientConfiguration.PubSubChannelModes.Pattern: self.sub_patterns
+                    GlideClusterClientConfiguration.PubSubChannelModes.Pattern: {self.join_channel, self.leave_channel}
                 },
                 callback=self.on_message,
                 context=None,
@@ -51,11 +52,16 @@ class BigPictureClient:
 
         data = msg.message.decode() if isinstance(msg.message, bytes) else msg.message
 
-        match msg.channel:
-            case "gateway.join":
+        channel = msg.channel.decode() if isinstance(msg.channel, bytes) else msg.channel
+
+        match channel:
+            case self.join_channel:
+                print(f"BigPictureClient({self.member_set}): member {data} joining", flush=True)
                 self.ring.add_node(data)
-            case "gateway.leave":
+            case self.leave_channel:
+                print(f"BigPictureClient({self.member_set}): member {data} leaving", flush=True)
                 self.ring.remove_node(data)
+            case _: ...
     
     async def get_node(self, key_id: UUID) -> str:
         """Get the corresponding node for a uuid"""

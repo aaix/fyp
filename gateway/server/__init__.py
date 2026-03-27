@@ -58,11 +58,12 @@ class GatewayController:
         self.__loop.create_task(self.internal_events_loop())
 
     def shutdown(self, server_future: Future[None]):
+        log("Starting shutdown")
         server_future.set_result(None)
-        self.__loop.create_task(self.shutdown_inner())
     
     @tracer.start_as_current_span("Controller.shutdown_inner")
     async def shutdown_inner(self):
+        log("Shutting down")
         await self.__gateway_big_picture_node.shutdown()
         await self.__sublisher.close()
 
