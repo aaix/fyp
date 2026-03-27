@@ -18,7 +18,7 @@ type Username = Annotated[str, AfterValidator(str_is_printable_no_whitespace_low
 type DeviceName = Annotated[str, Field(max_length=DEVICE_NAME_MAX_LENGTH, min_length=DEVICE_NAME_MIN_LENGTH)]
 
 type ChannelNameIn = Annotated[Base64Input, Field(max_length=CHANNEL_NAME_MAX_LENGTH, min_length=CHANNEL_NAME_MIN_LENGTH)]
-type ChannelNameOut = Annotated[Base64Output, Field(max_length=CHANNEL_NAME_MAX_LENGTH, min_length=CHANNEL_NAME_MIN_LENGTH)]
+type ChannelNameOut = Annotated[Base64Output, Field()]
 
 # 512 bytes is 4096 bits
 type RSA4096CiphertextIn = Annotated[Base64Input, Field(max_length=512, min_length=512)]

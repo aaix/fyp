@@ -4,6 +4,7 @@ package dataservices.channelproto;
 
 import "plib.proto";
 import "google/protobuf/field_mask.proto";
+import "google/protobuf/wrappers.proto";
 
 
 service ChannelService {
@@ -29,7 +30,7 @@ message CreateChannelRequest {
 message UpdateChannelRequest {
     plib.pUUID channel_id = 1;
     optional bytes opt_channel_name = 2;
-    optional plib.pUUID opt_channel_icon_asset_id = 3;
+    optional google.protobuf.BoolValue request_icon = 3;
     google.protobuf.FieldMask update_mask = 4;
     repeated plib.pUUID members_to_update = 5;
     optional int64 last_bucket = 6;

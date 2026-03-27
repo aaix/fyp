@@ -13,6 +13,7 @@ from api.routes.channel.system import create_system_message
 from api.types.params import ChannelAsMemberParam, UserParam
 from api.utils import ResourceNotFoundRpcHandler, unwrap
 
+from shared.py.asset import delete_asset, generate_signed_get, generate_signed_put
 from shared.py.grpc.message import MessageType
 from shared.py.intraservice import client as intraclient
 from shared.py.grpc.channel import ChannelType, add_channel_members, edit_channel, remove_channel_members
@@ -23,6 +24,7 @@ from shared.py.grpcgen import channel_pb2, internalmessage_pb2
 from shared.py.grpcgen.channel_pb2_grpc import ChannelServiceStub
 from shared.py.grpcgen.user_pb2 import TestManyRelationshipEntry
 from shared.py.grpcgen.user_pb2_grpc import UserRelationshipServiceStub
+from shared.py.types import UNSET
 
 
 
@@ -107,7 +109,8 @@ async def new_channel(s: SessionParam, body: NewChannelBody) -> ChannelResponse:
         channel_name=channel.opt_channel_name,
         channel_icon=None,
         channel_members=list(member_ids),
-        channel_type=body.channel_type
+        channel_type=body.channel_type,
+        icon_upload_url=None
     )
 
 @ChannelRouter.get("/channels")
@@ -140,22 +143,64 @@ async def patch_channel(s: SessionParam, channel: ChannelAsMemberParam, body: Ed
     channel_id = channel.channel_id
 
     channel_name = body.channel_name
+    request_icon = UNSET
+
+    if body.attachment_request:
+        if puuid_opt(channel.opt_channel_icon_asset_id):
+            # delete old icon
+            await delete_asset(public=False, bucket_id=channel.channel_id, asset_id=channel.opt_channel_icon_asset_id)
+    
+        request_icon = True
 
     rpc = await edit_channel(
         grpcchannel,
         channel_id,
-        channel_name=channel_name,
-        members=channel.channel_members
+        channel_name=channel_name or UNSET,
+        members=channel.channel_members,
+        request_icon=request_icon
     )
 
-    await intraclient.fan_out(channel.channel_id, channel.channel_members, "channel_create", lambda _user_id: internalmessage_pb2.EventChannelCreate(
-        channel_id=channel_id,
-        encrypted_channel_name=rpc.opt_channel_name,
-    ))
     
-    await create_system_message(channel, s.user_id, MessageType.SYSTEM_EDIT_CHANNEL_NAME, content=channel_name)
+    if body.channel_name:
+        await intraclient.fan_out(channel.channel_id, channel.channel_members, "channel_create", lambda _user_id: internalmessage_pb2.EventChannelCreate(
+            channel_id=channel_id,
+            encrypted_channel_name=rpc.opt_channel_name,
+        ))
+        await create_system_message(channel, s.user_id, MessageType.SYSTEM_EDIT_CHANNEL_NAME, content=channel_name)
+
+    if body.attachment_request:
+        icon_upload_url = await generate_signed_put(
+            public=False,
+            bucket_id=channel.channel_id,
+            asset_id=rpc.opt_channel_icon_asset_id,
+            mime_type="application/octet-stream",
+            size=body.attachment_request.content_len
+        )
+        await create_system_message(channel, s.user_id, MessageType.SYSTEM_EDIT_CHANNEL_ICON)
+
+        return await ChannelResponse.from_rpc(rpc, icon_upload_url)
 
     return await ChannelResponse.from_rpc(rpc)
+
+
+@ChannelRouter.put("/channel/{channel_id}/icon/complete")
+async def icon_uploaded(s: SessionParam, channel: ChannelAsMemberParam) -> None:
+
+    if not puuid_opt(channel.opt_channel_icon_asset_id):
+        return
+    
+    icon_url = await generate_signed_get(
+        public=False,
+        bucket_id=channel.channel_id,
+        asset_id=channel.opt_channel_icon_asset_id,
+    )
+
+
+    await intraclient.fan_out(channel.channel_id, channel.channel_members, "channel_create", lambda _user_id: internalmessage_pb2.EventChannelCreate(
+        channel_id=channel.channel_id,
+        icon_url=icon_url,
+    ))
+
 
 @ChannelRouter.post("/channel/{channel_id}/members")
 async def r_add_channel_members(s: SessionParam, channel: ChannelAsMemberParam, body: AddChannelMembersRequest) -> None:

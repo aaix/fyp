@@ -194,7 +194,8 @@ class GatewayClient:
         event = events.ChannelCreateEvent(
             channel_id=puuid_uuid(d.channel_id) or unwrap(),
             channel_name=d.encrypted_channel_name or None,
-            encrypted_channel_key=d.encrypted_channel_key
+            encrypted_channel_key=d.encrypted_channel_key,
+            icon_url=d.icon_url or None
         )
         await self.send_event(event)
     

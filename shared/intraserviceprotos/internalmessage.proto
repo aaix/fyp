@@ -29,7 +29,8 @@ message EventSessionCreate {
 message EventChannelCreate {
     plib.pUUID channel_id = 1;
     optional bytes encrypted_channel_name = 2;
-    bytes encrypted_channel_key = 3;
+    optional bytes encrypted_channel_key = 3;
+    optional string icon_url = 4;
 }
 
 message EventFriendshipUpdate {

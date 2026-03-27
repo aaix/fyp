@@ -24,47 +24,48 @@ _sym_db = _symbol_database.Default()
 
 from . import plib_pb2 as plib__pb2
 from google.protobuf import field_mask_pb2 as google_dot_protobuf_dot_field__mask__pb2
+from google.protobuf import wrappers_pb2 as google_dot_protobuf_dot_wrappers__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\rchannel.proto\x12\x19\x64\x61taservices.channelproto\x1a\nplib.proto\x1a google/protobuf/field_mask.proto\"\xb3\x01\n\x14\x43reateChannelRequest\x12\x14\n\x0c\x63hannel_type\x18\x01 \x01(\x05\x12\x1d\n\x10opt_channel_name\x18\x02 \x01(\x0cH\x00\x88\x01\x01\x12\x33\n\x19opt_channel_icon_asset_id\x18\x03 \x01(\x0b\x32\x0b.plib.pUUIDH\x01\x88\x01\x01\x42\x13\n\x11_opt_channel_nameB\x1c\n\x1a_opt_channel_icon_asset_id\"\xc1\x02\n\x14UpdateChannelRequest\x12\x1f\n\nchannel_id\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\x12\x1d\n\x10opt_channel_name\x18\x02 \x01(\x0cH\x00\x88\x01\x01\x12\x33\n\x19opt_channel_icon_asset_id\x18\x03 \x01(\x0b\x32\x0b.plib.pUUIDH\x01\x88\x01\x01\x12/\n\x0bupdate_mask\x18\x04 \x01(\x0b\x32\x1a.google.protobuf.FieldMask\x12&\n\x11members_to_update\x18\x05 \x03(\x0b\x32\x0b.plib.pUUID\x12\x18\n\x0blast_bucket\x18\x06 \x01(\x03H\x02\x88\x01\x01\x42\x13\n\x11_opt_channel_nameB\x1c\n\x1a_opt_channel_icon_asset_idB\x0e\n\x0c_last_bucket\"5\n\x12ReadChannelRequest\x12\x1f\n\nchannel_id\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\"7\n\x14\x44\x65leteChannelRequest\x12\x1f\n\nchannel_id\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\"\x17\n\x15\x44\x65leteChannelResponse\"\x92\x02\n\x15\x43hannelObjectResponse\x12\x1f\n\nchannel_id\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\x12\x14\n\x0c\x63hannel_type\x18\x02 \x01(\x05\x12\x15\n\rlatest_bucket\x18\x06 \x01(\x03\x12\x1d\n\x10opt_channel_name\x18\x03 \x01(\x0cH\x00\x88\x01\x01\x12$\n\x0f\x63hannel_members\x18\x04 \x03(\x0b\x32\x0b.plib.pUUID\x12\x33\n\x19opt_channel_icon_asset_id\x18\x05 \x01(\x0b\x32\x0b.plib.pUUIDH\x01\x88\x01\x01\x42\x13\n\x11_opt_channel_nameB\x1c\n\x1a_opt_channel_icon_asset_id\"6\n\x16GetUserChannelsRequest\x12\x1c\n\x07user_id\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\"X\n\x14UserChannelsResponse\x12@\n\x08\x63hannels\x18\x01 \x03(\x0b\x32..dataservices.channelproto.ChannelMemberObject\"V\n\x17\x41\x64\x64\x43hannelMemberRequest\x12\x1c\n\x07user_id\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\x12\x1d\n\x15\x65ncrypted_channel_key\x18\x02 \x01(\x0c\"\xc5\x02\n\x13\x43hannelMemberObject\x12\x1c\n\x07user_id\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\x12\x1f\n\nchannel_id\x18\x02 \x01(\x0b\x32\x0b.plib.pUUID\x12\x1d\n\x15\x65ncrypted_channel_key\x18\x03 \x01(\x0c\x12/\n\x15last_acked_message_id\x18\x04 \x01(\x0b\x32\x0b.plib.pUUIDH\x00\x88\x01\x01\x12\x1d\n\x10opt_channel_name\x18\x05 \x01(\x0cH\x01\x88\x01\x01\x12\x33\n\x19opt_channel_icon_asset_id\x18\x06 \x01(\x0b\x32\x0b.plib.pUUIDH\x02\x88\x01\x01\x42\x18\n\x16_last_acked_message_idB\x13\n\x11_opt_channel_nameB\x1c\n\x1a_opt_channel_icon_asset_id\"\xc3\x01\n\x18\x41\x64\x64\x43hannelMembersRequest\x12\x1f\n\nchannel_id\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\x12@\n\x07\x63hannel\x18\x03 \x01(\x0b\x32/.dataservices.channelproto.CreateChannelRequest\x12\x44\n\x08requests\x18\x02 \x03(\x0b\x32\x32.dataservices.channelproto.AddChannelMemberRequest\"\x1b\n\x19\x41\x64\x64\x43hannelMembersResponse\"\\\n\x1bRemoveChannelMembersRequest\x12\x1f\n\nchannel_id\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\x12\x1c\n\x07members\x18\x02 \x03(\x0b\x32\x0b.plib.pUUID\"\x1e\n\x1cRemoveChannelMembersResponse\"\xa6\x01\n\x1aUpdateChannelMemberRequest\x12\x1c\n\x07user_id\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\x12\x1f\n\nchannel_id\x18\x02 \x01(\x0b\x32\x0b.plib.pUUID\x12/\n\x15last_acked_message_id\x18\x03 \x01(\x0b\x32\x0b.plib.pUUIDH\x00\x88\x01\x01\x42\x18\n\x16_last_acked_message_id\"\x1d\n\x1bUpdateChannelMemberResponse2\xe2\x07\n\x0e\x43hannelService\x12r\n\rCreateChannel\x12/.dataservices.channelproto.CreateChannelRequest\x1a\x30.dataservices.channelproto.ChannelObjectResponse\x12n\n\x0bReadChannel\x12-.dataservices.channelproto.ReadChannelRequest\x1a\x30.dataservices.channelproto.ChannelObjectResponse\x12r\n\rUpdateChannel\x12/.dataservices.channelproto.UpdateChannelRequest\x1a\x30.dataservices.channelproto.ChannelObjectResponse\x12p\n\rDeleteChannel\x12-.dataservices.channelproto.ReadChannelRequest\x1a\x30.dataservices.channelproto.DeleteChannelResponse\x12~\n\x11\x41\x64\x64\x43hannelMembers\x12\x33.dataservices.channelproto.AddChannelMembersRequest\x1a\x34.dataservices.channelproto.AddChannelMembersResponse\x12\x87\x01\n\x14RemoveChannelMembers\x12\x36.dataservices.channelproto.RemoveChannelMembersRequest\x1a\x37.dataservices.channelproto.RemoveChannelMembersResponse\x12\x84\x01\n\x13UpdateChannelMember\x12\x35.dataservices.channelproto.UpdateChannelMemberRequest\x1a\x36.dataservices.channelproto.UpdateChannelMemberResponse\x12u\n\x0fGetUserChannels\x12\x31.dataservices.channelproto.GetUserChannelsRequest\x1a/.dataservices.channelproto.UserChannelsResponseb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\rchannel.proto\x12\x19\x64\x61taservices.channelproto\x1a\nplib.proto\x1a google/protobuf/field_mask.proto\x1a\x1egoogle/protobuf/wrappers.proto\"\xb3\x01\n\x14\x43reateChannelRequest\x12\x14\n\x0c\x63hannel_type\x18\x01 \x01(\x05\x12\x1d\n\x10opt_channel_name\x18\x02 \x01(\x0cH\x00\x88\x01\x01\x12\x33\n\x19opt_channel_icon_asset_id\x18\x03 \x01(\x0b\x32\x0b.plib.pUUIDH\x01\x88\x01\x01\x42\x13\n\x11_opt_channel_nameB\x1c\n\x1a_opt_channel_icon_asset_id\"\xb6\x02\n\x14UpdateChannelRequest\x12\x1f\n\nchannel_id\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\x12\x1d\n\x10opt_channel_name\x18\x02 \x01(\x0cH\x00\x88\x01\x01\x12\x35\n\x0crequest_icon\x18\x03 \x01(\x0b\x32\x1a.google.protobuf.BoolValueH\x01\x88\x01\x01\x12/\n\x0bupdate_mask\x18\x04 \x01(\x0b\x32\x1a.google.protobuf.FieldMask\x12&\n\x11members_to_update\x18\x05 \x03(\x0b\x32\x0b.plib.pUUID\x12\x18\n\x0blast_bucket\x18\x06 \x01(\x03H\x02\x88\x01\x01\x42\x13\n\x11_opt_channel_nameB\x0f\n\r_request_iconB\x0e\n\x0c_last_bucket\"5\n\x12ReadChannelRequest\x12\x1f\n\nchannel_id\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\"7\n\x14\x44\x65leteChannelRequest\x12\x1f\n\nchannel_id\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\"\x17\n\x15\x44\x65leteChannelResponse\"\x92\x02\n\x15\x43hannelObjectResponse\x12\x1f\n\nchannel_id\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\x12\x14\n\x0c\x63hannel_type\x18\x02 \x01(\x05\x12\x15\n\rlatest_bucket\x18\x06 \x01(\x03\x12\x1d\n\x10opt_channel_name\x18\x03 \x01(\x0cH\x00\x88\x01\x01\x12$\n\x0f\x63hannel_members\x18\x04 \x03(\x0b\x32\x0b.plib.pUUID\x12\x33\n\x19opt_channel_icon_asset_id\x18\x05 \x01(\x0b\x32\x0b.plib.pUUIDH\x01\x88\x01\x01\x42\x13\n\x11_opt_channel_nameB\x1c\n\x1a_opt_channel_icon_asset_id\"6\n\x16GetUserChannelsRequest\x12\x1c\n\x07user_id\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\"X\n\x14UserChannelsResponse\x12@\n\x08\x63hannels\x18\x01 \x03(\x0b\x32..dataservices.channelproto.ChannelMemberObject\"V\n\x17\x41\x64\x64\x43hannelMemberRequest\x12\x1c\n\x07user_id\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\x12\x1d\n\x15\x65ncrypted_channel_key\x18\x02 \x01(\x0c\"\xc5\x02\n\x13\x43hannelMemberObject\x12\x1c\n\x07user_id\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\x12\x1f\n\nchannel_id\x18\x02 \x01(\x0b\x32\x0b.plib.pUUID\x12\x1d\n\x15\x65ncrypted_channel_key\x18\x03 \x01(\x0c\x12/\n\x15last_acked_message_id\x18\x04 \x01(\x0b\x32\x0b.plib.pUUIDH\x00\x88\x01\x01\x12\x1d\n\x10opt_channel_name\x18\x05 \x01(\x0cH\x01\x88\x01\x01\x12\x33\n\x19opt_channel_icon_asset_id\x18\x06 \x01(\x0b\x32\x0b.plib.pUUIDH\x02\x88\x01\x01\x42\x18\n\x16_last_acked_message_idB\x13\n\x11_opt_channel_nameB\x1c\n\x1a_opt_channel_icon_asset_id\"\xc3\x01\n\x18\x41\x64\x64\x43hannelMembersRequest\x12\x1f\n\nchannel_id\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\x12@\n\x07\x63hannel\x18\x03 \x01(\x0b\x32/.dataservices.channelproto.CreateChannelRequest\x12\x44\n\x08requests\x18\x02 \x03(\x0b\x32\x32.dataservices.channelproto.AddChannelMemberRequest\"\x1b\n\x19\x41\x64\x64\x43hannelMembersResponse\"\\\n\x1bRemoveChannelMembersRequest\x12\x1f\n\nchannel_id\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\x12\x1c\n\x07members\x18\x02 \x03(\x0b\x32\x0b.plib.pUUID\"\x1e\n\x1cRemoveChannelMembersResponse\"\xa6\x01\n\x1aUpdateChannelMemberRequest\x12\x1c\n\x07user_id\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\x12\x1f\n\nchannel_id\x18\x02 \x01(\x0b\x32\x0b.plib.pUUID\x12/\n\x15last_acked_message_id\x18\x03 \x01(\x0b\x32\x0b.plib.pUUIDH\x00\x88\x01\x01\x42\x18\n\x16_last_acked_message_id\"\x1d\n\x1bUpdateChannelMemberResponse2\xe2\x07\n\x0e\x43hannelService\x12r\n\rCreateChannel\x12/.dataservices.channelproto.CreateChannelRequest\x1a\x30.dataservices.channelproto.ChannelObjectResponse\x12n\n\x0bReadChannel\x12-.dataservices.channelproto.ReadChannelRequest\x1a\x30.dataservices.channelproto.ChannelObjectResponse\x12r\n\rUpdateChannel\x12/.dataservices.channelproto.UpdateChannelRequest\x1a\x30.dataservices.channelproto.ChannelObjectResponse\x12p\n\rDeleteChannel\x12-.dataservices.channelproto.ReadChannelRequest\x1a\x30.dataservices.channelproto.DeleteChannelResponse\x12~\n\x11\x41\x64\x64\x43hannelMembers\x12\x33.dataservices.channelproto.AddChannelMembersRequest\x1a\x34.dataservices.channelproto.AddChannelMembersResponse\x12\x87\x01\n\x14RemoveChannelMembers\x12\x36.dataservices.channelproto.RemoveChannelMembersRequest\x1a\x37.dataservices.channelproto.RemoveChannelMembersResponse\x12\x84\x01\n\x13UpdateChannelMember\x12\x35.dataservices.channelproto.UpdateChannelMemberRequest\x1a\x36.dataservices.channelproto.UpdateChannelMemberResponse\x12u\n\x0fGetUserChannels\x12\x31.dataservices.channelproto.GetUserChannelsRequest\x1a/.dataservices.channelproto.UserChannelsResponseb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'channel_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
-  _globals['_CREATECHANNELREQUEST']._serialized_start=91
-  _globals['_CREATECHANNELREQUEST']._serialized_end=270
-  _globals['_UPDATECHANNELREQUEST']._serialized_start=273
-  _globals['_UPDATECHANNELREQUEST']._serialized_end=594
-  _globals['_READCHANNELREQUEST']._serialized_start=596
-  _globals['_READCHANNELREQUEST']._serialized_end=649
-  _globals['_DELETECHANNELREQUEST']._serialized_start=651
-  _globals['_DELETECHANNELREQUEST']._serialized_end=706
-  _globals['_DELETECHANNELRESPONSE']._serialized_start=708
-  _globals['_DELETECHANNELRESPONSE']._serialized_end=731
-  _globals['_CHANNELOBJECTRESPONSE']._serialized_start=734
-  _globals['_CHANNELOBJECTRESPONSE']._serialized_end=1008
-  _globals['_GETUSERCHANNELSREQUEST']._serialized_start=1010
-  _globals['_GETUSERCHANNELSREQUEST']._serialized_end=1064
-  _globals['_USERCHANNELSRESPONSE']._serialized_start=1066
-  _globals['_USERCHANNELSRESPONSE']._serialized_end=1154
-  _globals['_ADDCHANNELMEMBERREQUEST']._serialized_start=1156
-  _globals['_ADDCHANNELMEMBERREQUEST']._serialized_end=1242
-  _globals['_CHANNELMEMBEROBJECT']._serialized_start=1245
-  _globals['_CHANNELMEMBEROBJECT']._serialized_end=1570
-  _globals['_ADDCHANNELMEMBERSREQUEST']._serialized_start=1573
-  _globals['_ADDCHANNELMEMBERSREQUEST']._serialized_end=1768
-  _globals['_ADDCHANNELMEMBERSRESPONSE']._serialized_start=1770
-  _globals['_ADDCHANNELMEMBERSRESPONSE']._serialized_end=1797
-  _globals['_REMOVECHANNELMEMBERSREQUEST']._serialized_start=1799
-  _globals['_REMOVECHANNELMEMBERSREQUEST']._serialized_end=1891
-  _globals['_REMOVECHANNELMEMBERSRESPONSE']._serialized_start=1893
-  _globals['_REMOVECHANNELMEMBERSRESPONSE']._serialized_end=1923
-  _globals['_UPDATECHANNELMEMBERREQUEST']._serialized_start=1926
-  _globals['_UPDATECHANNELMEMBERREQUEST']._serialized_end=2092
-  _globals['_UPDATECHANNELMEMBERRESPONSE']._serialized_start=2094
-  _globals['_UPDATECHANNELMEMBERRESPONSE']._serialized_end=2123
-  _globals['_CHANNELSERVICE']._serialized_start=2126
-  _globals['_CHANNELSERVICE']._serialized_end=3120
+  _globals['_CREATECHANNELREQUEST']._serialized_start=123
+  _globals['_CREATECHANNELREQUEST']._serialized_end=302
+  _globals['_UPDATECHANNELREQUEST']._serialized_start=305
+  _globals['_UPDATECHANNELREQUEST']._serialized_end=615
+  _globals['_READCHANNELREQUEST']._serialized_start=617
+  _globals['_READCHANNELREQUEST']._serialized_end=670
+  _globals['_DELETECHANNELREQUEST']._serialized_start=672
+  _globals['_DELETECHANNELREQUEST']._serialized_end=727
+  _globals['_DELETECHANNELRESPONSE']._serialized_start=729
+  _globals['_DELETECHANNELRESPONSE']._serialized_end=752
+  _globals['_CHANNELOBJECTRESPONSE']._serialized_start=755
+  _globals['_CHANNELOBJECTRESPONSE']._serialized_end=1029
+  _globals['_GETUSERCHANNELSREQUEST']._serialized_start=1031
+  _globals['_GETUSERCHANNELSREQUEST']._serialized_end=1085
+  _globals['_USERCHANNELSRESPONSE']._serialized_start=1087
+  _globals['_USERCHANNELSRESPONSE']._serialized_end=1175
+  _globals['_ADDCHANNELMEMBERREQUEST']._serialized_start=1177
+  _globals['_ADDCHANNELMEMBERREQUEST']._serialized_end=1263
+  _globals['_CHANNELMEMBEROBJECT']._serialized_start=1266
+  _globals['_CHANNELMEMBEROBJECT']._serialized_end=1591
+  _globals['_ADDCHANNELMEMBERSREQUEST']._serialized_start=1594
+  _globals['_ADDCHANNELMEMBERSREQUEST']._serialized_end=1789
+  _globals['_ADDCHANNELMEMBERSRESPONSE']._serialized_start=1791
+  _globals['_ADDCHANNELMEMBERSRESPONSE']._serialized_end=1818
+  _globals['_REMOVECHANNELMEMBERSREQUEST']._serialized_start=1820
+  _globals['_REMOVECHANNELMEMBERSREQUEST']._serialized_end=1912
+  _globals['_REMOVECHANNELMEMBERSRESPONSE']._serialized_start=1914
+  _globals['_REMOVECHANNELMEMBERSRESPONSE']._serialized_end=1944
+  _globals['_UPDATECHANNELMEMBERREQUEST']._serialized_start=1947
+  _globals['_UPDATECHANNELMEMBERREQUEST']._serialized_end=2113
+  _globals['_UPDATECHANNELMEMBERRESPONSE']._serialized_start=2115
+  _globals['_UPDATECHANNELMEMBERRESPONSE']._serialized_end=2144
+  _globals['_CHANNELSERVICE']._serialized_start=2147
+  _globals['_CHANNELSERVICE']._serialized_end=3141
 # @@protoc_insertion_point(module_scope)

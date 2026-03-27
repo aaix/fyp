@@ -44,8 +44,11 @@ function unwrapLengthPrefixed(buffer) {
   return { version, parts }
 }
 
-/** Wire format version for channel attachments (Uint32 lengths; supports large ciphertext). */
-const SYM_ATTACHMENT_FORMAT_VERSION = 3
+/** Wire format version for channel attachments (Uint32 lengths; supports large ciphertext + optional metadata). */
+const SYM_ATTACHMENT_FORMAT_VERSION = 4
+
+/** Single-byte sentinel: "missing" optional UTF-8 field when the sibling field is present (4-part layout). */
+const SYM_ATTACHMENT_META_ABSENT = 0x00
 
 function partToU8(part) {
   if (part instanceof ArrayBuffer) return new Uint8Array(part)
@@ -161,6 +164,10 @@ export async function decryptB64Sym(encrypted_b64, key) {
  * @returns {Promise<ArrayBuffer>}
  */
 export async function decryptSym(buff, key) {
+  if (buff.byteLength < 1) {
+    throw new RangeError('Empty buff');
+  }
+
   const {parts} = unwrapLengthPrefixed(buff);
 
   const [iv, ciphertext] = parts;
@@ -176,11 +183,25 @@ export async function decryptSym(buff, key) {
   )
 }
 
+function decodeAttachmentMetaPart(part) {
+  const u8 = partToU8(part)
+  if (u8.byteLength === 1 && u8[0] === SYM_ATTACHMENT_META_ABSENT) {
+    return null
+  }
+  return new TextDecoder().decode(u8)
+}
+
 /**
- * AES-GCM encrypt for channel attachments; uses 32-bit part lengths (format v3) so payloads
- * can exceed 64KiB. Use only for attachment upload; not for message `content` blobs.
+ * AES-GCM encrypt for channel attachments; uses 32-bit part lengths (format v4) so payloads
+ * can exceed 64KiB. Optional UTF-8 metadata is length-prefixed after ciphertext:
+ * - 2 parts: iv + ciphertext only (same as v3 layout, version bumped)
+ * - 3 parts: iv + ciphertext + content-type only
+ * - 4 parts: iv + ciphertext + content-type or sentinel + file-name or sentinel
+ * Use only for attachment upload; not for message `content` blobs.
+ * @param {string | null} [content_type=null]
+ * @param {string | null} [file_name=null]
  */
-export async function encryptSymAttachment(plaintext, key) {
+export async function encryptSymAttachment(key, plaintext, content_type = null, file_name = null) {
   const iv = window.crypto.getRandomValues(new Uint8Array(16))
   const ciphertext = await window.crypto.subtle.encrypt(
     {
@@ -192,12 +213,30 @@ export async function encryptSymAttachment(plaintext, key) {
     key,
     plaintext,
   )
-  return lengthPrefixedBlobU32(SYM_ATTACHMENT_FORMAT_VERSION, [iv, ciphertext])
+  const enc = new TextEncoder()
+  const hasCt = content_type != null && String(content_type).length > 0
+  const hasFn = file_name != null && String(file_name).length > 0
+
+  const parts = [iv, ciphertext]
+  if (!hasCt && !hasFn) {
+    return lengthPrefixedBlobU32(SYM_ATTACHMENT_FORMAT_VERSION, parts)
+  }
+  if (hasCt && !hasFn) {
+    parts.push(enc.encode(content_type))
+    return lengthPrefixedBlobU32(SYM_ATTACHMENT_FORMAT_VERSION, parts)
+  }
+  if (!hasCt && hasFn) {
+    parts.push(new Uint8Array([SYM_ATTACHMENT_META_ABSENT]), enc.encode(file_name))
+    return lengthPrefixedBlobU32(SYM_ATTACHMENT_FORMAT_VERSION, parts)
+  }
+  parts.push(enc.encode(content_type), enc.encode(file_name))
+  return lengthPrefixedBlobU32(SYM_ATTACHMENT_FORMAT_VERSION, parts)
 }
 
 /**
- * Decrypt attachment ciphertext from S3. Supports format v3 (Uint32 lengths) and v1
- * (Uint16, legacy small attachments).
+ * Decrypt attachment ciphertext from S3. Supports format v4 (optional metadata), v3 (Uint32 lengths),
+ * and v1 (Uint16, legacy small attachments).
+ * @returns {Promise<{ plaintext: ArrayBuffer, contentType: string | null, fileName: string | null }>}
  */
 export async function decryptSymAttachment(buff, key) {
   if (!buff || buff.byteLength < 1) {
@@ -206,8 +245,11 @@ export async function decryptSymAttachment(buff, key) {
   const wireVersion = new DataView(buff).getUint8(0)
   if (wireVersion === SYM_ATTACHMENT_FORMAT_VERSION) {
     const { parts } = unwrapLengthPrefixedU32(buff)
+    if (parts.length < 2) {
+      throw new RangeError('Malformed encrypted attachment')
+    }
     const [iv, ciphertext] = parts
-    return await window.crypto.subtle.decrypt(
+    const plaintext = await window.crypto.subtle.decrypt(
       {
         name: 'AES-GCM',
         length: 256,
@@ -217,9 +259,36 @@ export async function decryptSymAttachment(buff, key) {
       key,
       ciphertext,
     )
+    let contentType = null
+    let fileName = null
+    if (parts.length === 3) {
+      contentType = decodeAttachmentMetaPart(parts[2])
+    } else if (parts.length === 4) {
+      contentType = decodeAttachmentMetaPart(parts[2])
+      fileName = decodeAttachmentMetaPart(parts[3])
+    } else if (parts.length > 4) {
+      throw new RangeError('Malformed encrypted attachment: too many parts')
+    }
+    return { plaintext, contentType, fileName }
+  }
+  if (wireVersion === 3) {
+    const { parts } = unwrapLengthPrefixedU32(buff)
+    const [iv, ciphertext] = parts
+    const plaintext = await window.crypto.subtle.decrypt(
+      {
+        name: 'AES-GCM',
+        length: 256,
+        iv,
+        additionalData: iv,
+      },
+      key,
+      ciphertext,
+    )
+    return { plaintext, contentType: null, fileName: null }
   }
   if (wireVersion === 1) {
-    return decryptSym(buff, key)
+    const plaintext = await decryptSym(buff, key)
+    return { plaintext, contentType: null, fileName: null }
   }
   throw new Error(`Unknown attachment crypto format (${wireVersion})`)
 }

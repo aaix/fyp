@@ -1,9 +1,7 @@
 let PUBLIC_BASE = "https://userpublic.az7.chat";
-let PRIVATE_BASE = "https://userprivate.az7.chat";
 
 if (window.location.hostname == "127.0.0.1") {
   PUBLIC_BASE = "https://userpublic.dev.az7.chat";
-  PRIVATE_BASE = "https://userprivate.dev.az7.chat";
 } else {}
 
 
@@ -51,7 +49,7 @@ export function userContentUrl(is_public, bucket, asset_id) {
   if (is_public) {
     base = PUBLIC_BASE;
   } else {
-    base = PRIVATE_BASE;
+    throw new Error("Private should be signed")
   }
   return `${base}/${bucket}/${asset_id}`
 }

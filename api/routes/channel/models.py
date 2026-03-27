@@ -56,7 +56,8 @@ class NewChannelBody(BaseModel):
     channel_members: ChannelMembers
 
 class EditChannelBody(BaseModel):
-    channel_name: ChannelNameIn
+    channel_name: ChannelNameIn | None
+    attachment_request: AttachmentRequestBody | None
 
 class AddChannelMembersRequest(BaseModel):
     members_to_add: ChannelMembers
@@ -68,16 +69,18 @@ class ChannelResponse(BaseModel):
     channel_icon: str | None
     channel_members: list[UUID]
     channel_type: int
+    icon_upload_url: str | None
 
     @classmethod
-    async def from_rpc(cls, rpc: channel_pb2.ChannelObjectResponse) -> Self:
+    async def from_rpc(cls, rpc: channel_pb2.ChannelObjectResponse, icon_upload_url: str | None = None) -> Self:
         channel_icon = await create_channel_presigned(rpc.channel_id, rpc.opt_channel_icon_asset_id)
         return cls(
             channel_id=puuid_uuid(rpc.channel_id) or unwrap(),
             channel_name=rpc.opt_channel_name,
             channel_icon=channel_icon,
             channel_members=list(puuid_uuid(m) or unwrap() for m in rpc.channel_members),
-            channel_type=rpc.channel_type
+            channel_type=rpc.channel_type,
+            icon_upload_url=icon_upload_url
         )
 
 class ChannelMemberParamOut(BaseModel):
@@ -107,6 +110,7 @@ class ChannelsResponse(BaseModel):
 
 class AttachmentRequestBody(BaseModel):
     content_len: Annotated[int, Field(le=CHAT_ATTACHMENT_MAX_SIZE, ge=1)]
+    content_type: str
 
 class NewMessageBody(BaseModel):
     message_type: MessageType

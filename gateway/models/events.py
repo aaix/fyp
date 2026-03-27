@@ -38,6 +38,7 @@ class ChannelCreateEvent(BaseEvent):
     channel_id: UUID
     channel_name: ChannelNameOut | None
     encrypted_channel_key: Base64Output | None
+    icon_url: str | None
 
 
 class UsersEvent(BaseEvent):

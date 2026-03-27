@@ -17,7 +17,7 @@ class MessageType(IntEnum):
     
     @property
     def supports_content_editing(self):
-        return self.value in (self.USER_REGULAR,)
+        return self.value in (self.USER_REGULAR, self.USER_MEDIA)
     
     def can_transition_to(self, other: Self) -> bool:
         return self.value == self.USER_MEDIA_PENDING and other.value == self.USER_MEDIA

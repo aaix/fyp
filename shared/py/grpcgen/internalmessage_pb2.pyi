@@ -36,14 +36,16 @@ class EventSessionCreate(_message.Message):
     def __init__(self, ipaddress: _Optional[int] = ...) -> None: ...
 
 class EventChannelCreate(_message.Message):
-    __slots__ = ("channel_id", "encrypted_channel_name", "encrypted_channel_key")
+    __slots__ = ("channel_id", "encrypted_channel_name", "encrypted_channel_key", "icon_url")
     CHANNEL_ID_FIELD_NUMBER: _ClassVar[int]
     ENCRYPTED_CHANNEL_NAME_FIELD_NUMBER: _ClassVar[int]
     ENCRYPTED_CHANNEL_KEY_FIELD_NUMBER: _ClassVar[int]
+    ICON_URL_FIELD_NUMBER: _ClassVar[int]
     channel_id: _plib_pb2.pUUID
     encrypted_channel_name: bytes
     encrypted_channel_key: bytes
-    def __init__(self, channel_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., encrypted_channel_name: _Optional[bytes] = ..., encrypted_channel_key: _Optional[bytes] = ...) -> None: ...
+    icon_url: str
+    def __init__(self, channel_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., encrypted_channel_name: _Optional[bytes] = ..., encrypted_channel_key: _Optional[bytes] = ..., icon_url: _Optional[str] = ...) -> None: ...
 
 class EventFriendshipUpdate(_message.Message):
     __slots__ = ("peer_id", "relationship_type")

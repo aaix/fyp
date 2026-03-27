@@ -90,8 +90,8 @@ class ChannelManager {
 
     }
 
-    async populateEncryptedChannelFields(channel, keep_key=false, shared_key) {
-        
+    async populateEncryptedChannelFields(channel, keep_key=false, shared_key = null) {
+        try {
         if (!shared_key) {
             shared_key = await this.channelGetSharedKey(channel);
         }
@@ -107,6 +107,10 @@ class ChannelManager {
                 await decryptB64Sym(channel.channel_name, shared_key)
             );
         }
+        } catch (err) {
+            console.error("Error loading channel", channel, err);
+        }
+
             
     }
 
@@ -118,11 +122,14 @@ class ChannelManager {
         }
 
         await Promise.all(res.data.channels.map(async (channel) => {
-            // modify channel in place
             await this.populateEncryptedChannelFields(channel, false);
             if (channel?.encrypted_channel_key) {
                 this.channelStore.set(channel.channel_id, { encrypted_channel_key: channel.encrypted_channel_key, shared_key: null });
             }
+
+            
+            // modify channel in place
+
         }))
 
 
@@ -181,24 +188,82 @@ class ChannelManager {
         const encrypted_channel_name = await encryptSymB64(new TextEncoder().encode(channel_name).buffer, channel.shared_key);
 
         const res = await API.PATCH(`chat/channel/${channel_id}`,{
-            channel_name: encrypted_channel_name
+            channel_name: encrypted_channel_name,
+            attachment_request: null,
         })
 
         if (res.success) {
-            const updatedChannel = {...channel, ...res.data};
-            await this.populateEncryptedChannelFields(updatedChannel, true);
-            res.data = updatedChannel;
-
-            if (updatedChannel?.encrypted_channel_key) {
-                this.channelStore.set(updatedChannel.channel_id, {
-                    encrypted_channel_key: updatedChannel.encrypted_channel_key,
-                    shared_key: updatedChannel.shared_key ?? null,
-                });
-            }
+            await this.mergeChannel(res, channel);
         }
         return res;
     }
+
+    async mergeChannel(res, channel) {
+        const updatedChannel = {...channel, ...res.data};
+        await this.populateEncryptedChannelFields(updatedChannel, true);
+        res.data = updatedChannel;
+
+        if (updatedChannel?.encrypted_channel_key) {
+            this.channelStore.set(updatedChannel.channel_id, {
+                encrypted_channel_key: updatedChannel.encrypted_channel_key,
+                shared_key: updatedChannel.shared_key ?? null,
+            });
+        }
+    }
     
+    async editChannelIcon(channel, channel_icon_bytes, content_type) {
+        const key = channel.shared_key;
+
+        if (!key) {
+            throw new Error("Missing channel key");
+        }
+
+        const ciphertext = await encryptSymAttachment(key, channel_icon_bytes, content_type, null);
+        const upload_len = ciphertext.size;
+
+        const patchRes = await API.PATCH(`chat/channel/${channel.channel_id}`, {
+            channel_name: null,
+            attachment_request: {
+                content_type: "application/octet-stream",
+                content_len: upload_len,
+            }
+        });
+
+        if (!patchRes.success) {
+            return patchRes
+        }
+
+        const uploadUrl = patchRes.data.icon_upload_url;
+
+        const uploadResp = await fetch(uploadUrl, {
+            method: "PUT",
+            body: ciphertext,
+            headers: {
+                "Content-Type": "application/octet-stream"
+            }
+        });
+
+        if (!uploadResp.ok) {
+            return {
+                success: false,
+                status_code: uploadResp.status,
+                data: null,
+                error: { message: `Upload failed (${uploadResp.status})` },
+                headers: uploadResp.headers,
+            };
+        }
+
+        const notifyRes = await API.PUT(`chat/channel/${channel.channel_id}/icon/complete`);
+
+        if (!notifyRes.success) {
+            return notifyRes;
+        }
+
+        if (patchRes.success) {
+            await this.mergeChannel(patchRes, channel);
+        }
+        return patchRes;
+    }
 }
 
 
@@ -316,17 +381,16 @@ class MessageManager {
         return res;
     }
 
-    async sendMessageAttachment(channel, attachment_arraybuff, content_type, file_name, in_reply_to = null) {
+    async sendMessageAttachment(channel, message_content, attachment_arraybuff, content_type, file_name, in_reply_to = null) {
         const key = channel.shared_key;
 
         if (!key) {
             throw new Error("Missing channel key");
         }
 
-        const plaintextContent = `${content_type};${file_name}`;
-        const content = await encryptSymB64(new TextEncoder().encode(plaintextContent).buffer, key);
+        const content = await encryptSymB64(new TextEncoder().encode(message_content).buffer, key);
 
-        const ciphertext = await encryptSymAttachment(attachment_arraybuff, key);
+        const ciphertext = await encryptSymAttachment(key, attachment_arraybuff, content_type, file_name);
         const upload_len = ciphertext.size;
 
         const createRes = await API.POST(`chat/channel/${channel.channel_id}/message`, {
@@ -377,11 +441,6 @@ class MessageManager {
 
     async sendMessage(channel, message, in_reply_to_message_id = null) {
 
-        if (message.attachment || message.attachment_type) {
-            throw new Error("Attachments not yet supported")
-        }
-
-
         const { content } = message;
 
 
@@ -428,7 +487,8 @@ class MessageManager {
 
         return await API.PATCH(`chat/channel/${channel.channel_id}/message/${message_id}`,
             {
-                content:ciphertext
+                content:ciphertext,
+                message_type: null,
             }
         );
     }

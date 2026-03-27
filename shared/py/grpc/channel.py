@@ -1,12 +1,12 @@
 from enum import IntEnum
-from typing import cast
+from typing import Literal, cast
 from collections.abc import Iterable
 
-from uuid import UUID
 from google.protobuf.field_mask_pb2 import FieldMask
+from google.protobuf.wrappers_pb2 import BoolValue
 
 from shared.py.grpc import instrument_call
-from shared.py.grpc.id import id_t, id_puuid, uuid_puuid
+from shared.py.grpc.id import id_t, id_puuid
 from shared.py.grpc.lazy import LazyGRPC
 from shared.py.grpcgen import channel_pb2
 from shared.py.grpcgen.channel_pb2_grpc import ChannelServiceStub
@@ -33,7 +33,7 @@ async def edit_channel(
     channel_id: id_t,
     *,
     channel_name: MaybeUnset[bytes | None] = UNSET,
-    icon_id: MaybeUnset[UUID | None] = UNSET,
+    request_icon: MaybeUnset[Literal[True]] = UNSET,
     latest_bucket: MaybeUnset[int] = UNSET,
     members: Iterable[pUUID] = (),
 ) -> channel_pb2.ChannelObjectResponse:
@@ -41,8 +41,6 @@ async def edit_channel(
     update_mask = []
     if channel_name is not UNSET:
         update_mask.append("opt_channel_name")
-    if icon_id is not UNSET:
-        update_mask.append("opt_channel_icon_asset_id")
     
     if latest_bucket is not UNSET:
         latest_bucket_v = latest_bucket
@@ -51,7 +49,7 @@ async def edit_channel(
 
     msg = channel_pb2.UpdateChannelRequest(
         channel_id=id_puuid(channel_id),
-        opt_channel_icon_asset_id=uuid_puuid(icon_id) if icon_id else None,
+        request_icon=BoolValue(value=request_icon) if request_icon else None,
         opt_channel_name=channel_name if channel_name else None,
         update_mask=FieldMask(paths=update_mask),
         members_to_update=members,

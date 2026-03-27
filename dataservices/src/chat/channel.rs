@@ -10,7 +10,7 @@ use futures::{StreamExt, future::join_all};
 use scylla::{statement::prepared::PreparedStatement, value::{CqlTimeuuid, MaybeUnset}};
 use tonic::{Response, Status, async_trait};
 
-use crate::{db_conn::db, errors::DSResult, helpers::{gen_timeuuid}, maybe_opt_field, maybe_opt_field_into, models::{channel::Channel, user_channel::UserChannel}, profile_statement, protos::dataservices::channel_service::{AddChannelMembersRequest, AddChannelMembersResponse, ChannelMemberObject, ChannelObjectResponse, CreateChannelRequest, DeleteChannelResponse, GetUserChannelsRequest, ReadChannelRequest, RemoveChannelMembersRequest, RemoveChannelMembersResponse, UpdateChannelMemberRequest, UpdateChannelMemberResponse, UpdateChannelRequest, UserChannelsResponse, channel_service_server::{ChannelService, ChannelServiceServer}}, req_ref, req_tuuid};
+use crate::{db_conn::db, errors::DSResult, helpers::{gen_timeuuid}, maybe_opt_field, models::{channel::Channel, user_channel::UserChannel}, profile_statement, protos::dataservices::channel_service::{AddChannelMembersRequest, AddChannelMembersResponse, ChannelMemberObject, ChannelObjectResponse, CreateChannelRequest, DeleteChannelResponse, GetUserChannelsRequest, ReadChannelRequest, RemoveChannelMembersRequest, RemoveChannelMembersResponse, UpdateChannelMemberRequest, UpdateChannelMemberResponse, UpdateChannelRequest, UserChannelsResponse, channel_service_server::{ChannelService, ChannelServiceServer}}, req_ref, req_tuuid};
 
 
 #[derive(Debug)]
@@ -122,7 +122,7 @@ impl ScyllaChannelServiceServer {
 
         let channel_id = gen_timeuuid();
         let members: HashSet<CqlTimeuuid> = HashSet::new();
-        let asset_id: Option<CqlTimeuuid> = owned.opt_channel_icon_asset_id.map(|u| u.into());
+        let asset_id: Option<CqlTimeuuid> = None;
         let latest_bucket: i64 = 0;
 
         db().await.execute_unpaged(
@@ -180,14 +180,22 @@ impl ScyllaChannelServiceServer {
         let map = owned.update_mask.ok_or(Status::invalid_argument("bad mask"))?;
 
         let channel_name = maybe_opt_field!(owned, opt_channel_name, map);
-        let channel_icon: MaybeUnset<Option<CqlTimeuuid>> = maybe_opt_field_into!(owned, opt_channel_icon_asset_id, map);
         let bucket: MaybeUnset<i64> = MaybeUnset::from_option(owned.last_bucket);
 
+
+        let icon_id: Option<CqlTimeuuid> = if let Some(request_asset) = owned.request_icon {
+            if !request_asset {
+                return Err(Status::invalid_argument("Unexpected false asset request").into());                    
+            }
+            Some(gen_timeuuid())
+        } else {
+            None
+        };
 
         db().await.execute_unpaged(
             &self.update_channel_prepared,
             (
-                &channel_name, channel_icon, bucket, channel_id,
+                &channel_name, icon_id, bucket, channel_id,
             )
         ).await?;
 
@@ -197,7 +205,7 @@ impl ScyllaChannelServiceServer {
                 &self.update_user_channel_denorm_prepared,
                 (
                     &channel_name,
-                    &channel_icon,
+                    &icon_id,
                     user_id,
                     channel_id,
                 )
