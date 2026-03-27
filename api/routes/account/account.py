@@ -182,7 +182,7 @@ async def my_account(s: SessionParam) -> AccountResponse:
         username=res.username,
         email=res.email,
 
-        assigned_gateway=gateway
+        assigned_gateway=discovery.transform_gateway_to_external(gateway)
     )
 
 

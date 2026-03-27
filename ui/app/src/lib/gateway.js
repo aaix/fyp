@@ -5,18 +5,20 @@ import { channelManager, messageManager } from "./chat";
 import { B64toUint8Array, blobToB64, hexFromBuffer } from "./utils";
 import { relationshipManager} from "./user.js"
 
-const GATEWAY_URL = "/gateway";
 
 
-export function gatewayFactory() {
+export function gatewayFactory(gatewayUrl) {
     if (window._gatewayPromise !== undefined) {
         return window._gatewayPromise;
     }
+    if (!gatewayUrl) {
+        throw new Error("Unknown gateway");
+    }
     window._gatewayPromise = new Promise((resolve) => {
-        let socket = new WebSocket(GATEWAY_URL);
+        let socket = new WebSocket(gatewayUrl);
 
         socket.addEventListener("open", () => {
-            resolve(new Gateway(socket))
+            resolve(new Gateway(socket, gatewayUrl))
         })
 
     })
@@ -131,8 +133,9 @@ class UserStore {
  * @param {WebSocket} socket - The WebSocket instance to manage
  */
 class Gateway {
-    constructor(socket) {
+    constructor(socket, gatewayUrl = DEFAULT_GATEWAY_URL) {
         this.socket = socket;
+        this.gatewayUrl = gatewayUrl;
         this.handshake_complete = false;
         this.handshake_promise = new Promise((resolve) => {this.handshake_promise_resolver = resolve});
         this.handshake_started = false;
@@ -152,7 +155,7 @@ class Gateway {
     async reconnect() {
         this.socket.close()
         await new Promise((resolve) => {
-            const socket = new WebSocket(GATEWAY_URL);
+            const socket = new WebSocket(this.gatewayUrl);
             socket.addEventListener("open", () => {
                 this.socket = socket;
                 this.handshake_complete = false;

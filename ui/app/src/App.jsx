@@ -16,6 +16,7 @@ import { getCurrentSession } from './lib/session.js'
 
 function useAuth() {
   const [isLoggedIn, setIsLoggedIn] = useState(null)
+  const [gatewayUrl, setGatewayUrl] = useState(null)
 
   useEffect(() => {
     let cancelled = false
@@ -25,10 +26,12 @@ function useAuth() {
         const session = getCurrentSession()
         const res = await session.getCurrentAccount()
         if (cancelled) return
+        setGatewayUrl(res?.data?.assigned_gateway ?? null)
         setIsLoggedIn(!!res?.success)
       } catch (e) {
         console.error(e)
         if (!cancelled) {
+          setGatewayUrl(null)
           setIsLoggedIn(false)
         }
       }
@@ -41,7 +44,7 @@ function useAuth() {
     }
   }, [])
 
-  return [isLoggedIn, () => setIsLoggedIn(true)]
+  return [isLoggedIn, gatewayUrl, () => setIsLoggedIn(true)]
 }
 
 function getTitleFromPathname(pathname) {
@@ -67,7 +70,7 @@ function getTitleFromPathname(pathname) {
 }
 
 function App() {
-  const [isLoggedIn, setLoggedIn] = useAuth()
+  const [isLoggedIn, gatewayUrl, setLoggedIn] = useAuth()
   const location = useLocation()
 
   useEffect(() => {
@@ -76,7 +79,11 @@ function App() {
     }
 
     let cancelled = false
-    gatewayFactory().then(async (gateway) => {
+    if (!gatewayUrl) {
+      return
+    }
+
+    gatewayFactory(gatewayUrl).then(async (gateway) => {
       if (cancelled) return
       await gateway.handshake()
       window.gateway = gateway
@@ -84,7 +91,7 @@ function App() {
     return () => {
       cancelled = true
     }
-  }, [isLoggedIn])
+  }, [isLoggedIn, gatewayUrl])
 
   useEffect(() => {
     if (!isLoggedIn) {

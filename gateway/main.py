@@ -38,6 +38,7 @@ async def main():
     async with serve(controller.accept_incoming, host=host, port=port):
         await server_future
     log("No longer serving")
+    await controller.shutdown_inner()
 
 
 if __name__ == "__main__":

@@ -8,7 +8,8 @@ class DiscoveryManager(SingletonMixin):
     Handles discovery of variables, secrets and services
     """
 
-    def __init__(self): ...
+    def __init__(self):
+        self._is_prod: bool | None = None
 
     def discover_valkey(self) -> tuple[str, int]:
         host, port = environ["VALKEY_URI"].split(":", 1)
@@ -20,6 +21,11 @@ class DiscoveryManager(SingletonMixin):
 
     def discover_otel(self) -> str:
         return environ["OTEL_URI"]
+    
+    def transform_gateway_to_external(self, gateway: str) -> str:
+        if self.is_prod():
+            return "/gateway"
+        return f"/gateway?g={gateway}"
 
     def find_s3_creds(self) -> tuple[str, str, str]:
         return (environ["S3_ENDPOINT_URL"], self.find_key("S3_ACCESS_KEY_ID"), self.find_key("S3_ACCESS_KEY_SECRET"))
@@ -38,4 +44,6 @@ class DiscoveryManager(SingletonMixin):
             return f.read()
 
     def is_prod(self) -> bool:
-        return environ.get("DEPLOYMENT_MODE", "dev") == "prod"
+        if self._is_prod is None:
+            self._is_prod = environ.get("DEPLOYMENT_MODE", "dev") == "prod"
+        return self._is_prod
