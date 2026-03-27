@@ -381,10 +381,12 @@ export default function MessagesPage() {
       (prev ?? []).map((row) => {
         if (String(row.message_id) !== String(payload.message_id)) return row
         const next = { ...row, last_edited: ts }
-        // Only apply fields present on the event. PATCH often omits `new_content`; sending
-        // `content: null` used to wipe decrypted `mime;fileName` and break attachment display.
+        // Only apply fields present on the event. PATCH often omits `new_content`.
         if (Object.prototype.hasOwnProperty.call(payload, 'content')) {
           next.content = payload.content
+        }
+        if (Object.prototype.hasOwnProperty.call(payload, 'additional_content')) {
+          next.additional_content = payload.additional_content
         }
         if (payload.new_message_type !== undefined && payload.new_message_type !== null) {
           next.message_type = payload.new_message_type
@@ -1726,6 +1728,7 @@ export default function MessagesPage() {
                           applyChannelAckUpdate(created.message_id)
                         }
                         let decryptedContent = created?.content ?? null
+                        let decryptedAdditionalContent = created?.additional_content ?? null
                         try {
                           if (decryptedContent && selectedChannel?.shared_key) {
                             decryptedContent = await decryptB64Sym(
@@ -1733,10 +1736,21 @@ export default function MessagesPage() {
                               selectedChannel.shared_key,
                             )
                           }
+                          if (decryptedAdditionalContent && selectedChannel?.shared_key) {
+                            decryptedAdditionalContent = await decryptB64Sym(
+                              decryptedAdditionalContent,
+                              selectedChannel.shared_key,
+                            )
+                          }
                         } catch {
                           decryptedContent = null
+                          decryptedAdditionalContent = null
                         }
-                        const newMessage = { ...created, content: decryptedContent }
+                        const newMessage = {
+                          ...created,
+                          content: decryptedContent,
+                          additional_content: decryptedAdditionalContent,
+                        }
                         setMessages((prev) => {
                           const prevList = prev ?? []
                           if (prevList.some((m) => String(m.message_id) === String(newMessage.message_id))) {

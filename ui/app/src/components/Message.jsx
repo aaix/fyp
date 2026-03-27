@@ -69,7 +69,6 @@ function decodeMessageContent(content) {
   }
 }
 
-/** Encrypted attachment metadata in message content: `mime;fileName` (pending / legacy; v4 blob metadata preferred when present). */
 function parseAttachmentContentEnvelope(raw) {
   const s = (raw ?? '').trim()
   if (!s) return { mime: '', fileName: '' }
@@ -78,35 +77,14 @@ function parseAttachmentContentEnvelope(raw) {
   return { mime: s.slice(0, i).trim(), fileName: s.slice(i + 1).trim() }
 }
 
-/** Pending: first line `mime;fileName`, optional body = caption. Complete: caption-only, or legacy single-line envelope. */
-function parseUserMediaMessageContent(raw, isUploadPending, messageType) {
+/** Media message content is caption text only; metadata comes from `additional_content`. */
+function parseUserMediaMessageContent(raw, messageType) {
   const s = (raw ?? '').trimEnd()
   if (!s) return { mime: '', fileName: '', caption: '' }
   const isMedia =
     messageType === MESSAGE_TYPE_USER_MEDIA || messageType === MESSAGE_TYPE_USER_MEDIA_PENDING
 
   if (!isMedia) return { mime: '', fileName: '', caption: s }
-
-  if (isUploadPending) {
-    const nl = s.indexOf('\n')
-    const head = nl === -1 ? s : s.slice(0, nl)
-    const caption = nl === -1 ? '' : s.slice(nl + 1)
-    const { mime, fileName } = parseAttachmentContentEnvelope(head)
-    return { mime, fileName, caption: caption.trim() }
-  }
-
-  const nl = s.indexOf('\n')
-  if (nl !== -1) {
-    const head = s.slice(0, nl)
-    const caption = s.slice(nl + 1)
-    const { mime, fileName } = parseAttachmentContentEnvelope(head)
-    return { mime, fileName, caption: caption.trim() }
-  }
-
-  const { mime, fileName } = parseAttachmentContentEnvelope(s)
-  if (mime && mime.includes('/')) {
-    return { mime, fileName, caption: '' }
-  }
   return { mime: '', fileName: '', caption: s }
 }
 
@@ -146,15 +124,19 @@ function Message({
   const parentFromList = replyToId ? messagesById?.[replyToId] : undefined
 
   const text = decodeMessageContent(message?.content)
+  const additionalText = decodeMessageContent(message?.additional_content)
   const isUploadPending = message?.message_type === MESSAGE_TYPE_USER_MEDIA_PENDING
   const isMediaMessage =
     message?.message_type === MESSAGE_TYPE_USER_MEDIA ||
     message?.message_type === MESSAGE_TYPE_USER_MEDIA_PENDING
   const mediaParsed = isMediaMessage
-    ? parseUserMediaMessageContent(text, isUploadPending, message?.message_type)
+    ? parseUserMediaMessageContent(text, message?.message_type)
     : { mime: '', fileName: '', caption: '' }
-  const contentMimeType = mediaParsed.mime
-  const attachmentFileName = mediaParsed.fileName
+  const additionalParsed = isMediaMessage
+    ? parseAttachmentContentEnvelope(additionalText)
+    : { mime: '', fileName: '' }
+  const contentMimeType = additionalParsed.mime
+  const attachmentFileName = additionalParsed.fileName
 
   const createdMs = uuidTimeToUnixMs(message?.message_id)
   const { label: timeLabel, full: fullTimeLabel } = formatMessageTimestamp(createdMs)
