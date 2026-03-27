@@ -56,22 +56,22 @@ class EventFriendshipUpdate(_message.Message):
     def __init__(self, peer_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., relationship_type: _Optional[int] = ...) -> None: ...
 
 class EventMessageCreate(_message.Message):
-    __slots__ = ("author_id", "message_id", "channel_id", "content", "message_type", "attachment_id", "in_reply_to")
+    __slots__ = ("author_id", "message_id", "channel_id", "content", "additional_content", "message_type", "in_reply_to")
     AUTHOR_ID_FIELD_NUMBER: _ClassVar[int]
     MESSAGE_ID_FIELD_NUMBER: _ClassVar[int]
     CHANNEL_ID_FIELD_NUMBER: _ClassVar[int]
     CONTENT_FIELD_NUMBER: _ClassVar[int]
+    ADDITIONAL_CONTENT_FIELD_NUMBER: _ClassVar[int]
     MESSAGE_TYPE_FIELD_NUMBER: _ClassVar[int]
-    ATTACHMENT_ID_FIELD_NUMBER: _ClassVar[int]
     IN_REPLY_TO_FIELD_NUMBER: _ClassVar[int]
     author_id: _plib_pb2.pUUID
     message_id: _plib_pb2.pUUID
     channel_id: _plib_pb2.pUUID
     content: bytes
+    additional_content: bytes
     message_type: int
-    attachment_id: _plib_pb2.pUUID
     in_reply_to: _plib_pb2.pUUID
-    def __init__(self, author_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., message_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., channel_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., content: _Optional[bytes] = ..., message_type: _Optional[int] = ..., attachment_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., in_reply_to: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ...) -> None: ...
+    def __init__(self, author_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., message_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., channel_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., content: _Optional[bytes] = ..., additional_content: _Optional[bytes] = ..., message_type: _Optional[int] = ..., in_reply_to: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ...) -> None: ...
 
 class EventMessageUpdate(_message.Message):
     __slots__ = ("message_id", "channel_id", "new_content", "new_message_type", "attachment_url")

@@ -45,6 +45,13 @@ async def r_create_message(s: SessionParam, channel: ChannelAsMemberParam, body:
 
     request_asset = body.message_type == MessageType.USER_MEDIA_PENDING or None
 
+    if not (body.attachment_request or body.content):
+        raise ApiErrExc(errors.BadRequest(
+            "a message must have either content or an attachment request",
+            api_error_code=errors.ERROR_INVALID_BODY_PARTS
+        ))
+
+
     if request_asset and body.attachment_request is None:
         raise ApiErrExc(errors.BadRequest(
             "attachment_request is mandatory with USER_MEDIA_PENDING message type",
@@ -60,7 +67,8 @@ async def r_create_message(s: SessionParam, channel: ChannelAsMemberParam, body:
         content=body.content,
         request_asset=request_asset,
         author_id=author_id,
-        in_reply_to=in_reply_to
+        in_reply_to=in_reply_to,
+        additional_content=body.additional_content
     )
 
     await set_last_acked_message_id(grpcchannel, s.user_id, channel.channel_id, message.message_id)
@@ -71,8 +79,8 @@ async def r_create_message(s: SessionParam, channel: ChannelAsMemberParam, body:
         message_type=body.message_type,
         channel_id=channel.channel_id,
         message_id=message.message_id,
-        attachment_id=message.opt_attachment_asset_id,
         in_reply_to=in_reply_to,
+        additional_content=body.additional_content,
     ))
 
     if message.bucket != channel.latest_bucket:

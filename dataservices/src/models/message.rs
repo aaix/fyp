@@ -11,6 +11,7 @@ pub struct Message {
     pub message_type: i32,
     pub opt_last_edited: Option<value::CqlTimestamp>,
     pub opt_content: Option<Vec<u8>>,
+    pub opt_additional_content: Option<Vec<u8>>,
     pub opt_attachment_asset_id: Option<value::CqlTimeuuid>,
     pub opt_in_reply_to: Option<value::CqlTimeuuid>,
 }

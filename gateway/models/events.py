@@ -56,8 +56,8 @@ class MessageCreateEvent(BaseEvent):
     channel_id: UUID
     message_id: UUID
     content: Base64Output | None
+    additional_content: Base64Output | None
     message_type: int
-    attachment_id: UUID | None
     author_id: UUID
     in_reply_to: UUID | None
 

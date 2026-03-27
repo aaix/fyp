@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 
 from api.utils import unwrap
 from shared.py.asset import generate_signed_get
-from shared.py.constraints import CHANNEL_MAX_NUM_MEMBERS, CHAT_ATTACHMENT_MAX_SIZE, ICON_MAX_UPLOAD_SIZE, MESSAGE_CONTENT_MAX_LENGTH
+from shared.py.constraints import CHANNEL_MAX_NUM_MEMBERS, CHAT_ATTACHMENT_MAX_SIZE, ICON_MAX_UPLOAD_SIZE, MESSAGE_ADDITIONAL_CONTENT_MAX_LENGTH, MESSAGE_CONTENT_MAX_LENGTH
 from shared.py.grpc.channel import ChannelType
 from shared.py.grpc.id import id_puuid, id_t, puuid_opt, puuid_uuid
 from shared.py.grpc.message import MessageType
@@ -121,7 +121,8 @@ class NewMessageBody(BaseModel):
     # we deliberately dont check this in case the message has been DELETED
     # at the same time as the message being sent
     in_reply_to: UUID | None
-    content: Annotated[Base64Input, Field(min_length=1, max_length=MESSAGE_CONTENT_MAX_LENGTH)]
+    content: None | Annotated[Base64Input, Field(min_length=1, max_length=MESSAGE_CONTENT_MAX_LENGTH)]
+    additional_content: None | Annotated[Base64Input, Field(min_length=1, max_length=MESSAGE_ADDITIONAL_CONTENT_MAX_LENGTH)]
 
     # special params IF creating an attachment
     attachment_request: AttachmentRequestBody | None
@@ -141,7 +142,8 @@ class MessageResponse(BaseModel):
             attachment_url=attachment_url,
             author_id=puuid_uuid(rpc.author_id) or unwrap(),
             in_reply_to=puuid_uuid(rpc.opt_in_reply_to),
-            asset_upload_url=asset_upload_url
+            asset_upload_url=asset_upload_url,
+            additional_content=rpc.opt_additional_content,
         )
 
 
@@ -151,6 +153,7 @@ class MessageResponse(BaseModel):
     message_type: int
     last_edited: int | None
     content: Base64Output | None
+    additional_content: Base64Output | None
     attachment_url: str | None
     author_id: UUID
     in_reply_to: UUID | None

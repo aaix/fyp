@@ -43,8 +43,8 @@ message EventMessageCreate {
     plib.pUUID message_id = 5;
     plib.pUUID channel_id = 4;
     optional bytes content = 2;
+    optional bytes additional_content = 8;
     int32 message_type = 3;
-    optional plib.pUUID attachment_id = 6;
     optional plib.pUUID in_reply_to = 7;
 }
 

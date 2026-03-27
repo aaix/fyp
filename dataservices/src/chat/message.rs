@@ -42,7 +42,8 @@ fn message_from_row(row: Message) -> MessageObject {
         opt_content: row.opt_content,
         opt_attachment_asset_id: row.opt_attachment_asset_id.map(Into::into),
         author_id: Some(row.author_id.into()),
-        opt_in_reply_to: row.opt_in_reply_to.map(Into::into)
+        opt_in_reply_to: row.opt_in_reply_to.map(Into::into),
+        opt_additional_content: row.opt_additional_content,
     }
 }
 
@@ -64,8 +65,8 @@ impl ScyllaMessageServiceServer {
         
         let create_message_prepared = db().await.prepare(
             "INSERT INTO dataservices.message \
-            (channel_id, bucket, message_id, message_type, opt_last_edited, opt_content, opt_attachment_asset_id, author_id, opt_in_reply_to)\
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
+            (channel_id, bucket, message_id, message_type, opt_last_edited, opt_content, opt_attachment_asset_id, author_id, opt_in_reply_to, opt_additional_content)\
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
         ).await?;
 
         let read_messages_prepared = db().await.prepare(
@@ -135,6 +136,7 @@ impl ScyllaMessageServiceServer {
         let message_type = inner.message_type;
         let last_edited = inner.opt_last_edited;
         let content = inner.opt_content;
+        let additional_content = inner.opt_additional_content;
 
         let attachment_asset_id: Option<CqlTimeuuid> = if let Some(request_asset) = inner.request_asset {
             if !request_asset {
@@ -160,6 +162,7 @@ impl ScyllaMessageServiceServer {
                 MaybeUnset::from_option(attachment_asset_id),
                 author_id,
                 in_reply_to,
+                &additional_content,
             )
         ).await?;
 
@@ -174,6 +177,7 @@ impl ScyllaMessageServiceServer {
             opt_attachment_asset_id: attachment_asset_id.map(Into::into),
             author_id: Some(author_id.into()),
             opt_in_reply_to: inner.opt_in_reply_to,
+            opt_additional_content: additional_content,
         }))
     }
 

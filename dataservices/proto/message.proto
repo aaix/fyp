@@ -22,6 +22,7 @@ message CreateMessageRequest {
     plib.pUUID author_id = 6;
     optional int64 opt_last_edited = 3;
     optional bytes opt_content = 4;
+    optional bytes opt_additional_content = 8;
     optional google.protobuf.BoolValue request_asset = 5;
     optional plib.pUUID opt_in_reply_to = 7;
 }
@@ -34,6 +35,7 @@ message MessageObject {
     plib.pUUID author_id = 8;
     optional int64 opt_last_edited = 5;
     optional bytes opt_content = 6;
+    optional bytes opt_additional_content = 10;
     optional plib.pUUID opt_attachment_asset_id = 7;
     optional plib.pUUID opt_in_reply_to = 9;
 }

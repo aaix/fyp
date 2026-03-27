@@ -118,6 +118,7 @@ CREATE TABLE dataservices.message (
     message_type INT,
     opt_last_edited TIMESTAMP,
     opt_content BLOB,
+    opt_additional_content BLOB,
     opt_attachment_asset_id TIMEUUID,
     opt_in_reply_to TIMEUUID,
 

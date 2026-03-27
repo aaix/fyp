@@ -206,8 +206,8 @@ class GatewayClient:
             message_id=puuid_uuid(d.message_id) or unwrap(),
             channel_id=puuid_uuid(d.channel_id) or unwrap(),
             content=d.content,
+            additional_content=d.additional_content,
             message_type=d.message_type,
-            attachment_id=puuid_uuid(d.attachment_id),
             author_id=puuid_uuid(d.author_id) or unwrap(),
             in_reply_to=puuid_uuid(d.in_reply_to),
         )

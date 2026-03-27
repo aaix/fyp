@@ -66,6 +66,7 @@ async def create_message(
     message_type: MessageType,
     last_edited:  int | None,
     content: bytes | None,
+    additional_content: bytes | None,
     request_asset: Literal[True] | None,
     author_id: id_t,
     in_reply_to: id_t | None
@@ -79,5 +80,6 @@ async def create_message(
         opt_content=content,
         request_asset=BoolValue(value=request_asset) if request_asset else None,
         author_id=id_puuid(author_id),
-        opt_in_reply_to=id_puuid(in_reply_to) if in_reply_to else None
+        opt_in_reply_to=id_puuid(in_reply_to) if in_reply_to else None,
+        opt_additional_content=additional_content,
     )))

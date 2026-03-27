@@ -308,6 +308,12 @@ class MessageManager {
 
         message.content = plaintext;
 
+        const additional_ciphertext = message.additional_content;
+        if (additional_ciphertext) {
+            const additional_plaintext = await decryptB64Sym(additional_ciphertext, key);
+            message.additional_content = additional_plaintext;
+        }
+
         return message;
 
     }
@@ -323,7 +329,7 @@ class MessageManager {
         if (!key) return;
 
         // fan out includes:
-        // channel_id, message_id, content, message_type, attachment_id, author_id, in_reply_to
+        // channel_id, message_id, content, message_type, attachment_id, author_id, in_reply_to, additional_content
         // bucket is not useful to the ui
         // last_edited is assumed null because the message was just created
         let decryptedContent = null;
@@ -331,6 +337,12 @@ class MessageManager {
             decryptedContent = await decryptB64Sym(event.content, key);
         } else if (event.content != null) {
             decryptedContent = event.content;
+        }
+        let decryptedAdditionalContent = null;
+        if (event.additional_content && messageHasCiphertext(event.message_type)) {
+            decryptedAdditionalContent = await decryptB64Sym(event.additional_content, key);
+        } else if (event.additional_content != null) {
+            decryptedAdditionalContent = event.additional_content;
         }
 
         const message = {
@@ -340,6 +352,7 @@ class MessageManager {
             message_type: event.message_type,
             last_edited: null,
             content: decryptedContent,
+            additional_content: decryptedAdditionalContent,
             attachment_url: null,
             author_id: event.author_id ?? null,
             in_reply_to: event.in_reply_to ?? null,
@@ -388,13 +401,15 @@ class MessageManager {
             throw new Error("Missing channel key");
         }
 
-        const content = await encryptSymB64(new TextEncoder().encode(message_content).buffer, key);
+        const additional_content = await encryptSymB64(new TextEncoder().encode(`${content_type};${file_name ?? ""}`).buffer, key);
+        const content = message_content ? await encryptSymB64(new TextEncoder().encode(message_content.trim()).buffer, key) : null;
 
         const ciphertext = await encryptSymAttachment(key, attachment_arraybuff, content_type, file_name);
         const upload_len = ciphertext.size;
 
         const createRes = await API.POST(`chat/channel/${channel.channel_id}/message`, {
             content: content,
+            additional_content: additional_content,
             message_type: MESSAGE_TYPE_USER_MEDIA_PENDING,
             in_reply_to: in_reply_to,
             attachment_request: {
@@ -458,6 +473,7 @@ class MessageManager {
             message_type: MESSAGE_TYPE_USER_REGULAR,
             in_reply_to: in_reply_to_message_id,
             attachment_request: null,
+            additional_content: null,
         })
     }
 
