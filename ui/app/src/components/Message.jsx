@@ -64,17 +64,36 @@ function decodeMessageContent(content) {
       return new TextDecoder().decode(content)
     }
     return String(content)
-  } catch {
+  } catch (err) { console.error(err);
     return null
   }
 }
 
 function parseAttachmentContentEnvelope(raw) {
   const s = (raw ?? '').trim()
-  if (!s) return { mime: '', fileName: '' }
-  const i = s.indexOf(';')
-  if (i === -1) return { mime: s, fileName: '' }
-  return { mime: s.slice(0, i).trim(), fileName: s.slice(i + 1).trim() }
+  if (!s) return { mime: '', fileName: '', fileSize: null }
+  const parts = s.split(';')
+  if (parts.length === 1) return { mime: parts[0].trim(), fileName: '', fileSize: null }
+  const mime = (parts[0] ?? '').trim()
+  const fileName = (parts[1] ?? '').trim()
+  const sizeRaw = (parts[2] ?? '').trim()
+  const parsed = Number.parseInt(sizeRaw, 10)
+  const fileSize = Number.isFinite(parsed) && parsed >= 0 ? parsed : null
+  return { mime, fileName, fileSize }
+}
+
+function formatAttachmentSize(bytes) {
+  if (!Number.isFinite(bytes) || bytes < 0) return ''
+  if (bytes < 1024) return `${bytes} B`
+  const units = ['KB', 'MB', 'GB', 'TB']
+  let value = bytes / 1024
+  let unitIdx = 0
+  while (value >= 1024 && unitIdx < units.length - 1) {
+    value /= 1024
+    unitIdx += 1
+  }
+  const rounded = value >= 10 ? Math.round(value) : Math.round(value * 10) / 10
+  return `${rounded} ${units[unitIdx]}`
 }
 
 /** Media message content is caption text only; metadata comes from `additional_content`. */
@@ -134,9 +153,10 @@ function Message({
     : { mime: '', fileName: '', caption: '' }
   const additionalParsed = isMediaMessage
     ? parseAttachmentContentEnvelope(additionalText)
-    : { mime: '', fileName: '' }
+    : { mime: '', fileName: '', fileSize: null }
   const contentMimeType = additionalParsed.mime
   const attachmentFileName = additionalParsed.fileName
+  const attachmentSizeLabel = formatAttachmentSize(additionalParsed.fileSize)
 
   const createdMs = uuidTimeToUnixMs(message?.message_id)
   const { label: timeLabel, full: fullTimeLabel } = formatMessageTimestamp(createdMs)
@@ -302,7 +322,7 @@ function Message({
         if (res.data?.content && channel.shared_key) {
           decrypted = await decryptB64Sym(res.data.content, channel.shared_key)
         }
-      } catch {
+      } catch (err) { console.error(err);
         decrypted = decodeMessageContent(editDraft)
       }
       onMessagePatched?.({
@@ -440,6 +460,7 @@ function Message({
                             {' '}
                             <span className="font-medium text-[color:var(--text-primary)]">
                               {attachmentFileName}
+                              {attachmentSizeLabel ? ` (${attachmentSizeLabel})` : ''}
                             </span>
                           </>
                         ) : (
@@ -455,6 +476,7 @@ function Message({
                             {' '}
                             <span className="font-medium text-[color:var(--text-primary)]">
                               {attachmentFileName}
+                              {attachmentSizeLabel ? ` (${attachmentSizeLabel})` : ''}
                             </span>
                           </>
                         ) : (
@@ -472,6 +494,7 @@ function Message({
                     sharedKey={channel?.shared_key}
                     contentMimeType={contentMimeType}
                     fileName={attachmentFileName}
+                    fileSize={additionalParsed.fileSize}
                     onDisplayReady={onAttachmentDisplayReady}
                   />
                 ) : null}

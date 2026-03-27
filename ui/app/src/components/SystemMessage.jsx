@@ -121,7 +121,7 @@ function SystemMessage({ message, selectedMembers, authorProfilesById }) {
           return u?.username ? `@${u.username}` : `@${uuidHexKey(id).slice(0, 8)}…`
         })
         if (!cancelled) queueMicrotask(() => setAddMembersFetchedLine(labels.join(', ')))
-      } catch {
+      } catch (err) { console.error(err);
         if (!cancelled) {
           const fallback = ids.map((id, i) => syncLabels[i] ?? `@${ids[i].slice(0, 8)}…`)
           queueMicrotask(() => setAddMembersFetchedLine(fallback.join(', ')))
@@ -172,7 +172,7 @@ function SystemMessage({ message, selectedMembers, authorProfilesById }) {
         if (cancelled) return
         if (u?.username) setRemovalResolvedLabel(`@${u.username}`)
         else queueMicrotask(() => setRemovalResolvedLabel(null))
-      } catch {
+      } catch (err) { console.error(err);
         if (!cancelled) queueMicrotask(() => setRemovalResolvedLabel(null))
       }
     })()

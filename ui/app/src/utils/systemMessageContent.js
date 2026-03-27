@@ -20,7 +20,7 @@ export function decodeSystemMessageContent(content) {
       return new TextDecoder().decode(content)
     }
     return String(content)
-  } catch {
+  } catch (err) { console.error(err);
     if (typeof content === 'string') return content.trim()
     return null
   }

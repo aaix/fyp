@@ -298,20 +298,30 @@ class MessageManager {
 
     async populateEncryptedMessageFields(key, message) {
 
-        if (!messageHasCiphertext(message.message_type)) {
-            return message;
+        try {
+            if (!messageHasCiphertext(message.message_type)) {
+                return message;
+            }
+
+            const ciphertext = message.content;
+            if (ciphertext != null && ciphertext !== "") {
+                const plaintext = await decryptB64Sym(ciphertext, key);
+                message.content = plaintext;
+            } else {
+                message.content = null;
+            }
+
+            const additional_ciphertext = message.additional_content;
+            if (additional_ciphertext != null && additional_ciphertext !== "") {
+                const additional_plaintext = await decryptB64Sym(additional_ciphertext, key);
+                message.additional_content = additional_plaintext;
+            } else {
+                message.additional_content = null;
+            }
+
         }
-
-        const ciphertext = message.content;
-
-        const plaintext = await decryptB64Sym(ciphertext, key);
-
-        message.content = plaintext;
-
-        const additional_ciphertext = message.additional_content;
-        if (additional_ciphertext) {
-            const additional_plaintext = await decryptB64Sym(additional_ciphertext, key);
-            message.additional_content = additional_plaintext;
+        catch (err) {
+            console.error("failed to decrypt message", message, err);
         }
 
         return message;
@@ -401,7 +411,11 @@ class MessageManager {
             throw new Error("Missing channel key");
         }
 
-        const additional_content = await encryptSymB64(new TextEncoder().encode(`${content_type};${file_name ?? ""}`).buffer, key);
+        const attachment_size = attachment_arraybuff?.byteLength ?? 0;
+        const additional_content = await encryptSymB64(
+            new TextEncoder().encode(`${content_type};${file_name ?? ""};${attachment_size}`).buffer,
+            key
+        );
         const content = message_content ? await encryptSymB64(new TextEncoder().encode(message_content.trim()).buffer, key) : null;
 
         const ciphertext = await encryptSymAttachment(key, attachment_arraybuff, content_type, file_name);

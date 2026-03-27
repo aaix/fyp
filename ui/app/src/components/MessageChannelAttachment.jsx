@@ -14,6 +14,7 @@ export default function MessageChannelAttachment({
   sharedKey,
   contentMimeType,
   fileName,
+  fileSize,
   onDisplayReady,
 }) {
   const [blobMeta, setBlobMeta] = useState({ contentType: null, fileName: null })
@@ -112,13 +113,27 @@ export default function MessageChannelAttachment({
   const isVideo = mime.startsWith('video/')
   const isVisualMedia = isImage || isVideo
   const displayName = (blobMeta.fileName ?? fileName ?? '').trim()
+  const displaySize = (() => {
+    if (!Number.isFinite(fileSize) || fileSize < 0) return ''
+    if (fileSize < 1024) return `${fileSize} B`
+    const units = ['KB', 'MB', 'GB', 'TB']
+    let value = fileSize / 1024
+    let unitIdx = 0
+    while (value >= 1024 && unitIdx < units.length - 1) {
+      value /= 1024
+      unitIdx += 1
+    }
+    const rounded = value >= 10 ? Math.round(value) : Math.round(value * 10) / 10
+    return `${rounded} ${units[unitIdx]}`
+  })()
+  const nameWithSize = displayName ? `${displayName}${displaySize ? ` (${displaySize})` : ''}` : ''
 
   if (isVisualMedia) {
     return (
       <div className="mt-2 space-y-1">
-        {displayName ? (
-          <div className="truncate text-sm font-medium text-[color:var(--text-primary)]" title={displayName}>
-            {displayName}
+        {nameWithSize ? (
+          <div className="truncate text-sm font-medium text-[color:var(--text-primary)]" title={nameWithSize}>
+            {nameWithSize}
           </div>
         ) : null}
         <div className="relative max-w-full">
@@ -127,11 +142,11 @@ export default function MessageChannelAttachment({
               type="button"
               className="block w-full max-w-full cursor-zoom-in rounded-button border border-[color:var(--card-border)] p-0 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)]"
               onClick={openLightbox}
-              aria-label={displayName ? `View ${displayName} larger` : 'View image larger'}
+              aria-label={nameWithSize ? `View ${nameWithSize} larger` : 'View image larger'}
             >
               <img
                 src={previewUrl}
-                alt={displayName || 'Attachment'}
+                alt={nameWithSize || 'Attachment'}
                 className="max-h-64 w-full object-contain"
                 onLoad={() => onDisplayReady?.()}
                 decoding="async"
@@ -154,7 +169,7 @@ export default function MessageChannelAttachment({
                   size="iconSm"
                   variant="ghost"
                   className="bg-[color:var(--card-bg)]/90 text-[color:var(--text-primary)] shadow-card backdrop-blur-sm hover:bg-[color:var(--card-bg)]"
-                  aria-label={displayName ? `Open ${displayName} fullscreen` : 'Open video fullscreen'}
+                  aria-label={nameWithSize ? `Open ${nameWithSize} fullscreen` : 'Open video fullscreen'}
                   onClick={(e) => {
                     e.stopPropagation()
                     openLightbox()
@@ -173,7 +188,7 @@ export default function MessageChannelAttachment({
           onClose={() => setLightboxOpen(false)}
           url={previewUrl}
           mime={mime}
-          title={displayName || undefined}
+          title={nameWithSize || undefined}
         />
       </div>
     )
@@ -211,9 +226,9 @@ export default function MessageChannelAttachment({
 
   return (
     <div className="mt-2 space-y-1">
-      {displayName ? (
-        <div className="truncate text-sm font-medium text-[color:var(--text-primary)]" title={displayName}>
-          {displayName}
+      {nameWithSize ? (
+        <div className="truncate text-sm font-medium text-[color:var(--text-primary)]" title={nameWithSize}>
+          {nameWithSize}
         </div>
       ) : null}
       <Button type="button" variant="text" size="sm" onClick={() => void handleDownload()} disabled={downloading}>

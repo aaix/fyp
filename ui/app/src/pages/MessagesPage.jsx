@@ -38,7 +38,7 @@ function decodeReplyPreviewContent(content) {
       return new TextDecoder().decode(content)
     }
     return String(content)
-  } catch {
+  } catch (err) { console.error(err);
     return null
   }
 }
@@ -461,7 +461,7 @@ export default function MessagesPage() {
             )
             return merged
           })
-        } catch {
+        } catch (err) { console.error(err);
           setSelectedChannel((prev) => {
             if (!prev) return prev
             const prevMembers = prev.channel_members ?? []
@@ -597,7 +597,7 @@ export default function MessagesPage() {
       if (prev?.previewUrl) {
         try {
           URL.revokeObjectURL(prev.previewUrl)
-        } catch {
+        } catch (err) { console.error(err);
           // Ignore; best-effort cleanup
         }
       }
@@ -611,7 +611,7 @@ export default function MessagesPage() {
       if (prev?.previewUrl) {
         try {
           URL.revokeObjectURL(prev.previewUrl)
-        } catch {
+        } catch (err) { console.error(err);
           // Ignore
         }
       }
@@ -775,7 +775,7 @@ export default function MessagesPage() {
           }
           return next
         })
-      } catch {
+      } catch (err) { console.error(err);
         // Best-effort fallback; keep rendering with existing data.
       } finally {
         for (const id of missingIds) {
@@ -1742,7 +1742,7 @@ export default function MessagesPage() {
                               selectedChannel.shared_key,
                             )
                           }
-                        } catch {
+                        } catch (err) { console.error(err);
                           decryptedContent = null
                           decryptedAdditionalContent = null
                         }
@@ -2236,7 +2236,7 @@ export default function MessagesPage() {
               )
               return merged
             })
-          } catch {
+          } catch (err) { console.error(err);
             // Swallow; members will appear after full reload/select
           }
         }}
