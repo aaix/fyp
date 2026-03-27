@@ -22,7 +22,8 @@ async def create_system_message(channel: channel_pb2.ChannelObjectResponse, auth
         content=content,
         request_asset=None,
         author_id=author_id,
-        in_reply_to=None
+        in_reply_to=None,
+        additional_content=None,
     )
     if not fan_out:
         return message
