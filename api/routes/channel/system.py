@@ -5,12 +5,12 @@ from shared.py.grpcgen.internalmessage_pb2 import EventMessageCreate
 from shared.py.intraservice import client as intraclient
 from shared.py.discovery import DiscoveryManager
 from shared.py.grpc.id import id_puuid, id_t
-from shared.py.grpc.lazy import LazyGRPC
+from shared.py.grpc.lazy import DataservicesLazyGRPC
 from shared.py.grpc.message import MessageType, create_message
 from shared.py.grpcgen import channel_pb2, message_pb2_grpc
 
 discovery = DiscoveryManager()
-grpcmessage = LazyGRPC(discovery.discover_dataservices(), message_pb2_grpc.MessageServiceStub)
+grpcmessage = DataservicesLazyGRPC(message_pb2_grpc.MessageServiceStub)
 
 @tracer.start_as_current_span("create_system_message")
 async def create_system_message(channel: channel_pb2.ChannelObjectResponse, author_id: id_t, message_type: MessageType, content: bytes | None = None, fan_out: bool = True):

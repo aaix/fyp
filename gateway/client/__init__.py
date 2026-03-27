@@ -29,7 +29,7 @@ from shared.py.constraints import USER_MAX_NUM_DEVICES
 from shared.py.discovery import DiscoveryManager
 from shared.py.grpc.device import create_device, get_device, read_devices
 from shared.py.grpc.id import puuid_str, puuid_uuid
-from shared.py.grpc.lazy import LazyGRPC
+from shared.py.grpc.lazy import DataservicesLazyGRPC
 from shared.py.grpc.relationship import RelationshipType
 from shared.py.grpc.user import get_bulk_users, get_user, get_user_by_username
 from shared.py.grpcgen import user_pb2_grpc
@@ -39,8 +39,8 @@ from shared.py.pydantic.user import UserSearchResponse
 
 discovery = DiscoveryManager()
 
-grpcuser = LazyGRPC(discovery.discover_dataservices(), user_pb2_grpc.UserServiceStub)
-grpcdevice = LazyGRPC(discovery.discover_dataservices(), user_pb2_grpc.UserDeviceServiceStub)
+grpcuser = DataservicesLazyGRPC(user_pb2_grpc.UserServiceStub)
+grpcdevice = DataservicesLazyGRPC(user_pb2_grpc.UserDeviceServiceStub)
 
 
 

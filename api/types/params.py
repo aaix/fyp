@@ -10,7 +10,7 @@ from api.utils import ResourceNotFoundRpcHandler, RpcErrHandler
 from shared.py.discovery import DiscoveryManager
 from shared.py.grpc.channel import get_channel
 from shared.py.grpc.id import uuid_puuid
-from shared.py.grpc.lazy import LazyGRPC
+from shared.py.grpc.lazy import DataservicesLazyGRPC
 from shared.py.grpc.message import get_message
 from shared.py.grpc.user import get_user
 
@@ -20,12 +20,12 @@ from shared.py.grpcgen import channel_pb2, channel_pb2_grpc, message_pb2, messag
 discovery = DiscoveryManager()
 
 
-grpcuser = LazyGRPC(discovery.discover_dataservices(), user_pb2_grpc.UserServiceStub)
-grpcchannel = LazyGRPC(discovery.discover_dataservices(), channel_pb2_grpc.ChannelServiceStub)
-grpcmessage = LazyGRPC(discovery.discover_dataservices(), message_pb2_grpc.MessageServiceStub)
+grpcuser = DataservicesLazyGRPC(user_pb2_grpc.UserServiceStub)
+grpcchannel = DataservicesLazyGRPC(channel_pb2_grpc.ChannelServiceStub)
+grpcmessage = DataservicesLazyGRPC(message_pb2_grpc.MessageServiceStub)
 
 
-def RichUUIDParamFactory[lazy_t: LazyGRPC, out_t](
+def RichUUIDParamFactory[lazy_t: DataservicesLazyGRPC, out_t](
     ctx: Callable[[LiteralString, UUID], RpcErrHandler],
     lazy: lazy_t,
     fetcher: Callable[[lazy_t, UUID], Coroutine[None, None, out_t]],

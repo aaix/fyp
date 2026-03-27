@@ -8,7 +8,7 @@ from api.utils import ResourceNotFoundRpcHandler, get_ip_from_request, unwrap
 
 from shared.py.intraservice import client as intraclient
 from shared.py.crypto import session as session_crypto
-from shared.py.grpc.lazy import LazyGRPC
+from shared.py.grpc.lazy import DataservicesLazyGRPC
 from shared.py.grpc.user import get_user_by_username
 from shared.py.grpcgen import user_pb2_grpc
 from shared.py.grpc.id import puuid_uuid
@@ -19,7 +19,7 @@ discovery = DiscoveryManager()
 SessionRouter = APIRouter()
 
 
-grpcuser = LazyGRPC(discovery.discover_dataservices(), user_pb2_grpc.UserServiceStub)
+grpcuser = DataservicesLazyGRPC(user_pb2_grpc.UserServiceStub)
 
 
 @SessionRouter.post("/login")

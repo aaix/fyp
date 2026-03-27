@@ -32,7 +32,7 @@ services:
     image: europe-west2-docker.pkg.dev/fyp-25coc251/az7-backend/discoverystore:latest
 
 
-  dataservices-0:
+  dataservices:
     networks:
       - shared-network
     image: europe-west2-docker.pkg.dev/fyp-25coc251/az7-backend/dataservices:latest
@@ -52,14 +52,13 @@ services:
     image: europe-west2-docker.pkg.dev/fyp-25coc251/az7-backend/gateway:latest
     environment:
         DEPLOYMENT_MODE: prod
-        DATASERVICES_URI: "dataservices-0:3114"
         OTEL_URI: "http://jaeger:4317"
         VALKEY_URI: discoverystore-0:6379
 
     depends_on:
       discoverystore-0:
         condition: service_healthy
-      dataservices-0:
+      dataservices:
         condition: service_started
     ports:
       - 8081:8081
@@ -70,7 +69,6 @@ services:
     image: europe-west2-docker.pkg.dev/fyp-25coc251/az7-backend/api:latest
     environment:
       DEPLOYMENT_MODE: prod
-      DATASERVICES_URI: "dataservices-0:3114"
       OTEL_URI: "http://jaeger:4317"
       API_SESSION_SIGNING_KEY: ${SECRET_KEY_API_SESSION_SIGN}
       API_SESSION_ENCRYPTION_KEY: ${SECRET_KEY_API_SESSION_ENCRYPT}
@@ -87,7 +85,7 @@ services:
     depends_on:
       discoverystore-0:
         condition: service_healthy
-      dataservices-0:
+      dataservices:
         condition: service_started
 
 

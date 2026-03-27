@@ -18,7 +18,7 @@ from shared.py.grpc.message import MessageType
 from shared.py.intraservice import client as intraclient
 from shared.py.grpc.channel import ChannelType, add_channel_members, edit_channel, remove_channel_members
 from shared.py.grpc.id import id_compare, puuid_opt, puuid_uuid, uuid_puuid
-from shared.py.grpc.lazy import LazyGRPC
+from shared.py.grpc.lazy import DataservicesLazyGRPC
 from shared.py.grpc.relationship import RelationshipType, test_many_relationships, test_relationship
 from shared.py.grpcgen import channel_pb2, internalmessage_pb2
 from shared.py.grpcgen.channel_pb2_grpc import ChannelServiceStub
@@ -32,8 +32,8 @@ discovery = DiscoveryManager()
 
 ChannelRouter = APIRouter()
 
-grpcrelationship = LazyGRPC(discovery.discover_dataservices(), UserRelationshipServiceStub)
-grpcchannel = LazyGRPC(discovery.discover_dataservices(), ChannelServiceStub)
+grpcrelationship = DataservicesLazyGRPC(UserRelationshipServiceStub)
+grpcchannel = DataservicesLazyGRPC(ChannelServiceStub)
 
 
 @ChannelRouter.post("/channel")
@@ -76,8 +76,8 @@ async def new_channel(s: SessionParam, body: NewChannelBody) -> ChannelResponse:
         opt_channel_name=body.channel_name,
         opt_channel_icon_asset_id=None
     )
-
-    channel = cast(channel_pb2.ChannelObjectResponse, await grpcchannel.stub.CreateChannel(channel_request))
+    stub = await grpcchannel()
+    channel = cast(channel_pb2.ChannelObjectResponse, await stub.CreateChannel(channel_request))
 
     # add the channel members
     members = await add_channel_members(
@@ -115,7 +115,8 @@ async def new_channel(s: SessionParam, body: NewChannelBody) -> ChannelResponse:
 
 @ChannelRouter.get("/channels")
 async def get_my_channels(s: SessionParam) -> ChannelsResponse:
-    res = cast(channel_pb2.UserChannelsResponse, await grpcchannel.stub.GetUserChannels(channel_pb2.GetUserChannelsRequest(
+    stub = await grpcchannel(s.user_id)
+    res = cast(channel_pb2.UserChannelsResponse, await stub.GetUserChannels(channel_pb2.GetUserChannelsRequest(
         user_id=uuid_puuid(s.user_id) or unwrap()
     )))
 

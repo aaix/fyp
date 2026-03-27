@@ -13,7 +13,7 @@ from api.types.params import ChannelAsMemberParam, MessageParam
 from shared.py import asset
 from shared.py.grpc.channel import edit_channel, edit_channel_member, set_last_acked_message_id
 from shared.py.grpc.id import id_compare, puuid_opt, uuid_puuid, id_t
-from shared.py.grpc.lazy import LazyGRPC
+from shared.py.grpc.lazy import DataservicesLazyGRPC
 from shared.py.grpc.message import MessageType, create_message, edit_message
 from shared.py.grpcgen import channel_pb2_grpc, internalmessage_pb2, message_pb2, message_pb2_grpc
 from shared.py.constraints import CHAT_ATTACHMENT_MAX_SIZE, MAX_MESSAGES_QUERYABLE
@@ -23,8 +23,8 @@ from shared.py.types import UNSET
 
 
 discovery = DiscoveryManager()
-grpcmessage = LazyGRPC(discovery.discover_dataservices(), message_pb2_grpc.MessageServiceStub)
-grpcchannel = LazyGRPC(discovery.discover_dataservices(), channel_pb2_grpc.ChannelServiceStub)
+grpcmessage = DataservicesLazyGRPC(message_pb2_grpc.MessageServiceStub)
+grpcchannel = DataservicesLazyGRPC(channel_pb2_grpc.ChannelServiceStub)
 
 MessageRouter = APIRouter()
 
@@ -152,7 +152,8 @@ async def delete_message(s: SessionParam, channel: ChannelAsMemberParam, message
             asset_id=message.opt_attachment_asset_id,
         )
 
-    cast(message_pb2.DeleteMessageResponse, await grpcmessage.stub.DeleteMessage(message_pb2.DeleteMessageRequest(
+    stub = await grpcmessage(channel.channel_id)
+    cast(message_pb2.DeleteMessageResponse, await stub.DeleteMessage(message_pb2.DeleteMessageRequest(
         channel_id=channel.channel_id,
         message_id=message.message_id,
     )))
@@ -171,7 +172,8 @@ async def get_messages(
     count: Annotated[int, Query(le=MAX_MESSAGES_QUERYABLE)] = MAX_MESSAGES_QUERYABLE
 ) -> MessagesResponse:
 
-    messages = cast(message_pb2.ReadMessagesResponse, await grpcmessage.stub.ReadMessages(message_pb2.ReadMessagesRequest(
+    stub = await grpcmessage(channel.channel_id)
+    messages = cast(message_pb2.ReadMessagesResponse, await stub.ReadMessages(message_pb2.ReadMessagesRequest(
         channel_id=channel.channel_id,
         before=uuid_puuid(before) if before else None,
         count=count,

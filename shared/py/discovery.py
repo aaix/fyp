@@ -14,9 +14,6 @@ class DiscoveryManager(SingletonMixin):
         host, port = environ["VALKEY_URI"].split(":", 1)
 
         return host, int(port)
-
-    def discover_dataservices(self) -> str:
-        return environ["DATASERVICES_URI"]
     
     def discover_mediaservices(self) -> str:
         return environ["MEDIASERVICES_URI"]

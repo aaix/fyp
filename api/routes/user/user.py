@@ -11,7 +11,7 @@ from api.utils import now, unwrap
 
 from shared.py.intraservice import client as intraclient
 from shared.py.grpc.id import id_puuid, puuid_uuid, id_t
-from shared.py.grpc.lazy import LazyGRPC
+from shared.py.grpc.lazy import DataservicesLazyGRPC
 from shared.py.grpc.relationship import PeerRelationshipManager, RelationshipType, read_relationships
 from shared.py.pydantic.pem import PEMPublicKey
 from shared.py.grpcgen import internalmessage_pb2, user_pb2, user_pb2_grpc
@@ -21,8 +21,8 @@ discovery = DiscoveryManager()
 
 UserRouter = APIRouter()
 
-grpcuser = LazyGRPC(discovery.discover_dataservices(), user_pb2_grpc.UserServiceStub)
-grpcrelationship = LazyGRPC(discovery.discover_dataservices(), user_pb2_grpc.UserRelationshipServiceStub)
+grpcuser = DataservicesLazyGRPC(user_pb2_grpc.UserServiceStub)
+grpcrelationship = DataservicesLazyGRPC(user_pb2_grpc.UserRelationshipServiceStub)
 
 async def send_friend_update(to: id_t, peer: id_t, r_type: RelationshipType | None):
     await intraclient.send_to_remote(to, "friendship_update", internalmessage_pb2.EventFriendshipUpdate(
@@ -192,10 +192,11 @@ async def unblock_user(s: SessionParam, peer: UserParam) -> None:
 
 @UserRouter.get("/search")
 async def search_users(s: SessionParam, q: UsernameSearchQuery) -> list[UserSearchResponse]:
-    q = q.replace('%','').replace('_','') # TEMP FIX before elasticsearch for listing all users
+    q = q.replace('%','').replace('_','') # TODO: TEMP FIX before elasticsearch for listing all users
     if not len(q) >= 2:
         raise ApiErrExc(errors.BadRequest("bad query"))
-    res = cast(user_pb2.BulkUserResponse, await grpcuser.stub.UsernameSearcher(user_pb2.UsernameSearch(
+    stub = await grpcuser()
+    res = cast(user_pb2.BulkUserResponse, await stub.UsernameSearcher(user_pb2.UsernameSearch(
         query=f"{q}%",
     )))
 

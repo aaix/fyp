@@ -21,10 +21,12 @@ from gateway.utils import get_current_node_ip
 
 from shared.py.discovery import DiscoveryManager
 from shared.py.grpc.id import puuid_uuid
+from shared.py.grpc.lazy import lazy_init
 from shared.py.grpc.traceparent import span_from_traceparent
 from shared.py.grpcgen.internalmessage_pb2 import IntraMessage
 from shared.py.intraservice import server as intraserver
-from shared.py.intraservice.discoverystore import GATEWAY_SERVICE
+from shared.py.intraservice.discoverystore import DATASERVICES_SERVICE, GATEWAY_SERVICE
+from shared.py.intraservice.discoverystore.client import BigPictureClientServiceFactory
 
 
 discovery = DiscoveryManager()
@@ -43,13 +45,15 @@ class GatewayController:
 
         # distributed system
         self.__address = get_current_node_ip()
-        self.__big_picture = intraserver.BigPictureNode(discovery.discover_valkey(), self.__address, GATEWAY_SERVICE)
+        self.__gateway_big_picture_node = intraserver.BigPictureNode(discovery.discover_valkey(), self.__address, GATEWAY_SERVICE)
         self.__sublisher = intraserver.Sub(self.__loop)
         self.__internal_burnt = 0
         self.__internal_fanned = 0
     
     async def start(self):
-        await self.__big_picture.valkey_connect()
+        # lazygrpc requires init
+        await lazy_init()
+        await self.__gateway_big_picture_node.valkey_connect()
         await self.__sublisher.test_bind()
         self.__loop.create_task(self.internal_events_loop())
 
@@ -59,7 +63,7 @@ class GatewayController:
     
     @tracer.start_as_current_span("Controller.shutdown_inner")
     async def shutdown_inner(self):
-        await self.__big_picture.shutdown()
+        await self.__gateway_big_picture_node.shutdown()
         await self.__sublisher.close()
 
         existing: list[Task[Any]] = []

@@ -6,28 +6,31 @@ from google.protobuf.wrappers_pb2 import BoolValue
 
 
 from shared.py.grpc.id import id_t, id_puuid
-from shared.py.grpc.lazy import LazyGRPC
+from shared.py.grpc.lazy import DataservicesLazyGRPC
 from shared.py.grpcgen import user_pb2
 from shared.py.grpcgen.user_pb2_grpc import UserServiceStub
 from shared.py.types import UNSET, MaybeUnset
 
-async def get_user(lazy: LazyGRPC[UserServiceStub], user_id: id_t) -> user_pb2.ReadUserResponse:
-    return cast(user_pb2.ReadUserResponse, await lazy.stub.ReadUser(user_pb2.ReadUserRequest(
+async def get_user(lazy: DataservicesLazyGRPC[UserServiceStub], user_id: id_t) -> user_pb2.ReadUserResponse:
+    stub = await lazy(user_id)
+    return cast(user_pb2.ReadUserResponse, await stub.ReadUser(user_pb2.ReadUserRequest(
         user_id=id_puuid(user_id)
     )))
 
-async def get_user_by_username(lazy: LazyGRPC[UserServiceStub], username: str) -> user_pb2.ReadUserResponse:
-    return cast(user_pb2.ReadUserResponse, await lazy.stub.ReadUserByUsername(user_pb2.ReadUserByUsernameRequest(
+async def get_user_by_username(lazy: DataservicesLazyGRPC[UserServiceStub], username: str) -> user_pb2.ReadUserResponse:
+    stub = await lazy()
+    return cast(user_pb2.ReadUserResponse, await stub.ReadUserByUsername(user_pb2.ReadUserByUsernameRequest(
         username=username    
     )))
 
-async def get_bulk_users(lazy: LazyGRPC[UserServiceStub], user_ids: Iterable[id_t]) -> user_pb2.BulkUserResponse:
-    return cast(user_pb2.BulkUserResponse, await lazy.stub.UserBulkReader(user_pb2.ReadUserBulkRequest(
+async def get_bulk_users(lazy: DataservicesLazyGRPC[UserServiceStub], user_ids: Iterable[id_t]) -> user_pb2.BulkUserResponse:
+    stub = await lazy()
+    return cast(user_pb2.BulkUserResponse, await stub.UserBulkReader(user_pb2.ReadUserBulkRequest(
         user_ids=(puuid for puuid in (id_puuid(u_id) for u_id in user_ids) if puuid)
     )))
 
 async def edit_user(
-    lazy: LazyGRPC[UserServiceStub],
+    lazy: DataservicesLazyGRPC[UserServiceStub],
     user_id: id_t,
     *,
     username: MaybeUnset[str] = UNSET,
@@ -41,7 +44,8 @@ async def edit_user(
         username_v = None
     
 
-    return cast(user_pb2.ReadUserResponse, await lazy.stub.UpdateUser(user_pb2.UpdateUserRequest(
+    stub = await lazy(user_id)
+    return cast(user_pb2.ReadUserResponse, await stub.UpdateUser(user_pb2.UpdateUserRequest(
         user_id=id_puuid(user_id),
         username=username_v,
         opt_make_avatar_asset_id=BoolValue(value=make_avatar) if make_avatar else None,

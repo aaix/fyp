@@ -35,7 +35,11 @@ services:
     image: az-discoverystore:latest
 
 
-  dataservices-0:
+  dataservices:
+    deploy:
+      mode: replicated
+      replicas: 2
+
     networks:
       - shared-network
     image: az-dataservices:latest
@@ -70,7 +74,6 @@ services:
       - shared-network
     image: az-api:latest
     environment:
-      DATASERVICES_URI: "dataservices-0:3114"
       OTEL_URI: "http://jaeger:4317"
       API_SESSION_SIGNING_KEY: ${SECRET_KEY_API_SESSION_SIGN}
       API_SESSION_ENCRYPTION_KEY: ${SECRET_KEY_API_SESSION_ENCRYPT}
@@ -86,27 +89,27 @@ services:
     depends_on:
       discoverystore-0:
         condition: service_healthy
-      dataservices-0:
+      dataservices:
         condition: service_started
     ports:
       - 8000:8000
   
-  gateway-0:
+  gateway:
+    deploy:
+      mode: replicated
+      replicas: 2
     networks:
       - shared-network
     image: az-gateway:latest
     environment:
-        DATASERVICES_URI: "dataservices-0:3114"
         OTEL_URI: "http://jaeger:4317"
         VALKEY_URI: discoverystore-0:6379
 
     depends_on:
       discoverystore-0:
         condition: service_healthy
-      dataservices-0:
+      dataservices:
         condition: service_started
-    ports:
-      - 8001:80
 
 
   scylla-seed:

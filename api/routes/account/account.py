@@ -21,7 +21,7 @@ from shared.py.grpc.user import edit_user, get_user, get_user_by_username
 from shared.py.intraservice.discoverystore import GATEWAY_SERVICE
 from shared.py.pydantic.pem import PEMPublicKey
 from shared.py.pydantic.common import Username
-from shared.py.grpc.lazy import LazyGRPC
+from shared.py.grpc.lazy import DataservicesLazyGRPC, LazyGRPC
 from shared.py.grpcgen import media_pb2_grpc, user_pb2_grpc
 from shared.py.grpcgen import user_pb2
 from shared.py.grpc.device import create_device, read_devices
@@ -35,8 +35,8 @@ gateway_bigpicture = BigPictureClientServiceFactory(GATEWAY_SERVICE)
 
 AccountRouter = APIRouter()
 
-grpcuser = LazyGRPC(discovery.discover_dataservices(), user_pb2_grpc.UserServiceStub)
-grpcdevice = LazyGRPC(discovery.discover_dataservices(), user_pb2_grpc.UserDeviceServiceStub)
+grpcuser = DataservicesLazyGRPC(user_pb2_grpc.UserServiceStub)
+grpcdevice = DataservicesLazyGRPC(user_pb2_grpc.UserDeviceServiceStub)
 grpcmedia = LazyGRPC(discovery.discover_mediaservices(), media_pb2_grpc.TransformerServiceStub)
 
 
@@ -50,7 +50,8 @@ async def signup(r: Request, body: SignupBody) -> SignupResponse:
         StatusCode.ALREADY_EXISTS,
         lambda: errors.BadRequest("username already exists", api_error_code=errors.ERROR_ALREADY_EXISTS)
     ):
-        res = cast(user_pb2.ReadUserResponse, await grpcuser.stub.CreateUser(user_pb2.CreateUserRequest(
+        stub = await grpcuser()
+        res = cast(user_pb2.ReadUserResponse, await stub.CreateUser(user_pb2.CreateUserRequest(
             username=body.username,
             email=body.email,
             public_key=body.account_public_key.to_bytes()
@@ -59,7 +60,8 @@ async def signup(r: Request, body: SignupBody) -> SignupResponse:
     try:
         device = await _create_device(res.user_id, body.device)
     except Exception as e:
-        cast(user_pb2.DeleteUserResponse, await grpcuser.stub.DeleteUser(user_pb2.DeleteUserRequest(
+        stub = await grpcuser(res.user_id)
+        cast(user_pb2.DeleteUserResponse, await stub.DeleteUser(user_pb2.DeleteUserRequest(
             user_id=res.user_id
         )))
         raise ApiErrExc(errors.InternalServerError("Invalid transient state encountered during transaction")) from e
@@ -144,15 +146,16 @@ async def delete_device(r: Request, s: SessionParam, device_id: UUID) -> None:
     if res.device_count <= 1:
         raise ApiErrExc(errors.BadRequest("Unable to delete a users only device", api_error_code=errors.ERROR_LIMIT_REACHED))
 
-    
-    res = cast(user_pb2.DeleteDeviceResponse, await grpcdevice.stub.DeleteDevice(user_pb2.DeleteDeviceRequest(
+    stub = await grpcdevice(s.user_id)
+    res = cast(user_pb2.DeleteDeviceResponse, await stub.DeleteDevice(user_pb2.DeleteDeviceRequest(
         user_id=uuid_puuid(s.user_id),
         device_id=uuid_puuid(device_id)
     )))
 
 @AccountRouter.patch("/device/{device_id}")
 async def patch_device(s: SessionParam, device_id: UUID, body: UpdateDeviceBody) -> DeviceResponse:
-    res = cast(user_pb2.DeviceObjectResponse, await grpcdevice.stub.UpdateDevice(user_pb2.UpdateDeviceRequest(
+    stub = await grpcdevice(s.user_id)
+    res = cast(user_pb2.DeviceObjectResponse, await stub.UpdateDevice(user_pb2.UpdateDeviceRequest(
         user_id=uuid_puuid(s.user_id),
         device_id=uuid_puuid(device_id),
         device_name=body.device_name

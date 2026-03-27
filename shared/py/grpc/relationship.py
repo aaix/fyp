@@ -7,9 +7,9 @@ from uuid import UUID
 
 
 from shared.py.grpc.id import id_t, id_puuid
-from shared.py.grpc.lazy import LazyGRPC
+from shared.py.grpc.lazy import DataservicesLazyGRPC
 from shared.py.grpcgen import user_pb2
-from shared.py.grpc.lazy import LazyGRPC
+from shared.py.grpc.lazy import DataservicesLazyGRPC
 from shared.py.grpcgen.user_pb2_grpc import UserRelationshipServiceStub
 
 
@@ -29,53 +29,59 @@ class RelationshipType(IntEnum):
 BLOCKED_RELATIONSHIPS = (RelationshipType.CURRENT_BLOCKED_PEER, RelationshipType.PEER_BLOCKED_CURRENT)
 
 async def create_relationship(
-    lazy: LazyGRPC[UserRelationshipServiceStub],
+    lazy: DataservicesLazyGRPC[UserRelationshipServiceStub],
     user_id_a: id_t,
     user_id_b: id_t,
     a_to_b_type: RelationshipType,
     b_to_a_type: RelationshipType
 ) -> user_pb2.RelationshipObject:
-    return cast(user_pb2.RelationshipObject, await lazy.stub.CreateRelationship(user_pb2.CreateRelationshipRequest(
+    stub = await lazy(user_id_a)
+    return cast(user_pb2.RelationshipObject, await stub.CreateRelationship(user_pb2.CreateRelationshipRequest(
         user_id_a=id_puuid(user_id_a),
         user_id_b=id_puuid(user_id_b),
         a_to_b_type=a_to_b_type.value,
         b_to_a_type=b_to_a_type.value,
     )))
 
-async def read_relationship(lazy: LazyGRPC[UserRelationshipServiceStub], user_id_a: id_t, user_id_b: id_t, r_types: Iterable[RelationshipType]) -> user_pb2.ReadRelationshipResponse:
-    return cast(user_pb2.ReadRelationshipResponse, await lazy.stub.ReadRelationship(user_pb2.ReadRelationshipRequest(
+async def read_relationship(lazy: DataservicesLazyGRPC[UserRelationshipServiceStub], user_id_a: id_t, user_id_b: id_t, r_types: Iterable[RelationshipType]) -> user_pb2.ReadRelationshipResponse:
+    stub = await lazy(user_id_a)
+    return cast(user_pb2.ReadRelationshipResponse, await stub.ReadRelationship(user_pb2.ReadRelationshipRequest(
         user_id_a=id_puuid(user_id_a),
         user_id_b=id_puuid(user_id_b),
         relationship_types=(r.value for r in r_types)
     )))
 
-async def test_relationship(lazy: LazyGRPC[UserRelationshipServiceStub], user_id_a: id_t, user_id_b: id_t, relationship_type: RelationshipType) -> user_pb2.RelationshipTestResponse:
-    return cast(user_pb2.RelationshipTestResponse, await lazy.stub.TestRelationship(user_pb2.RelationshipObject(
+async def test_relationship(lazy: DataservicesLazyGRPC[UserRelationshipServiceStub], user_id_a: id_t, user_id_b: id_t, relationship_type: RelationshipType) -> user_pb2.RelationshipTestResponse:
+    stub = await lazy(user_id_a)
+    return cast(user_pb2.RelationshipTestResponse, await stub.TestRelationship(user_pb2.RelationshipObject(
         user_id_a=id_puuid(user_id_a),
         user_id_b=id_puuid(user_id_b),
         relationship_type=relationship_type.value
     )))
 
-async def test_many_relationships(lazy: LazyGRPC[UserRelationshipServiceStub], user_id_a: id_t, tests: Iterable[user_pb2.TestManyRelationshipEntry]) -> user_pb2.TestManyRelationshipsResponse:
-    return cast(user_pb2.TestManyRelationshipsResponse, await lazy.stub.TestManyRelationships(user_pb2.TestManyRelationshipsRequest(
+async def test_many_relationships(lazy: DataservicesLazyGRPC[UserRelationshipServiceStub], user_id_a: id_t, tests: Iterable[user_pb2.TestManyRelationshipEntry]) -> user_pb2.TestManyRelationshipsResponse:
+    stub = await lazy(user_id_a)
+    return cast(user_pb2.TestManyRelationshipsResponse, await stub.TestManyRelationships(user_pb2.TestManyRelationshipsRequest(
         user_id=id_puuid(user_id_a),
         tests=tests
     )))
 
-async def read_relationships(lazy: LazyGRPC[UserRelationshipServiceStub], user_id: id_t, r_type: RelationshipType) -> user_pb2.RelationshipsResponse:
-    return cast(user_pb2.RelationshipsResponse, await lazy.stub.ReadRelationships(user_pb2.ReadRelationshipsRequest(
+async def read_relationships(lazy: DataservicesLazyGRPC[UserRelationshipServiceStub], user_id: id_t, r_type: RelationshipType) -> user_pb2.RelationshipsResponse:
+    stub = await lazy(user_id)
+    return cast(user_pb2.RelationshipsResponse, await stub.ReadRelationships(user_pb2.ReadRelationshipsRequest(
         user_id=id_puuid(user_id),
         relationship_type=r_type.value,
     )))
 
 async def delete_relationship(
-    lazy: LazyGRPC[UserRelationshipServiceStub],
+    lazy: DataservicesLazyGRPC[UserRelationshipServiceStub],
     user_id_a: id_t, 
     user_id_b: id_t,
     a_to_b_type: RelationshipType,
     b_to_a_type: RelationshipType,
 ) -> user_pb2.DeleteRelationshipResponse:
-    return cast(user_pb2.DeleteRelationshipResponse, await lazy.stub.DeleteRelationship(user_pb2.CreateRelationshipRequest(
+    stub = await lazy(user_id_a)
+    return cast(user_pb2.DeleteRelationshipResponse, await stub.DeleteRelationship(user_pb2.CreateRelationshipRequest(
         user_id_a=id_puuid(user_id_a),
         user_id_b=id_puuid(user_id_b),
         a_to_b_type=a_to_b_type.value,
@@ -87,12 +93,12 @@ class PeerRelationshipManager:
     """Helper class for simplifying business logic of user relationships"""
     def __init__(
             self,
-            lazy: LazyGRPC[UserRelationshipServiceStub],
+            lazy: DataservicesLazyGRPC[UserRelationshipServiceStub],
             current_user_id: id_t,
             peer_user_id: id_t,
             fetch_on_enter: Iterable[RelationshipType] | None = None
         ):
-        self.lazy: LazyGRPC[UserRelationshipServiceStub] = lazy
+        self.lazy: DataservicesLazyGRPC[UserRelationshipServiceStub] = lazy
         self.current_id: id_t = current_user_id
         self.peer_id: id_t = peer_user_id
         self.relationships: None | Iterable[user_pb2.RelationshipObject] = None
