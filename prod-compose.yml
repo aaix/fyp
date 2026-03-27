@@ -37,7 +37,7 @@ services:
       - shared-network
     image: europe-west2-docker.pkg.dev/fyp-25coc251/az7-backend/dataservices:latest
     environment:
-      SCYLLA_URIl: 172.31.0.199
+      SCYLLA_URI: 172.31.0.199
       OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://172.31.0.254:4317
       VALKEY_URI: redis://discoverystore-0:6379
     depends_on:
