@@ -195,13 +195,13 @@ impl ScyllaChannelServiceServer {
         let bucket: MaybeUnset<i64> = MaybeUnset::from_option(owned.last_bucket);
 
 
-        let icon_id: Option<CqlTimeuuid> = if let Some(request_asset) = owned.request_icon {
+        let icon_id: MaybeUnset<CqlTimeuuid> = if let Some(request_asset) = owned.request_icon {
             if !request_asset {
                 return Err(Status::invalid_argument("Unexpected false asset request").into());                    
             }
-            Some(gen_timeuuid())
+            MaybeUnset::Set(gen_timeuuid())
         } else {
-            None
+            MaybeUnset::Unset
         };
 
         db().await.execute_unpaged(
