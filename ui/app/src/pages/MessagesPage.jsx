@@ -100,14 +100,22 @@ function formatAckedSinceForUnreadBar(ms) {
   return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
-function sortChannelsByLastAcked(list) {
+/** Unread = channel total counter − per-user acked counter (`message_counter` from API). */
+function channelListUnreadCount(ch, totalByChannelId) {
+  const total = totalByChannelId[String(ch.channel_id)] ?? 0
+  const acked = typeof ch.message_counter === 'number' ? ch.message_counter : 0
+  return Math.max(0, total - acked)
+}
+
+function sortChannelsForSidebar(list, totalByChannelId) {
   return [...list].sort((a, b) => {
-    const ta = uuidV1Ticks(a.last_acked_message_id)
-    const tb = uuidV1Ticks(b.last_acked_message_id)
-    const va = ta ?? 0n
-    const vb = tb ?? 0n
-    if (vb > va) return 1
-    if (vb < va) return -1
+    const ua = channelListUnreadCount(a, totalByChannelId)
+    const ub = channelListUnreadCount(b, totalByChannelId)
+    if (ub !== ua) return ub - ua
+    const ta = uuidV1Ticks(a.last_acked_message_id) ?? 0n
+    const tb = uuidV1Ticks(b.last_acked_message_id) ?? 0n
+    if (tb > ta) return 1
+    if (tb < ta) return -1
     return 0
   })
 }
@@ -127,6 +135,9 @@ const SCROLL_BOTTOM_THRESHOLD_PX = 120
 
 export default function MessagesPage() {
   const [channels, setChannels] = useState([])
+  /** Maps channel_id → global message counter (from `channel_counters`). */
+  const [channelTotalCounters, setChannelTotalCounters] = useState({})
+  const channelTotalCountersRef = useRef({})
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [createOpen, setCreateOpen] = useState(false)
@@ -261,15 +272,44 @@ export default function MessagesPage() {
     channelsRef.current = channels
   }, [channels])
 
-  const applyChannelAckUpdate = useCallback((messageId) => {
-    setSelectedChannel((prev) => (prev ? { ...prev, last_acked_message_id: messageId } : prev))
+  useEffect(() => {
+    channelTotalCountersRef.current = channelTotalCounters
+  }, [channelTotalCounters])
+
+  const applyChannelAckUpdate = useCallback((messageId, kind = 'send') => {
     const cid = selectedChannelIdRef.current
     if (!cid) return
+    const cidStr = String(cid)
+
+    const prevTotals = channelTotalCountersRef.current
+    const nextTotals =
+      kind === 'send'
+        ? { ...prevTotals, [cidStr]: (prevTotals[cidStr] ?? 0) + 1 }
+        : { ...prevTotals }
+
+    channelTotalCountersRef.current = nextTotals
+    setChannelTotalCounters(nextTotals)
+
+    setSelectedChannel((prev) => {
+      if (!prev) return prev
+      const total = nextTotals[cidStr] ?? 0
+      const nextMc = kind === 'send' ? (prev.message_counter ?? 0) + 1 : total
+      return { ...prev, last_acked_message_id: messageId, message_counter: nextMc }
+    })
+
     setChannels((prev) =>
-      sortChannelsByLastAcked(
+      sortChannelsForSidebar(
         (prev ?? []).map((c) =>
-          String(c.channel_id) === String(cid) ? { ...c, last_acked_message_id: messageId } : c,
+          String(c.channel_id) === cidStr
+            ? {
+                ...c,
+                last_acked_message_id: messageId,
+                message_counter:
+                  kind === 'send' ? (c.message_counter ?? 0) + 1 : nextTotals[cidStr] ?? 0,
+              }
+            : c,
         ),
+        nextTotals,
       ),
     )
   }, [])
@@ -290,7 +330,7 @@ export default function MessagesPage() {
     try {
       const res = await messageManager.ackMessageAsRead(channel.channel_id, last.message_id)
       if (!res?.success) return
-      applyChannelAckUpdate(last.message_id)
+      applyChannelAckUpdate(last.message_id, 'catchUp')
     } catch (e) {
       console.error(e)
     }
@@ -999,14 +1039,25 @@ export default function MessagesPage() {
       if (!res?.success) {
         setError(res?.error?.message ?? 'Could not load channels')
         setChannels([])
+        setChannelTotalCounters({})
+        channelTotalCountersRef.current = {}
         return
       }
-      const list = sortChannelsByLastAcked(res?.data?.channels ?? [])
+      const counters = res?.data?.channel_counters ?? []
+      const nextTotals = {}
+      for (const row of counters) {
+        if (row?.channel_id != null) nextTotals[String(row.channel_id)] = row.counter ?? 0
+      }
+      channelTotalCountersRef.current = nextTotals
+      setChannelTotalCounters(nextTotals)
+      const list = sortChannelsForSidebar(res?.data?.channels ?? [], nextTotals)
       setChannels(list)
     } catch (e) {
       console.error(e);
       setError(e?.message ?? 'Could not load channels')
       setChannels([])
+      setChannelTotalCounters({})
+      channelTotalCountersRef.current = {}
     } finally {
       setLoading(false)
     }
@@ -1027,12 +1078,13 @@ export default function MessagesPage() {
     channelManager.setOnChannelUpsert((channel, isNew) => {
       setChannels((prev) => {
         const list = prev ?? []
+        const totals = channelTotalCountersRef.current
         if (isNew) {
           if (list.some((c) => c.channel_id === channel.channel_id)) return list
-          return sortChannelsByLastAcked([...list, channel])
+          return sortChannelsForSidebar([...list, channel], totals)
         }
         const next = list.map((c) => (c.channel_id === channel.channel_id ? { ...c, ...channel } : c))
-        return sortChannelsByLastAcked(next)
+        return sortChannelsForSidebar(next, totals)
       })
 
       // If the currently open channel is updated by the gateway, ensure we
@@ -1046,6 +1098,7 @@ export default function MessagesPage() {
             shared_key: prev.shared_key,
             encrypted_channel_key: prev.encrypted_channel_key ?? channel.encrypted_channel_key,
             last_acked_message_id: channel.last_acked_message_id ?? prev.last_acked_message_id,
+            message_counter: channel.message_counter ?? prev.message_counter,
           }
         })
       }
@@ -1151,6 +1204,8 @@ export default function MessagesPage() {
               ...raw,
               last_acked_message_id:
                 raw.last_acked_message_id ?? channelFromList?.last_acked_message_id ?? null,
+              message_counter:
+                raw.message_counter ?? channelFromList?.message_counter ?? 0,
             }
           : null
         setSelectedChannel(channel)
@@ -1228,18 +1283,23 @@ export default function MessagesPage() {
                 ...updated,
                 shared_key: prev.shared_key ?? updated.shared_key,
                 last_acked_message_id: updated.last_acked_message_id ?? prev.last_acked_message_id,
+                message_counter: updated.message_counter ?? prev.message_counter,
               }
             : prev,
         )
         setChannels((prev) =>
-          (prev ?? []).map((ch) =>
-            String(ch.channel_id) === String(cid)
-              ? {
-                  ...ch,
-                  ...updated,
-                  last_acked_message_id: updated.last_acked_message_id ?? ch.last_acked_message_id,
-                }
-              : ch,
+          sortChannelsForSidebar(
+            (prev ?? []).map((ch) =>
+              String(ch.channel_id) === String(cid)
+                ? {
+                    ...ch,
+                    ...updated,
+                    last_acked_message_id: updated.last_acked_message_id ?? ch.last_acked_message_id,
+                    message_counter: updated.message_counter ?? ch.message_counter,
+                  }
+                : ch,
+            ),
+            channelTotalCountersRef.current,
           ),
         )
       }
@@ -1273,17 +1333,22 @@ export default function MessagesPage() {
               ...updated,
               shared_key: updated.shared_key ?? prev.shared_key,
               last_acked_message_id: updated.last_acked_message_id ?? prev.last_acked_message_id,
+              message_counter: updated.message_counter ?? prev.message_counter,
             }
           : updated,
       )
       setChannels((prev) =>
-        (prev ?? []).map((ch) =>
-          ch.channel_id === updated.channel_id
-            ? {
-                ...updated,
-                last_acked_message_id: updated.last_acked_message_id ?? ch.last_acked_message_id,
-              }
-            : ch,
+        sortChannelsForSidebar(
+          (prev ?? []).map((ch) =>
+            ch.channel_id === updated.channel_id
+              ? {
+                  ...updated,
+                  last_acked_message_id: updated.last_acked_message_id ?? ch.last_acked_message_id,
+                  message_counter: updated.message_counter ?? ch.message_counter,
+                }
+              : ch,
+          ),
+          channelTotalCountersRef.current,
         ),
       )
       setEditingName(false)
@@ -1309,6 +1374,12 @@ export default function MessagesPage() {
 
       await channelManager.removeChannelMember(channelId, currentUserId)
 
+      setChannelTotalCounters((prev) => {
+        const next = { ...prev }
+        delete next[String(channelId)]
+        channelTotalCountersRef.current = next
+        return next
+      })
       setChannels((prev) => (prev ?? []).filter((ch) => ch.channel_id !== channelId))
 
       if (channelId === selectedChannelId) {
@@ -1390,6 +1461,7 @@ export default function MessagesPage() {
             <ul className="space-y-2 overflow-x-hidden" role="list" aria-label="Channels">
               {channels.map((ch) => {
                 const isSelected = isDesktop && selectedChannelId === ch.channel_id
+                const sidebarUnread = channelListUnreadCount(ch, channelTotalCounters)
                 return (
                   <li key={ch.channel_id} className="min-w-0">
                     <ClickableRow
@@ -1430,6 +1502,14 @@ export default function MessagesPage() {
                               })()}
                             </div>
                           </div>
+                          {sidebarUnread > 0 ? (
+                            <span
+                              className="flex h-6 min-w-6 shrink-0 items-center justify-center rounded-full bg-[color:var(--accent)] px-1.5 text-[11px] font-semibold tabular-nums text-white"
+                              aria-label={`${sidebarUnread} unread`}
+                            >
+                              {sidebarUnread > 99 ? '99+' : sidebarUnread}
+                            </span>
+                          ) : null}
                         </div>
                       </Card>
                     </ClickableRow>
@@ -1725,7 +1805,7 @@ export default function MessagesPage() {
                       const appendDecryptedMessage = async (created) => {
                         if (created?.message_id) {
                           // Keep local read state in sync without an extra ack request.
-                          applyChannelAckUpdate(created.message_id)
+                          applyChannelAckUpdate(created.message_id, 'send')
                         }
                         let decryptedContent = created?.content ?? null
                         let decryptedAdditionalContent = created?.additional_content ?? null
