@@ -1,0 +1,1 @@
+ALTER TABLE dataservices.user_channel ADD (opt_last_acked_ctr BIGINT);

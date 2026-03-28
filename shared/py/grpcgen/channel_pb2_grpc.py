@@ -74,6 +74,16 @@ class ChannelServiceStub(object):
                 request_serializer=channel__pb2.GetUserChannelsRequest.SerializeToString,
                 response_deserializer=channel__pb2.UserChannelsResponse.FromString,
                 _registered_method=True)
+        self.GetChannelsCounter = channel.unary_unary(
+                '/dataservices.channelproto.ChannelService/GetChannelsCounter',
+                request_serializer=channel__pb2.GetChannelsCounterRequest.SerializeToString,
+                response_deserializer=channel__pb2.GetChannelsCounterResponse.FromString,
+                _registered_method=True)
+        self.IncrementChannelCounter = channel.unary_unary(
+                '/dataservices.channelproto.ChannelService/IncrementChannelCounter',
+                request_serializer=channel__pb2.IncrementChannelCounterRequest.SerializeToString,
+                response_deserializer=channel__pb2.IncrementChannelCounterResponse.FromString,
+                _registered_method=True)
 
 
 class ChannelServiceServicer(object):
@@ -127,6 +137,18 @@ class ChannelServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def GetChannelsCounter(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def IncrementChannelCounter(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_ChannelServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -169,6 +191,16 @@ def add_ChannelServiceServicer_to_server(servicer, server):
                     servicer.GetUserChannels,
                     request_deserializer=channel__pb2.GetUserChannelsRequest.FromString,
                     response_serializer=channel__pb2.UserChannelsResponse.SerializeToString,
+            ),
+            'GetChannelsCounter': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetChannelsCounter,
+                    request_deserializer=channel__pb2.GetChannelsCounterRequest.FromString,
+                    response_serializer=channel__pb2.GetChannelsCounterResponse.SerializeToString,
+            ),
+            'IncrementChannelCounter': grpc.unary_unary_rpc_method_handler(
+                    servicer.IncrementChannelCounter,
+                    request_deserializer=channel__pb2.IncrementChannelCounterRequest.FromString,
+                    response_serializer=channel__pb2.IncrementChannelCounterResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -387,6 +419,60 @@ class ChannelService(object):
             '/dataservices.channelproto.ChannelService/GetUserChannels',
             channel__pb2.GetUserChannelsRequest.SerializeToString,
             channel__pb2.UserChannelsResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetChannelsCounter(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/dataservices.channelproto.ChannelService/GetChannelsCounter',
+            channel__pb2.GetChannelsCounterRequest.SerializeToString,
+            channel__pb2.GetChannelsCounterResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def IncrementChannelCounter(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/dataservices.channelproto.ChannelService/IncrementChannelCounter',
+            channel__pb2.IncrementChannelCounterRequest.SerializeToString,
+            channel__pb2.IncrementChannelCounterResponse.FromString,
             options,
             channel_credentials,
             insecure,

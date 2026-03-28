@@ -6,6 +6,7 @@ pub mod relationship_v2;
 pub mod user_profile;
 pub mod channel;
 pub mod user_channel;
+pub mod channel_counter;
 pub mod message;
 pub mod post;
 pub mod post_comment;

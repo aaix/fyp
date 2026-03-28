@@ -11,7 +11,7 @@ from api.routes.channel.models import *
 
 from api.types.params import ChannelAsMemberParam, MessageParam
 from shared.py import asset
-from shared.py.grpc.channel import edit_channel, edit_channel_member, set_last_acked_message_id
+from shared.py.grpc.channel import edit_channel, edit_channel_member, increment_channel_counter, set_last_acked_message_id
 from shared.py.grpc.id import id_compare, puuid_opt, uuid_puuid, id_t
 from shared.py.grpc.lazy import DataservicesLazyGRPC
 from shared.py.grpc.message import MessageType, create_message, edit_message
@@ -71,7 +71,8 @@ async def r_create_message(s: SessionParam, channel: ChannelAsMemberParam, body:
         additional_content=body.additional_content
     )
 
-    await set_last_acked_message_id(grpcchannel, s.user_id, channel.channel_id, message.message_id)
+    # await set_last_acked_message_id(grpcchannel, s.user_id, channel.channel_id, message.message_id)
+    await increment_channel_counter(grpcchannel, channel.channel_id)
 
     await intraclient.fan_out(channel.channel_id, channel.channel_members, "message_create", lambda m_id: internalmessage_pb2.EventMessageCreate(
         author_id=author_id,
@@ -110,12 +111,12 @@ async def r_get_message(s: SessionParam, channel: ChannelAsMemberParam, message:
     return await MessageResponse.from_rpc(message)
 
 @MessageRouter.put("/channel/{channel_id}/message/{message_id}/ack")
-async def ack_message(s: SessionParam, channel: ChannelAsMemberParam, message_id: UUID) -> None:
+async def ack_message(s: SessionParam, channel: ChannelAsMemberParam, message_id: UUID, counter: Annotated[int, Query()]) -> None:
     """Ack a message as read"""
     if not message_id.version == 1:
         raise ApiErrExc(errors.BadRequest(f"Invalid message id {message_id} to ack"))
 
-    await set_last_acked_message_id(grpcchannel, s.user_id, channel.channel_id, message_id)
+    await set_last_acked_message_id(grpcchannel, s.user_id, channel.channel_id, message_id, counter)
     
 
 @MessageRouter.patch("/channel/{channel_id}/message/{message_id}")

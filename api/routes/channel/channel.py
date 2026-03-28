@@ -1,6 +1,7 @@
 from typing import cast
 
 import asyncio
+import itertools
 from uuid import UUID
 
 from fastapi import APIRouter
@@ -11,15 +12,15 @@ from api.routes.channel.models import *
 
 from api.routes.channel.system import create_system_message
 from api.types.params import ChannelAsMemberParam, UserParam
-from api.utils import ResourceNotFoundRpcHandler, unwrap
+from api.utils import unwrap
 
 from shared.py.asset import delete_asset, generate_signed_get, generate_signed_put
 from shared.py.grpc.message import MessageType
 from shared.py.intraservice import client as intraclient
-from shared.py.grpc.channel import ChannelType, add_channel_members, edit_channel, remove_channel_members
+from shared.py.grpc.channel import ChannelType, add_channel_members, edit_channel, remove_channel_members, scatter_gather_channel_counters
 from shared.py.grpc.id import id_compare, puuid_opt, puuid_uuid, uuid_puuid
 from shared.py.grpc.lazy import DataservicesLazyGRPC
-from shared.py.grpc.relationship import RelationshipType, test_many_relationships, test_relationship
+from shared.py.grpc.relationship import RelationshipType, test_many_relationships
 from shared.py.grpcgen import channel_pb2, internalmessage_pb2
 from shared.py.grpcgen.channel_pb2_grpc import ChannelServiceStub
 from shared.py.grpcgen.user_pb2 import TestManyRelationshipEntry
@@ -120,9 +121,18 @@ async def get_my_channels(s: SessionParam) -> ChannelsResponse:
         user_id=uuid_puuid(s.user_id) or unwrap()
     )))
 
+    channel_ids = (c.channel_id for c in res.channels)
+
+    # get counters for unread state
+    ctrs = await scatter_gather_channel_counters(grpcchannel, channel_ids)
+
     channels = await asyncio.gather(*map(ChannelMemberParamOut.from_rpc, res.channels))
+
+    flattened = itertools.chain(*map(lambda r: r.responses, ctrs))
+
     return ChannelsResponse(
-        channels=channels
+        channels=channels,
+        channel_counters=list(map(ChannelCounter.from_rpc, flattened))
     )
 
 @ChannelRouter.get("/channel/{channel_id}")

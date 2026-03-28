@@ -26,6 +26,16 @@ class ChannelManager {
         this.channelStore = new Map()
         this.onChannelUpsert = null
         this.onUserTypingCb = null
+        this.channelCounter = new Map()
+    }
+
+    onMessage(message) {
+        const channel_id = message.channel_id;
+        if (!channel_id) {
+            return
+        }
+        const current = this.channelCounter.get(channel_id);
+        this.channelCounter.set(channel_id, current ?? 0 + 1);
     }
 
     startTyping(channel_id) {
@@ -120,6 +130,10 @@ class ChannelManager {
         if (!res.success) {
             return res
         }
+
+        res.data.channel_counters.forEach((channel_counter) => {
+            this.channelCounter.set(channel_counter.channel_id, channel_counter.counter)
+        })
 
         await Promise.all(res.data.channels.map(async (channel) => {
             await this.populateEncryptedChannelFields(channel, false);
@@ -293,7 +307,8 @@ class MessageManager {
     }
 
     ackMessageAsRead(channel_id, message_id) {
-        return API.PUT(`chat/channel/${channel_id}/message/${message_id}/ack`);
+        const counter = channelManager.channelCounter.get(channel_id);
+        return API.PUT(`chat/channel/${channel_id}/message/${message_id}/ack?counter=${counter}`);
     }
 
     async populateEncryptedMessageFields(key, message) {
@@ -330,6 +345,8 @@ class MessageManager {
 
     async onMessage(event) {
         if (!event || event.intent !== 'message_create') return;
+
+        channelManager.onMessage(event);
 
         const channel = this.activeChannel;
         if (!channel) return;

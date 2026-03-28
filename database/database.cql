@@ -97,6 +97,7 @@ CREATE TABLE dataservices.user_channel (
     channel_id TIMEUUID,
 
     opt_last_acked_message_id TIMEUUID,
+    opt_last_acked_ctr BIGINT,
 
     encrypted_channel_key BLOB,
     opt_channel_name BLOB,
@@ -105,9 +106,11 @@ CREATE TABLE dataservices.user_channel (
     PRIMARY KEY (user_id, channel_id)
 );
 
--- CREATE TABLE dataservices.read_state (
-
--- );
+CREATE TABLE dataservices.channel_counter (
+    channel_id TIMEUUID,
+    message_ctr COUNTER,
+    PRIMARY KEY (channel_id)
+);
 
 
 CREATE TABLE dataservices.message (

@@ -23,6 +23,7 @@ __all__ = (
     "ChannelsResponse",
     "AddChannelMembersRequest",
     "EditChannelBody",
+    "ChannelCounter",
 
     "NewMessageBody",
     "MessageResponse",
@@ -88,6 +89,7 @@ class ChannelMemberParamOut(BaseModel):
 
     encrypted_channel_key: Base64Output
     last_acked_message_id: UUID | None
+    last_acked_ctr: int
 
     channel_name: ChannelNameOut
     channel_icon: str | None
@@ -101,11 +103,24 @@ class ChannelMemberParamOut(BaseModel):
             last_acked_message_id=puuid_uuid(rpc.last_acked_message_id),
             channel_name=rpc.opt_channel_name,
             channel_icon=channel_icon,
+            last_acked_ctr=rpc.opt_last_acked_ctr or 0
         )
 
 
 class ChannelsResponse(BaseModel):
     channels: list[ChannelMemberParamOut]
+    channel_counters: list[ChannelCounter]
+
+class ChannelCounter(BaseModel):
+    channel_id: UUID
+    counter: int
+
+    @classmethod
+    def from_rpc(cls, rpc: channel_pb2.ChannelCounterResponse) -> Self:
+        return cls(
+            channel_id=puuid_uuid(rpc.channel_id) or unwrap(),
+            counter=rpc.counter
+        )
 
 
 class AttachmentRequestBody(BaseModel):

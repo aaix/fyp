@@ -91,6 +91,7 @@ class RustModelGenerator(ModelGenerator):
         "uuid": "uuid::Uuid",
         "timestamp": "value::CqlTimestamp",
         "set<timeuuid>": "HashSet<value::CqlTimeuuid>",
+        "counter": "value::Counter",
     }
 
     @classmethod

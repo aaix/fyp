@@ -10,7 +10,7 @@ use futures::{StreamExt, future::join_all};
 use scylla::{statement::prepared::PreparedStatement, value::{CqlTimeuuid, MaybeUnset}};
 use tonic::{Response, Status, async_trait};
 
-use crate::{db_conn::db, errors::DSResult, helpers::{gen_timeuuid}, maybe_opt_field, models::{channel::Channel, user_channel::UserChannel}, profile_statement, protos::dataservices::channel_service::{AddChannelMembersRequest, AddChannelMembersResponse, ChannelMemberObject, ChannelObjectResponse, CreateChannelRequest, DeleteChannelResponse, GetUserChannelsRequest, ReadChannelRequest, RemoveChannelMembersRequest, RemoveChannelMembersResponse, UpdateChannelMemberRequest, UpdateChannelMemberResponse, UpdateChannelRequest, UserChannelsResponse, channel_service_server::{ChannelService, ChannelServiceServer}}, req_ref, req_tuuid};
+use crate::{db_conn::db, errors::DSResult, helpers::gen_timeuuid, maybe_opt_field, models::{channel::Channel, channel_counter::ChannelCounter, user_channel::UserChannel}, profile_statement, protos::dataservices::channel_service::{AddChannelMembersRequest, AddChannelMembersResponse, ChannelCounterResponse, ChannelMemberObject, ChannelObjectResponse, CreateChannelRequest, DeleteChannelResponse, GetChannelsCounterRequest, GetChannelsCounterResponse, GetUserChannelsRequest, IncrementChannelCounterRequest, IncrementChannelCounterResponse, ReadChannelRequest, RemoveChannelMembersRequest, RemoveChannelMembersResponse, UpdateChannelMemberRequest, UpdateChannelMemberResponse, UpdateChannelRequest, UserChannelsResponse, channel_service_server::{ChannelService, ChannelServiceServer}}, req_ref, req_tuuid};
 
 
 #[derive(Debug)]
@@ -30,6 +30,8 @@ pub struct ScyllaChannelServiceServer {
     delete_user_channel_prepared: PreparedStatement,
 
     get_user_channels_prepared: PreparedStatement,
+    read_channel_counter_prepared: PreparedStatement,
+    increment_channel_counter_prepared: PreparedStatement,
 }
 
 impl ScyllaChannelServiceServer {
@@ -93,7 +95,15 @@ impl ScyllaChannelServiceServer {
         ).await?;
 
         let update_user_channel_norm_prepared = db().await.prepare(
-            "UPDATE dataservices.user_channel SET opt_last_acked_message_id = ? WHERE user_id = ? AND channel_id = ?"
+            "UPDATE dataservices.user_channel SET opt_last_acked_message_id = ?, opt_last_acked_ctr = ? WHERE user_id = ? AND channel_id = ?"
+        ).await?;
+
+        let read_channel_counter_prepared = db().await.prepare(
+            "SELECT * FROM dataservices.channel_counter WHERE channel_id = ?"
+        ).await?;
+
+        let increment_channel_counter_prepared = db().await.prepare(
+            "UPDATE dataservices.channel_counter SET message_ctr = message_ctr + 1 WHERE channel_id = ?"
         ).await?;
 
         Ok(Self {
@@ -110,6 +120,8 @@ impl ScyllaChannelServiceServer {
             update_user_channel_norm_prepared,
 
             get_user_channels_prepared,
+            read_channel_counter_prepared,
+            increment_channel_counter_prepared,
         })
     }
 
@@ -314,6 +326,7 @@ impl ScyllaChannelServiceServer {
                     last_acked_message_id: channel.opt_last_acked_message_id.map(Into::into),
                     opt_channel_name: channel.opt_channel_name,
                     opt_channel_icon_asset_id: channel.opt_channel_icon_asset_id.map(Into::into),
+                    opt_last_acked_ctr: channel.opt_last_acked_ctr
                 }
             );
         }
@@ -370,12 +383,14 @@ impl ScyllaChannelServiceServer {
         let inner = request.get_ref();
 
         let last_acked_message_id: MaybeUnset<CqlTimeuuid> = MaybeUnset::from_option(inner.last_acked_message_id.map(Into::into));
+        let counter = MaybeUnset::from_option(inner.counter);
 
 
         db().await.execute_unpaged(
             &self.update_user_channel_norm_prepared,
             (
                 last_acked_message_id,
+                counter,
                 user_id,
                 channel_id,
             )
@@ -384,6 +399,59 @@ impl ScyllaChannelServiceServer {
 
         Ok(Response::new(UpdateChannelMemberResponse {}))
     }
+
+    async fn _get_single_channel_counter(
+        &self,
+        channel_id: CqlTimeuuid,
+    ) -> DSResult<ChannelCounterResponse> {
+        
+        let row  = db().await.execute_unpaged(
+            &self.read_channel_counter_prepared,
+            (&channel_id,)
+        ).await?.into_rows_result()?.first_row::<ChannelCounter>()?;
+        Ok(ChannelCounterResponse { channel_id: Some(channel_id.into()), counter: row.message_ctr.0 })
+
+    }
+
+    async fn get_channels_counter_impl(
+        &self,
+        request: tonic::Request<GetChannelsCounterRequest>,
+    ) -> DSResult<
+        tonic::Response<GetChannelsCounterResponse>> {
+        let inner = request.get_ref();
+
+        let futures = inner.channel_ids.iter().map(|id| {
+            self._get_single_channel_counter(id.into())
+        });
+        
+        let responses = join_all(futures).await.into_iter().filter_map(|r| {
+            if let Err(e) = r {
+                tracing::error!("{e:?}");
+                None
+            } else {
+                r.ok()
+            }
+        }).collect();
+
+        Ok(Response::new(GetChannelsCounterResponse { responses }))
+    }
+
+    async fn increment_channel_counter_impl(
+        &self,
+        request: tonic::Request<IncrementChannelCounterRequest>,
+    ) -> DSResult<
+        tonic::Response<IncrementChannelCounterResponse>>
+    {
+        let channel_id: CqlTimeuuid = req_tuuid!(request, channel_id)?;
+
+        db().await.execute_unpaged(
+            &self.increment_channel_counter_prepared,
+            (&channel_id,)
+        ).await?;
+
+        Ok(Response::new(IncrementChannelCounterResponse {  }))
+    }
+
 }
 
 #[async_trait]
@@ -459,5 +527,24 @@ impl ChannelService for ScyllaChannelServiceServer {
         tonic::Status,
     > {
         Ok(self.get_user_channels_impl(request).await?)
+    }
+
+    async fn get_channels_counter(
+        &self,
+        request: tonic::Request<GetChannelsCounterRequest>,
+    ) -> std::result::Result<
+        tonic::Response<GetChannelsCounterResponse>,
+        tonic::Status,
+    > {
+        Ok(self.get_channels_counter_impl(request).await?)
+    }
+    async fn increment_channel_counter(
+        &self,
+        request: tonic::Request<IncrementChannelCounterRequest>,
+    ) -> std::result::Result<
+        tonic::Response<IncrementChannelCounterResponse>,
+        tonic::Status,
+    > {
+        Ok(self.increment_channel_counter_impl(request).await?)
     }
 }
