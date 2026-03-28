@@ -100,10 +100,10 @@ function formatAckedSinceForUnreadBar(ms) {
   return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
-/** Unread = channel total counter − per-user acked counter (`message_counter` from API). */
+/** Unread = channel total counter − per-user acked counter (`last_acked_ctr`). */
 function channelListUnreadCount(ch, totalByChannelId) {
   const total = totalByChannelId[String(ch.channel_id)] ?? 0
-  const acked = typeof ch.message_counter === 'number' ? ch.message_counter : 0
+  const acked = typeof ch.last_acked_ctr === 'number' ? ch.last_acked_ctr : 0
   return Math.max(0, total - acked)
 }
 
@@ -276,6 +276,10 @@ export default function MessagesPage() {
     channelTotalCountersRef.current = channelTotalCounters
   }, [channelTotalCounters])
 
+  /**
+   * Updates local read state. `send`: bump global message counter + ack counter (client marks read; server no longer does on send).
+   * `catchUp`: set ack counter to current channel total (fully read → sidebar unread 0).
+   */
   const applyChannelAckUpdate = useCallback((messageId, kind = 'send') => {
     const cid = selectedChannelIdRef.current
     if (!cid) return
@@ -293,8 +297,8 @@ export default function MessagesPage() {
     setSelectedChannel((prev) => {
       if (!prev) return prev
       const total = nextTotals[cidStr] ?? 0
-      const nextMc = kind === 'send' ? (prev.message_counter ?? 0) + 1 : total
-      return { ...prev, last_acked_message_id: messageId, message_counter: nextMc }
+      const nextAck = kind === 'send' ? (prev.last_acked_ctr ?? 0) + 1 : total
+      return { ...prev, last_acked_message_id: messageId, last_acked_ctr: nextAck }
     })
 
     setChannels((prev) =>
@@ -304,8 +308,8 @@ export default function MessagesPage() {
             ? {
                 ...c,
                 last_acked_message_id: messageId,
-                message_counter:
-                  kind === 'send' ? (c.message_counter ?? 0) + 1 : nextTotals[cidStr] ?? 0,
+                last_acked_ctr:
+                  kind === 'send' ? (c.last_acked_ctr ?? 0) + 1 : nextTotals[cidStr] ?? 0,
               }
             : c,
         ),
@@ -1098,7 +1102,7 @@ export default function MessagesPage() {
             shared_key: prev.shared_key,
             encrypted_channel_key: prev.encrypted_channel_key ?? channel.encrypted_channel_key,
             last_acked_message_id: channel.last_acked_message_id ?? prev.last_acked_message_id,
-            message_counter: channel.message_counter ?? prev.message_counter,
+            last_acked_ctr: channel.last_acked_ctr ?? prev.last_acked_ctr,
           }
         })
       }
@@ -1204,8 +1208,7 @@ export default function MessagesPage() {
               ...raw,
               last_acked_message_id:
                 raw.last_acked_message_id ?? channelFromList?.last_acked_message_id ?? null,
-              message_counter:
-                raw.message_counter ?? channelFromList?.message_counter ?? 0,
+              last_acked_ctr: raw.last_acked_ctr ?? channelFromList?.last_acked_ctr ?? 0,
             }
           : null
         setSelectedChannel(channel)
@@ -1283,7 +1286,7 @@ export default function MessagesPage() {
                 ...updated,
                 shared_key: prev.shared_key ?? updated.shared_key,
                 last_acked_message_id: updated.last_acked_message_id ?? prev.last_acked_message_id,
-                message_counter: updated.message_counter ?? prev.message_counter,
+                last_acked_ctr: updated.last_acked_ctr ?? prev.last_acked_ctr,
               }
             : prev,
         )
@@ -1295,7 +1298,7 @@ export default function MessagesPage() {
                     ...ch,
                     ...updated,
                     last_acked_message_id: updated.last_acked_message_id ?? ch.last_acked_message_id,
-                    message_counter: updated.message_counter ?? ch.message_counter,
+                    last_acked_ctr: updated.last_acked_ctr ?? ch.last_acked_ctr,
                   }
                 : ch,
             ),
@@ -1333,7 +1336,7 @@ export default function MessagesPage() {
               ...updated,
               shared_key: updated.shared_key ?? prev.shared_key,
               last_acked_message_id: updated.last_acked_message_id ?? prev.last_acked_message_id,
-              message_counter: updated.message_counter ?? prev.message_counter,
+              last_acked_ctr: updated.last_acked_ctr ?? prev.last_acked_ctr,
             }
           : updated,
       )
@@ -1344,7 +1347,7 @@ export default function MessagesPage() {
               ? {
                   ...updated,
                   last_acked_message_id: updated.last_acked_message_id ?? ch.last_acked_message_id,
-                  message_counter: updated.message_counter ?? ch.message_counter,
+                  last_acked_ctr: updated.last_acked_ctr ?? ch.last_acked_ctr,
                 }
               : ch,
           ),
