@@ -13,12 +13,14 @@ RUN cargo chef prepare --recipe-path recipe.json
 
 # dependency builder
 FROM chef AS cacher
+ARG release="--release"
 COPY --from=planner /az7/recipe.json recipe.json
 RUN apt-get update && apt-get install -y protobuf-compiler gcc
-RUN cargo chef cook --release --recipe-path recipe.json
+RUN cargo chef cook ${release} --recipe-path recipe.json
 
 # builder stage
 FROM cacher AS builder
+ARG release="--release"
 COPY --from=planner /az7/recipe.json recipe.json
 RUN apt-get update && apt-get install -y protobuf-compiler gcc
 
@@ -30,12 +32,13 @@ COPY --from=shared ./rs /az7/shared/rs/
 COPY . /az7/dataservices/
 
 # compile time dependencies
-RUN cargo build --manifest-path /az7/dataservices/Cargo.toml --offline --release
+RUN cargo build --manifest-path /az7/dataservices/Cargo.toml --offline ${release}
 
 
 FROM debian:12.13-slim AS runtime
+ARG mode=release
 WORKDIR /az7
 
-COPY --from=builder /az7/target/release/dataservices /usr/local/bin/dataservices
+COPY --from=builder /az7/target/${mode}/dataservices /usr/local/bin/dataservices
 
 ENTRYPOINT ["dataservices"]
