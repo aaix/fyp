@@ -1,5 +1,5 @@
 cryptography==46.0.6
-joserfc==1.6.0
+joserfc==1.6.3
 grpcio==1.76.0
 protobuf==6.33.5
 valkey-glide==2.2.7
