@@ -34,9 +34,9 @@ class TransformerServiceStub(object):
         Args:
             channel: A grpc.Channel.
         """
-        self.TransformImage = channel.unary_unary(
+        self.TransformImage = channel.stream_unary(
                 '/mediaservices.transformer.TransformerService/TransformImage',
-                request_serializer=media__pb2.TransformImageRequest.SerializeToString,
+                request_serializer=media__pb2.MediaInput.SerializeToString,
                 response_deserializer=media__pb2.TransformImageResponse.FromString,
                 _registered_method=True)
         self.TransformVideo = channel.stream_unary(
@@ -49,7 +49,7 @@ class TransformerServiceStub(object):
 class TransformerServiceServicer(object):
     """Missing associated documentation comment in .proto file."""
 
-    def TransformImage(self, request, context):
+    def TransformImage(self, request_iterator, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -64,9 +64,9 @@ class TransformerServiceServicer(object):
 
 def add_TransformerServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
-            'TransformImage': grpc.unary_unary_rpc_method_handler(
+            'TransformImage': grpc.stream_unary_rpc_method_handler(
                     servicer.TransformImage,
-                    request_deserializer=media__pb2.TransformImageRequest.FromString,
+                    request_deserializer=media__pb2.MediaInput.FromString,
                     response_serializer=media__pb2.TransformImageResponse.SerializeToString,
             ),
             'TransformVideo': grpc.stream_unary_rpc_method_handler(
@@ -86,7 +86,7 @@ class TransformerService(object):
     """Missing associated documentation comment in .proto file."""
 
     @staticmethod
-    def TransformImage(request,
+    def TransformImage(request_iterator,
             target,
             options=(),
             channel_credentials=None,
@@ -96,11 +96,11 @@ class TransformerService(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(
-            request,
+        return grpc.experimental.stream_unary(
+            request_iterator,
             target,
             '/mediaservices.transformer.TransformerService/TransformImage',
-            media__pb2.TransformImageRequest.SerializeToString,
+            media__pb2.MediaInput.SerializeToString,
             media__pb2.TransformImageResponse.FromString,
             options,
             channel_credentials,

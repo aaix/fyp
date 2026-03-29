@@ -27,7 +27,8 @@ from shared.py.grpcgen import user_pb2
 from shared.py.grpc.device import create_device, read_devices
 
 
-CONF_AVATAR_CONTENT_TYPE = "image/webp" 
+CONF_AVATAR_CONTENT_TYPE = "image/webp"
+CONF_AVATAR_DIMENSIONS = (512, 512)
 
 
 discovery = DiscoveryManager()
@@ -213,7 +214,8 @@ async def set_my_icon(
         asset_id=user.avatar_asset_id,
         mime_in=icon.content_type,
         mime_out=CONF_AVATAR_CONTENT_TYPE,
-        data=await icon.read()
+        data=icon,
+        dimensions=CONF_AVATAR_DIMENSIONS,
     )
 
     return PublicAsset(

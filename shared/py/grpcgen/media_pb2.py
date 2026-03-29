@@ -25,7 +25,7 @@ _sym_db = _symbol_database.Default()
 from . import asset_pb2 as asset__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0bmedia.proto\x12\x19mediaservices.transformer\x1a\x0b\x61sset.proto\"P\n\x15TransformImageRequest\x12)\n\x05\x61sset\x18\x01 \x01(\x0b\x32\x1a.mediaservices.asset.Asset\x12\x0c\n\x04\x64\x61ta\x18\x02 \x01(\x0c\"\x18\n\x16TransformImageResponse\"R\n\nMediaInput\x12+\n\x05\x61sset\x18\x01 \x01(\x0b\x32\x1a.mediaservices.asset.AssetH\x00\x12\x0f\n\x05\x63hunk\x18\x02 \x01(\x0cH\x00\x42\x06\n\x04next\"\x18\n\x16TransformVideoResponse2\xf9\x01\n\x12TransformerService\x12u\n\x0eTransformImage\x12\x30.mediaservices.transformer.TransformImageRequest\x1a\x31.mediaservices.transformer.TransformImageResponse\x12l\n\x0eTransformVideo\x12%.mediaservices.transformer.MediaInput\x1a\x31.mediaservices.transformer.TransformVideoResponse(\x01\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0bmedia.proto\x12\x19mediaservices.transformer\x1a\x0b\x61sset.proto\"P\n\x15TransformImageRequest\x12)\n\x05\x61sset\x18\x01 \x01(\x0b\x32\x1a.mediaservices.asset.Asset\x12\x0c\n\x04\x64\x61ta\x18\x02 \x01(\x0c\"\x18\n\x16TransformImageResponse\"R\n\nMediaInput\x12+\n\x05\x61sset\x18\x01 \x01(\x0b\x32\x1a.mediaservices.asset.AssetH\x00\x12\x0f\n\x05\x63hunk\x18\x02 \x01(\x0cH\x00\x42\x06\n\x04next\"\x18\n\x16TransformVideoResponse2\xf0\x01\n\x12TransformerService\x12l\n\x0eTransformImage\x12%.mediaservices.transformer.MediaInput\x1a\x31.mediaservices.transformer.TransformImageResponse(\x01\x12l\n\x0eTransformVideo\x12%.mediaservices.transformer.MediaInput\x1a\x31.mediaservices.transformer.TransformVideoResponse(\x01\x62\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -41,5 +41,5 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_TRANSFORMVIDEORESPONSE']._serialized_start=247
   _globals['_TRANSFORMVIDEORESPONSE']._serialized_end=271
   _globals['_TRANSFORMERSERVICE']._serialized_start=274
-  _globals['_TRANSFORMERSERVICE']._serialized_end=523
+  _globals['_TRANSFORMERSERVICE']._serialized_end=514
 # @@protoc_insertion_point(module_scope)

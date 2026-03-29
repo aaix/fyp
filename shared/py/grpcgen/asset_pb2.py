@@ -24,13 +24,13 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0b\x61sset.proto\x12\x13mediaservices.asset\"P\n\x05\x41sset\x12\x0c\n\x04path\x18\x01 \x01(\t\x12\x0e\n\x06public\x18\x02 \x01(\x08\x12\x14\n\x0c\x63ontent_type\x18\x03 \x01(\t\x12\x13\n\x0boutput_type\x18\x04 \x01(\tb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0b\x61sset.proto\x12\x13mediaservices.asset\"\xbe\x01\n\x05\x41sset\x12\x0c\n\x04path\x18\x01 \x01(\t\x12\x0e\n\x06public\x18\x02 \x01(\x08\x12\x12\n\ninput_size\x18\x05 \x01(\r\x12\x14\n\x0c\x63ontent_type\x18\x03 \x01(\t\x12\x13\n\x0boutput_type\x18\x04 \x01(\t\x12\x19\n\x0coutput_width\x18\x06 \x01(\rH\x00\x88\x01\x01\x12\x1a\n\routput_height\x18\x07 \x01(\rH\x01\x88\x01\x01\x42\x0f\n\r_output_widthB\x10\n\x0e_output_heightb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'asset_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
-  _globals['_ASSET']._serialized_start=36
-  _globals['_ASSET']._serialized_end=116
+  _globals['_ASSET']._serialized_start=37
+  _globals['_ASSET']._serialized_end=227
 # @@protoc_insertion_point(module_scope)

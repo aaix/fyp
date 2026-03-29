@@ -1,9 +1,9 @@
-use std::io::{BufRead, ErrorKind, Read, Write};
+use std::io::{ErrorKind, Read, Write};
 
-use futures::channel::mpsc::Recv;
+
 use tokio::sync::mpsc::{self, Receiver, Sender};
 
-use crate::protos::mediaservices::transformer::{MediaInput, media_input};
+use crate::{errors::{MSError, MSResult}, protos::mediaservices::transformer::{MediaInput, media_input::{self, Next}}};
 pub struct AsyncStreamer<T> {
     streaming: tonic::Streaming<T>,
     sender: Sender<T>,
@@ -27,6 +27,24 @@ impl AsyncStreamer<MediaInput> {
             receiver
         ))
     }
+
+    pub async fn recv(mut self) -> MSResult<()> {
+        while let Some(m) = self.streaming.message().await.map_err(|e| {
+            tracing::error!("{e:?}");
+            MSError::Cancelled
+        })? {
+            if let Err(e) = self.sender.send(m).await {
+                tracing::error!("{e:?}");
+                return Err(MSError::Unknown);
+            }
+        }
+        Ok(())
+    }
+
+    pub async fn get_one(&mut self) -> Result<Option<MediaInput>, tonic::Status> {
+        self.streaming.message().await
+    }
+
 }
 
 impl SyncStreamer<MediaInput> {
@@ -36,10 +54,6 @@ impl SyncStreamer<MediaInput> {
             last_message: None,
             partial_written: None,
         }
-    }
-
-    pub async fn get_one(&mut self) -> Option<MediaInput> {
-        self.recv.recv().await
     }
 
     fn populate_buf(&mut self) -> Option<()> {
@@ -75,15 +89,22 @@ impl Read for SyncStreamer<MediaInput> {
         let max = buf.len();
         let start = self.partial_written.unwrap_or_default();
         let msg_len = d.len() - start;
+
+        let mut consumed_buf = false;
         let to_write = if max < msg_len {
             self.partial_written = Some(start + max);
             max
         } else {
-            self.partial_written = None;
+            // we wrote the whole thing, so we must empty the current buf
+            consumed_buf = true;
             msg_len
         };
-
         buf.write(&d[start..start+to_write])?;
+
+        if consumed_buf {
+            self.partial_written = None;
+            self.last_message = None;
+        }
 
         Ok(to_write)
 

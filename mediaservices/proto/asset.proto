@@ -6,6 +6,9 @@ package mediaservices.asset;
 message Asset {
     string path = 1;
     bool public = 2;
+    uint32 input_size = 5;
     string content_type = 3;
     string output_type = 4;
+    optional uint32 output_width = 6;
+    optional uint32 output_height = 7;
 }

@@ -5,7 +5,7 @@ package mediaservices.transformer;
 import "asset.proto";
 
 service TransformerService {
-    rpc TransformImage (TransformImageRequest) returns (TransformImageResponse);
+    rpc TransformImage (stream MediaInput) returns (TransformImageResponse);
     rpc TransformVideo (stream MediaInput) returns (TransformVideoResponse);
 }
 

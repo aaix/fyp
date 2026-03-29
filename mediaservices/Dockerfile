@@ -24,7 +24,7 @@ COPY --from=cacher /usr/local/cargo /usr/local/cargo
 COPY . .
 
 # compile time dependencies
-RUN cargo build --release
+RUN cargo build --release --offline
 
 
 FROM debian:12.13-slim AS runtime
