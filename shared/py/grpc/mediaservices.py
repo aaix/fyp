@@ -49,13 +49,3 @@ async def transform_image(
     ))
 
     return cast(TransformImageResponse, await grpc.stub.TransformImage(async_bytes_generator(first, data)))
-
-    return cast(TransformImageResponse, await grpc.stub.TransformImage(TransformImageRequest(
-        asset=Asset(
-            path=asset.asset_path(bucket_id=bucket_id, asset_id=asset_id),
-            public=public,
-            content_type=mime_in,
-            output_type=mime_out,
-        ),
-        data=data,
-    )))
