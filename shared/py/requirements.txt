@@ -1,4 +1,4 @@
-cryptography==46.0.5
+cryptography==46.0.6
 joserfc==1.6.0
 grpcio==1.76.0
 protobuf==6.33.5
