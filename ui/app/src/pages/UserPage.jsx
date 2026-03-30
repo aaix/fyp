@@ -11,8 +11,10 @@ const PEER_REQUESTING_CURRENT = 2
 const FRIENDS = 3
 const PEER_BLOCKED_CURRENT = 5
 const CURRENT_BLOCKED_PEER = 6
+const CURRENT_FOLLOWING_PEER = 7
+const PEER_FOLLOWING_CURRENT = 8
 
-/** @typedef {{ blockedByMe: boolean, blockedByThem: boolean, isFriends: boolean, isIncomingRequest: boolean, isOutgoingRequest: boolean }} PeerRelFlags */
+/** @typedef {{ blockedByMe: boolean, blockedByThem: boolean, isFriends: boolean, isIncomingRequest: boolean, isOutgoingRequest: boolean, isFollowing: boolean, isFollowedBy: boolean }} PeerRelFlags */
 
 function emptyPeerRel() {
   return {
@@ -21,6 +23,8 @@ function emptyPeerRel() {
     isFriends: false,
     isIncomingRequest: false,
     isOutgoingRequest: false,
+    isFollowing: false,
+    isFollowedBy: false,
   }
 }
 
@@ -37,6 +41,8 @@ function peerRelFlagsFromTypes(types) {
       isFriends: false,
       isIncomingRequest: false,
       isOutgoingRequest: false,
+      isFollowing: false,
+      isFollowedBy: false,
     }
   }
   if (s.has(FRIENDS)) {
@@ -46,6 +52,8 @@ function peerRelFlagsFromTypes(types) {
       isFriends: true,
       isIncomingRequest: false,
       isOutgoingRequest: false,
+      isFollowing: false,
+      isFollowedBy: false,
     }
   }
   if (s.has(PEER_REQUESTING_CURRENT)) {
@@ -55,6 +63,8 @@ function peerRelFlagsFromTypes(types) {
       isFriends: false,
       isIncomingRequest: true,
       isOutgoingRequest: false,
+      isFollowing: false,
+      isFollowedBy: false,
     }
   }
   if (s.has(CURRENT_REQUESTING_PEER)) {
@@ -64,21 +74,60 @@ function peerRelFlagsFromTypes(types) {
       isFriends: false,
       isIncomingRequest: false,
       isOutgoingRequest: true,
+      isFollowing: false,
+      isFollowedBy: false,
+    }
+  }
+  if (s.has(CURRENT_FOLLOWING_PEER)) {
+    return {
+      blockedByMe: false,
+      blockedByThem: false,
+      isFriends: false,
+      isIncomingRequest: false,
+      isOutgoingRequest: false,
+      isFollowing: true,
+      isFollowedBy: s.has(PEER_FOLLOWING_CURRENT),
+    }
+  }
+  if (s.has(PEER_FOLLOWING_CURRENT)) {
+    return {
+      blockedByMe: false,
+      blockedByThem: false,
+      isFriends: false,
+      isIncomingRequest: false,
+      isOutgoingRequest: false,
+      isFollowing: false,
+      isFollowedBy: true,
     }
   }
   return emptyPeerRel()
 }
 
+/** Preserve API `null` for counts (shown as "-" in ProfileView); treat missing keys as 0. */
+function countFieldFromUserPayload(v) {
+  if (v === null) return null
+  return v ?? 0
+}
+
 function userToProfile(user, routeUserId) {
   const uid = user?.user_id ?? routeUserId ?? null
-  if (!user && !routeUserId) return { username: '', iconUrl: null, friendsCount: 0, userId: null }
+  if (!user && !routeUserId) {
+    return { username: '', iconUrl: null, friendsCount: 0, followersCount: 0, userId: null }
+  }
   if (!user) {
-    return { username: '', iconUrl: null, friendsCount: 0, userId: uid ? String(uid) : null }
+    return {
+      username: '',
+      iconUrl: null,
+      friendsCount: 0,
+      followersCount: 0,
+      userId: uid ? String(uid) : null,
+    }
   }
   return {
     username: user.username ?? '',
     iconUrl: user.icon_url ?? (user.user_id ? getAvatarUrl(user) : null),
-    friendsCount: 0,
+    friendsCount: countFieldFromUserPayload(user.friends),
+    followersCount: countFieldFromUserPayload(user.followers),
     userId: user.user_id ?? (routeUserId != null ? String(routeUserId) : null),
   }
 }
@@ -109,7 +158,7 @@ export default function UserPage() {
         setLoading(true)
         setError(null)
         const session = getCurrentSession()
-        const [profileRes, relTypes, meRes] = await Promise.all([
+        const [profileRes, , meRes] = await Promise.all([
           userManager.getUserProfile(userId),
           relationshipManager.refreshPeerRelationshipWithUser(userId),
           session.getCurrentAccount(),
@@ -120,19 +169,27 @@ export default function UserPage() {
         if (meId != null) setCurrentUserId(meId)
 
         if (profileRes?.success && profileRes?.data) {
-          const user = profileRes.data?.user ?? profileRes.data
+          const raw = profileRes.data
+          const user = raw?.user ?? raw
+          const friendsCount = countFieldFromUserPayload(raw.friends)
+          const followersCount = countFieldFromUserPayload(raw.followers)
           setProfile({
             username: user?.username ?? '',
             iconUrl: user ? getAvatarUrl(user) : null,
-            friendsCount: 0,
+            friendsCount,
+            followersCount,
             userId: user?.user_id ?? userId ?? null,
           })
         } else if (profileRes?.data) {
-          const user = profileRes.data?.user ?? profileRes.data
+          const raw = profileRes.data
+          const user = raw?.user ?? raw
+          const friendsCount = countFieldFromUserPayload(raw.friends)
+          const followersCount = countFieldFromUserPayload(raw.followers)
           setProfile({
             username: user?.username ?? '',
             iconUrl: user ? getAvatarUrl(user) : null,
-            friendsCount: 0,
+            friendsCount,
+            followersCount,
             userId: user?.user_id ?? userId ?? null,
           })
         }
@@ -141,7 +198,7 @@ export default function UserPage() {
           setError('User not found')
         }
 
-        setPeerRel(peerRelFlagsFromTypes(relTypes))
+        setPeerRel(peerRelFlagsFromTypes(relationshipManager.getRelationshipWithUser(userId) ?? []))
       } catch (e) {
         console.error(e);
         if (!cancelled) setError(e?.message ?? 'Could not load profile')
@@ -161,9 +218,31 @@ export default function UserPage() {
   }, [profile.username, stateUser?.username, userId])
 
   const syncPeerRelFromManager = () => {
-    setPeerRel(
-      peerRelFlagsFromTypes(relationshipManager.getPeerRelationshipTypes(userId) ?? []),
-    )
+    setPeerRel(peerRelFlagsFromTypes(relationshipManager.getRelationshipWithUser(userId) ?? []))
+  }
+
+  const refreshPeerRelFromApi = async () => {
+    await relationshipManager.refreshPeerRelationshipWithUser(userId)
+    syncPeerRelFromManager()
+  }
+
+  const refetchProfileCounts = async () => {
+    if (!userId) return
+    try {
+      const profileRes = await userManager.getUserProfile(userId)
+      const raw = profileRes?.data
+      if (!raw) return
+      const friendsCount = raw.friends
+      const followersCount = raw.followers
+      if (friendsCount === undefined && followersCount === undefined) return
+      setProfile((p) => ({
+        ...p,
+        ...(friendsCount !== undefined ? { friendsCount } : {}),
+        ...(followersCount !== undefined ? { followersCount } : {}),
+      }))
+    } catch (e) {
+      console.error(e)
+    }
   }
 
   const handleFriendAction = async () => {
@@ -173,6 +252,7 @@ export default function UserPage() {
       const res = await relationshipManager.friendUser(userId)
       if (res?.success) {
         syncPeerRelFromManager()
+        await refetchProfileCounts()
       }
     } finally {
       setActionLoading(false)
@@ -186,6 +266,7 @@ export default function UserPage() {
       const res = await relationshipManager.unfriendUser(userId)
       if (res?.success) {
         syncPeerRelFromManager()
+        await refetchProfileCounts()
       }
     } finally {
       setActionLoading(false)
@@ -205,6 +286,38 @@ export default function UserPage() {
     }
   }
 
+  const handleFollowAction = async () => {
+    if (!userId || peerRel.isFollowing || peerRel.isFriends) return
+    setActionLoading(true)
+    try {
+      const res = await relationshipManager.followUser(userId)
+      if (res?.success) {
+        await refreshPeerRelFromApi()
+        await refetchProfileCounts()
+      }
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  const handleUnfollowAction = async () => {
+    if (!userId || !peerRel.isFollowing) return
+    setActionLoading(true)
+    try {
+      const res = await relationshipManager.unfollowUser(userId)
+      if (res?.success) {
+        await refreshPeerRelFromApi()
+        await refetchProfileCounts()
+      }
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
   const handleBlockAction = async () => {
     if (!userId) return
     setActionLoading(true)
@@ -215,6 +328,7 @@ export default function UserPage() {
         : await relationshipManager.blockUser(userId)
       if (res?.success) {
         syncPeerRelFromManager()
+        await refetchProfileCounts()
       }
     } finally {
       setActionLoading(false)
@@ -228,10 +342,11 @@ export default function UserPage() {
   const isBlocked = peerRel.blockedByMe || peerRel.blockedByThem
   const showSendOrAccept =
     (peerRel.isIncomingRequest || (!peerRel.isFriends && !peerRel.isOutgoingRequest)) && !isBlocked
+  const showFollowControls = !isBlocked && !peerRel.isFriends
 
   const profileActions =
     !loading && !error ? (
-      <div className="flex justify-center flex-wrap gap-2">
+      <div className="flex justify-center flex-wrap items-center gap-2">
         {showSendOrAccept && (
           <Button
             onClick={handleFriendAction}
@@ -261,6 +376,21 @@ export default function UserPage() {
             Remove friend
           </Button>
         )}
+        {showFollowControls &&
+          (peerRel.isFollowing ? (
+            <Button
+              variant="ghost"
+              onClick={handleUnfollowAction}
+              disabled={actionLoading}
+              aria-label="Unfollow user"
+            >
+              Unfollow
+            </Button>
+          ) : (
+            <Button onClick={handleFollowAction} disabled={actionLoading} aria-label="Follow user">
+              Follow
+            </Button>
+          ))}
         {peerRel.blockedByMe && (
           <Button
             variant="ghost"

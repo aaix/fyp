@@ -7,7 +7,7 @@ import UserAvatar from './UserAvatar.jsx'
  * No header or settings link; the parent (AccountPage or UserPage) provides those.
  *
  * @param {Object} props
- * @param {{ username: string, iconUrl: string | null, friendsCount?: number, userId?: string | null }} props.profile
+ * @param {{ username: string, iconUrl: string | null, friendsCount?: number | null, followersCount?: number | null, userId?: string | null }} props.profile
  * @param {boolean} [props.loading]
  * @param {string | null} [props.error]
  * @param {string | null} [props.avatarError] - Shown when avatar upload fails (e.g. on account page).
@@ -32,14 +32,27 @@ export default function ProfileView({
     iconUrl = null,
     userId = null,
     friendsCount = 0,
+    followersCount = 0,
   } = profile ?? {}
+
+  const friendsDisplay = friendsCount === null ? '-' : friendsCount
+  const followersDisplay = followersCount === null ? '-' : followersCount
 
   const friendsStat = (
     <span className="flex flex-col items-center gap-0.5">
       <strong className="text-lg font-bold text-[color:var(--text-primary)]">
-        {friendsCount}
+        {friendsDisplay}
       </strong>
       <span className="text-xs text-[color:var(--text-muted)]">friends</span>
+    </span>
+  )
+
+  const followersStat = (
+    <span className="flex flex-col items-center gap-0.5">
+      <strong className="text-lg font-bold text-[color:var(--text-primary)]">
+        {followersDisplay}
+      </strong>
+      <span className="text-xs text-[color:var(--text-muted)]">followers</span>
     </span>
   )
 
@@ -125,7 +138,7 @@ export default function ProfileView({
           {avatarError}
         </p>
       )}
-      <div className="mt-2 flex gap-6">
+      <div className="mt-2 flex gap-8">
         {onFriendsClick ? (
           <Button
             type="button"
@@ -133,13 +146,14 @@ export default function ProfileView({
             size="sm"
             onClick={onFriendsClick}
             className="flex-col gap-0.5"
-            aria-label={`${friendsCount} friends. View list`}
+            aria-label={`${friendsCount === null ? 'Unknown' : friendsCount} friends. View list`}
           >
             {friendsStat}
           </Button>
         ) : (
           friendsStat
         )}
+        {followersStat}
       </div>
       {actions != null ? <div className="mt-4 w-full">{actions}</div> : null}
       <section className="mt-6 w-full" aria-label="Posts">
