@@ -1,10 +1,11 @@
 use std::io::{ErrorKind, Error};
 
-use aws_sdk_s3::{error::SdkError, operation::put_object::PutObjectError};
 use image::{ImageError, error::{DecodingError, EncodingError, LimitErrorKind, UnsupportedErrorKind}};
 use tokio::task::JoinError;
 use tonic::Status;
 use webp::AnimEncodeError;
+
+use crate::cloudadapter::CloudadapterError;
 
 
 pub type MSResult<T> = Result<T, MSError>;
@@ -15,11 +16,12 @@ pub enum MSError {
     BadInternalInput(&'static str),
     UploadError,
     Cancelled,
-    Unknown
+    Unknown(&'static str),
 }
 
-impl<R> From<SdkError<PutObjectError, R>> for MSError {
-    fn from(_: SdkError<PutObjectError, R>) -> Self {
+impl From<CloudadapterError> for MSError {
+    fn from(value: CloudadapterError) -> Self {
+        tracing::error!("Failed to upload to cloud adapter {value:?}");
         Self::UploadError
     }
 }
@@ -35,8 +37,14 @@ impl From<JoinError> for MSError {
         if value.is_cancelled() {
             Self::Cancelled
         } else {
-            Self::Unknown
+            Self::Unknown("Failed to join {value:?}")
         }
+    }
+}
+
+impl From<Error> for MSError {
+    fn from(value: Error) -> Self {
+        Self::ConversionError(ConversionError::IoError(value.kind()))
     }
 }
 
@@ -47,7 +55,7 @@ impl From<MSError> for Status {
         match value {
             MSError::ConversionError(conversion_error) => conversion_error.into(),
             MSError::Cancelled => Self::aborted("Operation cancelled"),
-            MSError::Unknown => Self::internal("Unknown internal error"),
+            MSError::Unknown(e) => Self::internal(format!("Unknown internal error, {e}")),
             MSError::BadUserInput(s) => Self::invalid_argument(s),
             MSError::BadInternalInput(s) => Self::internal(s),
             MSError::UploadError => Self::internal("S3 upload failed"),
@@ -68,12 +76,16 @@ impl From<ConversionError> for Status {
                 Status::invalid_argument(format!("{encoding_error:?}")),
             ConversionError::ResourceConstraint(limit_error_kind) =>
                 Status::invalid_argument(format!("{limit_error_kind:?}")),
-            ConversionError::Unknown=>
-                Status::internal("Unknown conversion error"),
+            ConversionError::Unknown(s)=> {
+                tracing::error!("Unknown error {s}");
+                Status::internal("Unknown conversion error")
+            },
             ConversionError::NoInputFormat => Status::invalid_argument("Unkown format"),
 
-            ConversionError::BadFrame(m) => Status::invalid_argument(m)
-        }
+            ConversionError::BadFrame(m) => Status::invalid_argument(m),
+
+            ConversionError::ErrorExitStatus(status) => Status::internal(format!("Unexpected error exit status {status:?}")),
+                    }
     }
 }
 
@@ -94,7 +106,9 @@ pub enum ConversionError {
 
     NoInputFormat,
 
-    Unknown,
+    Unknown(&'static str),
+
+    ErrorExitStatus(Option<i32>),
 }
 
 impl From<Error> for ConversionError {
@@ -114,7 +128,7 @@ impl From<ImageError> for ConversionError {
         match value {
             ImageError::Decoding(decoding_error) => ConversionError::UnknownInputFormat(decoding_error),
             ImageError::Encoding(encoding_error) => ConversionError::IncompatibleFormats(encoding_error),
-            ImageError::Parameter(_) => ConversionError::Unknown,
+            ImageError::Parameter(_) => ConversionError::Unknown("ImageError parameter error"),
             ImageError::Limits(limit_error) => ConversionError::ResourceConstraint(limit_error.kind()),
             ImageError::Unsupported(unsupported_error) => ConversionError::UnsupportedInput(unsupported_error.kind()),
             ImageError::IoError(error) => ConversionError::IoError(error.kind()),

@@ -6,7 +6,7 @@ use init_tracing_opentelemetry::tracing_opentelemetry::OpenTelemetrySpanExt;
 use tonic::{Response, async_trait};
 use tracing::Instrument;
 
-use crate::{cloudadapter, errors::{MSError, MSResult}, protos::mediaservices::transformer::{MediaInput, TransformImageResponse, TransformVideoResponse, media_input, transformer_service_server::{TransformerService, TransformerServiceServer}}, streamer::AsyncStreamer};
+use crate::{cloudadapter, errors::{ConversionError, MSError, MSResult}, protos::mediaservices::transformer::{MediaInput, TransformImageResponse, TransformVideoResponse, media_input::{self, Next}, transformer_service_server::{TransformerService, TransformerServiceServer}}, streamer::AsyncStreamer};
 
 pub struct TransformerServer {
 
@@ -36,9 +36,29 @@ impl TransformerService for TransformerServer {
         tonic::Response<TransformVideoResponse>,
         tonic::Status,
     > {
-        todo!();
+        Ok(transform_video(request).await?)
     }
 }
+
+
+
+pub async fn get_next_chunk(streaming: &mut tonic::Streaming<MediaInput> ) -> MSResult<Option<Vec<u8>>> {
+
+    if let Some(next) = streaming.message().await
+    .map_err(|e| {tracing::error!("Recieved error during stream {e:?}"); ConversionError::Unknown("Unexpected stream close")})?
+    {
+        if let Next::Chunk(chunk) = next.next.ok_or(MSError::BadInternalInput("Unexpected empty next"))? {
+            Ok(Some(chunk))
+        } else {
+            Err(MSError::BadInternalInput("Unexpected asset chunk"))
+        }
+
+    } else {
+        Ok(None)
+    }
+
+} 
+
 
 async fn transform_image(
     request: tonic::Request<tonic::Streaming<MediaInput>>,
@@ -107,7 +127,7 @@ async fn transform_image(
     let transform_future = async || {
         let data = transform_join_future.await.map_err(|e| {
             tracing::error!("{e:?}");
-            MSError::Unknown
+            MSError::Unknown("Cannot join transform future")
         })??;
         Ok(data)
     };
@@ -122,30 +142,36 @@ async fn transform_image(
     Ok(Response::new(TransformImageResponse {  }))
 }
 
-// async fn transform_video(
-//     request: tonic::Request<tonic::Streaming<MediaInput>>,
-// ) -> MSResult<tonic::Response<TransformImageResponse>> {
+async fn transform_video(
+    request: tonic::Request<tonic::Streaming<MediaInput>>,
+) -> MSResult<tonic::Response<TransformVideoResponse>> {
 
-//     let streaming = request.into_inner();
-
-//     let (mut streamer, mut out) = AsyncStreamer::new(streaming);
+    let mut req = request.into_inner();
 
 
-//     let first = streamer.get_one().await.map_err(|e| {tracing::error!("{e:?}"); MSError::Cancelled})?.ok_or(MSError::Cancelled)?;
-
-//     let next = first.next.ok_or(MSError::BadUserInput("Missing 'next'"))?;
-//     let asset = match next {
-//         media_input::Next::Asset(asset) => Ok(asset),
-//         media_input::Next::Chunk(items) => Err(MSError::BadUserInput("Unexpected chunk as first")),
-//     }?;
+    let first = req.message().await.map_err(|e| {tracing::error!("{e:?}"); MSError::Cancelled})?.ok_or(MSError::Cancelled)?;
 
 
-//     tokio::task::spawn_blocking(move || {
-//         let reader = BufReader::new(out);
+    let asset = match first.next.ok_or(MSError::Cancelled)? {
+        media_input::Next::Asset(asset) => asset,
+        media_input::Next::Chunk(_) => return Err(MSError::BadInternalInput("Missing asset submessage")),
+    };
 
-//     }).await?;
+    let dimensions = match (asset.output_width.unwrap_or(0), asset.output_height.unwrap_or(0)) {
+        (0, _) => None,
+        (_, 0) => None,
+        (w, h) => Some((NonZeroU32::new(w).unwrap(), NonZeroU32::new(h).unwrap()))
+    };
 
 
 
-//      todo!();
-// }
+
+    
+    crate::ffmpeg::transcode(req, dimensions, asset).await?;
+
+    
+
+
+
+    Ok(Response::new(TransformVideoResponse {  }))
+}

@@ -137,7 +137,7 @@ where A: AnimationDecoder<'i>, W: io::Seek + io::Write + 'o
 
     match output_format {
         ImageFormat::WebP  => {
-            let mut config = WebPConfig::new().map_err(|_| {ConversionError::Unknown})?;
+            let mut config = WebPConfig::new().map_err(|_| {ConversionError::Unknown("Could not create webp config")})?;
             config.alpha_compression = 1;
             config.quality = 90f32;
             let mut encoder = AnimEncoder::new(width, height, &config);

@@ -3,7 +3,7 @@ use std::io::{ErrorKind, Read, Write};
 
 use tokio::sync::mpsc::{self, Receiver, Sender};
 
-use crate::{errors::{MSError, MSResult}, protos::mediaservices::transformer::{MediaInput, media_input::{self, Next}}};
+use crate::{errors::{MSError, MSResult}, protos::mediaservices::transformer::{MediaInput, media_input::{self,}}};
 pub struct AsyncStreamer<T> {
     streaming: tonic::Streaming<T>,
     sender: Sender<T>,
@@ -35,7 +35,7 @@ impl AsyncStreamer<MediaInput> {
         })? {
             if let Err(e) = self.sender.send(m).await {
                 tracing::error!("{e:?}");
-                return Err(MSError::Unknown);
+                return Err(MSError::Unknown("Syncstreamer closed channel"));
             }
         }
         Ok(())
