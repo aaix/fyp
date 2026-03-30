@@ -257,6 +257,12 @@ export class Session {
   async getCurrentAccount() {
     return await API.GET("account/@me");
   }
+
+  async setMyProfilePublic(public_profile) {
+    return await API.PATCH("account/@me", {
+      public_profile: public_profile
+    });
+  }
 }
 
 

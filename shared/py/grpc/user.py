@@ -35,6 +35,7 @@ async def edit_user(
     *,
     username: MaybeUnset[str] = UNSET,
     make_avatar: MaybeUnset[Literal[True] | None] = UNSET,
+    public_profile: MaybeUnset[bool] = UNSET,
 ) -> user_pb2.ReadUserResponse:
 
     
@@ -49,4 +50,5 @@ async def edit_user(
         user_id=id_puuid(user_id),
         username=username_v,
         opt_make_avatar_asset_id=BoolValue(value=make_avatar) if make_avatar else None,
+        opt_is_public=BoolValue(value=public_profile) if public_profile is not UNSET else None,
     )))

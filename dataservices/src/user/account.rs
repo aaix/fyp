@@ -67,7 +67,7 @@ impl ScyllaUserService {
         ).await?;
 
         let update_user_prepared = db().await.prepare(
-            "UPDATE dataservices.user SET username = ?, opt_avatar_asset_id = ? WHERE user_id = ?"
+            "UPDATE dataservices.user SET username = ?, opt_avatar_asset_id = ?, opt_public_profile = ? WHERE user_id = ?"
         ).await?;
 
         let fetch_user_id_by_username_prepared = db().await.prepare(
@@ -197,11 +197,12 @@ impl ScyllaUserService {
             MaybeUnset::Unset
         };
 
+        let public_profile = MaybeUnset::from_option(unpacked.opt_is_public);
 
 
         db().await.execute_unpaged(
             &self.update_user_prepared,
-            (&username, &avatar_id, &user_id)
+            (&username, &avatar_id, &public_profile, &user_id)
         ).await?;
 
 

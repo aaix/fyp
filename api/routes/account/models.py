@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Self
 from uuid import UUID
 
 from fastapi import Query
@@ -26,6 +26,7 @@ __all__ = (
     "DeviceKeyResponse",
     "AccountResponse",
     "UpdateDeviceBody",
+    "UpdateAccountBody",
 )
 
 
@@ -84,5 +85,20 @@ class AccountResponse(BaseModel):
     public_key: PEMPublicKey
     username: str
     email: str
-    
-    assigned_gateway: str
+    assigned_gateway: str | None
+    profile_is_public: bool
+
+    @classmethod
+    def from_rpc(cls, rpc: user_pb2.ReadUserResponse, gateway: str | None = None) -> Self:
+        return cls(
+            user_id=puuid_uuid(rpc.user_id) or unwrap(),
+            avatar_asset_id=puuid_uuid(rpc.avatar_asset_id),
+            public_key=PEMPublicKey.from_bytes(rpc.public_key),
+            username=rpc.username,
+            email=rpc.email,
+            assigned_gateway=gateway,
+            profile_is_public=rpc.is_public,
+        )
+
+class UpdateAccountBody(BaseModel):
+    public_profile: bool | None

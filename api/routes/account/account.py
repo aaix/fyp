@@ -176,15 +176,23 @@ async def my_account(s: SessionParam) -> AccountResponse:
 
     gateway = await gateway_bigpicture.get_node(s.user_id)
 
-    return AccountResponse(
-        user_id=s.user_id,
-        avatar_asset_id=puuid_uuid(res.avatar_asset_id),
-        public_key=PEMPublicKey.from_bytes(res.public_key),
-        username=res.username,
-        email=res.email,
+    return AccountResponse.from_rpc(res, discovery.transform_gateway_to_external(gateway))
+@AccountRouter.patch("/@me")
+async def edit_my_account(s: SessionParam, body: UpdateAccountBody) -> AccountResponse:
+    public_profile = body.public_profile
 
-        assigned_gateway=discovery.transform_gateway_to_external(gateway)
+    if public_profile is None:
+        raise ApiErrExc(errors.BadRequest("Expected atleast 1 param to change", api_error_code=errors.ERROR_INVALID_BODY_PARTS))
+
+    me = await edit_user(
+        grpcuser,
+        s.user_id,
+        public_profile=public_profile
     )
+
+    return AccountResponse.from_rpc(me)
+
+
 
 
 @AccountRouter.put("/@me/icon")
