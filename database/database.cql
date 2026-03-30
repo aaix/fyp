@@ -6,12 +6,14 @@ CREATE KEYSPACE dataservices WITH REPLICATION = {
     'datacenter1' : 1
 } AND TABLETS = {'enabled': false};
 
+-- COALESCE on user_id
 CREATE TABLE dataservices.user (
     user_id TIMEUUID,
     username TEXT, -- probably needs to be queryable so users can find users
     email TEXT,
     public_key BLOB, -- rsa public key
     opt_avatar_asset_id TIMEUUID, -- foreign key: asset.asset_id
+    public_profile boolean,
     PRIMARY KEY (user_id),
 );
 
@@ -70,11 +72,11 @@ CREATE TABLE dataservices.relationship_v2 (
 );
 
 
-CREATE TABLE dataservices.user_profile (
+-- COALESCE on user_id
+CREATE TABLE dataservices.user_num_relationships (
     user_id TIMEUUID,
-    bio TEXT,
-    num_friends INT,
-    num_followers INT,
+    num_friends COUNTER,
+    num_followers COUNTER,
 
     PRIMARY KEY (user_id)
 );
@@ -133,21 +135,48 @@ CREATE TABLE dataservices.message (
 
 
 
+-- COALESCE post ON post_id
 CREATE TABLE dataservices.post (
+    asset_id TIMEUUID,
+    content_type TEXT,
+    post_type INT, -- 0: image, 1: video, 2: short form
     post_id TIMEUUID,
-    author__user_id TIMEUUID, -- foreign key: user.user_id
+    author_id TIMEUUID, -- foreign key: user.user_id
     body TEXT,
     last_edited TIMESTAMP,
-    opt_likes INT, -- denormalized count of likes
-    opt_comments INT, -- denormalized count of comments
-    PRIMARY KEY (post_id),
+    PRIMARY KEY (author_id, post_id), -- route will have to be /user/id/post/id
+) WITH CLUSTERING ORDER BY (post_id DESC);
+
+-- COALESCE post_num_comments ON post_id
+CREATE TABLE dataservices.post_num_counters (
+    post_id TIMEUUID,
+    post_likes COUNTER,
+
+    post_comments COUNTER,
+    PRIMARY KEY (post_id)
 );
 
 
+CREATE TABLE dataservices.user_timeline_meta  (
+    user_id TIMEUUID,
+    timeline_type INT,
+    last_fanned_in_at TIMEUUID, -- fan in following
+    PRIMARY KEY (user_id, timeline_type)
+);
+
+CREATE TABLE dataservices.user_timeline (
+    user_id TIMEUUID,
+    timeline_type INT, -- 0: main feed (image/video post), 1: short from (sf post)
+    post_id TIMEUUID,
+    PRIMARY KEY (user_id, timeline_type, post_id)
+) WITH CLUSTERING ORDER BY (post_id DESC);
+
+
+-- COALESCE post_comment ON comment_id
 CREATE TABLE dataservices.post_comment (
     comment_id TIMEUUID,
     post_id TIMEUUID, -- foreign key: post.post_id
-    author__user_id TIMEUUID, -- foreign key: user.user_id
+    author_id TIMEUUID, -- foreign key: user.user_id
     body TEXT,
     opt_last_edited TIMESTAMP,
     PRIMARY KEY (post_id, comment_id),
@@ -155,18 +184,6 @@ CREATE TABLE dataservices.post_comment (
 
 CREATE TABLE dataservices.post_like (
     post_id TIMEUUID, -- foreign key: post.post_id
-    liker__user_id TIMEUUID, -- foreign key: user.user_id
-    PRIMARY KEY (post_id, liker__user_id)
-);
-
-CREATE TABLE dataservices.temporary_post (
-    temp_post_id TIMEUUID,
-    author__user_id TIMEUUID, -- foreign key: user.user_id
-    PRIMARY KEY (author__user_id, temp_post_id)
-);
-
-CREATE TABLE dataservices.multiuse_post_attachment ( -- used for temporary & permanent posts
-    multiuse_post_id TIMEUUID, -- foreign key: can be temp_post_id or post_id
-    asset_id TIMEUUID, -- foreign key: assets.asset_id
-    PRIMARY KEY (multiuse_post_id, asset_id)
+    liker_id TIMEUUID, -- foreign key: user.user_id
+    PRIMARY KEY (post_id, liker_id)
 );

@@ -1,0 +1,1 @@
+ALTER TABLE dataservices.user ADD (public_profile boolean);

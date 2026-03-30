@@ -3,7 +3,8 @@
 use scylla::DeserializeRow;
 use scylla::value;
 #[derive(Debug, DeserializeRow)]
-pub struct PostLike {
-    pub post_id: value::CqlTimeuuid,
-    pub liker_id: value::CqlTimeuuid,
+pub struct UserTimelineMeta {
+    pub user_id: value::CqlTimeuuid,
+    pub timeline_type: i32,
+    pub last_fanned_in_at: value::CqlTimeuuid,
 }

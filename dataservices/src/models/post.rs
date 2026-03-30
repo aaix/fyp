@@ -4,10 +4,11 @@ use scylla::DeserializeRow;
 use scylla::value;
 #[derive(Debug, DeserializeRow)]
 pub struct Post {
+    pub asset_id: value::CqlTimeuuid,
+    pub content_type: String,
+    pub post_type: i32,
     pub post_id: value::CqlTimeuuid,
-    pub author__user_id: value::CqlTimeuuid,
+    pub author_id: value::CqlTimeuuid,
     pub body: String,
     pub last_edited: value::CqlTimestamp,
-    pub opt_likes: Option<i32>,
-    pub opt_comments: Option<i32>,
 }

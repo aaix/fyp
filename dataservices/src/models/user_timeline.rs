@@ -3,10 +3,8 @@
 use scylla::DeserializeRow;
 use scylla::value;
 #[derive(Debug, DeserializeRow)]
-pub struct PostComment {
-    pub comment_id: value::CqlTimeuuid,
+pub struct UserTimeline {
+    pub user_id: value::CqlTimeuuid,
+    pub timeline_type: i32,
     pub post_id: value::CqlTimeuuid,
-    pub author_id: value::CqlTimeuuid,
-    pub body: String,
-    pub opt_last_edited: Option<value::CqlTimestamp>,
 }

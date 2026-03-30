@@ -3,10 +3,8 @@
 use scylla::DeserializeRow;
 use scylla::value;
 #[derive(Debug, DeserializeRow)]
-pub struct PostComment {
-    pub comment_id: value::CqlTimeuuid,
+pub struct PostNumCounters {
     pub post_id: value::CqlTimeuuid,
-    pub author_id: value::CqlTimeuuid,
-    pub body: String,
-    pub opt_last_edited: Option<value::CqlTimestamp>,
+    pub post_likes: value::Counter,
+    pub post_comments: value::Counter,
 }

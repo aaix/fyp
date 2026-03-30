@@ -9,4 +9,5 @@ pub struct User {
     pub email: String,
     pub public_key: Vec<u8>,
     pub opt_avatar_asset_id: Option<value::CqlTimeuuid>,
+    pub public_profile: bool,
 }
