@@ -6,6 +6,7 @@ from uuid import UUID
 from fastapi import Depends, Path
 
 from api.middleware.auth import SessionParam
+from api.responses import ApiErrExc
 from api.utils import ResourceNotFoundRpcHandler, RpcErrHandler
 from shared.py.discovery import DiscoveryManager
 from shared.py.grpc.channel import get_channel
@@ -48,7 +49,7 @@ async def _channel_dependency_with_member(s: SessionParam, channel_id: Annotated
     with ResourceNotFoundRpcHandler("channel_id", channel_id) as h:
         channel = await get_channel(grpcchannel, channel_id)
         if not any(me == member for member in channel.channel_members):
-            h.do_raise()
+            raise ApiErrExc(h.error())
         return channel
 
 

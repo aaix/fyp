@@ -34,7 +34,7 @@ def now() -> int:
 
 class RpcErrHandler:
     """Helper to return an API error on a specific rpc exception raised"""
-    def __init__(self, code: StatusCode, callback: Callable[[], ErrorResponse]):
+    def __init__(self, code: StatusCode, callback: Callable[[RpcError], ErrorResponse]):
         self.__code = code
         self.__callback = callback
 
@@ -56,12 +56,12 @@ class RpcErrHandler:
             return False
 
         if exc.code() == self.__code:
-            self.do_raise()
+            self.do_raise(exc)
         
         return False # dont suppress other rpc errors
 
-    def do_raise(self) -> Never:
-        raise ApiErrExc(self.__callback())
+    def do_raise(self, error: RpcError) -> Never:
+        raise ApiErrExc(self.__callback(error))
 
 class ResourceNotFoundRpcHandler(RpcErrHandler):
     """Special case for mapping rpc not found to 404 user not found error"""
@@ -71,10 +71,14 @@ class ResourceNotFoundRpcHandler(RpcErrHandler):
         return errors.NotFound(f"Resource {param_type} {resource_id} not found", api_error_code=errors.ERROR_NO_SUCH_RESOURCE)
 
     def __init__(self, param_type: LiteralString, resource_id: SupportsStr):
+        self.resource_id = resource_id
+        self.param_type: LiteralString = param_type
         super().__init__(
             StatusCode.NOT_FOUND,
-            lambda: self.make_error(param_type, resource_id)
+            self.error
         )
+    def error(self, _: object = None) -> errors.NotFound:
+        return self.make_error(self.param_type, self.resource_id)
 
 def get_ip_from_request(request: Request) -> IPv4Address | IPv6Address | None:
     cf_connecting_ip = request.headers.get("CF-Connecting-IP", None)

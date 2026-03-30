@@ -49,7 +49,7 @@ async def signup(r: Request, body: SignupBody) -> SignupResponse:
 
     with RpcErrHandler(
         StatusCode.ALREADY_EXISTS,
-        lambda: errors.BadRequest("username already exists", api_error_code=errors.ERROR_ALREADY_EXISTS)
+        lambda _: errors.BadRequest("username already exists", api_error_code=errors.ERROR_ALREADY_EXISTS)
     ):
         stub = await grpcuser()
         res = cast(user_pb2.ReadUserResponse, await stub.CreateUser(user_pb2.CreateUserRequest(
@@ -206,17 +206,17 @@ async def set_my_icon(
     # creating a path None would be bad
     assert puuid_opt(user.avatar_asset_id)
 
-
-    await mediaservices.transform_image(
-        grpcmedia,
-        public=True,
-        bucket_id=s.user_id,
-        asset_id=user.avatar_asset_id,
-        mime_in=icon.content_type,
-        mime_out=CONF_AVATAR_CONTENT_TYPE,
-        data=icon,
-        dimensions=CONF_AVATAR_DIMENSIONS,
-    )
+    with RpcErrHandler(StatusCode.INVALID_ARGUMENT, lambda e: errors.BadRequest(e.details() or "Unsupported input")):
+        await mediaservices.transform_image(
+            grpcmedia,
+            public=True,
+            bucket_id=s.user_id,
+            asset_id=user.avatar_asset_id,
+            mime_in=icon.content_type,
+            mime_out=CONF_AVATAR_CONTENT_TYPE,
+            data=icon,
+            dimensions=CONF_AVATAR_DIMENSIONS,
+        )
 
     return PublicAsset(
         asset_id=puuid_uuid(user.avatar_asset_id) or unwrap(),
