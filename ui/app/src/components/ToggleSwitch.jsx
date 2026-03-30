@@ -3,9 +3,11 @@ export default function ToggleSwitch({
   onChange,
   disabled = false,
   label,
+  ariaLabel,
   onLabel = 'On',
   offLabel = 'Off',
 }) {
+  const switchAriaLabel = ariaLabel ?? label
   return (
     <label className="flex items-center gap-2">
       {label ? <span className="text-xs text-[color:var(--text-muted)]">{label}</span> : null}
@@ -13,7 +15,7 @@ export default function ToggleSwitch({
         type="button"
         role="switch"
         aria-checked={checked}
-        aria-label={label}
+        aria-label={switchAriaLabel}
         disabled={disabled}
         onClick={() => onChange?.(!checked)}
         className={`relative inline-flex h-6 w-11 items-center rounded-full p-0 transition-colors ${

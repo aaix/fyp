@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { DeviceManager } from '../lib/session.js'
+import { DeviceManager, getCurrentSession } from '../lib/session.js'
 import { gatewayFactory } from '../lib/gateway.js'
 import { timeFromUUIDv1 } from '../lib/utils.js'
 import ConfirmModal from '../components/ConfirmModal.jsx'
@@ -7,6 +7,7 @@ import PageContainer from '../components/PageContainer.jsx'
 import Button from '../components/Button.jsx'
 import IconLinkButton from '../components/IconLinkButton.jsx'
 import ClickableRow from '../components/ClickableRow.jsx'
+import ToggleSwitch from '../components/ToggleSwitch.jsx'
 
 const deviceManager = new DeviceManager()
 
@@ -58,6 +59,12 @@ export default function SettingsPage() {
   const [registerCodeModalOpen, setRegisterCodeModalOpen] = useState(false)
   const [registerConfirmDetails, setRegisterConfirmDetails] = useState(null)
   const registerConfirmResolverRef = useRef(null)
+  const [profilePublic, setProfilePublic] = useState(null)
+  const [profileVisibilityLoading, setProfileVisibilityLoading] = useState(true)
+  const [profileVisibilityError, setProfileVisibilityError] = useState(null)
+  const [visibilityConfirmTarget, setVisibilityConfirmTarget] = useState(null)
+  const [visibilitySaveLoading, setVisibilitySaveLoading] = useState(false)
+  const [visibilitySaveError, setVisibilitySaveError] = useState(null)
 
   useEffect(() => {
     let cancelled = false
@@ -70,6 +77,68 @@ export default function SettingsPage() {
     )
     return () => { cancelled = true }
   }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    setProfileVisibilityLoading(true)
+    setProfileVisibilityError(null)
+    const session = getCurrentSession()
+    session
+      .getCurrentAccount()
+      .then((res) => {
+        if (cancelled) return
+        if (res.success) {
+          setProfilePublic(!!res.data?.public_profile)
+        } else {
+          setProfileVisibilityError(res.error?.message ?? 'Failed to load profile settings')
+          setProfilePublic(false)
+        }
+      })
+      .catch((err) => {
+        console.error(err)
+        if (!cancelled) {
+          setProfileVisibilityError(err?.message ?? 'Failed to load profile settings')
+          setProfilePublic(false)
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setProfileVisibilityLoading(false)
+      })
+    return () => { cancelled = true }
+  }, [])
+
+  const openVisibilityConfirm = (nextPublic) => {
+    if (profilePublic === null || profileVisibilityLoading || visibilitySaveLoading) return
+    setVisibilitySaveError(null)
+    setVisibilityConfirmTarget(nextPublic)
+  }
+
+  const closeVisibilityConfirm = () => {
+    if (!visibilitySaveLoading) {
+      setVisibilityConfirmTarget(null)
+      setVisibilitySaveError(null)
+    }
+  }
+
+  const confirmVisibilityChange = async () => {
+    if (visibilityConfirmTarget === null || visibilitySaveLoading) return
+    setVisibilitySaveLoading(true)
+    setVisibilitySaveError(null)
+    try {
+      const res = await getCurrentSession().setMyProfilePublic(visibilityConfirmTarget)
+      if (!res.success) {
+        setVisibilitySaveError(res.error?.message ?? 'Could not update profile visibility')
+        return
+      }
+      setProfilePublic(visibilityConfirmTarget)
+      setVisibilityConfirmTarget(null)
+    } catch (err) {
+      console.error(err)
+      setVisibilitySaveError(err?.message ?? 'Could not update profile visibility')
+    } finally {
+      setVisibilitySaveLoading(false)
+    }
+  }
 
   const openDeleteModal = (device, e) => {
     e?.stopPropagation?.()
@@ -327,25 +396,99 @@ export default function SettingsPage() {
           </section>
 
           <section
-            className="rounded-card border border-[color:var(--card-border)] bg-[color:var(--card-bg)] p-5 opacity-70 shadow-subtle"
-            aria-label="Additional settings"
+            className="rounded-card border border-[color:var(--card-border)] bg-[color:var(--card-bg)] p-5 shadow-subtle"
+            aria-label="Profile visibility"
           >
-            <header className="flex items-center gap-3">
+            <header className="mb-3 flex items-center gap-3">
               <span className="material-symbols-outlined text-2xl text-[color:var(--accent)]" aria-hidden>
-                tune
+                visibility
               </span>
               <div>
                 <h2 className="m-0 text-[1.05rem] font-semibold text-[color:var(--text-primary)]">
-                  More controls
+                  Profile visibility
                 </h2>
                 <p className="mt-[0.15rem] text-xs text-[color:var(--text-muted)]">
-                  Additional powerful settings will appear here.
+                  Control who can discover and view your profile.
                 </p>
               </div>
             </header>
+            <div className="flex flex-col gap-2">
+              {profileVisibilityLoading ? (
+                <p className="m-0 text-sm text-[color:var(--text-muted)]">Loading…</p>
+              ) : profileVisibilityError ? (
+                <p className="m-0 text-sm text-red-600">{profileVisibilityError}</p>
+              ) : (
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="m-0 text-sm font-medium text-[color:var(--text-primary)]">
+                      {profilePublic ? 'Public' : 'Private'}
+                    </p>
+                    <p className="mt-0.5 text-xs text-[color:var(--text-muted)]">
+                      {profilePublic
+                        ? 'Your profile can be viewed by anyone who finds it.'
+                        : 'Your profile is only visible to people you allow.'}
+                    </p>
+                  </div>
+                  <ToggleSwitch
+                    checked={profilePublic === true}
+                    onChange={openVisibilityConfirm}
+                    disabled={
+                      profileVisibilityLoading ||
+                      visibilitySaveLoading ||
+                      visibilityConfirmTarget !== null
+                    }
+                    ariaLabel="Profile visibility: public or private"
+                    onLabel="Public"
+                    offLabel="Private"
+                  />
+                </div>
+              )}
+            </div>
           </section>
         </div>
       </main>
+
+      <ConfirmModal
+        open={visibilityConfirmTarget !== null}
+        title={
+          visibilityConfirmTarget === true
+            ? 'Make profile public?'
+            : 'Make profile private?'
+        }
+        confirmLabel={
+          visibilitySaveLoading
+            ? 'Saving…'
+            : visibilityConfirmTarget === true
+              ? 'Make public'
+              : 'Make private'
+        }
+        cancelLabel="Cancel"
+        confirmVariant="primary"
+        confirmDisabled={visibilitySaveLoading}
+        onConfirm={confirmVisibilityChange}
+        onCancel={closeVisibilityConfirm}
+        labelledById="profile-visibility-confirm-title"
+      >
+        {visibilityConfirmTarget === true ? (
+          <div className="flex flex-col gap-2 text-sm text-[color:var(--text-muted)]">
+            <p>
+              This will allow <strong className="text-[color:var(--text-primary)]">anyone</strong> to view
+              your profile and the things you post. Only continue if you are comfortable with that.
+            </p>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-2 text-sm text-[color:var(--text-muted)]">
+            <p>
+              Your profile will no longer be broadly discoverable.{' '}
+              <strong className="text-[color:var(--text-primary)]">This does not remove people who already follow you</strong>
+              —they will stay connected unless you remove them yourself.
+            </p>
+          </div>
+        )}
+        {visibilitySaveError && (
+          <p className="mt-2 text-sm text-red-600">{visibilitySaveError}</p>
+        )}
+      </ConfirmModal>
 
       {deviceToDelete && (
         <ConfirmModal
