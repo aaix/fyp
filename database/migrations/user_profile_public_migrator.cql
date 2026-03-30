@@ -1,1 +1,1 @@
-ALTER TABLE dataservices.user ADD (public_profile boolean);
+ALTER TABLE dataservices.user ADD (opt_public_profile boolean);

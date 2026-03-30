@@ -38,6 +38,7 @@ message ReadUserResponse {
     bytes public_key = 3;
     string username = 4;
     string email = 5;
+    bool is_public = 6;
 }
 
 message CreateUserRequest {
@@ -54,6 +55,7 @@ message UpdateUserRequest {
     // set, False = undefined
     // unset = ignore,
     optional google.protobuf.BoolValue opt_make_avatar_asset_id = 3;
+    optional google.protobuf.BoolValue opt_is_public = 4;
 
 }
 
@@ -159,6 +161,7 @@ service UserRelationshipService {
     // read all of a users relationships with others
     rpc ReadRelationships (ReadRelationshipsRequest) returns (RelationshipsResponse);
 
+    rpc GetUserRelationshipCounts (GetUserRelationshipCountsRequest) returns (GetUserRelationshipCountsResponse);
 }
 
 message CreateRelationshipRequest {
@@ -219,3 +222,13 @@ message RelationshipsResponse {
 }
 
 message DeleteRelationshipResponse {}
+
+message GetUserRelationshipCountsRequest {
+    plib.pUUID user_id = 1;
+}
+
+message GetUserRelationshipCountsResponse {
+    plib.pUUID user_id = 1;
+    int64 num_friends = 2;
+    int64 num_followers = 3;
+}

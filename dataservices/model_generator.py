@@ -51,7 +51,7 @@ for statement in cql_statements:
     name = next(iterator).split()[2]
     rows: list[str] = []
     pk: str | None = None
-    while row := next(iterator):
+    while row := next(iterator): # stopiteration: table without primary key
         if row.startswith("PRIMARY KEY"):
             pk = row
             break

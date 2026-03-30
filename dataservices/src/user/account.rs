@@ -107,6 +107,7 @@ impl ScyllaUserService {
         let public_key = row.public_key;
         let avatar = row.opt_avatar_asset_id;
         let email = row.email;
+        let is_public = row.opt_public_profile.unwrap_or(false);
 
         Ok(ReadUserResponse {
             user_id: Some(user_id.into()),
@@ -114,6 +115,7 @@ impl ScyllaUserService {
             public_key,
             username,
             email,
+            is_public,
         })
     }
 
@@ -157,6 +159,7 @@ impl ScyllaUserService {
             (&user_id, &email, &username, &public_key)
         ).await?;
 
+        
 
 
         Ok(Response::new(ReadUserResponse {
@@ -165,6 +168,7 @@ impl ScyllaUserService {
             public_key: public_key,
             email: email,
             username: username,
+            is_public: false,
         }))
     }
 

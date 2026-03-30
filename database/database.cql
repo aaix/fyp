@@ -13,7 +13,7 @@ CREATE TABLE dataservices.user (
     email TEXT,
     public_key BLOB, -- rsa public key
     opt_avatar_asset_id TIMEUUID, -- foreign key: asset.asset_id
-    public_profile boolean,
+    opt_public_profile boolean,
     PRIMARY KEY (user_id),
 );
 

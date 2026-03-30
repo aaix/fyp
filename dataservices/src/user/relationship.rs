@@ -1,25 +1,25 @@
-/*
-TABLE friendship
-
-TABLE friendship_request
-
-TABLE blocked_user
-*/
-
-use crate::{db_conn::db, errors::DSResult, helpers::time_now, models::relationship_v2::RelationshipV2, protos::dataservices::user_service::{self, CreateRelationshipRequest, DeleteRelationshipResponse, HalfRelationship, ReadRelationshipRequest, ReadRelationshipResponse, ReadRelationshipsRequest, RelationshipObject, RelationshipTestResponse, RelationshipsResponse, TestManyRelationshipsRequest, TestManyRelationshipsResponse}, req_tuuid};
+use crate::{db_conn::db, errors::DSResult, helpers::time_now, models::{relationship_v2::RelationshipV2, user_num_relationships::UserNumRelationships}, protos::dataservices::user_service::{self, CreateRelationshipRequest, DeleteRelationshipResponse, GetUserRelationshipCountsRequest, GetUserRelationshipCountsResponse, HalfRelationship, ReadRelationshipRequest, ReadRelationshipResponse, ReadRelationshipsRequest, RelationshipObject, RelationshipTestResponse, RelationshipsResponse, TestManyRelationshipsRequest, TestManyRelationshipsResponse}, req_tuuid};
 
 use futures::{StreamExt, future::join_all};
-use scylla::{statement::prepared::PreparedStatement, value::CqlTimeuuid};
+use scylla::{errors::FirstRowError, statement::prepared::PreparedStatement, value::{Counter, CqlTimeuuid}};
 use tonic::{Request, Response, Status, async_trait};
 use user_service::user_relationship_service_server::{UserRelationshipService, UserRelationshipServiceServer};
 
 
+const REL_TYPE_FRIENDS: i32 = 3;
+const REL_TYPE_A_FOLLOWING_B: i32 = 7;
+const REL_TYPE_B_FOLLOWING_A: i32 = 8;
+
+
+
 pub struct ScyllaUserRelationshipService {
     create_relationship_prepared: PreparedStatement,
+    modify_relationship_counters_prepared: PreparedStatement,
     read_relationship_prepared: PreparedStatement,
     read_relationships_prepared: PreparedStatement,
     delete_relationship_prepared: PreparedStatement,
     test_relationship_prepared: PreparedStatement,
+    read_relationship_counters_prepared: PreparedStatement,
 }
 
 
@@ -45,6 +45,19 @@ impl ScyllaUserRelationshipService {
             APPLY BATCH"
         ).await?;
 
+        let modify_relationship_counter_prepared = db().await.prepare(
+            "
+            UPDATE dataservices.user_num_relationships \
+            SET num_friends = num_friends + ?, num_followers = num_followers + ? \
+            WHERE user_id = ?;"
+        ).await?;
+
+
+
+        let read_relationship_counters_prepared = db().await.prepare(
+            "SELECT * FROM dataservices.user_num_relationships WHERE user_id = ?"
+        ).await?;
+
         let read_relationship_prepared = db().await.prepare(
             "SELECT * FROM dataservices.relationship_v2 WHERE user_id_a = ? AND user_id_b = ? AND relationship_type IN ?"
         ).await?;
@@ -66,10 +79,12 @@ impl ScyllaUserRelationshipService {
 
         Ok(Self {
             create_relationship_prepared, 
+            modify_relationship_counters_prepared: modify_relationship_counter_prepared,
             read_relationship_prepared,
             read_relationships_prepared,
             delete_relationship_prepared,
             test_relationship_prepared,
+            read_relationship_counters_prepared,
         })
     }
 }
@@ -87,7 +102,49 @@ impl ScyllaUserRelationshipService {
         let a_to_b_type = inner.a_to_b_type;
         let b_to_a_type = inner.b_to_a_type;
 
-        // batch insert/upsert both directions
+
+        match (a_to_b_type, b_to_a_type) {
+            // creating friendship
+            (REL_TYPE_FRIENDS,REL_TYPE_FRIENDS ) => {
+                
+                let (a, b) = tokio::join!(
+                    // increment a
+                    db().await.execute_unpaged(
+                        &self.modify_relationship_counters_prepared,
+                        (Counter(1), Counter(0), &user_a_id,),
+                    ),
+                    // increment b
+                    db().await.execute_unpaged(
+                        &self.modify_relationship_counters_prepared,
+                        (Counter(1), Counter(0), &user_b_id,),
+                    )
+                );
+                if a.is_err() {
+                    tracing::error!("error updating counter a {a:?}");
+                }
+                if b.is_err() {
+                    tracing::error!("error updating counter b {b:?}");
+                }
+                if a.is_err() && b.is_err() {
+                    b?;
+                }
+                
+            },
+            // a is following b
+            (REL_TYPE_A_FOLLOWING_B,REL_TYPE_B_FOLLOWING_A) => {
+                db().await.execute_unpaged(
+                    &self.modify_relationship_counters_prepared,
+                    (
+                        Counter(0),
+                        Counter(1),
+                        &user_b_id,
+                    ),
+                ).await?;
+            },
+            // default
+            _ => {}
+        }
+
         db().await.execute_unpaged(
             &self.create_relationship_prepared,
             (
@@ -102,6 +159,7 @@ impl ScyllaUserRelationshipService {
             ),
         )
         .await?;
+
 
         Ok(Response::new(RelationshipObject {
             user_id_a: Some(user_a_id.into()),
@@ -146,23 +204,68 @@ impl ScyllaUserRelationshipService {
         &self,
         request: Request<CreateRelationshipRequest>,
     ) -> DSResult<Response<DeleteRelationshipResponse>> {
-        let user_a: CqlTimeuuid = req_tuuid!(request, user_id_a)?;
-        let user_b: CqlTimeuuid = req_tuuid!(request, user_id_b)?;
+        let user_a_id: CqlTimeuuid = req_tuuid!(request, user_id_a)?;
+        let user_b_id: CqlTimeuuid = req_tuuid!(request, user_id_b)?;
         let inner = request.get_ref();
         let a_to_b_type = inner.a_to_b_type;
         let b_to_a_type = inner.b_to_a_type;
 
-        db().await.execute_unpaged(&self.delete_relationship_prepared,
-                (
-                    &user_a,
-                    &user_b,
-                    &a_to_b_type,
-                    &user_b,
-                    &user_a,
-                    &b_to_a_type,
-                ),
-            )
-            .await?;
+        match (a_to_b_type, b_to_a_type) {
+            // creating friendship
+            (REL_TYPE_FRIENDS, REL_TYPE_FRIENDS ) => {
+                let (a, b) = tokio::join!(
+                    // decrement a
+                    db().await.execute_unpaged(
+                        &self.modify_relationship_counters_prepared,
+                        (Counter(-1), Counter(0), &user_a_id,),
+                    ),
+                    // decrement b
+                    db().await.execute_unpaged(
+                        &self.modify_relationship_counters_prepared,
+                        (Counter(-1), Counter(0), &user_b_id,),
+                    )
+                );
+                if a.is_err() {
+                    tracing::error!("error updating counter a {a:?}");
+                }
+                if b.is_err() {
+                    tracing::error!("error updating counter b {b:?}");
+                }
+                if a.is_err() && b.is_err() {
+                    b?;
+                }            
+            },
+            // a is following b
+            (REL_TYPE_A_FOLLOWING_B, REL_TYPE_B_FOLLOWING_A) => {
+                db().await.execute_unpaged(
+                    &self.modify_relationship_counters_prepared,
+                    (
+                        Counter(0),
+                        Counter(-1),
+                        &user_b_id,
+                    ),
+                ).await?;
+            },
+            // default
+            _ => {}
+        }
+            
+        db().await.execute_unpaged(
+            &self.delete_relationship_prepared,
+            (
+                &user_a_id,
+                &user_b_id,
+                &a_to_b_type,
+                &user_b_id,
+                &user_a_id,
+                &b_to_a_type,
+            ),
+        )
+        .await?;
+            
+        
+
+
 
         Ok(Response::new(DeleteRelationshipResponse {}))
     }
@@ -255,6 +358,43 @@ impl ScyllaUserRelationshipService {
 
         Ok(Response::new(RelationshipsResponse { relationships }))
     }
+
+    async fn get_user_relationship_counts_impl(
+        &self,
+        request: tonic::Request<GetUserRelationshipCountsRequest>,
+    ) -> DSResult<
+        tonic::Response<GetUserRelationshipCountsResponse>> {
+        let user_id: CqlTimeuuid = req_tuuid!(request, user_id)?;
+        let inner = request.get_ref();
+        let row_res = db().await.execute_unpaged(
+            &self.read_relationship_counters_prepared, 
+        &(
+            user_id,
+            )
+        ).await?.into_rows_result()?.first_row::<UserNumRelationships>();
+
+
+        // in case of no row we can default to 0
+        let (num_friends, num_followers) = match row_res {
+            Err(e) => {
+                if let FirstRowError::RowsEmpty = e {
+                    (0, 0)
+                } else {
+                    return Err(e.into());
+                }
+            }
+            Ok(r) => {
+                (r.num_friends.0, r.num_followers.0)
+            }
+        };
+
+
+        Ok(Response::new(GetUserRelationshipCountsResponse {
+            user_id: inner.user_id,
+            num_friends,
+            num_followers,
+        }))
+    }
 }
 
 
@@ -326,6 +466,16 @@ impl UserRelationshipService for ScyllaUserRelationshipService {
     > {
         Ok(self.read_relationships_impl(request).await?)
 
+    }
+
+    async fn get_user_relationship_counts(
+        &self,
+        request: tonic::Request<GetUserRelationshipCountsRequest>,
+    ) -> std::result::Result<
+        tonic::Response<GetUserRelationshipCountsResponse>,
+        tonic::Status,
+    > {
+        Ok(self.get_user_relationship_counts_impl(request).await?)
     }
     
 }

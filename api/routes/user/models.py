@@ -28,6 +28,8 @@ type UsernameSearchQuery = Annotated[str, Query(max_length=USERNAME_MAX_LENGTH, 
 
 class UserProfileResponse(BaseModel):
     user: UserSearchResponse
+    friends: int | None
+    followers: int | None
 
 class UserRelationshipResponse(BaseModel):
     peer_id: UUID

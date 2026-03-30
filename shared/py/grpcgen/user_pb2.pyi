@@ -27,18 +27,20 @@ class ReadUserByUsernameRequest(_message.Message):
     def __init__(self, username: _Optional[str] = ...) -> None: ...
 
 class ReadUserResponse(_message.Message):
-    __slots__ = ("user_id", "avatar_asset_id", "public_key", "username", "email")
+    __slots__ = ("user_id", "avatar_asset_id", "public_key", "username", "email", "is_public")
     USER_ID_FIELD_NUMBER: _ClassVar[int]
     AVATAR_ASSET_ID_FIELD_NUMBER: _ClassVar[int]
     PUBLIC_KEY_FIELD_NUMBER: _ClassVar[int]
     USERNAME_FIELD_NUMBER: _ClassVar[int]
     EMAIL_FIELD_NUMBER: _ClassVar[int]
+    IS_PUBLIC_FIELD_NUMBER: _ClassVar[int]
     user_id: _plib_pb2.pUUID
     avatar_asset_id: _plib_pb2.pUUID
     public_key: bytes
     username: str
     email: str
-    def __init__(self, user_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., avatar_asset_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., public_key: _Optional[bytes] = ..., username: _Optional[str] = ..., email: _Optional[str] = ...) -> None: ...
+    is_public: bool
+    def __init__(self, user_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., avatar_asset_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., public_key: _Optional[bytes] = ..., username: _Optional[str] = ..., email: _Optional[str] = ..., is_public: bool = ...) -> None: ...
 
 class CreateUserRequest(_message.Message):
     __slots__ = ("username", "email", "public_key")
@@ -51,14 +53,16 @@ class CreateUserRequest(_message.Message):
     def __init__(self, username: _Optional[str] = ..., email: _Optional[str] = ..., public_key: _Optional[bytes] = ...) -> None: ...
 
 class UpdateUserRequest(_message.Message):
-    __slots__ = ("user_id", "username", "opt_make_avatar_asset_id")
+    __slots__ = ("user_id", "username", "opt_make_avatar_asset_id", "opt_is_public")
     USER_ID_FIELD_NUMBER: _ClassVar[int]
     USERNAME_FIELD_NUMBER: _ClassVar[int]
     OPT_MAKE_AVATAR_ASSET_ID_FIELD_NUMBER: _ClassVar[int]
+    OPT_IS_PUBLIC_FIELD_NUMBER: _ClassVar[int]
     user_id: _plib_pb2.pUUID
     username: str
     opt_make_avatar_asset_id: _wrappers_pb2.BoolValue
-    def __init__(self, user_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., username: _Optional[str] = ..., opt_make_avatar_asset_id: _Optional[_Union[_wrappers_pb2.BoolValue, _Mapping]] = ...) -> None: ...
+    opt_is_public: _wrappers_pb2.BoolValue
+    def __init__(self, user_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., username: _Optional[str] = ..., opt_make_avatar_asset_id: _Optional[_Union[_wrappers_pb2.BoolValue, _Mapping]] = ..., opt_is_public: _Optional[_Union[_wrappers_pb2.BoolValue, _Mapping]] = ...) -> None: ...
 
 class DeleteUserRequest(_message.Message):
     __slots__ = ("user_id",)
@@ -279,3 +283,19 @@ class RelationshipsResponse(_message.Message):
 class DeleteRelationshipResponse(_message.Message):
     __slots__ = ()
     def __init__(self) -> None: ...
+
+class GetUserRelationshipCountsRequest(_message.Message):
+    __slots__ = ("user_id",)
+    USER_ID_FIELD_NUMBER: _ClassVar[int]
+    user_id: _plib_pb2.pUUID
+    def __init__(self, user_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ...) -> None: ...
+
+class GetUserRelationshipCountsResponse(_message.Message):
+    __slots__ = ("user_id", "num_friends", "num_followers")
+    USER_ID_FIELD_NUMBER: _ClassVar[int]
+    NUM_FRIENDS_FIELD_NUMBER: _ClassVar[int]
+    NUM_FOLLOWERS_FIELD_NUMBER: _ClassVar[int]
+    user_id: _plib_pb2.pUUID
+    num_friends: int
+    num_followers: int
+    def __init__(self, user_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., num_friends: _Optional[int] = ..., num_followers: _Optional[int] = ...) -> None: ...

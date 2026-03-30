@@ -6,6 +6,7 @@ from collections.abc import Iterable
 from uuid import UUID
 
 
+from shared.py.grpc import instrument_call
 from shared.py.grpc.id import id_t, id_puuid
 from shared.py.grpc.lazy import DataservicesLazyGRPC
 from shared.py.grpcgen import user_pb2
@@ -23,8 +24,8 @@ class RelationshipType(IntEnum):
     PEER_BLOCKED_CURRENT = 5
     CURRENT_BLOCKED_PEER = 6
 
-    CURRENT_FOLLOWING_PEER = 5
-    PEER_FOLLOWING_CURRENT = 6
+    CURRENT_FOLLOWING_PEER = 7
+    PEER_FOLLOWING_CURRENT = 8
 
 BLOCKED_RELATIONSHIPS = (RelationshipType.CURRENT_BLOCKED_PEER, RelationshipType.PEER_BLOCKED_CURRENT)
 
@@ -86,6 +87,15 @@ async def delete_relationship(
         user_id_b=id_puuid(user_id_b),
         a_to_b_type=a_to_b_type.value,
         b_to_a_type=b_to_a_type.value,
+    )))
+
+async def read_relationship_counts(
+    lazy: DataservicesLazyGRPC[UserRelationshipServiceStub],
+    user_id: id_t,
+) -> user_pb2.GetUserRelationshipCountsResponse:
+    stub = await lazy(user_id)
+    return cast(user_pb2.GetUserRelationshipCountsResponse, await stub.GetUserRelationshipCounts(user_pb2.GetUserRelationshipCountsRequest(
+        user_id=id_puuid(user_id)
     )))
 
 
@@ -171,6 +181,19 @@ class PeerRelationshipManager:
     async def request_other(self) -> user_pb2.RelationshipObject:
         return await self._create_relationship(RelationshipType.CURRENT_REQUESTING_PEER, RelationshipType.PEER_REQUESTING_CURRENT)
 
+    async def is_current_following_peer(self) -> bool:
+        return await self._do_test(RelationshipType.CURRENT_FOLLOWING_PEER)
+
+    async def is_peer_following_current(self) -> bool:
+        return await self._do_test(RelationshipType.PEER_FOLLOWING_CURRENT)
+
+    async def follow_peer(self) -> user_pb2.RelationshipObject:
+        return await self._create_relationship(RelationshipType.CURRENT_FOLLOWING_PEER, RelationshipType.PEER_FOLLOWING_CURRENT)
+
+    async def unfollow_peer(self):
+        return await self._delete_relationship(RelationshipType.CURRENT_FOLLOWING_PEER, RelationshipType.PEER_FOLLOWING_CURRENT)
+
+
     async def _delete_relationship(self, current_to_peer: RelationshipType, peer_to_current: RelationshipType):
         await delete_relationship(
             self.lazy,
@@ -188,3 +211,24 @@ class PeerRelationshipManager:
         
     async def unblock(self):
         await self._delete_relationship(RelationshipType.CURRENT_BLOCKED_PEER, RelationshipType.PEER_BLOCKED_CURRENT)
+
+
+async def can_i_view_peer_profile(lazy: DataservicesLazyGRPC[UserRelationshipServiceStub],me: id_t, peer: user_pb2.ReadUserResponse) -> tuple[bool, bool]:
+    if peer.is_public:
+        fetch_on_entry = (RelationshipType.PEER_BLOCKED_CURRENT,) # no
+    else:
+        fetch_on_entry = (
+            RelationshipType.PEER_BLOCKED_CURRENT, # no
+            RelationshipType.FRIENDS, # yes
+            RelationshipType.PEER_BLOCKED_CURRENT # yes,
+        )
+    async with PeerRelationshipManager(lazy, me, peer.user_id, fetch_on_entry) as r:
+        if await r.peer_blocked_current():
+            return True, False
+        if peer.is_public:
+            return False, True
+        if await r.are_friends():
+            return False, True
+        if await r.is_peer_following_current():
+            return False, True
+    return False, False

@@ -26,5 +26,5 @@ class UserSearchResponse(BaseModel):
             user_id=u_id,
             avatar_asset_id=puuid_uuid(res.opt_avatar_asset_id),
             public_key=PEMPublicKey.from_bytes(res.public_key),
-            username=res.username
+            username=res.username,
         )

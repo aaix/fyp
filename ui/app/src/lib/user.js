@@ -33,7 +33,7 @@ export class UserManager {
 
 export const userManager = new UserManager();
 
-export const PEER_PROFILE_RELATIONSHIP_TYPES = Object.freeze([1, 2, 3, 5, 6]);
+export const PEER_PROFILE_RELATIONSHIP_TYPES = Object.freeze([1, 2, 3, 5, 6, 7, 8]);
 
 export class RelationshipManager {
 
@@ -391,6 +391,24 @@ export class RelationshipManager {
 
     async unfriendUser(user_id) {
         const res = await API.DELETE(`user/relationship/${user_id}/friend`);
+        if (res.success) {
+            this.updateRelationships(user_id, null);
+        }
+        return res;
+    }
+    
+
+    async followUser(user_id) {
+        const res = await API.PUT(`user/relationship/${user_id}/follow`);
+
+        if (res.success) {
+            this.updateRelationships(user_id, res.data.relationship);
+        }
+        return res;
+    }
+
+    async unfollowUser(user_id) {
+        const res = await API.DELETE(`user/relationship/${user_id}/follow`);
         if (res.success) {
             this.updateRelationships(user_id, null);
         }
