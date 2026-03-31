@@ -12,6 +12,7 @@ from shared.py.grpc.lazy import DataservicesLazyGRPC
 from shared.py.grpcgen import user_pb2
 from shared.py.grpc.lazy import DataservicesLazyGRPC
 from shared.py.grpcgen.user_pb2_grpc import UserRelationshipServiceStub
+from shared.py.types import UNSET, MaybeUnset
 
 
 
@@ -67,11 +68,20 @@ async def test_many_relationships(lazy: DataservicesLazyGRPC[UserRelationshipSer
         tests=tests
     )))
 
-async def read_relationships(lazy: DataservicesLazyGRPC[UserRelationshipServiceStub], user_id: id_t, r_type: RelationshipType) -> user_pb2.RelationshipsResponse:
+async def read_relationships(
+    lazy: DataservicesLazyGRPC[UserRelationshipServiceStub],
+    user_id: id_t,
+    r_type: RelationshipType,
+    limit: int,
+    before: MaybeUnset[id_t] = UNSET,
+) -> user_pb2.RelationshipsResponse:
+
     stub = await lazy(user_id)
     return cast(user_pb2.RelationshipsResponse, await stub.ReadRelationships(user_pb2.ReadRelationshipsRequest(
         user_id=id_puuid(user_id),
         relationship_type=r_type.value,
+        limit=limit,
+        before=id_puuid(before) if before is not UNSET else None,
     )))
 
 async def delete_relationship(

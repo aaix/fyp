@@ -35,27 +35,10 @@ CREATE TABLE dataservices.user_device (
 );
 
 -- Will have 2 rows per relationship
-CREATE TABLE dataservices.relationship (
+CREATE TABLE dataservices.relationship_v3 (
     user_id_a TIMEUUID,
     user_id_b TIMEUUID,
-    created_at TIMESTAMP,
-    relationship_type INT,
-    -- 0 reserved
-
-    -- 1 a requesting b
-    -- 2 b requesting a
-
-    -- 3 a friends with b
-
-    -- 5 b blocked a
-    -- 6 a blocked by b
-    PRIMARY KEY (user_id_a, user_id_b, relationship_type)
-);
-
-CREATE TABLE dataservices.relationship_v2 (
-    user_id_a TIMEUUID,
-    user_id_b TIMEUUID,
-    created_at TIMESTAMP,
+    created_at TIMEUUID,
     relationship_type INT,
     -- 0 reserved
 
@@ -68,8 +51,8 @@ CREATE TABLE dataservices.relationship_v2 (
     -- 6 a blocked by b
     -- 7 a following b
     -- 8 b following a
-    PRIMARY KEY (user_id_a, relationship_type, user_id_b)
-);
+    PRIMARY KEY (user_id_a, relationship_type, created_at, user_id_b)
+) WITH CLUSTERING ORDER BY (relationship_type ASC, created_at DESC);
 
 
 -- COALESCE on user_id

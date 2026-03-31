@@ -219,8 +219,8 @@ class RelationshipObject(_message.Message):
     user_id_a: _plib_pb2.pUUID
     user_id_b: _plib_pb2.pUUID
     relationship_type: int
-    created_at: int
-    def __init__(self, user_id_a: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., user_id_b: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., relationship_type: _Optional[int] = ..., created_at: _Optional[int] = ...) -> None: ...
+    created_at: _plib_pb2.pUUID
+    def __init__(self, user_id_a: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., user_id_b: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., relationship_type: _Optional[int] = ..., created_at: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ...) -> None: ...
 
 class ReadRelationshipResponse(_message.Message):
     __slots__ = ("relationships",)
@@ -259,20 +259,24 @@ class RelationshipTestResponse(_message.Message):
     def __init__(self, exists: bool = ...) -> None: ...
 
 class ReadRelationshipsRequest(_message.Message):
-    __slots__ = ("user_id", "relationship_type")
+    __slots__ = ("user_id", "relationship_type", "before", "limit")
     USER_ID_FIELD_NUMBER: _ClassVar[int]
     RELATIONSHIP_TYPE_FIELD_NUMBER: _ClassVar[int]
+    BEFORE_FIELD_NUMBER: _ClassVar[int]
+    LIMIT_FIELD_NUMBER: _ClassVar[int]
     user_id: _plib_pb2.pUUID
     relationship_type: int
-    def __init__(self, user_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., relationship_type: _Optional[int] = ...) -> None: ...
+    before: _plib_pb2.pUUID
+    limit: int
+    def __init__(self, user_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., relationship_type: _Optional[int] = ..., before: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., limit: _Optional[int] = ...) -> None: ...
 
 class HalfRelationship(_message.Message):
     __slots__ = ("user_id_b", "created_at")
     USER_ID_B_FIELD_NUMBER: _ClassVar[int]
     CREATED_AT_FIELD_NUMBER: _ClassVar[int]
     user_id_b: _plib_pb2.pUUID
-    created_at: int
-    def __init__(self, user_id_b: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., created_at: _Optional[int] = ...) -> None: ...
+    created_at: _plib_pb2.pUUID
+    def __init__(self, user_id_b: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., created_at: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ...) -> None: ...
 
 class RelationshipsResponse(_message.Message):
     __slots__ = ("relationships",)

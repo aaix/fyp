@@ -1,8 +1,7 @@
 pub mod user;
 pub mod user_by_username;
 pub mod user_device;
-pub mod relationship;
-pub mod relationship_v2;
+pub mod relationship_v3;
 pub mod user_num_relationships;
 pub mod channel;
 pub mod user_channel;

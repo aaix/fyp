@@ -1,4 +1,5 @@
 from typing import Annotated, cast
+from uuid import UUID
 
 
 from fastapi import APIRouter, Query
@@ -15,6 +16,7 @@ from shared.py.grpc.lazy import DataservicesLazyGRPC
 from shared.py.grpc.relationship import PeerRelationshipManager, RelationshipType, can_i_view_peer_profile, read_relationship_counts, read_relationships
 from shared.py.pydantic.pem import PEMPublicKey
 from shared.py.grpcgen import internalmessage_pb2, user_pb2, user_pb2_grpc
+from shared.py.types import UNSET
 
 
 discovery = DiscoveryManager()
@@ -62,9 +64,14 @@ async def get_user_profile(s: SessionParam, user: UserParam) -> UserProfileRespo
     )
 
 @UserRouter.get("/relationships")
-async def my_relationships(s: SessionParam, t: Annotated[RelationshipType, Query()]) -> RelationshipsResponse:
-
-    res = await read_relationships(grpcrelationship, s.user_id, t)
+async def my_relationships(
+    s: SessionParam,
+    t: Annotated[RelationshipType, Query()],
+    limit: Annotated[int, Query()] = 100,
+    before: Annotated[UUID | None, Query()] = None
+) -> RelationshipsResponse:
+    
+    res = await read_relationships(grpcrelationship, s.user_id, t, limit, before or UNSET)
 
     out: list[UserRelationshipResponse] = []
 
@@ -72,7 +79,7 @@ async def my_relationships(s: SessionParam, t: Annotated[RelationshipType, Query
         out.append(
             UserRelationshipResponse(
                 peer_id=puuid_uuid(r.user_id_b) or unwrap(),
-                created_at=r.created_at,
+                created_at=puuid_uuid(r.created_at) or unwrap(),
                 relationship=t
             )
         )
@@ -90,11 +97,7 @@ async def get_relationships_with_user(s: SessionParam, peer: UserParam, types: A
 
         for r in m.relationships or unwrap():
             out.append(
-                UserRelationshipResponse(
-                    peer_id=puuid_uuid(r.user_id_b) or unwrap(),
-                    created_at=r.created_at,
-                    relationship=RelationshipType(r.relationship_type)
-                )
+                UserRelationshipResponse.from_rpc(r)
             )
     
     return out
@@ -127,10 +130,10 @@ async def follow_user(s: SessionParam, peer: UserParam) -> UserRelationshipRespo
         
         if await r.is_current_following_peer():
             raise ApiErrExc(errors.BadRequest("You are already following this user", api_error_code=errors.ERROR_ALREADY_EXISTS))
-        await r.follow_peer()
+        rpc = await r.follow_peer()
 
 
-    return UserRelationshipResponse(peer_id=peer_id, relationship=RelationshipType.CURRENT_REQUESTING_PEER, created_at=now())
+    return UserRelationshipResponse.from_rpc(rpc)
 
 @UserRouter.delete("/relationship/{user_id}/follow")
 async def unfollow_user(s: SessionParam, peer: UserParam) -> None:
@@ -168,14 +171,14 @@ async def friend_user(s: SessionParam, peer: UserParam) -> UserRelationshipRespo
         
         if not await r.is_peer_requesting():
             # request  other
-            await r.request_other()
+            rpc = await r.request_other()
             await send_friend_update(peer.user_id, s.user_id, RelationshipType.PEER_REQUESTING_CURRENT)
-            return UserRelationshipResponse(peer_id=peer_id, relationship=RelationshipType.CURRENT_REQUESTING_PEER, created_at=now())
+            return UserRelationshipResponse.from_rpc(rpc)
 
         # upgrade to friends
         await send_friend_update(peer.user_id, s.user_id, RelationshipType.FRIENDS)
 
-        await r.set_friends()
+        rpc = await r.set_friends()
         # cancel their request to me
         await PeerRelationshipManager(grpcrelationship, peer.user_id, s.user_id).cancel_request_to_peer()
 
@@ -185,8 +188,7 @@ async def friend_user(s: SessionParam, peer: UserParam) -> UserRelationshipRespo
         if await r.is_peer_following_current():
             await PeerRelationshipManager(grpcrelationship, peer.user_id, s.user_id).unfollow_peer()
 
-        # we dont care about now being innacurate because of our eventual consistency model
-        return UserRelationshipResponse(peer_id=peer_id, relationship=RelationshipType.FRIENDS, created_at=now())
+        return UserRelationshipResponse.from_rpc(rpc)
 
 
 @UserRouter.delete("/relationship/{user_id}/friend")
@@ -238,14 +240,10 @@ async def block_user(s: SessionParam, peer: UserParam) -> UserRelationshipRespon
         if await r.is_peer_requesting():
             await PeerRelationshipManager(grpcrelationship, peer.user_id, s.user_id).cancel_request_to_peer()
         
-        res = await r.block_other()
+        rpc = await r.block_other()
         await send_friend_update(peer.user_id, s.user_id, RelationshipType.PEER_BLOCKED_CURRENT)
 
-        return UserRelationshipResponse(
-            peer_id=peer_id,
-            relationship=RelationshipType(res.relationship_type),
-            created_at=now()
-        )
+        return UserRelationshipResponse.from_rpc(rpc)
 
 
 @UserRouter.delete("/relationship/{user_id}/block")

@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Self
 from uuid import UUID
 
 from fastapi import Query
@@ -34,7 +34,15 @@ class UserProfileResponse(BaseModel):
 class UserRelationshipResponse(BaseModel):
     peer_id: UUID
     relationship: RelationshipType
-    created_at: int
+    created_at: UUID
+
+    @classmethod
+    def from_rpc(cls, rpc: user_pb2.RelationshipObject) -> Self:
+        return cls(
+            peer_id=puuid_uuid(rpc.user_id_b) or unwrap(),
+            relationship=RelationshipType(rpc.relationship_type),
+            created_at=puuid_uuid(rpc.created_at) or unwrap(),
+        )
 
 class RelationshipsResponse(BaseModel):
     relationships: list[UserRelationshipResponse]

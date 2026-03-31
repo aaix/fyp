@@ -181,7 +181,7 @@ message RelationshipObject {
     plib.pUUID user_id_a = 1;
     plib.pUUID user_id_b = 2;
     int32 relationship_type = 3;
-    int64 created_at = 4;
+    plib.pUUID created_at = 4;
 }
 
 message ReadRelationshipResponse {
@@ -210,11 +210,13 @@ message RelationshipTestResponse {
 message ReadRelationshipsRequest {
     plib.pUUID user_id = 1;
     int32 relationship_type = 2;
+    optional plib.pUUID before = 3;
+    int32 limit = 4;
 }
 
 message HalfRelationship {
     plib.pUUID user_id_b = 1;
-    int64 created_at = 3;
+    plib.pUUID created_at = 3;
 }
 
 message RelationshipsResponse {

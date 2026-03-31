@@ -1,4 +1,4 @@
-use crate::{db_conn::db, errors::DSResult, helpers::time_now, models::{relationship_v2::RelationshipV2, user_num_relationships::UserNumRelationships}, protos::dataservices::user_service::{self, CreateRelationshipRequest, DeleteRelationshipResponse, GetUserRelationshipCountsRequest, GetUserRelationshipCountsResponse, HalfRelationship, ReadRelationshipRequest, ReadRelationshipResponse, ReadRelationshipsRequest, RelationshipObject, RelationshipTestResponse, RelationshipsResponse, TestManyRelationshipsRequest, TestManyRelationshipsResponse}, req_tuuid};
+use crate::{db_conn::db, errors::DSResult, helpers::{gen_timeuuid}, models::{relationship_v3::RelationshipV3, user_num_relationships::UserNumRelationships}, protos::dataservices::user_service::{self, CreateRelationshipRequest, DeleteRelationshipResponse, GetUserRelationshipCountsRequest, GetUserRelationshipCountsResponse, HalfRelationship, ReadRelationshipRequest, ReadRelationshipResponse, ReadRelationshipsRequest, RelationshipObject, RelationshipTestResponse, RelationshipsResponse, TestManyRelationshipsRequest, TestManyRelationshipsResponse}, req_tuuid};
 
 use futures::{StreamExt, future::join_all};
 use scylla::{errors::FirstRowError, statement::prepared::PreparedStatement, value::{Counter, CqlTimeuuid}};
@@ -38,9 +38,9 @@ impl ScyllaUserRelationshipService {
 
         let create_relationship_prepared = db().await.prepare(
             "BEGIN BATCH
-            INSERT INTO dataservices.relationship_v2 (user_id_a, user_id_b, created_at, relationship_type)
+            INSERT INTO dataservices.relationship_v3 (user_id_a, user_id_b, created_at, relationship_type)
             VALUES (?, ?, ?, ?);
-            INSERT INTO dataservices.relationship_v2 (user_id_a, user_id_b, created_at, relationship_type)
+            INSERT INTO dataservices.relationship_v3 (user_id_a, user_id_b, created_at, relationship_type)
             VALUES (?, ?, ?, ?);
             APPLY BATCH"
         ).await?;
@@ -59,22 +59,23 @@ impl ScyllaUserRelationshipService {
         ).await?;
 
         let read_relationship_prepared = db().await.prepare(
-            "SELECT * FROM dataservices.relationship_v2 WHERE user_id_a = ? AND user_id_b = ? AND relationship_type IN ?"
+            "SELECT * FROM dataservices.relationship_v3 WHERE user_id_a = ? AND user_id_b = ? AND relationship_type IN ?"
         ).await?;
 
         let read_relationships_prepared = db().await.prepare(
-            "SELECT * FROM dataservices.relationship_v2 WHERE user_id_a = ? AND relationship_type = ?"
+            "SELECT * FROM dataservices.relationship_v3\
+            WHERE user_id_a = ? AND relationship_type = ? AND created_at < ? LIMIT ?"
         ).await?;
 
         let delete_relationship_prepared = db().await.prepare(
             "BEGIN BATCH
-            DELETE FROM dataservices.relationship_v2 WHERE user_id_a = ? AND user_id_b = ? AND relationship_type = ?;
-            DELETE FROM dataservices.relationship_v2 WHERE user_id_a = ? AND user_id_b = ? AND relationship_type = ?;
+            DELETE FROM dataservices.relationship_v3 WHERE user_id_a = ? AND user_id_b = ? AND relationship_type = ?;
+            DELETE FROM dataservices.relationship_v3 WHERE user_id_a = ? AND user_id_b = ? AND relationship_type = ?;
             APPLY BATCH"
         ).await?;
         
         let test_relationship_prepared = db().await.prepare(
-            "SELECT * FROM dataservices.relationship_v2 WHERE user_id_a = ? AND user_id_b = ? AND relationship_type = ?"
+            "SELECT * FROM dataservices.relationship_v3 WHERE user_id_a = ? AND user_id_b = ? AND relationship_type = ?"
         ).await?;
 
         Ok(Self {
@@ -96,7 +97,7 @@ impl ScyllaUserRelationshipService {
     ) -> DSResult<Response<RelationshipObject>> {
         let user_a_id: CqlTimeuuid = req_tuuid!(request, user_id_a)?;
         let user_b_id: CqlTimeuuid = req_tuuid!(request, user_id_b)?;
-        let created_at = time_now();
+        let created_at = gen_timeuuid();
         let inner = request.get_ref();
 
         let a_to_b_type = inner.a_to_b_type;
@@ -164,7 +165,7 @@ impl ScyllaUserRelationshipService {
         Ok(Response::new(RelationshipObject {
             user_id_a: Some(user_a_id.into()),
             user_id_b: Some(user_b_id.into()),
-            created_at: created_at.0,
+            created_at: Some(created_at.into()),
             relationship_type: a_to_b_type,
         }))
     }
@@ -181,7 +182,7 @@ impl ScyllaUserRelationshipService {
         let mut pager = db().await.execute_iter(
             self.read_relationship_prepared.clone(),
             (&user_a, &user_b, &r_types)
-        ).await?.rows_stream::<RelationshipV2>()?;
+        ).await?.rows_stream::<RelationshipV3>()?;
 
         let mut out = Vec::new();
 
@@ -192,7 +193,7 @@ impl ScyllaUserRelationshipService {
                 user_id_a: Some(row.user_id_a.into()),
                 user_id_b: Some(row.user_id_b.into()),
                 relationship_type: row.relationship_type,
-                created_at: row.created_at.0,
+                created_at: Some(row.created_at.into()),
             })
 
         }
@@ -337,12 +338,16 @@ impl ScyllaUserRelationshipService {
     ) -> DSResult<Response<RelationshipsResponse>> {
         let user_id: CqlTimeuuid = req_tuuid!(request, user_id)?;
 
-        let r_type = request.get_ref().relationship_type;
+        let inner  = request.get_ref();
+
+        let r_type = inner.relationship_type;
+        let limit = inner.limit;
+        let before = inner.before.map(Into::into).unwrap_or(CqlTimeuuid::nil());
 
         let mut pager = db().await.execute_iter(
             self.read_relationships_prepared.clone(),
-            (user_id, r_type)
-        ).await?.rows_stream::<RelationshipV2>()?;
+            (user_id, r_type, before, limit)
+        ).await?.rows_stream::<RelationshipV3>()?;
 
 
         let mut relationships = Vec::new();
@@ -351,7 +356,7 @@ impl ScyllaUserRelationshipService {
             let row = row_res?;
             relationships.push(HalfRelationship {
                 user_id_b: Some(row.user_id_b.into()),
-                created_at: row.created_at.0,
+                created_at: Some(row.created_at.into()),
             })
         }
 
