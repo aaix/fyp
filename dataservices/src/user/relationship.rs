@@ -63,7 +63,7 @@ impl ScyllaUserRelationshipService {
         ).await?;
 
         let read_relationships_prepared = db().await.prepare(
-            "SELECT * FROM dataservices.relationship_v2 WHERE user_id_a = ? AND relationship_type = ?"
+            "SELECT * FROM dataservices.relationship_v2 WHERE user_id_a = ? AND relationship_type = ? LIMIT 1000"
         ).await?;
 
         let delete_relationship_prepared = db().await.prepare(
