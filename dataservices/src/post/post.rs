@@ -40,6 +40,7 @@ pub struct ScyllaPostService {
     delete_post_prepared: PreparedStatement,
     read_user_posts_prepared_before: PreparedStatement,
     read_user_posts_prepared_no_before: PreparedStatement,
+    delete_post_counters_prepared: PreparedStatement,
 }
 
 impl ScyllaPostService {
@@ -77,6 +78,10 @@ impl ScyllaPostService {
             "DELETE FROM dataservices.post WHERE author_id = ? AND post_id = ?"
         ).await?;
 
+        let delete_post_counters_prepared = db().await.prepare(
+            "DELETE FROM dataservices.post_num_counters WHERE post_id = ?"
+        ).await?;
+
         let read_user_posts_prepared_before = db().await.prepare(
             "SELECT * FROM dataservices.post WHERE author_id = ? AND post_id < ? LIMIT ?"
         ).await?;
@@ -93,6 +98,7 @@ impl ScyllaPostService {
             delete_post_prepared,
             read_user_posts_prepared_before,
             read_user_posts_prepared_no_before,
+            delete_post_counters_prepared,
         })
     }
 }
@@ -236,6 +242,11 @@ impl ScyllaPostService {
         let post_id: CqlTimeuuid = req_tuuid!(request, post_id)?;
         let author_id: CqlTimeuuid = req_tuuid!(request, author_id)?;
 
+
+        db().await.execute_unpaged(
+            &self.delete_post_counters_prepared,
+            (&post_id,)
+        ).await?;
 
         db().await.execute_unpaged(
             &self.delete_post_prepared,

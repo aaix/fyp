@@ -12,11 +12,13 @@ from shared.py.grpcgen import post_pb2
 from shared.py.grpcgen.plib_pb2 import pUUID
 from shared.py.pydantic.common import PostBody
 from shared.py.pydantic.form import FormableBaseModel
+from shared.py.types import UNSET
 
 __all__ = (
     "NewPostBody",
     "PostResponse",
     "PostsResponse",
+    "EditPostBody",
 )
 
 
@@ -65,3 +67,6 @@ class PostResponse(BaseModel):
 
 class PostsResponse(BaseModel):
     posts: list[PostResponse]
+
+class EditPostBody(BaseModel):
+    body: str | None = None

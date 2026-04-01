@@ -67,6 +67,53 @@ class PostManager {
         }
         return await API.GET(path);
     }
+
+    /**
+     * 
+     * @param {string} author_id 
+     * @param {string} post_id 
+     * @returns {APIResponse}
+     */
+    async getPost(author_id, post_id) {
+
+        return await API.GET(`social/user/${author_id}/post/${post_id}`);
+    }
+
+    /**
+     * 
+     * @param {string} author_id 
+     * @param {string} post_id 
+     * @param {string | null} post_body 
+     * @returns {APIResponse}
+     */
+    async editPost(author_id, post_id, post_body) {
+
+        return await API.PATCH(`social/user/${author_id}/post/${post_id}`, {
+            body: post_body,
+        });
+    }
+
+    /**
+     * 
+     * @param {string} author_id 
+     * @param {string} post_id 
+     * @returns {APIResponse<null>}
+     */
+    async deletePost(author_id, post_id) {
+
+        return await API.DELETE(`social/user/${author_id}/post/${post_id}`);
+    }
+
+    /**
+     * 
+     * @param {string} author_id 
+     * @param {string} post_id 
+     * @returns {APIResponse}
+     */
+    async getPost(author_id, post_id) {
+
+        return await API.GET(`social/user/${author_id}/post/${post_id}`);
+    }
 }
 
 export const postManager = new PostManager();

@@ -2,10 +2,14 @@ from typing import Literal, cast
 
 from enum import IntEnum
 
+from google.protobuf.wrappers_pb2 import Int32Value, StringValue
+from google.protobuf.field_mask_pb2 import FieldMask
+
 from shared.py.grpc.id import id_puuid, id_t
 from shared.py.grpc.lazy import DataservicesLazyGRPC
-from shared.py.grpcgen.post_pb2 import CreatePostRequest, DeletePostRequest, DeletePostResponse, ReadPostResponse, ReadUserPostsRequest, ReadUserPostsResponse
+from shared.py.grpcgen.post_pb2 import CreatePostRequest, DeletePostRequest, DeletePostResponse, ReadPostRequest, ReadPostResponse, ReadUserPostsRequest, ReadUserPostsResponse, UpdatePostRequest
 from shared.py.grpcgen.post_pb2_grpc import PostServiceStub
+from shared.py.types import UNSET, MaybeUnset
 
 # posts are bucketed by their author so that a read my posts call will coalesce with read post call
 # this could be changed if taylor swifts leave load unbalanced
@@ -76,4 +80,39 @@ async def read_users_posts(
         author_id=id_puuid(author_id),
         limit=limit,
         before=id_puuid(before) if before is not None else None,
+    )))
+
+async def read_post(
+    lazy: DataservicesLazyGRPC[PostServiceStub],
+    author_id: id_t,
+    post_id: id_t
+) -> ReadPostResponse:
+    
+    stub = await lazy(author_id)
+    return cast(ReadPostResponse, await stub.ReadPost(ReadPostRequest(
+        post_id=id_puuid(post_id),
+        author_id=id_puuid(author_id)
+    )))
+
+async def edit_post(
+    lazy: DataservicesLazyGRPC[PostServiceStub],
+    author_id: id_t,
+    post_id: id_t,
+    *,
+    body: MaybeUnset[str | None] = UNSET,
+    post_type: MaybeUnset[PostType] = UNSET,
+) -> ReadPostResponse:
+    
+    stub = await lazy(author_id)
+
+    field_mask = FieldMask()
+    if body is not UNSET:
+        field_mask.paths.append("body")
+
+    return cast(ReadPostResponse, await stub.UpdatePost(UpdatePostRequest(
+        author_id=id_puuid(author_id),
+        post_id=id_puuid(post_id),
+        body=StringValue(value=body) if body else None,
+        post_type=Int32Value(value=post_type.value) if post_type is not UNSET else None,
+        field_mask=field_mask,
     )))

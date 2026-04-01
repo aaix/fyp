@@ -13,10 +13,11 @@ from shared.py.grpc.channel import get_channel
 from shared.py.grpc.id import id_compare, uuid_puuid
 from shared.py.grpc.lazy import DataservicesLazyGRPC
 from shared.py.grpc.message import get_message
+from shared.py.grpc.post import read_post
 from shared.py.grpc.relationship import can_i_view_peer_profile
 from shared.py.grpc.user import get_user
 
-from shared.py.grpcgen import channel_pb2, channel_pb2_grpc, message_pb2, message_pb2_grpc, user_pb2, user_pb2_grpc
+from shared.py.grpcgen import channel_pb2, channel_pb2_grpc, message_pb2, message_pb2_grpc, post_pb2, post_pb2_grpc, user_pb2, user_pb2_grpc
 
 
 discovery = DiscoveryManager()
@@ -26,6 +27,7 @@ grpcuser = DataservicesLazyGRPC(user_pb2_grpc.UserServiceStub)
 grpcchannel = DataservicesLazyGRPC(channel_pb2_grpc.ChannelServiceStub)
 grpcmessage = DataservicesLazyGRPC(message_pb2_grpc.MessageServiceStub)
 grpcrelationship = DataservicesLazyGRPC(user_pb2_grpc.UserRelationshipServiceStub)
+grpcpost = DataservicesLazyGRPC(post_pb2_grpc.PostServiceStub)
 
 
 def RichUUIDParamFactory[lazy_t: DataservicesLazyGRPC, out_t](
@@ -80,3 +82,11 @@ async def _user_with_profile_visible(s: SessionParam, peer: UserParam) -> user_p
     return peer
 
 UserWithProfileVisibleParam = Annotated[user_pb2.ReadUserResponse, Depends(_user_with_profile_visible)]
+
+
+async def _post_dependency(user_id: Annotated[UUID, Path(alias="author_id")], post_id: Annotated[UUID, Path()]) -> post_pb2.ReadPostResponse:
+    with ResourceNotFoundRpcHandler("message_id", post_id):
+        return await read_post(grpcpost, user_id, post_id)
+
+
+PostParam = Annotated[post_pb2.ReadPostResponse, Depends(_post_dependency)]
