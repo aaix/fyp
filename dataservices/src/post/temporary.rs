@@ -1,4 +1,0 @@
-/*
-
-TABLE temporary_post
-*/
