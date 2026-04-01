@@ -214,17 +214,17 @@ async def set_my_icon(
     # creating a path None would be bad
     assert puuid_opt(user.avatar_asset_id)
 
-    with RpcErrHandler(StatusCode.INVALID_ARGUMENT, lambda e: errors.BadRequest(e.details() or "Unsupported input")):
-        await mediaservices.transform_image(
-            grpcmedia,
-            public=True,
-            bucket_id=s.user_id,
-            asset_id=user.avatar_asset_id,
-            mime_in=icon.content_type,
-            mime_out=CONF_AVATAR_CONTENT_TYPE,
-            data=icon,
-            dimensions=CONF_AVATAR_DIMENSIONS,
-        )
+    
+    await mediaservices.transform_image(
+        grpcmedia,
+        public=True,
+        bucket_id=s.user_id,
+        asset_id=user.avatar_asset_id,
+        mime_in=icon.content_type,
+        mime_out=CONF_AVATAR_CONTENT_TYPE,
+        data=icon,
+        dimensions=CONF_AVATAR_DIMENSIONS,
+    )
 
     return PublicAsset(
         asset_id=puuid_uuid(user.avatar_asset_id) or unwrap(),

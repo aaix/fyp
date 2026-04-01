@@ -1,8 +1,13 @@
-from collections.abc import AsyncGenerator
 from typing import cast
 
-from fastapi import UploadFile
+from collections.abc import AsyncGenerator
 
+
+from fastapi import UploadFile
+from grpc import RpcError, StatusCode
+
+from api.responses import ApiErrExc, errors
+from api.utils import RpcErrHandler
 from shared.py import asset
 from shared.py.grpc.id import id_t
 from shared.py.grpc.lazy import LazyGRPC
@@ -22,6 +27,18 @@ async def async_bytes_generator(first: MediaInput, data: UploadFile) -> AsyncGen
 async def stream_to(grpc: LazyGRPC[media_pb2_grpc.TransformerServiceStub], data: UploadFile) -> None:
     grpc.stub.TransformVideo()
 
+
+
+class MediaservicesErrHandler(RpcErrHandler):
+    """Handle bad requests from mediaservices"""
+    def __init__(self):
+        super().__init__(
+            StatusCode.INVALID_ARGUMENT,
+            self.make_error
+        )
+    
+    def make_error(self, exc: RpcError) -> errors.BadRequest:
+        return errors.BadRequest(f"Invalid media input, message: {exc.details()}", api_error_code=errors.ERROR_BAD_MEDIA)
 
 
 async def transform_image(
@@ -48,7 +65,8 @@ async def transform_image(
         output_width=width,
     ))
 
-    return cast(TransformImageResponse, await grpc.stub.TransformImage(async_bytes_generator(first, data)))
+    with MediaservicesErrHandler():
+        return cast(TransformImageResponse, await grpc.stub.TransformImage(async_bytes_generator(first, data)))
 
 async def transform_video(
     grpc: LazyGRPC[media_pb2_grpc.TransformerServiceStub],
@@ -61,7 +79,6 @@ async def transform_video(
     data: UploadFile,
     dimensions: tuple[int, int] | None,
 ) -> TransformVideoResponse:
-    
     width, height = dimensions or (None, None)
     
     first = MediaInput(asset=Asset(
@@ -73,5 +90,5 @@ async def transform_video(
         output_height=height,
         output_width=width,
     ))
-
-    return cast(TransformVideoResponse, await grpc.stub.TransformVideo(async_bytes_generator(first, data)))
+    with MediaservicesErrHandler():
+        return cast(TransformVideoResponse, await grpc.stub.TransformVideo(async_bytes_generator(first, data)))
