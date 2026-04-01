@@ -6,13 +6,14 @@ from uuid import UUID
 from fastapi import Depends, Path
 
 from api.middleware.auth import SessionParam
-from api.responses import ApiErrExc
+from api.responses import ApiErrExc, errors
 from api.utils import ResourceNotFoundRpcHandler, RpcErrHandler
 from shared.py.discovery import DiscoveryManager
 from shared.py.grpc.channel import get_channel
-from shared.py.grpc.id import uuid_puuid
+from shared.py.grpc.id import id_compare, uuid_puuid
 from shared.py.grpc.lazy import DataservicesLazyGRPC
 from shared.py.grpc.message import get_message
+from shared.py.grpc.relationship import can_i_view_peer_profile
 from shared.py.grpc.user import get_user
 
 from shared.py.grpcgen import channel_pb2, channel_pb2_grpc, message_pb2, message_pb2_grpc, user_pb2, user_pb2_grpc
@@ -24,6 +25,7 @@ discovery = DiscoveryManager()
 grpcuser = DataservicesLazyGRPC(user_pb2_grpc.UserServiceStub)
 grpcchannel = DataservicesLazyGRPC(channel_pb2_grpc.ChannelServiceStub)
 grpcmessage = DataservicesLazyGRPC(message_pb2_grpc.MessageServiceStub)
+grpcrelationship = DataservicesLazyGRPC(user_pb2_grpc.UserRelationshipServiceStub)
 
 
 def RichUUIDParamFactory[lazy_t: DataservicesLazyGRPC, out_t](
@@ -65,3 +67,16 @@ async def _message_dependency(channel_id: Annotated[UUID, Path()], message_id: A
         return await get_message(grpcmessage, channel_id, message_id)
 
 MessageParam = Annotated[message_pb2.MessageObject, Depends(_message_dependency)]
+
+
+async def _user_with_profile_visible(s: SessionParam, peer: UserParam) -> user_pb2.ReadUserResponse:
+    
+    if id_compare(s.user_id, peer.user_id):
+        return peer
+
+    blocked, viewable = await can_i_view_peer_profile(grpcrelationship, s.user_id, peer)
+    if blocked or not viewable:
+        raise ApiErrExc(errors.Forbidden("User is private", api_error_code=errors.ERROR_USER_NOT_FRIENDS))
+    return peer
+
+UserWithProfileVisibleParam = Annotated[user_pb2.ReadUserResponse, Depends(_user_with_profile_visible)]

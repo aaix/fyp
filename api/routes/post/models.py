@@ -16,6 +16,7 @@ from shared.py.pydantic.form import FormableBaseModel
 __all__ = (
     "NewPostBody",
     "PostResponse",
+    "PostsResponse",
 )
 
 
@@ -61,3 +62,6 @@ class PostResponse(BaseModel):
             num_comments=rpc.num_comments,
             num_likes=rpc.num_likes,
         )
+
+class PostsResponse(BaseModel):
+    posts: list[PostResponse]

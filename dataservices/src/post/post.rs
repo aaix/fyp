@@ -78,7 +78,7 @@ impl ScyllaPostService {
         ).await?;
 
         let read_user_posts_prepared_before = db().await.prepare(
-            "SELECT * FROM dataservices.post WHERE author_id = ? AND post_id > ? LIMIT ?"
+            "SELECT * FROM dataservices.post WHERE author_id = ? AND post_id < ? LIMIT ?"
         ).await?;
 
         let read_user_posts_prepared_no_before = db().await.prepare(

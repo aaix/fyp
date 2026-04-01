@@ -1,14 +1,18 @@
 
-from typing import Annotated
+import asyncio
+from typing import Annotated, Literal
+from uuid import UUID
 
-from fastapi import APIRouter, Depends, UploadFile
+from fastapi import APIRouter, Depends, Query, UploadFile
 
 from api import *
 from api.routes.post.models import *
+from api.types.params import UserParam, UserWithProfileVisibleParam
 from api.utils import unwrap
 from shared.py.grpc import mediaservices
 from shared.py.grpc.lazy import DataservicesLazyGRPC, LazyGRPC
-from shared.py.grpc.post import PostType, create_post, delete_post
+from shared.py.grpc.post import PostType, create_post, delete_post, read_users_posts
+from shared.py.grpc.relationship import can_i_view_peer_profile
 from shared.py.grpcgen import media_pb2_grpc, post_pb2, post_pb2_grpc
 
 discovery = DiscoveryManager()
@@ -68,4 +72,21 @@ async def new_post(
     # now to deal with feed fan out
 
     return await PostResponse.from_rpc(post)
+
+@PostRouter.get("/user/{user_id}/posts")
+async def get_users_posts(s: SessionParam, user: UserWithProfileVisibleParam, before: Annotated[UUID | None, Query()] = None) -> PostsResponse:
+
+    rpc = await read_users_posts(
+        grpcpost,
+        user.user_id,
+        before=before,
+    )
+
+    posts = await asyncio.gather(*(PostResponse.from_rpc(post) for post in rpc.posts))
+
+    return PostsResponse(
+        posts=posts
+    )
+
+    
     

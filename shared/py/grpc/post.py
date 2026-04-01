@@ -4,7 +4,7 @@ from enum import IntEnum
 
 from shared.py.grpc.id import id_puuid, id_t
 from shared.py.grpc.lazy import DataservicesLazyGRPC
-from shared.py.grpcgen.post_pb2 import CreatePostRequest, DeletePostRequest, DeletePostResponse, ReadPostResponse
+from shared.py.grpcgen.post_pb2 import CreatePostRequest, DeletePostRequest, DeletePostResponse, ReadPostResponse, ReadUserPostsRequest, ReadUserPostsResponse
 from shared.py.grpcgen.post_pb2_grpc import PostServiceStub
 
 # posts are bucketed by their author so that a read my posts call will coalesce with read post call
@@ -51,6 +51,7 @@ async def create_post(
         body=body
     )))
 
+
 async def delete_post(
     lazy: DataservicesLazyGRPC[PostServiceStub],
     author_id: id_t,
@@ -60,4 +61,19 @@ async def delete_post(
     cast(DeletePostResponse, await stub.DeletePost(DeletePostRequest(
         post_id=id_puuid(post_id),
         author_id=id_puuid(author_id)
+    )))
+
+async def read_users_posts(
+    lazy: DataservicesLazyGRPC[PostServiceStub],
+    author_id: id_t,
+    *,
+    before: id_t | None, 
+    limit: int = 15
+) -> ReadUserPostsResponse:
+    stub = await lazy(author_id)
+
+    return cast(ReadUserPostsResponse, await stub.ReadUserPosts(ReadUserPostsRequest(
+        author_id=id_puuid(author_id),
+        limit=limit,
+        before=id_puuid(before) if before is not None else None,
     )))

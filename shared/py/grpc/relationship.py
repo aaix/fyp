@@ -213,7 +213,7 @@ class PeerRelationshipManager:
         await self._delete_relationship(RelationshipType.CURRENT_BLOCKED_PEER, RelationshipType.PEER_BLOCKED_CURRENT)
 
 
-async def can_i_view_peer_profile(lazy: DataservicesLazyGRPC[UserRelationshipServiceStub],me: id_t, peer: user_pb2.ReadUserResponse) -> tuple[bool, bool]:
+async def can_i_view_peer_profile(lazy: DataservicesLazyGRPC[UserRelationshipServiceStub], me: id_t, peer: user_pb2.ReadUserResponse) -> tuple[bool, bool]:
     if peer.is_public:
         fetch_on_entry = (RelationshipType.PEER_BLOCKED_CURRENT,) # no
     else:
