@@ -1,6 +1,7 @@
 import { useRef } from 'react'
 import Button from './Button.jsx'
 import UserAvatar from './UserAvatar.jsx'
+import { PostTileGrid } from './PostTile.jsx'
 
 /**
  * Reusable profile view: avatar, @username, friends stat, posts grid.
@@ -15,6 +16,12 @@ import UserAvatar from './UserAvatar.jsx'
  * @param {React.ReactNode} [props.actions] - Optional actions (e.g. buttons) rendered below the stats row.
  * @param {(file: File) => void} [props.onAvatarFileSelected] - When set, avatar shows hover overlay and opens file picker on click.
  * @param {boolean} [props.avatarUploading]
+ * @param {object[]} [props.posts] - User posts (PostResponse shape)
+ * @param {boolean} [props.postsLoading]
+ * @param {string | null} [props.postsError]
+ * @param {boolean} [props.postsHasMore]
+ * @param {boolean} [props.postsLoadingMore]
+ * @param {() => void} [props.onPostsLoadMore]
  */
 export default function ProfileView({
   profile,
@@ -25,6 +32,12 @@ export default function ProfileView({
   actions = null,
   onAvatarFileSelected = null,
   avatarUploading = false,
+  posts = [],
+  postsLoading = false,
+  postsError = null,
+  postsHasMore = false,
+  postsLoadingMore = false,
+  onPostsLoadMore = null,
 }) {
   const fileInputRef = useRef(null)
   const {
@@ -123,7 +136,7 @@ export default function ProfileView({
     )
 
   return (
-    <main className="flex flex-1 flex-col items-center overflow-y-auto px-5 pb-[calc(1.5rem+var(--bottom-nav-height)+env(safe-area-inset-bottom))] pt-6 md:px-8 md:pb-6">
+    <main className="flex w-full min-w-0 flex-1 flex-col items-center overflow-y-auto px-5 pb-[calc(1.5rem+var(--bottom-nav-height)+env(safe-area-inset-bottom))] pt-6 md:px-8 md:pb-6">
       {avatarBlock}
       <p className="mt-3 text-base font-medium text-[color:var(--text-primary)]">
         @{username || (loading ? 'loading' : 'user')}
@@ -156,15 +169,20 @@ export default function ProfileView({
         {followersStat}
       </div>
       {actions != null ? <div className="mt-4 w-full">{actions}</div> : null}
-      <section className="mt-6 w-full" aria-label="Posts">
-        <div className="grid grid-cols-3 gap-1">
-          {Array.from({ length: 12 }, (_, i) => (
-            <div
-              key={i}
-              className={`aspect-square rounded border border-[color:var(--card-border)] bg-[color:var(--card-bg)] ${loading ? 'skeleton-pulse' : ''}`}
-            />
-          ))}
-        </div>
+      <section
+        className="mt-6 w-full self-stretch px-4 sm:px-6 md:px-10 lg:px-14 xl:px-20 2xl:px-24"
+        aria-label="Posts"
+      >
+        <h2 className="mb-3 text-sm font-semibold text-[color:var(--text-muted)]">Posts</h2>
+        <PostTileGrid
+          posts={posts}
+          loading={postsLoading}
+          error={postsError}
+          emptyLabel="No posts yet."
+          hasMore={postsHasMore}
+          loadingMore={postsLoadingMore}
+          onLoadMore={onPostsLoadMore}
+        />
       </section>
     </main>
   )

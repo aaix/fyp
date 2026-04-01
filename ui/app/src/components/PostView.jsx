@@ -3,6 +3,7 @@ import Card from './Card.jsx'
 import { userManager } from '../lib/user.js'
 import { getAvatarUrl } from '../lib/utils.js'
 import { POST_TYPE_IMAGE, POST_TYPE_SHORT, POST_TYPE_VIDEO } from '../lib/post.js'
+import { isImageMime, isVideoMime } from '../lib/postMedia.js'
 
 /**
  * @typedef {{ username: string, iconUrl: string | null, userId: string | null }} PreviewAuthor
@@ -140,8 +141,8 @@ export default function PostView({
   }, [author_id, isPreview, previewAuthor])
 
   const ct = content_type ?? ''
-  const isVideo = ct.startsWith('video/')
-  const isImage = ct.startsWith('image/')
+  const isVideo = isVideoMime(ct)
+  const isImage = isImageMime(ct)
 
   let editedLine = null
   if (lastEdited != null && lastEdited !== undefined) {

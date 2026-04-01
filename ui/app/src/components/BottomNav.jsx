@@ -34,6 +34,25 @@ export default function BottomNav() {
         <span>Home</span>
       </NavLink>
       <NavLink
+        to="/create-post"
+        className={({ isActive }) =>
+          `${baseLinkClasses} hover:text-[color:var(--text-primary)] ${
+            isActive
+              ? 'text-[color:var(--accent)] md:bg-[color:var(--tab-active-bg)]'
+              : 'md:hover:bg-[color:var(--tab-active-bg)]/70'
+          }`
+        }
+      >
+        <span
+          className="material-symbols-outlined text-xl"
+          style={{ fontVariationSettings: '"FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24' }}
+          aria-hidden
+        >
+          post_add
+        </span>
+        <span>Create</span>
+      </NavLink>
+      <NavLink
         to="/messages"
         className={({ isActive }) =>
           `${baseLinkClasses} hover:text-[color:var(--text-primary)] ${

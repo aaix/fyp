@@ -5,6 +5,7 @@ import Button from '../components/Button.jsx'
 import { userManager, relationshipManager } from '../lib/user.js'
 import { getAvatarUrl } from '../lib/utils.js'
 import { getCurrentSession } from '../lib/session.js'
+import { useUserPosts } from '../hooks/useUserPosts.js'
 
 const CURRENT_REQUESTING_PEER = 1
 const PEER_REQUESTING_CURRENT = 2
@@ -147,6 +148,15 @@ export default function UserPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [actionLoading, setActionLoading] = useState(false)
+
+  const {
+    posts,
+    loading: postsLoading,
+    error: postsError,
+    hasMore: postsHasMore,
+    loadingMore: postsLoadingMore,
+    loadMore: loadMorePosts,
+  } = useUserPosts(userId)
 
   useEffect(() => {
     if (!userId) return
@@ -421,6 +431,12 @@ export default function UserPage() {
         loading={loading}
         error={error}
         actions={profileActions}
+        posts={posts}
+        postsLoading={postsLoading}
+        postsError={postsError}
+        postsHasMore={postsHasMore}
+        postsLoadingMore={postsLoadingMore}
+        onPostsLoadMore={loadMorePosts}
       />
     </div>
   )

@@ -4,6 +4,7 @@ import { getAvatarUrl } from '../lib/utils.js'
 import { relationshipManager } from '../lib/user.js'
 import ProfileView from '../components/ProfileView.jsx'
 import PageContainer from '../components/PageContainer.jsx'
+import { useUserPosts } from '../hooks/useUserPosts.js'
 import FriendsListModal from '../components/FriendsListModal.jsx'
 import IconLinkButton from '../components/IconLinkButton.jsx'
 
@@ -22,6 +23,16 @@ export default function AccountPage() {
   const [avatarError, setAvatarError] = useState(null)
   const [avatarUploading, setAvatarUploading] = useState(false)
   const [friendsModalOpen, setFriendsModalOpen] = useState(false)
+
+  const {
+    posts,
+    loading: postsLoading,
+    error: postsError,
+    hasMore: postsHasMore,
+    loadingMore: postsLoadingMore,
+    loadMore: loadMorePosts,
+  } = useUserPosts(profile.userId)
+  const postsGridLoading = postsLoading || (loading && !profile.userId)
 
   const loadAccountInfo = async () => {
     try {
@@ -102,6 +113,12 @@ export default function AccountPage() {
         onAvatarFileSelected={handleAvatarFileSelected}
         avatarUploading={avatarUploading}
         onFriendsClick={() => setFriendsModalOpen(true)}
+        posts={posts}
+        postsLoading={postsGridLoading}
+        postsError={postsError}
+        postsHasMore={postsHasMore}
+        postsLoadingMore={postsLoadingMore}
+        onPostsLoadMore={loadMorePosts}
       />
       <FriendsListModal
         open={friendsModalOpen}

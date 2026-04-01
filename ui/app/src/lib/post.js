@@ -58,6 +58,15 @@ class PostManager {
         return res;
 
     }
+
+    async getUserPosts(user_id, before = null) {
+        let path = `social/user/${user_id}/posts`;
+        if (before) {
+            const q = new URLSearchParams({ before: String(before) });
+            path += `?${q.toString()}`;
+        }
+        return await API.GET(path);
+    }
 }
 
 export const postManager = new PostManager();
