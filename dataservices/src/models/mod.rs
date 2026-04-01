@@ -11,6 +11,6 @@ pub mod message;
 pub mod post;
 pub mod post_num_counters;
 pub mod user_timeline_meta;
-pub mod user_timeline;
+pub mod user_timeline_entry;
 pub mod post_comment;
 pub mod post_like;

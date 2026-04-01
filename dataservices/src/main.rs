@@ -1,3 +1,4 @@
+use dataservices::post::post::ScyllaPostService;
 use tokio;
 use tokio::signal::unix::{signal, SignalKind};
 use tonic::transport::Server;
@@ -65,6 +66,7 @@ async fn main() {
         .add_optional_service(ScyllaUserRelationshipService::server().await)
         .add_optional_service(ScyllaChannelServiceServer::server().await)
         .add_optional_service(ScyllaMessageServiceServer::server().await)
+        .add_optional_service(ScyllaPostService::server().await)
         .serve_with_shutdown(listen_addr, shutdown_future())
         .await {
             bigpicturenode.leave().await.unwrap_or_else(|e| {tracing::error!("FAILED TO LEAVE BIG PICTURE {e:?}")});

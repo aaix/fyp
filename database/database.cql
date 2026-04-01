@@ -134,16 +134,15 @@ CREATE TABLE dataservices.message (
 
 
 
-
 -- COALESCE post ON post_id
 CREATE TABLE dataservices.post (
-    asset_id TIMEUUID,
-    content_type TEXT,
-    post_type INT, -- 0: image, 1: video, 2: short form
     post_id TIMEUUID,
     author_id TIMEUUID, -- foreign key: user.user_id
-    body TEXT,
-    last_edited TIMESTAMP,
+    asset_id TIMEUUID,
+    post_type INT, -- 0: private, 1: image, 2: video, 3: short form
+    content_type TEXT,
+    opt_body TEXT,
+    opt_last_edited TIMESTAMP,
     PRIMARY KEY (author_id, post_id), -- route will have to be /user/id/post/id
 ) WITH CLUSTERING ORDER BY (post_id DESC);
 
@@ -164,11 +163,12 @@ CREATE TABLE dataservices.user_timeline_meta  (
     PRIMARY KEY (user_id, timeline_type)
 );
 
-CREATE TABLE dataservices.user_timeline (
+CREATE TABLE dataservices.user_timeline_entry (
     user_id TIMEUUID,
     timeline_type INT, -- 0: main feed (image/video post), 1: short from (sf post)
+    post_author_id TIMEUUID,
     post_id TIMEUUID,
-    PRIMARY KEY (user_id, timeline_type, post_id)
+    PRIMARY KEY ((user_id, timeline_type), post_id)
 ) WITH CLUSTERING ORDER BY (post_id DESC);
 
 

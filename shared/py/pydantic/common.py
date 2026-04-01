@@ -3,6 +3,7 @@ from typing import Annotated
 from pydantic import Field, AfterValidator
 
 from shared.py.constraints import *
+from shared.py.constraints import POST_BODY_MAX_LENGTH
 from shared.py.pydantic.base64 import Base64Input, Base64Output
 
 
@@ -23,3 +24,5 @@ type ChannelNameOut = Annotated[Base64Output, Field()]
 # 512 bytes is 4096 bits
 type RSA4096CiphertextIn = Annotated[Base64Input, Field(max_length=512, min_length=512)]
 type RSA4096CiphertextOut = Annotated[Base64Output, Field(max_length=512, min_length=512)]
+
+type PostBody = Annotated[str, Field(max_length=POST_BODY_MAX_LENGTH, min_length=1)]

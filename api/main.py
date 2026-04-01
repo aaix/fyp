@@ -23,6 +23,7 @@ from api.routes.channel.message import MessageRouter
 from api.routes.session.session import SessionRouter
 from api.routes.user.user import UserRouter
 from api.routes.channel.channel import ChannelRouter
+from api.routes.post.post import PostRouter
 
 # shared
 from shared.py.grpc import lazy
@@ -62,6 +63,7 @@ app.include_router(SessionRouter, prefix="/session")
 app.include_router(UserRouter, prefix="/user")
 app.include_router(ChannelRouter, prefix="/chat")
 app.include_router(MessageRouter, prefix="/chat")
+app.include_router(PostRouter, prefix="/social")
 
 # exception handlers
 app.add_exception_handler(RequestValidationError, exception_handlers.request_validation_error_handler)

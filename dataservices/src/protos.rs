@@ -59,5 +59,9 @@ pub mod dataservices {
     pub mod message_service {
         tonic::include_proto!("dataservices.messageproto");
     }
+
+    pub mod post_service {
+        tonic::include_proto!("dataservices.postproto");
+    }
 }
 
