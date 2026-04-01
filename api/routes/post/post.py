@@ -95,7 +95,7 @@ async def get_users_posts(s: SessionParam, user: UserWithProfileVisibleParam, be
 
 
 
-@PostRouter.patch("/user/{author_id}/post/{post_id}")
+@PostRouter.patch("/user/{user_id}/post/{post_id}")
 async def edit_my_post(s: SessionParam, post: PostParam, body: EditPostBody) -> PostResponse:
     if not id_compare(s.user_id, post.author_id):
         raise ApiErrExc(errors.Forbidden("Cannot edit another users post"))
@@ -114,7 +114,7 @@ async def edit_my_post(s: SessionParam, post: PostParam, body: EditPostBody) -> 
 
     return await PostResponse.from_rpc(rpc)
 
-@PostRouter.delete("/user/{author_id}/post/{post_id}")
+@PostRouter.delete("/user/{user_id}/post/{post_id}")
 async def delete_my_post(s: SessionParam, post: PostParam) -> None:
     if not id_compare(s.user_id, post.author_id):
         raise ApiErrExc(errors.Forbidden("Cannot edit another users post"))

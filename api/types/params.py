@@ -84,7 +84,7 @@ async def _user_with_profile_visible(s: SessionParam, peer: UserParam) -> user_p
 UserWithProfileVisibleParam = Annotated[user_pb2.ReadUserResponse, Depends(_user_with_profile_visible)]
 
 
-async def _post_dependency(user_id: Annotated[UUID, Path(alias="author_id")], post_id: Annotated[UUID, Path()]) -> post_pb2.ReadPostResponse:
+async def _post_dependency(user_id: Annotated[UUID, Path()], post_id: Annotated[UUID, Path()]) -> post_pb2.ReadPostResponse:
     with ResourceNotFoundRpcHandler("message_id", post_id):
         return await read_post(grpcpost, user_id, post_id)
 
