@@ -19,11 +19,15 @@ __all__ = (
     "unwrap",
 )
 
-def unwrap() -> Never:
+def unwrap(additional_info: SupportsStr | None = None) -> Never:
     with tracer.start_as_current_span("unwrap info") as span:
         stack = '\n'.join(traceback.format_stack())
         span.set_attribute("az.api.unwrap.exc_stack", stack)
-    raise ApiErrExc(errors.InternalServerError("Illegal state occured"))
+
+        if additional_info is not None:
+            span.set_attribute("az.api.unwrap.additional_info", str(additional_info))
+
+        raise ApiErrExc(errors.InternalServerError("Illegal state occured"))
 
 def now() -> int:
     """Return the current unix timestamp in ms"""
