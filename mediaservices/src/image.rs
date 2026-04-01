@@ -105,6 +105,10 @@ where R: 'i + io::BufRead + io::Seek, W: 'o + io::Write + io:: Seek,
     }
 
     // fall back to dynamic handling when its not animated
+
+    // we need to reset the cursor to the start
+    input.seek(io::SeekFrom::Start(0)).ok().ok_or(ConversionError::Unknown("Failed to reset seek position"))?;
+
     let reader: ImageReader<&mut R> = ImageReader::with_format(&mut input, format);
 
     let decoded = reader.decode()?;

@@ -107,12 +107,32 @@ async fn transform_image(
     transform_span.set_attribute("az.mediaservices.img.from", input_format.map(|f| f.to_mime_type()).unwrap_or("unknown"));
     transform_span.set_attribute("az.mediaservices.img.to", output_format.to_mime_type());
 
-    // run in executor because image-rs is slow and not async``
+    // run in executor because image-rs is slow and not async
+
+    #[cfg(debug_assertions)]
+    let owned_path = path.replace('/', "-");
+    #[cfg(debug_assertions)]
+    let extension = output_format.to_mime_type().split('/').last().unwrap();
+
     let transform_join_future = tokio::task::spawn_blocking(move || {
 
         let mut data = Vec::with_capacity(input_length as usize);
-        tracing::info!("Allocated with capacity {}", data.len());
+        tracing::info!("Allocated with capacity {}", data.capacity());
+
         sync_stream.read_to_end(&mut data)?;
+
+
+        #[cfg(debug_assertions)]
+        {
+            use std::io::Write;
+            let fp = format!("/tmp/{}.{}", owned_path, extension);
+            let mut f = std::fs::File::create(&fp).unwrap();
+            f.write_all(&data).unwrap();
+            println!("Wrote to file path {}", fp);
+
+        }
+        
+
         let reader = std::io::Cursor::new(data);
 
         // we have to have the entire input and output in memory
