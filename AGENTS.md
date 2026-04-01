@@ -6,6 +6,8 @@ if something does not look right, or you are going to have to make a "hacky" or 
 
 you are only authorized to make changes to the ui/ folder, refrain from making anything but typo fixes to the ui/app/src/lib/ folder, do not try to implement things to interact with the backend - if functionality is missing make a note of it and use placeholders, you can search for api routes in api/ and the response model will be defined in the models file in the same folder as the route definition.
 
+when creating something, grep the components folder to see if there are any components that would be helpful, when creating something, consider creating components to contain it (e.g. member list components contains member list entry component, more components are usually better)
+
 the frontend is a vite+react app, if you think something may be reused multiple times, you should create a component for it, do not worry about supporting old browsers as the project requires websockets & webcrypto support, when using try/catch, if the error will affect the user (e.g. error text shown to the user, or message or element not rendered, you MUST console.error the error)
 
 ### Architecture overview
@@ -18,6 +20,7 @@ This is a private social media platform with end-to-end encrypted messaging ("az
 | **API** | Python 3.14 + FastAPI | Docker |
 | **Gateway** | Python 3.14 + websockets | Docker |
 | **Dataservices** | Rust (edition 2024) + Tonic gRPC | Docker |
+| **Mediaservices** | (Rust edition 2024) + Tonic gRPC + ffmpeg + image-rs | Docker |
 | **Database** | ScyllaDB | Docker |
 
 ### Running the full stack
