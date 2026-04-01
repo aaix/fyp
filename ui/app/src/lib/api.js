@@ -1,14 +1,26 @@
 const BASE_URI = '/api'
 
+
+
 /**
  * @class APIResponse
+ * @template T
  * @property {number} status_code - HTTP status code.
  * @property {boolean} success - Indicates if the api call was successful.
  * @property {Headers} headers - Response HTTP headers.
- * @property {Object|null} data - Success response body.
+ * @property {T | null} data - Success response body.
  * @property {Object|null} error - Error response body.
  */
 class APIResponse {
+  
+  /**
+   * Creates an instance of APIResponse.
+   *
+   * @constructor
+   * @param {int} status 
+   * @param {T} body 
+   * @param {Headers} headers 
+   */
   constructor(status, body, headers) {
     this.status_code = status
     this.success = body.success ?? status < 300
@@ -16,6 +28,16 @@ class APIResponse {
 
     this.data = this.success ? body.data : null
     this.error = !this.success ? body.data : null
+  }
+
+  
+  /**
+   * return the success body (or null on error)
+   *
+   * @returns {T | null} 
+   */
+  getData() {
+    return this.data  
   }
 }
 
