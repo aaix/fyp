@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import Card from './Card.jsx'
+import { getCurrentSession } from '../lib/session.js'
 import { userManager } from '../lib/user.js'
 import { getAvatarUrl } from '../lib/utils.js'
 import { POST_TYPE_IMAGE, POST_TYPE_SHORT, POST_TYPE_VIDEO } from '../lib/post.js'
@@ -8,6 +9,16 @@ import { isImageMime, isVideoMime } from '../lib/postMedia.js'
 /**
  * @typedef {{ username: string, iconUrl: string | null, userId: string | null }} PreviewAuthor
  */
+
+function getSessionUserId() {
+  try {
+    const s = getCurrentSession()
+    const id = s.user_id ?? (typeof localStorage !== 'undefined' ? localStorage.getItem('user_id') : null)
+    return id != null && id !== '' ? String(id) : null
+  } catch {
+    return null
+  }
+}
 
 function postTypeLabel(postType) {
   const t = Number(postType)
@@ -103,21 +114,37 @@ export default function PostView({
       return
     }
 
+    const sessionUserId = getSessionUserId()
+    const isOwnPost = sessionUserId != null && id === sessionUserId
+
     let cancelled = false
     ;(async () => {
       try {
         setAuthorLoading(true)
         setAuthorError(null)
-        const profileRes = await userManager.getUserProfile(id)
+
+        if (isOwnPost) {
+          const session = getCurrentSession()
+          const accountRes = await session.getCurrentAccount()
+          if (cancelled) return
+          if (accountRes?.success && accountRes.data) {
+            const data = accountRes.data
+            setAuthorUsername(data.username ?? '')
+            setAuthorIconUrl(getAvatarUrl(data))
+          } else {
+            setAuthorError(accountRes?.error?.message ?? 'Could not load account')
+            setAuthorUsername('')
+            setAuthorIconUrl(null)
+          }
+          return
+        }
+
+        const users = await userManager.fetchUsersBulk([id])
         if (cancelled) return
-        const raw = profileRes?.data
-        const user = raw?.user ?? raw
-        if (profileRes?.success && user) {
+        const user = users?.[0]
+        if (user) {
           setAuthorUsername(user.username ?? '')
-          setAuthorIconUrl(user ? getAvatarUrl(user) : null)
-        } else if (user) {
-          setAuthorUsername(user.username ?? '')
-          setAuthorIconUrl(user ? getAvatarUrl(user) : null)
+          setAuthorIconUrl(getAvatarUrl(user))
         } else {
           setAuthorError('User not found')
           setAuthorUsername('')

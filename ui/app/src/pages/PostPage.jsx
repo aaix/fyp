@@ -7,13 +7,53 @@ import ConfirmModal from '../components/ConfirmModal.jsx'
 import { getCurrentSession } from '../lib/session.js'
 import { postManager } from '../lib/post.js'
 
+const authorStorageKey = (postId) => `postPage.author:${postId}`
+
+function readStoredAuthorId(postId) {
+  if (!postId || typeof sessionStorage === 'undefined') return null
+  try {
+    const v = sessionStorage.getItem(authorStorageKey(postId))
+    return v != null && v !== '' ? String(v) : null
+  } catch {
+    return null
+  }
+}
+
+function writeStoredAuthorId(postId, authorId) {
+  if (!postId || authorId == null || typeof sessionStorage === 'undefined') return
+  try {
+    sessionStorage.setItem(authorStorageKey(postId), String(authorId))
+  } catch {
+    /* ignore quota / private mode */
+  }
+}
+
+function clearStoredAuthorId(postId) {
+  if (!postId || typeof sessionStorage === 'undefined') return
+  try {
+    sessionStorage.removeItem(authorStorageKey(postId))
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Current user id from session (localStorage); no account/profile API call. */
+function getSessionUserId() {
+  try {
+    const s = getCurrentSession()
+    const id = s.user_id ?? (typeof localStorage !== 'undefined' ? localStorage.getItem('user_id') : null)
+    return id != null && id !== '' ? String(id) : null
+  } catch {
+    return null
+  }
+}
+
 export default function PostPage() {
   const { postId } = useParams()
   const location = useLocation()
   const navigate = useNavigate()
   const statePost = location.state?.post ?? null
   const [post, setPost] = useState(() => statePost)
-  const [meId, setMeId] = useState(null)
   const [loadingPost, setLoadingPost] = useState(false)
   const [postError, setPostError] = useState(null)
   const [editMode, setEditMode] = useState(false)
@@ -23,9 +63,20 @@ export default function PostPage() {
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false)
   const [actionError, setActionError] = useState(null)
 
+  const sessionUserId = getSessionUserId()
+
   const idFromState = post?.post_id != null ? String(post.post_id) : null
   const matchesParam = idFromState != null && postId != null && idFromState === postId
   const authorId = post?.author_id != null ? String(post.author_id) : null
+
+  /** API route is GET /user/{author}/post/{id}; URL only has postId, so we persist author after first load. */
+  const authorIdForFetch = useMemo(() => {
+    if (!postId) return null
+    if (post?.author_id != null) return String(post.author_id)
+    const stored = readStoredAuthorId(postId)
+    if (stored) return stored
+    return sessionUserId
+  }, [postId, post?.author_id, sessionUserId])
 
   useEffect(() => {
     // Keep post in sync if navigated from another tile without unmounting.
@@ -37,43 +88,28 @@ export default function PostPage() {
     setConfirmDeleteOpen(false)
     setActionError(null)
     setPostError(null)
-    setLoadingPost(false)
     setDraftBody(next?.body != null ? String(next.body) : '')
-  }, [location.key, statePost])
-
-  useEffect(() => {
-    let cancelled = false
-    ;(async () => {
-      try {
-        const session = getCurrentSession()
-        const res = await session.getCurrentAccount()
-        if (cancelled) return
-        const id = res?.data?.user_id ?? res?.data?.id ?? null
-        setMeId(id != null ? String(id) : null)
-      } catch (e) {
-        console.error(e)
-        if (!cancelled) setMeId(null)
-      }
-    })()
-    return () => {
-      cancelled = true
+    if (next?.author_id != null && postId) {
+      writeStoredAuthorId(postId, next.author_id)
     }
-  }, [])
+  }, [location.key, statePost, postId])
 
+  // Always refetch from API (e.g. hard refresh) — no reliance on stale client state.
   useEffect(() => {
-    if (!postId) return
-    if (post && matchesParam) return
-    if (!meId) return
+    if (!postId || !authorIdForFetch) return
 
     let cancelled = false
     ;(async () => {
       try {
         setLoadingPost(true)
         setPostError(null)
-        const res = await postManager.getPost(meId, String(postId))
+        const res = await postManager.getPost(String(authorIdForFetch), String(postId))
         if (cancelled) return
         if (res?.success && res.data) {
           setPost(res.data)
+          if (res.data.author_id != null) {
+            writeStoredAuthorId(postId, res.data.author_id)
+          }
         } else {
           setPost(null)
           setPostError(res?.error?.message ?? 'Could not load post')
@@ -92,12 +128,9 @@ export default function PostPage() {
     return () => {
       cancelled = true
     }
-  }, [postId, meId, post, matchesParam])
+  }, [postId, authorIdForFetch])
 
-  const isMine = useMemo(() => {
-    if (!meId || !authorId) return false
-    return meId === authorId
-  }, [meId, authorId])
+  const isMine = Boolean(sessionUserId && authorId && sessionUserId === authorId)
 
   if (post && (matchesParam || (postId != null && String(post.post_id) === String(postId)))) {
     const handleStartEdit = () => {
@@ -124,8 +157,10 @@ export default function PostPage() {
           setActionError(res?.error?.message ?? 'Could not update post')
           return
         }
-        // API returns the updated PostResponse.
         setPost(res.data)
+        if (postId && res.data.author_id != null) {
+          writeStoredAuthorId(postId, res.data.author_id)
+        }
         setEditMode(false)
       } catch (e) {
         console.error(e)
@@ -145,6 +180,7 @@ export default function PostPage() {
           setActionError(res?.error?.message ?? 'Could not delete post')
           return
         }
+        if (postId) clearStoredAuthorId(postId)
         navigate('/', { replace: true })
       } catch (e) {
         console.error(e)
@@ -280,6 +316,8 @@ export default function PostPage() {
     )
   }
 
+  const missingAuthor = Boolean(postId && !authorIdForFetch)
+
   return (
     <PageContainer>
       <header className="border-b border-[color:var(--card-border)] pb-3">
@@ -296,10 +334,14 @@ export default function PostPage() {
             {postError}
           </p>
         ) : null}
-        {!loadingPost && !postError ? (
+        {missingAuthor && !loadingPost ? (
           <p className="text-sm text-[color:var(--text-muted)]">
-            Loading…
+            Open this post from the feed or a profile once so we can load it (author id is required for the URL you
+            have).
           </p>
+        ) : null}
+        {!loadingPost && !postError && !missingAuthor && !post ? (
+          <p className="text-sm text-[color:var(--text-muted)]">Loading…</p>
         ) : null}
         <Link
           to="/"
