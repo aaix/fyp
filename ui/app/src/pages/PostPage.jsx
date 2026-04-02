@@ -5,7 +5,15 @@ import PostView from '../components/PostView.jsx'
 import Button from '../components/Button.jsx'
 import ConfirmModal from '../components/ConfirmModal.jsx'
 import { getCurrentSession } from '../lib/session.js'
-import { FEED_TYPE_MAIN, FEED_TYPE_SHORTS, POST_TYPE_SHORT, postManager } from '../lib/post.js'
+import {
+  FEED_TYPE_MAIN,
+  FEED_TYPE_SHORTS,
+  POST_TYPE_SHORT,
+  POST_UPDATE_COMPLETED,
+  POST_UPDATE_ERROR,
+  describePostUpdateType,
+  postManager,
+} from '../lib/post.js'
 
 const authorStorageKey = (postId) => `postPage.author:${postId}`
 
@@ -62,6 +70,7 @@ export default function PostPage() {
   const [deleting, setDeleting] = useState(false)
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false)
   const [actionError, setActionError] = useState(null)
+  const [pipelineSteps, setPipelineSteps] = useState(() => [])
 
   const sessionUserId = getSessionUserId()
 
@@ -70,6 +79,10 @@ export default function PostPage() {
   const authorId = post?.author_id != null ? String(post.author_id) : null
   const feedTypeFromPost =
     post?.post_type != null && Number(post.post_type) === POST_TYPE_SHORT ? FEED_TYPE_SHORTS : FEED_TYPE_MAIN
+
+  const postIdFromPost = post?.post_id != null ? String(post.post_id) : null
+  const postIsPrivate = post?.is_private === true
+  const authorForPipelineRefetch = post?.author_id != null ? String(post.author_id) : null
 
   /** API route is GET /user/{author}/post/{id}; URL only has postId, so we persist author after first load. */
   const authorIdForFetch = useMemo(() => {
@@ -139,7 +152,60 @@ export default function PostPage() {
     }
   }, [postId, authorIdForFetch])
 
+  /** Async create: gateway `post_update` events until the post is public (buffered in postManager if early). */
+  useEffect(() => {
+    if (!postId || !postIdFromPost || postIdFromPost !== String(postId)) {
+      setPipelineSteps([])
+      return
+    }
+    if (!postIsPrivate) {
+      postManager.clearBufferedPostUpdates(String(postId))
+      setPipelineSteps([])
+      return
+    }
+
+    const syncStepsFromBuffer = () => {
+      const types = postManager.getBufferedPostUpdates(String(postId))
+      setPipelineSteps(types.map((x) => ({ updateType: x, text: describePostUpdateType(x) })))
+    }
+
+    syncStepsFromBuffer()
+
+    const unsub = postManager.subscribePostUpdates(String(postId), (t) => {
+      syncStepsFromBuffer()
+      if (t === POST_UPDATE_COMPLETED) {
+        ;(async () => {
+          const aid = authorForPipelineRefetch ?? readStoredAuthorId(postId) ?? sessionUserId
+          if (!aid) return
+          try {
+            let res = await postManager.getPost(String(aid), FEED_TYPE_MAIN, String(postId))
+            if (!res?.success) {
+              res = await postManager.getPost(String(aid), FEED_TYPE_SHORTS, String(postId))
+            }
+            if (res?.success && res.data) {
+              setPost(res.data)
+              if (res.data.author_id != null) {
+                writeStoredAuthorId(postId, res.data.author_id)
+              }
+              postManager.clearBufferedPostUpdates(String(postId))
+            }
+          } catch (e) {
+            console.error(e)
+          }
+        })()
+      }
+    })
+
+    return () => {
+      unsub()
+    }
+  }, [postId, postIdFromPost, postIsPrivate, authorForPipelineRefetch, sessionUserId])
+
   const isMine = Boolean(sessionUserId && authorId && sessionUserId === authorId)
+
+  const pipelineHasError = pipelineSteps.some((s) => s.updateType === POST_UPDATE_ERROR)
+  const showPipelineBanner =
+    pipelineSteps.length > 0 && (post?.is_private === true || pipelineHasError)
 
   if (post && (matchesParam || (postId != null && String(post.post_id) === String(postId)))) {
     const handleBack = () => {
@@ -273,6 +339,33 @@ export default function PostPage() {
           </div>
         </header>
         <main className="flex flex-1 flex-col overflow-y-auto pt-2">
+          {showPipelineBanner ? (
+            <div
+              role={pipelineHasError ? 'alert' : 'status'}
+              aria-live="polite"
+              className={
+                pipelineHasError
+                  ? 'mb-2 rounded-card border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200'
+                  : 'mb-2 rounded-card border border-[color:var(--card-border)] bg-[color:var(--card-bg)] px-3 py-2 text-sm text-[color:var(--text-primary)]'
+              }
+            >
+              <p className="mb-1 text-xs font-semibold text-[color:var(--text-muted)]">Post status</p>
+              <ul className="list-none space-y-1">
+                {pipelineSteps.map((step, i) => (
+                  <li
+                    key={`${i}-${step.updateType}`}
+                    className={
+                      step.updateType === POST_UPDATE_ERROR
+                        ? 'text-red-800 dark:text-red-200'
+                        : ''
+                    }
+                  >
+                    {step.text}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
           {actionError ? (
             <p className="mb-2 text-sm text-red-600" role="alert">
               {actionError}
