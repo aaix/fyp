@@ -91,22 +91,20 @@ function getTitleFromPathname(pathname) {
 
 function App() {
   const [isLoggedIn, gatewayUrl, completeLogin] = useAuth()
+  /** false until `handshake_promise` resolves for the current gateway (see gateway.js). */
   const [gatewayHandshakeReady, setGatewayHandshakeReady] = useState(false)
   const location = useLocation()
 
   useEffect(() => {
-    if (!isLoggedIn) {
-      setGatewayHandshakeReady(false)
-      return
-    }
-
-    if (!gatewayUrl) {
-      setGatewayHandshakeReady(true)
+    if (!isLoggedIn || !gatewayUrl) {
       return
     }
 
     let cancelled = false
+    // Reset gate for each (isLoggedIn, gatewayUrl) so a new login always re-handshakes.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- must clear before awaiting handshake_promise
     setGatewayHandshakeReady(false)
+
     ;(async () => {
       try {
         const gateway = await gatewayFactory(gatewayUrl)
@@ -150,7 +148,8 @@ function App() {
     return <AuthPage onLogin={completeLogin} />
   }
 
-  const waitingForGatewayHandshake = Boolean(gatewayUrl) && !gatewayHandshakeReady
+  const waitingForGatewayHandshake =
+    Boolean(isLoggedIn && gatewayUrl) && !gatewayHandshakeReady
   if (waitingForGatewayHandshake) {
     return (
       <div
