@@ -1,10 +1,11 @@
-from typing import Annotated, Literal
+from contextlib import AsyncExitStack
+from typing import Annotated, Literal, cast
 
 import asyncio
 from enum import IntEnum
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Header, Query, UploadFile
+from fastapi import APIRouter, Depends, Header, Query, Request, UploadFile
 
 from api import *
 from api.routes.post.models import *
@@ -106,14 +107,14 @@ async def new_post_task(
 
 @PostRouter.post("/{timeline_type}")
 async def new_post(
+    request: Request,
     s: SessionParam,
     body: Annotated[NewPostBody, Depends(NewPostBody.from_form)],
     attachment: UploadFile,
     timeline_type: TimelineTypeParam,
     content_length: Annotated[int, Header(lt=POST_MEDIA_MAX_UPLOAD_SIZE, gt=1)],
 ) -> PostResponse:
-    
-    
+        
     content_type = body.post_type.get_content_type()
 
     post_type = body.post_type
@@ -133,6 +134,17 @@ async def new_post(
     if len(completed) > 0:
         task, = completed
         post = task.result()
+    else:
+        task, = pending
+        loop = task.get_loop()
+
+        # stupid hack to stop fastapi "cleaning up" our file
+        file_stack = request.scope.get("fastapi_middleware_astack")
+        assert file_stack
+        new_stack = file_stack.pop_all()
+        task.add_done_callback(lambda _: loop.create_task(new_stack.aclose()))
+
+
 
 
     return await PostResponse.from_rpc(post)
