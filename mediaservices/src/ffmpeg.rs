@@ -26,6 +26,10 @@ pub async fn transcode(
         .arg("-c:a").arg("libopus")    // audio vodec
         .arg("-f").arg("webm") // webm out
         .arg("-error-resilient").arg("1")
+        .arg("-cpu-used").arg("6")
+        .arg("-threads").arg("8") 
+        .arg("-row-mt").arg("1")
+        .arg("-deadline").arg("realtime ")
         .arg("pipe:1")
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
