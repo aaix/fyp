@@ -74,7 +74,7 @@ services:
       API_SESSION_SIGNING_KEY: ${SECRET_KEY_API_SESSION_SIGN}
       API_SESSION_ENCRYPTION_KEY: ${SECRET_KEY_API_SESSION_ENCRYPT}
       VALKEY_URI: discoverystore-0:6379
-      MEDIASERVICES_URI: mediaservices-7yrjjcng3q-nw.a.run.app:3119
+      MEDIASERVICES_URI: mediaservices-7yrjjcng3q-nw.a.run.app:443
 
       S3_PUBLIC_BUCKET: az7-public
       S3_PRIVATE_BUCKET: az7-private
