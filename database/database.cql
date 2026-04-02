@@ -160,6 +160,7 @@ CREATE TABLE dataservices.user_timeline_meta  (
     user_id TIMEUUID,
     timeline_type INT,
     last_fanned_in_at TIMEUUID, -- fan in following
+    recent_remmovals set<TIMEUUID>, -- "cache" list of recent people unfollowed, or removed as friends
     PRIMARY KEY (user_id, timeline_type)
 );
 
@@ -168,6 +169,7 @@ CREATE TABLE dataservices.user_timeline_entry (
     timeline_type INT, -- 0: main feed (image/video post), 1: short from (sf post)
     post_author_id TIMEUUID,
     post_id TIMEUUID,
+    entry_type INT, --0: fanned out, --1: fanned in
     PRIMARY KEY ((user_id, timeline_type), post_id)
 ) WITH CLUSTERING ORDER BY (post_id DESC);
 
