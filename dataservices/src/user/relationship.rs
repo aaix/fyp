@@ -1,4 +1,4 @@
-use crate::{db_conn::db, errors::DSResult, helpers::time_now, models::{relationship_v2::RelationshipV2, user_num_relationships::UserNumRelationships}, protos::dataservices::user_service::{self, CreateRelationshipRequest, DeleteRelationshipResponse, GetUserRelationshipCountsRequest, GetUserRelationshipCountsResponse, HalfRelationship, ReadRelationshipRequest, ReadRelationshipResponse, ReadRelationshipsRequest, RelationshipObject, RelationshipTestResponse, RelationshipsResponse, TestManyRelationshipsRequest, TestManyRelationshipsResponse}, req_tuuid};
+use crate::{db_conn::db, errors::DSResult, helpers::time_now, models::{relationship_v2::RelationshipV2, user_num_relationships::UserNumRelationships}, protos::dataservices::user_service::{self, CreateRelationshipRequest, DeleteRelationshipResponse, GetUserRelationshipCountsRequest, GetUserRelationshipCountsResponse, HalfRelationship, ReadRelationshipRequest, ReadRelationshipResponse, ReadRelationshipsChunkedRequest, RelationshipsResponse, ReadRelationshipsRequest, RelationshipObject, RelationshipTestResponse, TestManyRelationshipsRequest, TestManyRelationshipsResponse}, req_tuuid};
 
 use futures::{StreamExt, future::join_all};
 use scylla::{errors::FirstRowError, statement::prepared::PreparedStatement, value::{Counter, CqlTimeuuid}};
@@ -20,6 +20,7 @@ pub struct ScyllaUserRelationshipService {
     delete_relationship_prepared: PreparedStatement,
     test_relationship_prepared: PreparedStatement,
     read_relationship_counters_prepared: PreparedStatement,
+    read_relationships_chunked_prepared: PreparedStatement,
 }
 
 
@@ -45,7 +46,7 @@ impl ScyllaUserRelationshipService {
             APPLY BATCH"
         ).await?;
 
-        let modify_relationship_counter_prepared = db().await.prepare(
+        let modify_relationship_counters_prepared = db().await.prepare(
             "
             UPDATE dataservices.user_num_relationships \
             SET num_friends = num_friends + ?, num_followers = num_followers + ? \
@@ -77,14 +78,19 @@ impl ScyllaUserRelationshipService {
             "SELECT * FROM dataservices.relationship_v2 WHERE user_id_a = ? AND user_id_b = ? AND relationship_type = ?"
         ).await?;
 
+        let read_relationships_chunked_prepared = db().await.prepare(
+            "SELECT * FROM dataservices.relationship_v2 WHERE user_id_a = ? AND (relationship_type, user_id_b) > (?, ?) LIMIT ?"
+        ).await?;
+
         Ok(Self {
             create_relationship_prepared, 
-            modify_relationship_counters_prepared: modify_relationship_counter_prepared,
+            modify_relationship_counters_prepared,
             read_relationship_prepared,
             read_relationships_prepared,
             delete_relationship_prepared,
             test_relationship_prepared,
             read_relationship_counters_prepared,
+            read_relationships_chunked_prepared,
         })
     }
 }
@@ -395,6 +401,54 @@ impl ScyllaUserRelationshipService {
             num_followers,
         }))
     }
+
+    async fn read_relationships_chunked_impl(
+        &self,
+        request: tonic::Request<ReadRelationshipsChunkedRequest>,
+    ) -> DSResult<
+    tonic::Response<RelationshipsResponse>> {
+
+        let user_id: CqlTimeuuid = req_tuuid!(request, user_id)?;
+        let inner = request.get_ref();
+        let rel_type = inner.relationship_type;
+        let chunk_size = inner.chunk_size;
+
+        let after = match inner.after {
+            Some(v) => v.into(),
+            None => CqlTimeuuid::from(*uuid::Builder::nil().with_version(uuid::Version::Mac).as_uuid()),
+        };
+
+        let mut pager = db().await.execute_iter(
+            self.read_relationships_chunked_prepared.clone(),
+            (
+                &user_id,
+                &rel_type,
+                &after,
+                &chunk_size
+            )
+        ).await?.rows_stream::<RelationshipV2>()?;
+
+        let mut relationships = Vec::new();
+
+        while let Some(row_res) = pager.next().await {
+            let row = row_res?;
+
+            // we have exhausted all relationships of our type
+            // we cannot limit in cql because we are using it as a composite order
+            if row.relationship_type != rel_type {
+                break;
+            }
+
+            relationships.push(HalfRelationship {
+                user_id_b: Some(row.user_id_b.into()),
+                created_at: row.created_at.0,
+            })
+        }
+
+
+        Ok(Response::new(RelationshipsResponse { relationships }))
+    }
+
 }
 
 
@@ -478,4 +532,13 @@ impl UserRelationshipService for ScyllaUserRelationshipService {
         Ok(self.get_user_relationship_counts_impl(request).await?)
     }
     
+    async fn read_relationships_chunked(
+        &self,
+        request: tonic::Request<ReadRelationshipsChunkedRequest>,
+    ) -> std::result::Result<
+        tonic::Response<RelationshipsResponse>,
+        tonic::Status,
+    > {
+        Ok(self.read_relationships_chunked_impl(request).await?)
+    }
 }

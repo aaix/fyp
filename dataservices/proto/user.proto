@@ -160,6 +160,7 @@ service UserRelationshipService {
 
     // read all of a users relationships with others
     rpc ReadRelationships (ReadRelationshipsRequest) returns (RelationshipsResponse);
+    rpc ReadRelationshipsChunked (ReadRelationshipsChunkedRequest) returns (RelationshipsResponse);
 
     rpc GetUserRelationshipCounts (GetUserRelationshipCountsRequest) returns (GetUserRelationshipCountsResponse);
 }
@@ -210,6 +211,13 @@ message RelationshipTestResponse {
 message ReadRelationshipsRequest {
     plib.pUUID user_id = 1;
     int32 relationship_type = 2;
+}
+
+message ReadRelationshipsChunkedRequest {
+    plib.pUUID user_id = 1;
+    int32 relationship_type = 2;
+    optional plib.pUUID after = 3;
+    int32 chunk_size = 4;
 }
 
 message HalfRelationship {
