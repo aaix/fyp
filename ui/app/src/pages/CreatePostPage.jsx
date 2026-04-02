@@ -223,7 +223,6 @@ export default function CreatePostPage() {
             author_id={previewAuthor.userId}
             asset_url={previewUrl}
             post_type={previewPostType}
-            content_type={file.type}
             body={captionForPreview.length > 0 ? captionForPreview : null}
             last_edited={null}
             num_comments={0}

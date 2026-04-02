@@ -5,7 +5,7 @@ import PostView from '../components/PostView.jsx'
 import Button from '../components/Button.jsx'
 import ConfirmModal from '../components/ConfirmModal.jsx'
 import { getCurrentSession } from '../lib/session.js'
-import { postManager } from '../lib/post.js'
+import { FEED_TYPE_MAIN, FEED_TYPE_SHORTS, POST_TYPE_SHORT, postManager } from '../lib/post.js'
 
 const authorStorageKey = (postId) => `postPage.author:${postId}`
 
@@ -68,6 +68,8 @@ export default function PostPage() {
   const idFromState = post?.post_id != null ? String(post.post_id) : null
   const matchesParam = idFromState != null && postId != null && idFromState === postId
   const authorId = post?.author_id != null ? String(post.author_id) : null
+  const feedTypeFromPost =
+    post?.post_type != null && Number(post.post_type) === POST_TYPE_SHORT ? FEED_TYPE_SHORTS : FEED_TYPE_MAIN
 
   /** API route is GET /user/{author}/post/{id}; URL only has postId, so we persist author after first load. */
   const authorIdForFetch = useMemo(() => {
@@ -103,16 +105,23 @@ export default function PostPage() {
       try {
         setLoadingPost(true)
         setPostError(null)
-        const res = await postManager.getPost(String(authorIdForFetch), String(postId))
+        // Direct links don't include feed type; try feed first, then shorts.
+        const res =
+          (await postManager.getPost(String(authorIdForFetch), FEED_TYPE_MAIN, String(postId))) ??
+          null
+        let effective = res
+        if (!effective?.success) {
+          effective = await postManager.getPost(String(authorIdForFetch), FEED_TYPE_SHORTS, String(postId))
+        }
         if (cancelled) return
-        if (res?.success && res.data) {
-          setPost(res.data)
-          if (res.data.author_id != null) {
-            writeStoredAuthorId(postId, res.data.author_id)
+        if (effective?.success && effective.data) {
+          setPost(effective.data)
+          if (effective.data.author_id != null) {
+            writeStoredAuthorId(postId, effective.data.author_id)
           }
         } else {
           setPost(null)
-          setPostError(res?.error?.message ?? 'Could not load post')
+          setPostError(effective?.error?.message ?? 'Could not load post')
         }
       } catch (e) {
         console.error(e)
@@ -133,6 +142,14 @@ export default function PostPage() {
   const isMine = Boolean(sessionUserId && authorId && sessionUserId === authorId)
 
   if (post && (matchesParam || (postId != null && String(post.post_id) === String(postId)))) {
+    const handleBack = () => {
+      try {
+        if (window.history.length > 1) navigate(-1)
+        else navigate('/', { replace: true })
+      } catch {
+        navigate('/', { replace: true })
+      }
+    }
     const handleStartEdit = () => {
       setActionError(null)
       setDraftBody(post?.body != null ? String(post.body) : '')
@@ -152,7 +169,7 @@ export default function PostPage() {
         setActionError(null)
         const trimmed = typeof draftBody === 'string' ? draftBody.trim() : ''
         const nextBody = trimmed.length > 0 ? trimmed : null
-        const res = await postManager.editPost(authorId, String(post.post_id), nextBody)
+        const res = await postManager.editPost(authorId, feedTypeFromPost, String(post.post_id), nextBody)
         if (!res?.success || !res?.data) {
           setActionError(res?.error?.message ?? 'Could not update post')
           return
@@ -175,7 +192,7 @@ export default function PostPage() {
       try {
         setDeleting(true)
         setActionError(null)
-        const res = await postManager.deletePost(authorId, String(post.post_id))
+        const res = await postManager.deletePost(authorId, feedTypeFromPost, String(post.post_id))
         if (!res?.success) {
           setActionError(res?.error?.message ?? 'Could not delete post')
           return
@@ -194,9 +211,10 @@ export default function PostPage() {
     return (
       <PageContainer>
         <header className="border-b border-[color:var(--card-border)] pb-3">
-          <Link
-            to="/"
-            className="mb-2 inline-flex items-center gap-1 text-sm font-medium text-[color:var(--accent)] no-underline hover:underline"
+          <button
+            type="button"
+            onClick={handleBack}
+            className="mb-2 inline-flex items-center gap-1 border-0 bg-transparent p-0 text-sm font-medium text-[color:var(--accent)] hover:underline"
           >
             <span
               className="material-symbols-outlined text-lg"
@@ -205,8 +223,8 @@ export default function PostPage() {
             >
               arrow_back
             </span>
-            Back to feed
-          </Link>
+            Back
+          </button>
           <div className="flex items-center justify-between gap-3">
             <h1 className="text-xl font-bold text-[color:var(--text-primary)]">Post</h1>
             {isMine ? (
@@ -293,7 +311,6 @@ export default function PostPage() {
             author_id={post.author_id}
             asset_url={post.asset_url}
             post_type={post.post_type}
-            content_type={post.content_type}
             body={isMine && editMode ? (draftBody || null) : (post.body ?? null)}
             last_edited={post.last_edited ?? null}
             num_comments={post.num_comments ?? 0}
@@ -347,7 +364,7 @@ export default function PostPage() {
           to="/"
           className="inline-flex w-fit items-center gap-1 text-sm font-medium text-[color:var(--accent)] no-underline hover:underline"
         >
-          Back to feed
+          Back
         </Link>
       </main>
     </PageContainer>

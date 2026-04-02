@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { columnCountFromContainerWidth, distributePostsRoundRobin } from '../lib/postTileGridLayout.js'
-import { clampTileAspectRatio, isImageMime, isVideoMime } from '../lib/postMedia.js'
+import { clampTileAspectRatio, postRendersAsImage, postRendersAsVideo } from '../lib/postMedia.js'
 
 const TILE_ROW_GAP_CLASS = 'gap-2 md:gap-3'
 
@@ -118,9 +118,8 @@ function usePostTileColumnCount() {
 export default function PostTile({ post, className = '' }) {
   const videoRef = useRef(null)
   const id = post.post_id != null ? String(post.post_id) : ''
-  const ct = post.content_type ?? ''
-  const isVideo = isVideoMime(ct)
-  const isImage = isImageMime(ct)
+  const isVideo = postRendersAsVideo(post.post_type)
+  const isImage = postRendersAsImage(post.post_type)
 
   const [displayRatio, setDisplayRatio] = useState(null)
 
@@ -192,7 +191,7 @@ export default function PostTile({ post, className = '' }) {
         />
       ) : (
         <div className="flex h-full w-full items-center justify-center px-2 text-center text-xs text-[color:var(--text-muted)]">
-          {ct || 'Media'}
+          Media
         </div>
       )}
       {displayRatio === null && (isImage || isVideo) && post.asset_url ? (

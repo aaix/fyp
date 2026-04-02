@@ -7,6 +7,7 @@ import PageContainer from '../components/PageContainer.jsx'
 import { useUserPosts } from '../hooks/useUserPosts.js'
 import FriendsListModal from '../components/FriendsListModal.jsx'
 import IconLinkButton from '../components/IconLinkButton.jsx'
+import { FEED_TYPE_MAIN, FEED_TYPE_SHORTS } from '../lib/post.js'
 
 const FRIENDS = 3
 const MAX_AVATAR_BYTES = 10_000_000
@@ -23,6 +24,7 @@ export default function AccountPage() {
   const [avatarError, setAvatarError] = useState(null)
   const [avatarUploading, setAvatarUploading] = useState(false)
   const [friendsModalOpen, setFriendsModalOpen] = useState(false)
+  const [postsFeedType, setPostsFeedType] = useState(FEED_TYPE_MAIN)
 
   const {
     posts,
@@ -31,7 +33,7 @@ export default function AccountPage() {
     hasMore: postsHasMore,
     loadingMore: postsLoadingMore,
     loadMore: loadMorePosts,
-  } = useUserPosts(profile.userId)
+  } = useUserPosts(profile.userId, postsFeedType)
   const postsGridLoading = postsLoading || (loading && !profile.userId)
 
   const loadAccountInfo = async () => {
@@ -119,6 +121,11 @@ export default function AccountPage() {
         postsHasMore={postsHasMore}
         postsLoadingMore={postsLoadingMore}
         onPostsLoadMore={loadMorePosts}
+        postsFeedType={postsFeedType}
+        onPostsFeedTypeChange={(next) => {
+          const v = next === FEED_TYPE_SHORTS ? FEED_TYPE_SHORTS : FEED_TYPE_MAIN
+          setPostsFeedType(v)
+        }}
       />
       <FriendsListModal
         open={friendsModalOpen}

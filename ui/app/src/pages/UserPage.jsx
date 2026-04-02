@@ -6,6 +6,8 @@ import { userManager, relationshipManager } from '../lib/user.js'
 import { getAvatarUrl } from '../lib/utils.js'
 import { getCurrentSession } from '../lib/session.js'
 import { useUserPosts } from '../hooks/useUserPosts.js'
+import { FEED_TYPE_MAIN } from '../lib/post.js'
+import { FEED_TYPE_SHORTS } from '../lib/post.js'
 
 const CURRENT_REQUESTING_PEER = 1
 const PEER_REQUESTING_CURRENT = 2
@@ -148,6 +150,7 @@ export default function UserPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [actionLoading, setActionLoading] = useState(false)
+  const [postsFeedType, setPostsFeedType] = useState(FEED_TYPE_MAIN)
 
   const {
     posts,
@@ -156,7 +159,7 @@ export default function UserPage() {
     hasMore: postsHasMore,
     loadingMore: postsLoadingMore,
     loadMore: loadMorePosts,
-  } = useUserPosts(userId)
+  } = useUserPosts(userId, postsFeedType)
 
   useEffect(() => {
     if (!userId) return
@@ -437,6 +440,11 @@ export default function UserPage() {
         postsHasMore={postsHasMore}
         postsLoadingMore={postsLoadingMore}
         onPostsLoadMore={loadMorePosts}
+        postsFeedType={postsFeedType}
+        onPostsFeedTypeChange={(next) => {
+          const v = next === FEED_TYPE_SHORTS ? FEED_TYPE_SHORTS : FEED_TYPE_MAIN
+          setPostsFeedType(v)
+        }}
       />
     </div>
   )

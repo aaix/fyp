@@ -2,6 +2,15 @@
  * Shared helpers for post image/video rendering (PostView, PostTile, etc.).
  */
 
+export function postRendersAsVideo(postType) {
+  // Current mapping: shorts are always video; other types may change later.
+  return Number(postType) === 3 || Number(postType) === 2;
+}
+
+export function postRendersAsImage(postType) {
+  return Number(postType) === 1
+}
+
 export function isVideoMime(contentType) {
   return typeof contentType === 'string' && contentType.startsWith('video/')
 }

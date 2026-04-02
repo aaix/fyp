@@ -1,7 +1,7 @@
 import API from './api'
 
-export const FEED_TYPE_MAIN = 0;
-export const FEED_TYPE_SHORTS = 1;
+export const FEED_TYPE_MAIN = "feed";
+export const FEED_TYPE_SHORTS = "short";
 
 export const POST_TYPE_IMAGE = 1;
 export const POST_TYPE_VIDEO = 2;
@@ -20,11 +20,11 @@ class PostManager {
      * create a post
      *
      * @async
-     * @param {string | null} optional_caption 
-     * @param {*} media_file 
-     * @param {string} content_type 
-     * @param {int} feed_type 0: main feed, 1: short form feed 
-     * @returns {APIResponse} 
+     * @param {string | null} optional_caption
+     * @param {*} media_file
+     * @param {string} content_type
+     * @param {string} feed_type "feed" | "short"
+     * @returns {APIResponse}
      */
     async createPost(optional_caption, media_file, content_type, feed_type) {
 
@@ -53,14 +53,19 @@ class PostManager {
 
         form.append("attachment", media_file);
 
-        let res = await API.POST(`social/post`, form, {useForm: true});
+        let res = await API.POST(`post/${encodeURIComponent(feed_type)}`, form, {useForm: true});
 
         return res;
 
     }
 
-    async getUserPosts(user_id, before = null) {
-        let path = `social/user/${user_id}/posts`;
+    /**
+     * @param {string} user_id
+     * @param {string} feed_type "feed" | "short"
+     * @param {string | null} [before] - UUID for pagination cursor
+     */
+    async getUserPosts(user_id, feed_type, before = null) {
+        let path = `post/user/${encodeURIComponent(user_id)}/${encodeURIComponent(feed_type)}`;
         if (before) {
             const q = new URLSearchParams({ before: String(before) });
             path += `?${q.toString()}`;
@@ -72,47 +77,40 @@ class PostManager {
      * 
      * @param {string} author_id 
      * @param {string} post_id 
+     * @param {string} feed_type
      * @returns {APIResponse}
      */
-    async getPost(author_id, post_id) {
-
-        return await API.GET(`social/user/${author_id}/post/${post_id}`);
+    async getPost(author_id, feed_type, post_id) {
+        return await API.GET(
+            `post/user/${encodeURIComponent(author_id)}/${encodeURIComponent(feed_type)}/${encodeURIComponent(post_id)}`
+        );
     }
 
     /**
      * 
      * @param {string} author_id 
      * @param {string} post_id 
+     * @param {string} feed_type
      * @param {string | null} post_body 
      * @returns {APIResponse}
      */
-    async editPost(author_id, post_id, post_body) {
-
-        return await API.PATCH(`social/user/${author_id}/post/${post_id}`, {
+    async editPost(author_id, feed_type, post_id, post_body) {
+        return await API.PATCH(`post/user/${encodeURIComponent(author_id)}/${encodeURIComponent(feed_type)}/${encodeURIComponent(post_id)}`, {
             body: post_body,
         });
     }
 
     /**
      * 
-     * @param {string} author_id 
+     * @param {string} author_id
+     * @param {string} feed_type 
      * @param {string} post_id 
      * @returns {APIResponse<null>}
      */
-    async deletePost(author_id, post_id) {
-
-        return await API.DELETE(`social/user/${author_id}/post/${post_id}`);
-    }
-
-    /**
-     * 
-     * @param {string} author_id 
-     * @param {string} post_id 
-     * @returns {APIResponse}
-     */
-    async getPost(author_id, post_id) {
-
-        return await API.GET(`social/user/${author_id}/post/${post_id}`);
+    async deletePost(author_id, feed_type, post_id) {
+        return await API.DELETE(
+            `post/user/${encodeURIComponent(author_id)}/${encodeURIComponent(feed_type)}/${encodeURIComponent(post_id)}`
+        );
     }
 }
 

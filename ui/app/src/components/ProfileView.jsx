@@ -22,6 +22,8 @@ import { PostTileGrid } from './PostTile.jsx'
  * @param {boolean} [props.postsHasMore]
  * @param {boolean} [props.postsLoadingMore]
  * @param {() => void} [props.onPostsLoadMore]
+ * @param {string} [props.postsFeedType] - "feed" | "short"
+ * @param {(nextFeedType: string) => void} [props.onPostsFeedTypeChange]
  */
 export default function ProfileView({
   profile,
@@ -38,6 +40,8 @@ export default function ProfileView({
   postsHasMore = false,
   postsLoadingMore = false,
   onPostsLoadMore = null,
+  postsFeedType = 'feed',
+  onPostsFeedTypeChange = null,
 }) {
   const fileInputRef = useRef(null)
   const {
@@ -173,7 +177,36 @@ export default function ProfileView({
         className="mt-6 w-full self-stretch px-4 sm:px-6 md:px-10 lg:px-14 xl:px-20 2xl:px-24"
         aria-label="Posts"
       >
-        <h2 className="mb-3 text-sm font-semibold text-[color:var(--text-muted)]">Posts</h2>
+        <div className="mb-3 flex items-center justify-center">
+          {typeof onPostsFeedTypeChange === 'function' ? (
+            <div className="flex items-center overflow-hidden rounded-button border border-[color:var(--card-border)]">
+              <button
+                type="button"
+                onClick={() => onPostsFeedTypeChange('feed')}
+                className={`px-3 py-1.5 text-xs font-semibold transition-colors ${
+                  postsFeedType === 'feed'
+                    ? 'bg-[color:var(--tab-active-bg)] text-[color:var(--text-primary)]'
+                    : 'bg-transparent text-[color:var(--text-muted)] hover:text-[color:var(--text-primary)]'
+                }`}
+                aria-pressed={postsFeedType === 'feed'}
+              >
+                Posts
+              </button>
+              <button
+                type="button"
+                onClick={() => onPostsFeedTypeChange('short')}
+                className={`px-3 py-1.5 text-xs font-semibold transition-colors ${
+                  postsFeedType === 'short'
+                    ? 'bg-[color:var(--tab-active-bg)] text-[color:var(--text-primary)]'
+                    : 'bg-transparent text-[color:var(--text-muted)] hover:text-[color:var(--text-primary)]'
+                }`}
+                aria-pressed={postsFeedType === 'short'}
+              >
+                Shorts
+              </button>
+            </div>
+          ) : null}
+        </div>
         <PostTileGrid
           posts={posts}
           loading={postsLoading}

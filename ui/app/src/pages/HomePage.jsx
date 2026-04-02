@@ -4,11 +4,12 @@ import IconLinkButton from '../components/IconLinkButton.jsx'
 import { PostTileGrid } from '../components/PostTile.jsx'
 import { useUserPosts } from '../hooks/useUserPosts.js'
 import { getCurrentSession } from '../lib/session.js'
+import { FEED_TYPE_MAIN } from '../lib/post.js'
 
 export default function HomePage() {
   const [feedUserId, setFeedUserId] = useState(null)
   const [sessionResolved, setSessionResolved] = useState(false)
-  const { posts, loading, error, hasMore, loadingMore, loadMore } = useUserPosts(feedUserId)
+  const { posts, loading, error, hasMore, loadingMore, loadMore } = useUserPosts(feedUserId, FEED_TYPE_MAIN)
 
   useEffect(() => {
     let cancelled = false

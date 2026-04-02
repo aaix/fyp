@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { postManager } from '../lib/post.js'
+import { FEED_TYPE_MAIN, postManager } from '../lib/post.js'
 
 /** Matches API default in shared/py/grpc/post.py read_users_posts */
 const PAGE_SIZE = 15
@@ -33,11 +33,16 @@ function mergePostsById(prev, next) {
  *   loadMore: () => Promise<void>,
  * }}
  */
-export function useUserPosts(userId) {
+export function useUserPosts(userId, feedType = FEED_TYPE_MAIN) {
   const stableUserId = useMemo(() => {
     if (userId == null || userId === '') return null
     return String(userId)
   }, [userId])
+
+  const stableFeedType = useMemo(() => {
+    if (feedType == null || feedType === '') return FEED_TYPE_MAIN
+    return String(feedType)
+  }, [feedType])
 
   const [posts, setPosts] = useState([])
   const [loading, setLoading] = useState(!!stableUserId)
@@ -67,7 +72,7 @@ export function useUserPosts(userId) {
         setLoading(true)
         setError(null)
         setHasMore(false)
-        const res = await postManager.getUserPosts(stableUserId)
+        const res = await postManager.getUserPosts(stableUserId, stableFeedType)
         if (cancelled) return
         if (res?.success && res.data?.posts) {
           const list = res.data.posts
@@ -94,7 +99,7 @@ export function useUserPosts(userId) {
     return () => {
       cancelled = true
     }
-  }, [stableUserId, reloadToken])
+  }, [stableUserId, stableFeedType, reloadToken])
 
   const loadMore = useCallback(async () => {
     if (!stableUserId || !hasMore || loadMoreInFlight.current) return
@@ -106,7 +111,7 @@ export function useUserPosts(userId) {
     loadMoreInFlight.current = true
     setLoadingMore(true)
     try {
-      const res = await postManager.getUserPosts(stableUserId, String(before))
+      const res = await postManager.getUserPosts(stableUserId, stableFeedType, String(before))
       if (res?.success && res.data?.posts) {
         const next = res.data.posts
         if (next.length === 0) {
@@ -127,7 +132,7 @@ export function useUserPosts(userId) {
       loadMoreInFlight.current = false
       setLoadingMore(false)
     }
-  }, [stableUserId, hasMore])
+  }, [stableUserId, stableFeedType, hasMore])
 
   return { posts, loading, error, reload, hasMore, loadingMore, loadMore }
 }

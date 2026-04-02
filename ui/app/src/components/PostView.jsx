@@ -4,7 +4,8 @@ import { getCurrentSession } from '../lib/session.js'
 import { userManager } from '../lib/user.js'
 import { getAvatarUrl } from '../lib/utils.js'
 import { POST_TYPE_IMAGE, POST_TYPE_SHORT, POST_TYPE_VIDEO } from '../lib/post.js'
-import { isImageMime, isVideoMime } from '../lib/postMedia.js'
+import { postRendersAsImage, postRendersAsVideo } from '../lib/postMedia.js'
+import { uuidTimeToUnixMs } from '../utils/timeuuid.js'
 
 /**
  * @typedef {{ username: string, iconUrl: string | null, userId: string | null }} PreviewAuthor
@@ -77,10 +78,10 @@ function PostBodyText({ body }) {
 }
 
 export default function PostView({
+  post_id,
   author_id,
   asset_url,
   post_type,
-  content_type,
   body,
   last_edited: lastEdited,
   num_comments,
@@ -167,9 +168,8 @@ export default function PostView({
     }
   }, [author_id, isPreview, previewAuthor])
 
-  const ct = content_type ?? ''
-  const isVideo = isVideoMime(ct)
-  const isImage = isImageMime(ct)
+  const isVideo = postRendersAsVideo(post_type)
+  const isImage = postRendersAsImage(post_type)
 
   let editedLine = null
   if (lastEdited != null && lastEdited !== undefined) {
@@ -178,6 +178,9 @@ export default function PostView({
       editedLine = new Date(n < 1e12 ? n * 1000 : n).toLocaleString()
     }
   }
+
+  const postedMs = uuidTimeToUnixMs(post_id != null ? String(post_id) : null)
+  const postedLine = postedMs ? new Date(postedMs).toLocaleString() : null
 
   return (
     <Card className={`overflow-hidden ${className}`}>
@@ -206,6 +209,9 @@ export default function PostView({
           {editedLine ? (
             <p className="text-xs text-[color:var(--text-muted)]">Edited {editedLine}</p>
           ) : null}
+          {postedLine ? (
+            <p className="text-xs text-[color:var(--text-muted)]">Posted {postedLine}</p>
+          ) : null}
         </div>
       </div>
 
@@ -217,7 +223,7 @@ export default function PostView({
             <img src={asset_url} alt="" className="max-h-[70vh] w-full object-contain" />
           ) : (
             <p className="px-3 py-6 text-center text-sm text-[color:var(--text-muted)]">
-              Unsupported media type ({ct || 'unknown'})
+              Unsupported post type
             </p>
           )
         ) : null}
