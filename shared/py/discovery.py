@@ -23,7 +23,7 @@ class DiscoveryManager(SingletonMixin):
     def mediaservices_auth(self) -> str | None:
         if not self.is_prod():
             return None
-        uri = self.discover_mediaservices().split(":", 1)[0]
+        uri = ''.join(self.discover_mediaservices().split(":3119")[0:-1])
         proc = subprocess.run([
             "curl",
             "-H",
