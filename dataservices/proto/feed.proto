@@ -1,0 +1,92 @@
+syntax = "proto3";
+
+package dataservices.feedproto;
+import "plib.proto";
+import "google/protobuf/wrappers.proto";
+
+service FeedService {
+    rpc ReadFeedMeta (ReadFeedMetaRequest) returns (FeedMetaResponse);
+    rpc UpdateFeedMeta (UpdateFeedMetaRequest) returns (FeedMetaResponse);
+
+    /// Read a users feed
+    rpc ReadFeed (ReadFeedRequest) returns (FeedResponse);
+    /// Add a post to many feeds (fan out)
+    rpc AddToFeeds (AddToFeedsRequest) returns (AddToFeedsResponse);
+    /// Remove many posts from a users feed (fan in)
+    rpc RemoveFromFeed (RemovePostsFromFeedRequest) returns (RemovePostsFromFeedResponse);
+    /// Add posts to a feed (fan in)
+    rpc AddPostsToFeed (AddPostsToFeedRequest) returns (AddPostsToFeedResponse);
+
+
+}
+
+message ReadFeedMetaRequest {
+    plib.pUUID user_id = 1;
+    int32 feed_type = 2;
+}
+
+message FeedMetaResponse {
+    plib.pUUID user_id = 2;
+    int32 feed_type = 3;
+    optional plib.pUUID last_fanned_in_at = 1;
+    repeated plib.pUUID exclude_users = 4;
+}
+
+message UpdateFeedMetaRequest {
+    plib.pUUID user_id = 1;
+    int32 feed_type = 2;
+    optional plib.pUUID last_fanned_in_at = 3;
+    repeated plib.pUUID exclude_to_add = 4;
+    repeated plib.pUUID exclude_to_delete = 5;
+}
+
+message ReadFeedRequest {
+    plib.pUUID user_id = 1;
+    int32 feed_type = 2;
+    optional plib.pUUID before = 3;
+    uint32 limit = 4;
+}
+
+// ommit primary key as we know them from the request
+message FeedEntry {
+    plib.pUUID post_author_id = 1;
+    plib.pUUID post_id = 2;
+    int32 entry_type = 3;
+}
+
+message FeedResponse {
+    repeated FeedEntry entries = 1;
+}
+
+message AddToFeedsRequest {
+    repeated plib.pUUID user_ids = 1;
+    int32 timeline_type = 2;
+    plib.pUUID author_id = 3;
+    plib.pUUID post_id = 4;
+    int32 entry_type = 5;
+} 
+
+message AddToFeedsResponse {
+    uint32 successes = 1;
+}
+
+message PartialFeedEntry {
+    plib.pUUID author_id = 1;
+    plib.pUUID post_id = 2;
+}
+
+message RemovePostsFromFeedRequest {
+    plib.pUUID user_id = 1;
+    int32 timeline_type = 2;
+    repeated PartialFeedEntry to_remove = 3;
+}
+
+message RemovePostsFromFeedResponse {}
+
+message AddPostsToFeedRequest {
+    plib.pUUID user_id = 1;
+    int32 timeline_type = 2;
+    repeated PartialFeedEntry to_add = 3;
+}
+
+message AddPostsToFeedResponse {}

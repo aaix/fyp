@@ -3,10 +3,7 @@
 use scylla::DeserializeRow;
 use scylla::value;
 #[derive(Debug, DeserializeRow)]
-pub struct UserTimelineEntry {
+pub struct UserLatestPost {
     pub user_id: value::CqlTimeuuid,
-    pub timeline_type: i32,
-    pub post_author_id: value::CqlTimeuuid,
-    pub post_id: value::CqlTimeuuid,
-    pub entry_type: i32,
+    pub last_post_id: value::CqlTimeuuid,
 }

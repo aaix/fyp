@@ -37,17 +37,17 @@ class PostServiceStub(object):
         self.CreatePost = channel.unary_unary(
                 '/dataservices.postproto.PostService/CreatePost',
                 request_serializer=post__pb2.CreatePostRequest.SerializeToString,
-                response_deserializer=post__pb2.ReadPostResponse.FromString,
+                response_deserializer=post__pb2.PostResponse.FromString,
                 _registered_method=True)
         self.ReadPost = channel.unary_unary(
                 '/dataservices.postproto.PostService/ReadPost',
                 request_serializer=post__pb2.ReadPostRequest.SerializeToString,
-                response_deserializer=post__pb2.ReadPostResponse.FromString,
+                response_deserializer=post__pb2.PostResponse.FromString,
                 _registered_method=True)
         self.UpdatePost = channel.unary_unary(
                 '/dataservices.postproto.PostService/UpdatePost',
                 request_serializer=post__pb2.UpdatePostRequest.SerializeToString,
-                response_deserializer=post__pb2.ReadPostResponse.FromString,
+                response_deserializer=post__pb2.PostResponse.FromString,
                 _registered_method=True)
         self.DeletePost = channel.unary_unary(
                 '/dataservices.postproto.PostService/DeletePost',
@@ -57,12 +57,17 @@ class PostServiceStub(object):
         self.ReadManyPosts = channel.unary_unary(
                 '/dataservices.postproto.PostService/ReadManyPosts',
                 request_serializer=post__pb2.ReadManyPostsRequest.SerializeToString,
-                response_deserializer=post__pb2.ReadManyPostsResponse.FromString,
+                response_deserializer=post__pb2.ManyPostsResponse.FromString,
                 _registered_method=True)
         self.ReadUserPosts = channel.unary_unary(
                 '/dataservices.postproto.PostService/ReadUserPosts',
                 request_serializer=post__pb2.ReadUserPostsRequest.SerializeToString,
-                response_deserializer=post__pb2.ReadUserPostsResponse.FromString,
+                response_deserializer=post__pb2.UserPostsResponse.FromString,
+                _registered_method=True)
+        self.ReadDehydratedUserPosts = channel.unary_unary(
+                '/dataservices.postproto.PostService/ReadDehydratedUserPosts',
+                request_serializer=post__pb2.ReadUserDehydratedPostsRequest.SerializeToString,
+                response_deserializer=post__pb2.UserDehydratedPostsResponse.FromString,
                 _registered_method=True)
 
 
@@ -105,23 +110,29 @@ class PostServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def ReadDehydratedUserPosts(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_PostServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
             'CreatePost': grpc.unary_unary_rpc_method_handler(
                     servicer.CreatePost,
                     request_deserializer=post__pb2.CreatePostRequest.FromString,
-                    response_serializer=post__pb2.ReadPostResponse.SerializeToString,
+                    response_serializer=post__pb2.PostResponse.SerializeToString,
             ),
             'ReadPost': grpc.unary_unary_rpc_method_handler(
                     servicer.ReadPost,
                     request_deserializer=post__pb2.ReadPostRequest.FromString,
-                    response_serializer=post__pb2.ReadPostResponse.SerializeToString,
+                    response_serializer=post__pb2.PostResponse.SerializeToString,
             ),
             'UpdatePost': grpc.unary_unary_rpc_method_handler(
                     servicer.UpdatePost,
                     request_deserializer=post__pb2.UpdatePostRequest.FromString,
-                    response_serializer=post__pb2.ReadPostResponse.SerializeToString,
+                    response_serializer=post__pb2.PostResponse.SerializeToString,
             ),
             'DeletePost': grpc.unary_unary_rpc_method_handler(
                     servicer.DeletePost,
@@ -131,12 +142,17 @@ def add_PostServiceServicer_to_server(servicer, server):
             'ReadManyPosts': grpc.unary_unary_rpc_method_handler(
                     servicer.ReadManyPosts,
                     request_deserializer=post__pb2.ReadManyPostsRequest.FromString,
-                    response_serializer=post__pb2.ReadManyPostsResponse.SerializeToString,
+                    response_serializer=post__pb2.ManyPostsResponse.SerializeToString,
             ),
             'ReadUserPosts': grpc.unary_unary_rpc_method_handler(
                     servicer.ReadUserPosts,
                     request_deserializer=post__pb2.ReadUserPostsRequest.FromString,
-                    response_serializer=post__pb2.ReadUserPostsResponse.SerializeToString,
+                    response_serializer=post__pb2.UserPostsResponse.SerializeToString,
+            ),
+            'ReadDehydratedUserPosts': grpc.unary_unary_rpc_method_handler(
+                    servicer.ReadDehydratedUserPosts,
+                    request_deserializer=post__pb2.ReadUserDehydratedPostsRequest.FromString,
+                    response_serializer=post__pb2.UserDehydratedPostsResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -165,7 +181,7 @@ class PostService(object):
             target,
             '/dataservices.postproto.PostService/CreatePost',
             post__pb2.CreatePostRequest.SerializeToString,
-            post__pb2.ReadPostResponse.FromString,
+            post__pb2.PostResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -192,7 +208,7 @@ class PostService(object):
             target,
             '/dataservices.postproto.PostService/ReadPost',
             post__pb2.ReadPostRequest.SerializeToString,
-            post__pb2.ReadPostResponse.FromString,
+            post__pb2.PostResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -219,7 +235,7 @@ class PostService(object):
             target,
             '/dataservices.postproto.PostService/UpdatePost',
             post__pb2.UpdatePostRequest.SerializeToString,
-            post__pb2.ReadPostResponse.FromString,
+            post__pb2.PostResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -273,7 +289,7 @@ class PostService(object):
             target,
             '/dataservices.postproto.PostService/ReadManyPosts',
             post__pb2.ReadManyPostsRequest.SerializeToString,
-            post__pb2.ReadManyPostsResponse.FromString,
+            post__pb2.ManyPostsResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -300,7 +316,34 @@ class PostService(object):
             target,
             '/dataservices.postproto.PostService/ReadUserPosts',
             post__pb2.ReadUserPostsRequest.SerializeToString,
-            post__pb2.ReadUserPostsResponse.FromString,
+            post__pb2.UserPostsResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ReadDehydratedUserPosts(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/dataservices.postproto.PostService/ReadDehydratedUserPosts',
+            post__pb2.ReadUserDehydratedPostsRequest.SerializeToString,
+            post__pb2.UserDehydratedPostsResponse.FromString,
             options,
             channel_credentials,
             insecure,

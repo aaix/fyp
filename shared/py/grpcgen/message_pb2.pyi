@@ -1,5 +1,4 @@
 import plib_pb2 as _plib_pb2
-from google.protobuf import field_mask_pb2 as _field_mask_pb2
 from google.protobuf import wrappers_pb2 as _wrappers_pb2
 from google.protobuf.internal import containers as _containers
 from google.protobuf import descriptor as _descriptor

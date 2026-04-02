@@ -63,7 +63,7 @@ app.include_router(SessionRouter, prefix="/session")
 app.include_router(UserRouter, prefix="/user")
 app.include_router(ChannelRouter, prefix="/chat")
 app.include_router(MessageRouter, prefix="/chat")
-app.include_router(PostRouter, prefix="/social")
+app.include_router(PostRouter, prefix="/post")
 
 # exception handlers
 app.add_exception_handler(RequestValidationError, exception_handlers.request_validation_error_handler)

@@ -26,7 +26,8 @@ async def create_post_url_presigned(post_id: pUUID, asset_id: pUUID) -> str:
     return await generate_signed_get(
         public=False,
         bucket_id=post_id,
-        asset_id=asset_id
+        asset_id=asset_id,
+        duration=300,
     )
 
 
@@ -41,14 +42,13 @@ class PostResponse(BaseModel):
     author_id: UUID
     asset_url: str
     post_type: PostType
-    content_type: str
     body: PostBody | None
     last_edited: int | None
     num_comments: int
     num_likes: int
 
     @classmethod
-    async def from_rpc(cls, rpc: post_pb2.ReadPostResponse) -> Self:
+    async def from_rpc(cls, rpc: post_pb2.PostResponse) -> Self:
 
         asset_url = await create_post_url_presigned(rpc.post_id, rpc.asset_id)
         
@@ -58,7 +58,6 @@ class PostResponse(BaseModel):
             author_id=puuid_uuid(rpc.author_id) or unwrap(),
             asset_url=asset_url,
             post_type=PostType(rpc.post_type),
-            content_type=rpc.content_type,
             body=rpc.body.value if rpc.HasField("body") else None,
             last_edited=rpc.last_edited.value if rpc.HasField("last_edited") else None,
             num_comments=rpc.num_comments,

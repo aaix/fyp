@@ -146,11 +146,32 @@ CREATE TABLE dataservices.post (
     PRIMARY KEY (author_id, post_id), -- route will have to be /user/id/post/id
 ) WITH CLUSTERING ORDER BY (post_id DESC);
 
+CREATE TABLE dataservices.post_v2 (
+    post_id TIMEUUID,
+    author_id TIMEUUID, -- foreign key: user.user_id
+    asset_id TIMEUUID,
+    timeline_type INT,
+    is_private BOOLEAN,
+    post_type INT, -- 1: image, 2: video, 3: short form
+    opt_body TEXT,
+    opt_last_edited TIMESTAMP,
+    PRIMARY KEY ((author_id, timeline_type), post_id), -- route will have to be /user/id/post/id?t=1
+) WITH CLUSTERING ORDER BY (post_id DESC);
+
+
+-- COALESCE on user_id
+-- optimisation table for deciding if we need to fan in a user
+CREATE TABLE dataservices.user_latest_post (
+    user_id TIMEUUID,
+    last_post_id TIMEUUID,
+    PRIMARY KEY (user_id);
+);
+
+
 -- COALESCE post_num_comments ON post_id
 CREATE TABLE dataservices.post_num_counters (
     post_id TIMEUUID,
     post_likes COUNTER,
-
     post_comments COUNTER,
     PRIMARY KEY (post_id)
 );
@@ -159,8 +180,9 @@ CREATE TABLE dataservices.post_num_counters (
 CREATE TABLE dataservices.user_timeline_meta  (
     user_id TIMEUUID,
     timeline_type INT,
-    last_fanned_in_at TIMEUUID, -- fan in following
-    recent_remmovals set<TIMEUUID>, -- "cache" list of recent people unfollowed, or removed as friends
+    opt_last_fanned_in_at TIMEUUID, -- fan in following
+    opt_explicit_fan_in set<TIMEUUID>, -- fan in new friends
+    opt_exclude_users set<TIMEUUID>, -- "cache" list of recent people unfollowed, or removed as friends
     PRIMARY KEY (user_id, timeline_type)
 );
 

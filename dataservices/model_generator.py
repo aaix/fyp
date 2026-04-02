@@ -113,18 +113,19 @@ class RustModelGenerator(ModelGenerator):
         struct_name = "".join(word.capitalize() for word in self.table.name.split("_"))
         lines.append("#[derive(Debug, DeserializeRow)]")
         lines.append(f"pub struct {struct_name} {{")
+
         for row in self.table.rows:
             rust_type = self.map_datatype(row)
             lines.append(f"    pub {row.key}: {rust_type},")
 
             # dependency tracking
-            if rust_type.startswith("value::"):
+            if "value::" in rust_type:
                 dependencies.add("use scylla::value;")
 
-            elif rust_type.startswith("uuid::"):
+            if "uuid::" in rust_type:
                 dependencies.add("use uuid;")
 
-            elif rust_type.startswith("HashSet"):
+            if "HashSet" in rust_type:
                 dependencies.add("use std::collections::HashSet;")
         lines.append("}")
 

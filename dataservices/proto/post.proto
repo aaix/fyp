@@ -6,28 +6,29 @@ import "google/protobuf/wrappers.proto";
 import "google/protobuf/field_mask.proto";
 
 service PostService {
-    rpc CreatePost (CreatePostRequest) returns (ReadPostResponse);
-    rpc ReadPost (ReadPostRequest) returns (ReadPostResponse);
-    rpc UpdatePost (UpdatePostRequest) returns (ReadPostResponse);
+    rpc CreatePost (CreatePostRequest) returns (PostResponse);
+    rpc ReadPost (ReadPostRequest) returns (PostResponse);
+    rpc UpdatePost (UpdatePostRequest) returns (PostResponse);
     rpc DeletePost (DeletePostRequest) returns (DeletePostResponse);
 
-    rpc ReadManyPosts (ReadManyPostsRequest) returns (ReadManyPostsResponse);
-    rpc ReadUserPosts (ReadUserPostsRequest) returns (ReadUserPostsResponse);
+    rpc ReadManyPosts (ReadManyPostsRequest) returns (ManyPostsResponse);
+    rpc ReadUserPosts (ReadUserPostsRequest) returns (UserPostsResponse);
+    rpc ReadDehydratedUserPosts (ReadUserDehydratedPostsRequest) returns (UserDehydratedPostsResponse);
+
 }
 
 message CreatePostRequest {
     plib.pUUID author_id = 1;
-    uint32 post_type = 2;
-    string content_type = 3;
+    int32 post_type = 2;
     optional string body = 4;
+    int32 timeline_type = 5;
 }
 
-message ReadPostResponse {
+message PostResponse {
     plib.pUUID post_id = 1;
     plib.pUUID author_id = 2;
     plib.pUUID asset_id = 3;
     int32 post_type = 4;
-    string content_type = 5;
     optional google.protobuf.StringValue body = 6;
     optional google.protobuf.Int64Value last_edited = 7;
     int64 num_comments = 8;
@@ -37,19 +38,22 @@ message ReadPostResponse {
 message ReadPostRequest {
     plib.pUUID post_id = 1;
     plib.pUUID author_id = 2;
+    int32 timeline_type = 3;
 }
 
 message UpdatePostRequest {
     plib.pUUID author_id = 1;
     plib.pUUID post_id = 2;
-    optional google.protobuf.StringValue body = 3;
-    optional google.protobuf.Int32Value post_type = 4;
-    google.protobuf.FieldMask field_mask = 5;
+    int32 timeline_type = 7;
+    google.protobuf.FieldMask field_mask = 3;
+    optional google.protobuf.StringValue body = 4;
+    optional google.protobuf.BoolValue is_private = 6;
 }
 
 message DeletePostRequest {
     plib.pUUID post_id = 1;
     plib.pUUID author_id = 2;
+    int32 timeline_type = 3;
 }
 
 message DeletePostResponse {}
@@ -58,16 +62,30 @@ message ReadManyPostsRequest {
     repeated ReadPostRequest requests = 1;
 }
 
-message ReadManyPostsResponse {
-    repeated ReadPostResponse responses = 1;
+message ManyPostsResponse {
+    repeated PostResponse responses = 1;
 }
 
 message ReadUserPostsRequest {
     plib.pUUID author_id = 1;
     int32 limit = 2;
-    plib.pUUID before = 3;
+    int32 timeline_type = 3;
+    optional plib.pUUID before = 4;
 }
 
-message ReadUserPostsResponse {
-    repeated ReadPostResponse posts = 1;
+message UserPostsResponse {
+    repeated PostResponse posts = 1;
+}
+
+// extra dehydrated request for fanning into timeline
+// as timeline posts are hydrated separately
+message ReadUserDehydratedPostsRequest {
+    plib.pUUID author_id = 1;
+    int32 limit = 2;
+    int32 timeline_type = 3;
+    optional plib.pUUID before = 4;
+}
+
+message UserDehydratedPostsResponse {
+    repeated plib.pUUID post_ids = 1;
 }

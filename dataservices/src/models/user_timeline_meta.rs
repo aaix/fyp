@@ -2,9 +2,12 @@
 #![allow(nonstandard_style)]
 use scylla::DeserializeRow;
 use scylla::value;
+use std::collections::HashSet;
 #[derive(Debug, DeserializeRow)]
 pub struct UserTimelineMeta {
     pub user_id: value::CqlTimeuuid,
     pub timeline_type: i32,
-    pub last_fanned_in_at: value::CqlTimeuuid,
+    pub opt_last_fanned_in_at: Option<value::CqlTimeuuid>,
+    pub opt_explicit_fan_in: Option<HashSet<value::CqlTimeuuid>>,
+    pub opt_exclude_users: Option<HashSet<value::CqlTimeuuid>>,
 }

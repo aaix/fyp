@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, Query, UploadFile
 
 from api import *
 from api.routes.post.models import *
-from api.types.params import PostParam, UserParam, UserWithProfileVisibleParam
+from api.types.params import PostParam, TimelineTypeParam, UserParam, UserWithProfileVisibleParam
 from api.utils import unwrap
 from shared.py.asset import delete_asset
 from shared.py.grpc import mediaservices
@@ -27,25 +27,24 @@ grpcpost = DataservicesLazyGRPC(post_pb2_grpc.PostServiceStub)
 
 
 
-@PostRouter.post("/post")
+@PostRouter.post("/{timeline_type}")
 async def new_post(
     s: SessionParam,
     body: Annotated[NewPostBody, Depends(NewPostBody.from_form)],
-    attachment: UploadFile
+    attachment: UploadFile,
+    timeline_type: TimelineTypeParam,
 ) -> PostResponse:
     
-    if not body.post_type.valid_as_user_input():
-        raise ApiErrExc(errors.BadRequest("Post type is not valid as user supplied"))
-
     content_type = body.post_type.get_content_type()
 
+    post_type = body.post_type
     
     post = await create_post(
         grpcpost,
         s.user_id,
-        post_type=PostType.PENDING,
+        post_type=post_type,
         body=body.body,
-        content_type=content_type,
+        timeline_type=post_type.to_feed_type()
     )
 
     match content_type:
@@ -68,22 +67,28 @@ async def new_post(
             dimensions=None
         )
     except Exception:
-        await delete_post(grpcpost, post.author_id, post.post_id)
+        await delete_post(grpcpost, post.author_id, post.post_id, timeline_type)
         raise
 
     # post created successfully 
     # now to deal with feed fan out
 
-    await edit_post(grpcpost, post.author_id, post.post_id, post_type=body.post_type)
+    await edit_post(grpcpost, post.author_id, post.post_id, timeline_type, is_private=False)
 
     return await PostResponse.from_rpc(post)
 
-@PostRouter.get("/user/{user_id}/posts")
-async def get_users_posts(s: SessionParam, user: UserWithProfileVisibleParam, before: Annotated[UUID | None, Query()] = None) -> PostsResponse:
+@PostRouter.get("/user/{user_id}/{timeline_type}")
+async def get_users_posts(
+    s: SessionParam,
+    user: UserWithProfileVisibleParam,
+    timeline_type: TimelineTypeParam,
+    before: Annotated[UUID | None, Query()] = None,
+) -> PostsResponse:
 
     rpc = await read_users_posts(
         grpcpost,
         user.user_id,
+        timeline_type,
         before=before,
     )
 
@@ -95,8 +100,8 @@ async def get_users_posts(s: SessionParam, user: UserWithProfileVisibleParam, be
 
 
 
-@PostRouter.patch("/user/{user_id}/post/{post_id}")
-async def edit_my_post(s: SessionParam, post: PostParam, body: EditPostBody) -> PostResponse:
+@PostRouter.patch("/user/{user_id}/{timeline_type}/{post_id}")
+async def edit_my_post(s: SessionParam, post: PostParam, body: EditPostBody, timeline_type: TimelineTypeParam) -> PostResponse:
     if not id_compare(s.user_id, post.author_id):
         raise ApiErrExc(errors.Forbidden("Cannot edit another users post"))
     
@@ -109,20 +114,21 @@ async def edit_my_post(s: SessionParam, post: PostParam, body: EditPostBody) -> 
         grpcpost,
         post.author_id,
         post.post_id,
+        timeline_type,
         body=new_body
     )
 
     return await PostResponse.from_rpc(rpc)
 
-@PostRouter.delete("/user/{user_id}/post/{post_id}")
-async def delete_my_post(s: SessionParam, post: PostParam) -> None:
+@PostRouter.delete("/user/{user_id}/{timeline_type}/{post_id}")
+async def delete_my_post(s: SessionParam, post: PostParam, timeline_type: TimelineTypeParam) -> None:
     if not id_compare(s.user_id, post.author_id):
         raise ApiErrExc(errors.Forbidden("Cannot edit another users post"))
     
     await delete_asset(public=False, bucket_id=post.post_id, asset_id=post.asset_id)
 
-    await delete_post(grpcpost, post.author_id, post.post_id)
+    await delete_post(grpcpost, post.author_id, post.post_id, timeline_type)
 
-@PostRouter.get("/user/{user_id}/post/{post_id}")
+@PostRouter.get("/user/{user_id}/{timeline_type}/{post_id}")
 async def get_post(s: SessionParam, user: UserWithProfileVisibleParam, post: PostParam) -> PostResponse:
     return await PostResponse.from_rpc(post)

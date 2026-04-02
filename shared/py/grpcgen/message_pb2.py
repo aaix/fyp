@@ -23,33 +23,32 @@ _sym_db = _symbol_database.Default()
 
 
 from . import plib_pb2 as plib__pb2
-from google.protobuf import field_mask_pb2 as google_dot_protobuf_dot_field__mask__pb2
 from google.protobuf import wrappers_pb2 as google_dot_protobuf_dot_wrappers__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\rmessage.proto\x12\x19\x64\x61taservices.messageproto\x1a\nplib.proto\x1a google/protobuf/field_mask.proto\x1a\x1egoogle/protobuf/wrappers.proto\"\x92\x03\n\x14\x43reateMessageRequest\x12\x1f\n\nchannel_id\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\x12\x14\n\x0cmessage_type\x18\x02 \x01(\x05\x12\x1e\n\tauthor_id\x18\x06 \x01(\x0b\x32\x0b.plib.pUUID\x12\x1c\n\x0fopt_last_edited\x18\x03 \x01(\x03H\x00\x88\x01\x01\x12\x18\n\x0bopt_content\x18\x04 \x01(\x0cH\x01\x88\x01\x01\x12#\n\x16opt_additional_content\x18\x08 \x01(\x0cH\x02\x88\x01\x01\x12\x36\n\rrequest_asset\x18\x05 \x01(\x0b\x32\x1a.google.protobuf.BoolValueH\x03\x88\x01\x01\x12)\n\x0fopt_in_reply_to\x18\x07 \x01(\x0b\x32\x0b.plib.pUUIDH\x04\x88\x01\x01\x42\x12\n\x10_opt_last_editedB\x0e\n\x0c_opt_contentB\x19\n\x17_opt_additional_contentB\x10\n\x0e_request_assetB\x12\n\x10_opt_in_reply_to\"\xc1\x03\n\rMessageObject\x12\x1f\n\nchannel_id\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\x12\x0e\n\x06\x62ucket\x18\x02 \x01(\x03\x12\x1f\n\nmessage_id\x18\x03 \x01(\x0b\x32\x0b.plib.pUUID\x12\x14\n\x0cmessage_type\x18\x04 \x01(\x05\x12\x1e\n\tauthor_id\x18\x08 \x01(\x0b\x32\x0b.plib.pUUID\x12\x1c\n\x0fopt_last_edited\x18\x05 \x01(\x03H\x00\x88\x01\x01\x12\x18\n\x0bopt_content\x18\x06 \x01(\x0cH\x01\x88\x01\x01\x12#\n\x16opt_additional_content\x18\n \x01(\x0cH\x02\x88\x01\x01\x12\x31\n\x17opt_attachment_asset_id\x18\x07 \x01(\x0b\x32\x0b.plib.pUUIDH\x03\x88\x01\x01\x12)\n\x0fopt_in_reply_to\x18\t \x01(\x0b\x32\x0b.plib.pUUIDH\x04\x88\x01\x01\x42\x12\n\x10_opt_last_editedB\x0e\n\x0c_opt_contentB\x19\n\x17_opt_additional_contentB\x1a\n\x18_opt_attachment_asset_idB\x12\n\x10_opt_in_reply_to\"\xb9\x01\n\x14UpdateMessageRequest\x12\x1f\n\nchannel_id\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\x12\x1f\n\nmessage_id\x18\x03 \x01(\x0b\x32\x0b.plib.pUUID\x12,\n\x07\x63ontent\x18\x06 \x01(\x0b\x32\x1b.google.protobuf.BytesValue\x12\x31\n\x0cmessage_type\x18\x07 \x01(\x0b\x32\x1b.google.protobuf.Int32Value\"V\n\x12ReadMessageRequest\x12\x1f\n\nchannel_id\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\x12\x1f\n\nmessage_id\x18\x02 \x01(\x0b\x32\x0b.plib.pUUID\"X\n\x14\x44\x65leteMessageRequest\x12\x1f\n\nchannel_id\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\x12\x1f\n\nmessage_id\x18\x02 \x01(\x0b\x32\x0b.plib.pUUID\"\x17\n\x15\x44\x65leteMessageResponse\"\x89\x01\n\x13ReadMessagesRequest\x12\x1f\n\nchannel_id\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\x12 \n\x06\x62\x65\x66ore\x18\x02 \x01(\x0b\x32\x0b.plib.pUUIDH\x00\x88\x01\x01\x12\r\n\x05\x63ount\x18\x03 \x01(\x05\x12\x15\n\rlatest_bucket\x18\x04 \x01(\x03\x42\t\n\x07_before\"R\n\x14ReadMessagesResponse\x12:\n\x08messages\x18\x01 \x03(\x0b\x32(.dataservices.messageproto.MessageObject2\xb5\x04\n\x0eMessageService\x12j\n\rCreateMessage\x12/.dataservices.messageproto.CreateMessageRequest\x1a(.dataservices.messageproto.MessageObject\x12j\n\rUpdateMessage\x12/.dataservices.messageproto.UpdateMessageRequest\x1a(.dataservices.messageproto.MessageObject\x12\x66\n\x0bReadMessage\x12-.dataservices.messageproto.ReadMessageRequest\x1a(.dataservices.messageproto.MessageObject\x12r\n\rDeleteMessage\x12/.dataservices.messageproto.DeleteMessageRequest\x1a\x30.dataservices.messageproto.DeleteMessageResponse\x12o\n\x0cReadMessages\x12..dataservices.messageproto.ReadMessagesRequest\x1a/.dataservices.messageproto.ReadMessagesResponseb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\rmessage.proto\x12\x19\x64\x61taservices.messageproto\x1a\nplib.proto\x1a\x1egoogle/protobuf/wrappers.proto\"\x92\x03\n\x14\x43reateMessageRequest\x12\x1f\n\nchannel_id\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\x12\x14\n\x0cmessage_type\x18\x02 \x01(\x05\x12\x1e\n\tauthor_id\x18\x06 \x01(\x0b\x32\x0b.plib.pUUID\x12\x1c\n\x0fopt_last_edited\x18\x03 \x01(\x03H\x00\x88\x01\x01\x12\x18\n\x0bopt_content\x18\x04 \x01(\x0cH\x01\x88\x01\x01\x12#\n\x16opt_additional_content\x18\x08 \x01(\x0cH\x02\x88\x01\x01\x12\x36\n\rrequest_asset\x18\x05 \x01(\x0b\x32\x1a.google.protobuf.BoolValueH\x03\x88\x01\x01\x12)\n\x0fopt_in_reply_to\x18\x07 \x01(\x0b\x32\x0b.plib.pUUIDH\x04\x88\x01\x01\x42\x12\n\x10_opt_last_editedB\x0e\n\x0c_opt_contentB\x19\n\x17_opt_additional_contentB\x10\n\x0e_request_assetB\x12\n\x10_opt_in_reply_to\"\xc1\x03\n\rMessageObject\x12\x1f\n\nchannel_id\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\x12\x0e\n\x06\x62ucket\x18\x02 \x01(\x03\x12\x1f\n\nmessage_id\x18\x03 \x01(\x0b\x32\x0b.plib.pUUID\x12\x14\n\x0cmessage_type\x18\x04 \x01(\x05\x12\x1e\n\tauthor_id\x18\x08 \x01(\x0b\x32\x0b.plib.pUUID\x12\x1c\n\x0fopt_last_edited\x18\x05 \x01(\x03H\x00\x88\x01\x01\x12\x18\n\x0bopt_content\x18\x06 \x01(\x0cH\x01\x88\x01\x01\x12#\n\x16opt_additional_content\x18\n \x01(\x0cH\x02\x88\x01\x01\x12\x31\n\x17opt_attachment_asset_id\x18\x07 \x01(\x0b\x32\x0b.plib.pUUIDH\x03\x88\x01\x01\x12)\n\x0fopt_in_reply_to\x18\t \x01(\x0b\x32\x0b.plib.pUUIDH\x04\x88\x01\x01\x42\x12\n\x10_opt_last_editedB\x0e\n\x0c_opt_contentB\x19\n\x17_opt_additional_contentB\x1a\n\x18_opt_attachment_asset_idB\x12\n\x10_opt_in_reply_to\"\xb9\x01\n\x14UpdateMessageRequest\x12\x1f\n\nchannel_id\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\x12\x1f\n\nmessage_id\x18\x03 \x01(\x0b\x32\x0b.plib.pUUID\x12,\n\x07\x63ontent\x18\x06 \x01(\x0b\x32\x1b.google.protobuf.BytesValue\x12\x31\n\x0cmessage_type\x18\x07 \x01(\x0b\x32\x1b.google.protobuf.Int32Value\"V\n\x12ReadMessageRequest\x12\x1f\n\nchannel_id\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\x12\x1f\n\nmessage_id\x18\x02 \x01(\x0b\x32\x0b.plib.pUUID\"X\n\x14\x44\x65leteMessageRequest\x12\x1f\n\nchannel_id\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\x12\x1f\n\nmessage_id\x18\x02 \x01(\x0b\x32\x0b.plib.pUUID\"\x17\n\x15\x44\x65leteMessageResponse\"\x89\x01\n\x13ReadMessagesRequest\x12\x1f\n\nchannel_id\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\x12 \n\x06\x62\x65\x66ore\x18\x02 \x01(\x0b\x32\x0b.plib.pUUIDH\x00\x88\x01\x01\x12\r\n\x05\x63ount\x18\x03 \x01(\x05\x12\x15\n\rlatest_bucket\x18\x04 \x01(\x03\x42\t\n\x07_before\"R\n\x14ReadMessagesResponse\x12:\n\x08messages\x18\x01 \x03(\x0b\x32(.dataservices.messageproto.MessageObject2\xb5\x04\n\x0eMessageService\x12j\n\rCreateMessage\x12/.dataservices.messageproto.CreateMessageRequest\x1a(.dataservices.messageproto.MessageObject\x12j\n\rUpdateMessage\x12/.dataservices.messageproto.UpdateMessageRequest\x1a(.dataservices.messageproto.MessageObject\x12\x66\n\x0bReadMessage\x12-.dataservices.messageproto.ReadMessageRequest\x1a(.dataservices.messageproto.MessageObject\x12r\n\rDeleteMessage\x12/.dataservices.messageproto.DeleteMessageRequest\x1a\x30.dataservices.messageproto.DeleteMessageResponse\x12o\n\x0cReadMessages\x12..dataservices.messageproto.ReadMessagesRequest\x1a/.dataservices.messageproto.ReadMessagesResponseb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'message_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
-  _globals['_CREATEMESSAGEREQUEST']._serialized_start=123
-  _globals['_CREATEMESSAGEREQUEST']._serialized_end=525
-  _globals['_MESSAGEOBJECT']._serialized_start=528
-  _globals['_MESSAGEOBJECT']._serialized_end=977
-  _globals['_UPDATEMESSAGEREQUEST']._serialized_start=980
-  _globals['_UPDATEMESSAGEREQUEST']._serialized_end=1165
-  _globals['_READMESSAGEREQUEST']._serialized_start=1167
-  _globals['_READMESSAGEREQUEST']._serialized_end=1253
-  _globals['_DELETEMESSAGEREQUEST']._serialized_start=1255
-  _globals['_DELETEMESSAGEREQUEST']._serialized_end=1343
-  _globals['_DELETEMESSAGERESPONSE']._serialized_start=1345
-  _globals['_DELETEMESSAGERESPONSE']._serialized_end=1368
-  _globals['_READMESSAGESREQUEST']._serialized_start=1371
-  _globals['_READMESSAGESREQUEST']._serialized_end=1508
-  _globals['_READMESSAGESRESPONSE']._serialized_start=1510
-  _globals['_READMESSAGESRESPONSE']._serialized_end=1592
-  _globals['_MESSAGESERVICE']._serialized_start=1595
-  _globals['_MESSAGESERVICE']._serialized_end=2160
+  _globals['_CREATEMESSAGEREQUEST']._serialized_start=89
+  _globals['_CREATEMESSAGEREQUEST']._serialized_end=491
+  _globals['_MESSAGEOBJECT']._serialized_start=494
+  _globals['_MESSAGEOBJECT']._serialized_end=943
+  _globals['_UPDATEMESSAGEREQUEST']._serialized_start=946
+  _globals['_UPDATEMESSAGEREQUEST']._serialized_end=1131
+  _globals['_READMESSAGEREQUEST']._serialized_start=1133
+  _globals['_READMESSAGEREQUEST']._serialized_end=1219
+  _globals['_DELETEMESSAGEREQUEST']._serialized_start=1221
+  _globals['_DELETEMESSAGEREQUEST']._serialized_end=1309
+  _globals['_DELETEMESSAGERESPONSE']._serialized_start=1311
+  _globals['_DELETEMESSAGERESPONSE']._serialized_end=1334
+  _globals['_READMESSAGESREQUEST']._serialized_start=1337
+  _globals['_READMESSAGESREQUEST']._serialized_end=1474
+  _globals['_READMESSAGESRESPONSE']._serialized_start=1476
+  _globals['_READMESSAGESRESPONSE']._serialized_end=1558
+  _globals['_MESSAGESERVICE']._serialized_start=1561
+  _globals['_MESSAGESERVICE']._serialized_end=2126
 # @@protoc_insertion_point(module_scope)
