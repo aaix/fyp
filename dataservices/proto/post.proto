@@ -13,7 +13,7 @@ service PostService {
 
     rpc ReadManyPosts (ReadManyPostsRequest) returns (ManyPostsResponse);
     rpc ReadUserPosts (ReadUserPostsRequest) returns (UserPostsResponse);
-    rpc ReadDehydratedUserPosts (ReadUserDehydratedPostsRequest) returns (UserDehydratedPostsResponse);
+    rpc ReadUsersDehydratedPosts (ReadUsersDehydratedPostsRequest) returns (UsersDehydratedPostsResponse);
 
 }
 
@@ -79,13 +79,18 @@ message UserPostsResponse {
 
 // extra dehydrated request for fanning into timeline
 // as timeline posts are hydrated separately
-message ReadUserDehydratedPostsRequest {
-    plib.pUUID author_id = 1;
+message ReadUsersDehydratedPostsRequest {
+    repeated plib.pUUID author_ids = 1;
     int32 limit = 2;
     int32 timeline_type = 3;
     optional plib.pUUID before = 4;
 }
 
-message UserDehydratedPostsResponse {
-    repeated plib.pUUID post_ids = 1;
+message UsersDehydratedPostsResponse {
+    repeated DehydratedPosts posts = 1;
+}
+
+message DehydratedPosts {
+    plib.pUUID user_id = 1;
+    repeated plib.pUUID post_ids = 2;
 }

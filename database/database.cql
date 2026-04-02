@@ -180,8 +180,9 @@ CREATE TABLE dataservices.post_num_counters (
 CREATE TABLE dataservices.user_timeline_meta  (
     user_id TIMEUUID,
     timeline_type INT,
-    opt_last_fanned_in_at TIMEUUID, -- fan in following
-    opt_explicit_fan_in set<TIMEUUID>, -- fan in new friends
+    opt_last_fanned_in_at TIMESTAMP, -- fan in following
+    opt_fanned_in_up_to TIMESTAMP,
+    opt_explicit_fan_in_users set<TIMEUUID>, -- fan in new friends
     opt_exclude_users set<TIMEUUID>, -- "cache" list of recent people unfollowed, or removed as friends
     PRIMARY KEY (user_id, timeline_type)
 );

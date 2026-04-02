@@ -2,7 +2,7 @@ use futures::{StreamExt, future::join_all};
 use scylla::{errors::FirstRowError, statement::prepared::PreparedStatement, value::{Counter, CqlTimeuuid, MaybeUnset}};
 use tonic::{Response, Status, async_trait};
 
-use crate::{db_conn::db, errors::DSResult, helpers::{gen_timeuuid, time_now}, maybe_opt_field, models::{post_num_counters::PostNumCounters, post_v2::PostV2}, protos::dataservices::post_service::{CreatePostRequest, DeletePostRequest, DeletePostResponse, ManyPostsResponse, PostResponse, ReadManyPostsRequest, ReadPostRequest, ReadUserDehydratedPostsRequest, ReadUserPostsRequest, UpdatePostRequest, UserDehydratedPostsResponse, UserPostsResponse, post_service_server::{PostService, PostServiceServer}}, req_tuuid};
+use crate::{db_conn::db, errors::DSResult, helpers::{gen_timeuuid, time_now}, maybe_opt_field, models::{post_num_counters::PostNumCounters, post_v2::PostV2}, protos::{dataservices::post_service::{CreatePostRequest, DehydratedPosts, DeletePostRequest, DeletePostResponse, ManyPostsResponse, PostResponse, ReadManyPostsRequest, ReadPostRequest, ReadUserPostsRequest, ReadUsersDehydratedPostsRequest, UpdatePostRequest, UserPostsResponse, UsersDehydratedPostsResponse, post_service_server::{PostService, PostServiceServer}}}, req_tuuid};
 
 
 
@@ -374,21 +374,15 @@ impl ScyllaPostService {
 
     }
 
-    async fn read_dehydrated_user_posts_impl(
+    async fn _read_user_dehydrated_posts(
         &self,
-        request: tonic::Request<ReadUserDehydratedPostsRequest>,
-    ) -> DSResult<tonic::Response<UserDehydratedPostsResponse>> {
-        
+        author_id: CqlTimeuuid,
+        timeline_type: &i32,
+        maybe_before: &Option<CqlTimeuuid>,
+        limit: &i32,
 
-        let author_id: CqlTimeuuid = req_tuuid!(request, author_id)?;
-        let inner = request.get_ref();
-
-        let timeline_type = inner.timeline_type;
-
-        let maybe_before: Option<CqlTimeuuid> = inner.before.map(Into::into);
-        let limit = inner.limit;
-
-        let mut pager = match maybe_before {
+    ) -> DSResult<DehydratedPosts> {
+            let mut pager = match maybe_before {
             Some(before) => {
                 db().await.execute_iter(
                 self.read_user_posts_dehydrated_prepared_before.clone(),
@@ -412,7 +406,7 @@ impl ScyllaPostService {
             }
         };
 
-        let mut post_ids = Vec::with_capacity(limit as usize);
+        let mut post_ids = Vec::with_capacity(*limit as usize);
 
         while let Some(post_id_res) = pager.next().await {
             let post_id = post_id_res?;
@@ -420,8 +414,40 @@ impl ScyllaPostService {
             post_ids.push(post_id.0.into());
 
         }
+        
+        Ok(DehydratedPosts { user_id: Some(author_id.into()), post_ids})
+    }
 
-        Ok(Response::new(UserDehydratedPostsResponse { post_ids }))
+    async fn read_users_dehydrated_posts_impl(
+        &self,
+        request: tonic::Request<ReadUsersDehydratedPostsRequest>,
+    ) -> DSResult<tonic::Response<UsersDehydratedPostsResponse>> {
+        
+        let inner = request.get_ref();
+
+        let timeline_type = inner.timeline_type;
+
+        let maybe_before: Option<CqlTimeuuid> = inner.before.map(Into::into);
+        let limit = inner.limit;
+
+        let futures = inner.author_ids.iter().map(|author_id| {
+            self._read_user_dehydrated_posts(
+                author_id.into(), &timeline_type, &maybe_before, &limit)
+        });
+
+        let posts = join_all(futures).await.into_iter().filter_map(|r| {
+            match r {
+                Err(e) => {
+                    tracing::error!("{e:?}");
+                    None
+                },
+                Ok(posts) => Some(posts)
+            }
+        }).collect();
+
+
+
+        Ok(Response::new(UsersDehydratedPostsResponse { posts }))
     }
 }
 
@@ -481,14 +507,13 @@ impl PostService for ScyllaPostService {
     > {
         Ok(self.read_user_posts_impl(request).await?)
     }
-
-    async fn read_dehydrated_user_posts(
+    async fn read_users_dehydrated_posts(
         &self,
-        request: tonic::Request<ReadUserDehydratedPostsRequest>,
+        request: tonic::Request<ReadUsersDehydratedPostsRequest>,
     ) -> std::result::Result<
-        tonic::Response<UserDehydratedPostsResponse>,
+        tonic::Response<UsersDehydratedPostsResponse>,
         tonic::Status,
     > {
-        Ok(self.read_dehydrated_user_posts_impl(request).await?)
+        Ok(self.read_users_dehydrated_posts_impl(request).await?)
     }
 }

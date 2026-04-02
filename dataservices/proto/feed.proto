@@ -2,7 +2,6 @@ syntax = "proto3";
 
 package dataservices.feedproto;
 import "plib.proto";
-import "google/protobuf/wrappers.proto";
 
 service FeedService {
     rpc ReadFeedMeta (ReadFeedMetaRequest) returns (FeedMetaResponse);
@@ -22,27 +21,32 @@ service FeedService {
 
 message ReadFeedMetaRequest {
     plib.pUUID user_id = 1;
-    int32 feed_type = 2;
+    int32 timeline_type = 2;
 }
 
 message FeedMetaResponse {
     plib.pUUID user_id = 2;
-    int32 feed_type = 3;
+    int32 timeline_type = 3;
     optional plib.pUUID last_fanned_in_at = 1;
     repeated plib.pUUID exclude_users = 4;
+    repeated plib.pUUID explicit_fan_in_users = 5;
+    optional int64 fanned_in_up_to = 6;
 }
 
 message UpdateFeedMetaRequest {
     plib.pUUID user_id = 1;
-    int32 feed_type = 2;
-    optional plib.pUUID last_fanned_in_at = 3;
+    int32 timeline_type = 2;
+    optional int64 last_fanned_in_at = 3;
+    optional int64 fanned_in_up_to = 8;
     repeated plib.pUUID exclude_to_add = 4;
     repeated plib.pUUID exclude_to_delete = 5;
+    repeated plib.pUUID explicit_fan_in_to_add = 6;
+    repeated plib.pUUID explicit_fan_in_to_delete = 7;
 }
 
 message ReadFeedRequest {
     plib.pUUID user_id = 1;
-    int32 feed_type = 2;
+    int32 timeline_type = 2;
     optional plib.pUUID before = 3;
     uint32 limit = 4;
 }

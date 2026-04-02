@@ -1,3 +1,4 @@
+from datetime import UTC, datetime
 from uuid import UUID
 
 from shared.py.grpcgen.plib_pb2 import pUUID
@@ -7,6 +8,14 @@ __all__ = ("id_t",)
 
 
 type id_t = str | pUUID | UUID
+
+def id_timestamp(id1: id_t) -> datetime | None:
+    if not (uuid := id_uuid(id1)):
+        return None
+    
+    greg_to_unix = 0x01b21dd213814000 # from python314/uuid
+    return datetime.fromtimestamp(((uuid.time - greg_to_unix) * 100) / 1e9, UTC)
+
 
 def puuid_int(uuid: pUUID) -> int | None:
     """Convert pUUID to int"""

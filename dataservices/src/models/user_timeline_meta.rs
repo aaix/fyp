@@ -7,7 +7,8 @@ use std::collections::HashSet;
 pub struct UserTimelineMeta {
     pub user_id: value::CqlTimeuuid,
     pub timeline_type: i32,
-    pub opt_last_fanned_in_at: Option<value::CqlTimeuuid>,
-    pub opt_explicit_fan_in: Option<HashSet<value::CqlTimeuuid>>,
+    pub opt_last_fanned_in_at: Option<value::CqlTimestamp>,
+    pub opt_fanned_in_up_to: Option<value::CqlTimestamp>,
+    pub opt_explicit_fan_in_users: Option<HashSet<value::CqlTimeuuid>>,
     pub opt_exclude_users: Option<HashSet<value::CqlTimeuuid>>,
 }

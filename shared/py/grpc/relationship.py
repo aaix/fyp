@@ -74,6 +74,20 @@ async def read_relationships(lazy: DataservicesLazyGRPC[UserRelationshipServiceS
         relationship_type=r_type.value,
     )))
 
+async def read_relationships_chunkned(
+    lazy: DataservicesLazyGRPC[UserRelationshipServiceStub],
+    user_id: id_t,
+    r_type: RelationshipType, after: id_t | None,
+    chunk_size: int
+) -> user_pb2.RelationshipsResponse:
+    stub = await lazy(user_id)
+    return cast(user_pb2.RelationshipsResponse, await stub.ReadRelationshipsChunked(user_pb2.ReadRelationshipsChunkedRequest(
+        user_id=id_puuid(user_id),
+        relationship_type=r_type.value,
+        after=id_puuid(after) if after else None,
+        chunk_size=chunk_size,
+    )))
+
 async def delete_relationship(
     lazy: DataservicesLazyGRPC[UserRelationshipServiceStub],
     user_id_a: id_t, 

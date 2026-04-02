@@ -20,6 +20,7 @@ from api.middleware import exception_handlers
 # routers
 from api.routes.account.account import AccountRouter
 from api.routes.channel.message import MessageRouter
+from api.routes.post.feed import FeedRouter
 from api.routes.session.session import SessionRouter
 from api.routes.user.user import UserRouter
 from api.routes.channel.channel import ChannelRouter
@@ -64,6 +65,7 @@ app.include_router(UserRouter, prefix="/user")
 app.include_router(ChannelRouter, prefix="/chat")
 app.include_router(MessageRouter, prefix="/chat")
 app.include_router(PostRouter, prefix="/post")
+app.include_router(FeedRouter, prefix="/post")
 
 # exception handlers
 app.add_exception_handler(RequestValidationError, exception_handlers.request_validation_error_handler)

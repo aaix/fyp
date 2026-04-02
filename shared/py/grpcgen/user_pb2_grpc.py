@@ -695,6 +695,11 @@ class UserRelationshipServiceStub(object):
                 request_serializer=user__pb2.ReadRelationshipsRequest.SerializeToString,
                 response_deserializer=user__pb2.RelationshipsResponse.FromString,
                 _registered_method=True)
+        self.ReadRelationshipsChunked = channel.unary_unary(
+                '/dataservices.userproto.UserRelationshipService/ReadRelationshipsChunked',
+                request_serializer=user__pb2.ReadRelationshipsChunkedRequest.SerializeToString,
+                response_deserializer=user__pb2.RelationshipsResponse.FromString,
+                _registered_method=True)
         self.GetUserRelationshipCounts = channel.unary_unary(
                 '/dataservices.userproto.UserRelationshipService/GetUserRelationshipCounts',
                 request_serializer=user__pb2.GetUserRelationshipCountsRequest.SerializeToString,
@@ -746,6 +751,12 @@ class UserRelationshipServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def ReadRelationshipsChunked(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def GetUserRelationshipCounts(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -783,6 +794,11 @@ def add_UserRelationshipServiceServicer_to_server(servicer, server):
             'ReadRelationships': grpc.unary_unary_rpc_method_handler(
                     servicer.ReadRelationships,
                     request_deserializer=user__pb2.ReadRelationshipsRequest.FromString,
+                    response_serializer=user__pb2.RelationshipsResponse.SerializeToString,
+            ),
+            'ReadRelationshipsChunked': grpc.unary_unary_rpc_method_handler(
+                    servicer.ReadRelationshipsChunked,
+                    request_deserializer=user__pb2.ReadRelationshipsChunkedRequest.FromString,
                     response_serializer=user__pb2.RelationshipsResponse.SerializeToString,
             ),
             'GetUserRelationshipCounts': grpc.unary_unary_rpc_method_handler(
@@ -954,6 +970,33 @@ class UserRelationshipService(object):
             target,
             '/dataservices.userproto.UserRelationshipService/ReadRelationships',
             user__pb2.ReadRelationshipsRequest.SerializeToString,
+            user__pb2.RelationshipsResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ReadRelationshipsChunked(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/dataservices.userproto.UserRelationshipService/ReadRelationshipsChunked',
+            user__pb2.ReadRelationshipsChunkedRequest.SerializeToString,
             user__pb2.RelationshipsResponse.FromString,
             options,
             channel_credentials,

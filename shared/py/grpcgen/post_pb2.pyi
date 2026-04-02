@@ -111,20 +111,28 @@ class UserPostsResponse(_message.Message):
     posts: _containers.RepeatedCompositeFieldContainer[PostResponse]
     def __init__(self, posts: _Optional[_Iterable[_Union[PostResponse, _Mapping]]] = ...) -> None: ...
 
-class ReadUserDehydratedPostsRequest(_message.Message):
-    __slots__ = ("author_id", "limit", "timeline_type", "before")
-    AUTHOR_ID_FIELD_NUMBER: _ClassVar[int]
+class ReadUsersDehydratedPostsRequest(_message.Message):
+    __slots__ = ("author_ids", "limit", "timeline_type", "before")
+    AUTHOR_IDS_FIELD_NUMBER: _ClassVar[int]
     LIMIT_FIELD_NUMBER: _ClassVar[int]
     TIMELINE_TYPE_FIELD_NUMBER: _ClassVar[int]
     BEFORE_FIELD_NUMBER: _ClassVar[int]
-    author_id: _plib_pb2.pUUID
+    author_ids: _containers.RepeatedCompositeFieldContainer[_plib_pb2.pUUID]
     limit: int
     timeline_type: int
     before: _plib_pb2.pUUID
-    def __init__(self, author_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., limit: _Optional[int] = ..., timeline_type: _Optional[int] = ..., before: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ...) -> None: ...
+    def __init__(self, author_ids: _Optional[_Iterable[_Union[_plib_pb2.pUUID, _Mapping]]] = ..., limit: _Optional[int] = ..., timeline_type: _Optional[int] = ..., before: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ...) -> None: ...
 
-class UserDehydratedPostsResponse(_message.Message):
-    __slots__ = ("post_ids",)
+class UsersDehydratedPostsResponse(_message.Message):
+    __slots__ = ("posts",)
+    POSTS_FIELD_NUMBER: _ClassVar[int]
+    posts: _containers.RepeatedCompositeFieldContainer[DehydratedPosts]
+    def __init__(self, posts: _Optional[_Iterable[_Union[DehydratedPosts, _Mapping]]] = ...) -> None: ...
+
+class DehydratedPosts(_message.Message):
+    __slots__ = ("user_id", "post_ids")
+    USER_ID_FIELD_NUMBER: _ClassVar[int]
     POST_IDS_FIELD_NUMBER: _ClassVar[int]
+    user_id: _plib_pb2.pUUID
     post_ids: _containers.RepeatedCompositeFieldContainer[_plib_pb2.pUUID]
-    def __init__(self, post_ids: _Optional[_Iterable[_Union[_plib_pb2.pUUID, _Mapping]]] = ...) -> None: ...
+    def __init__(self, user_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., post_ids: _Optional[_Iterable[_Union[_plib_pb2.pUUID, _Mapping]]] = ...) -> None: ...

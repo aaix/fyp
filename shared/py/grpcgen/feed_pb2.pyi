@@ -1,5 +1,4 @@
 import plib_pb2 as _plib_pb2
-from google.protobuf import wrappers_pb2 as _wrappers_pb2
 from google.protobuf.internal import containers as _containers
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
@@ -9,50 +8,60 @@ from typing import ClassVar as _ClassVar, Optional as _Optional, Union as _Union
 DESCRIPTOR: _descriptor.FileDescriptor
 
 class ReadFeedMetaRequest(_message.Message):
-    __slots__ = ("user_id", "feed_type")
+    __slots__ = ("user_id", "timeline_type")
     USER_ID_FIELD_NUMBER: _ClassVar[int]
-    FEED_TYPE_FIELD_NUMBER: _ClassVar[int]
+    TIMELINE_TYPE_FIELD_NUMBER: _ClassVar[int]
     user_id: _plib_pb2.pUUID
-    feed_type: int
-    def __init__(self, user_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., feed_type: _Optional[int] = ...) -> None: ...
+    timeline_type: int
+    def __init__(self, user_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., timeline_type: _Optional[int] = ...) -> None: ...
 
 class FeedMetaResponse(_message.Message):
-    __slots__ = ("user_id", "feed_type", "last_fanned_in_at", "exclude_users")
+    __slots__ = ("user_id", "timeline_type", "last_fanned_in_at", "exclude_users", "explicit_fan_in_users", "fanned_in_up_to")
     USER_ID_FIELD_NUMBER: _ClassVar[int]
-    FEED_TYPE_FIELD_NUMBER: _ClassVar[int]
+    TIMELINE_TYPE_FIELD_NUMBER: _ClassVar[int]
     LAST_FANNED_IN_AT_FIELD_NUMBER: _ClassVar[int]
     EXCLUDE_USERS_FIELD_NUMBER: _ClassVar[int]
+    EXPLICIT_FAN_IN_USERS_FIELD_NUMBER: _ClassVar[int]
+    FANNED_IN_UP_TO_FIELD_NUMBER: _ClassVar[int]
     user_id: _plib_pb2.pUUID
-    feed_type: int
+    timeline_type: int
     last_fanned_in_at: _plib_pb2.pUUID
     exclude_users: _containers.RepeatedCompositeFieldContainer[_plib_pb2.pUUID]
-    def __init__(self, user_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., feed_type: _Optional[int] = ..., last_fanned_in_at: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., exclude_users: _Optional[_Iterable[_Union[_plib_pb2.pUUID, _Mapping]]] = ...) -> None: ...
+    explicit_fan_in_users: _containers.RepeatedCompositeFieldContainer[_plib_pb2.pUUID]
+    fanned_in_up_to: int
+    def __init__(self, user_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., timeline_type: _Optional[int] = ..., last_fanned_in_at: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., exclude_users: _Optional[_Iterable[_Union[_plib_pb2.pUUID, _Mapping]]] = ..., explicit_fan_in_users: _Optional[_Iterable[_Union[_plib_pb2.pUUID, _Mapping]]] = ..., fanned_in_up_to: _Optional[int] = ...) -> None: ...
 
 class UpdateFeedMetaRequest(_message.Message):
-    __slots__ = ("user_id", "feed_type", "last_fanned_in_at", "exclude_to_add", "exclude_to_delete")
+    __slots__ = ("user_id", "timeline_type", "last_fanned_in_at", "fanned_in_up_to", "exclude_to_add", "exclude_to_delete", "explicit_fan_in_to_add", "explicit_fan_in_to_delete")
     USER_ID_FIELD_NUMBER: _ClassVar[int]
-    FEED_TYPE_FIELD_NUMBER: _ClassVar[int]
+    TIMELINE_TYPE_FIELD_NUMBER: _ClassVar[int]
     LAST_FANNED_IN_AT_FIELD_NUMBER: _ClassVar[int]
+    FANNED_IN_UP_TO_FIELD_NUMBER: _ClassVar[int]
     EXCLUDE_TO_ADD_FIELD_NUMBER: _ClassVar[int]
     EXCLUDE_TO_DELETE_FIELD_NUMBER: _ClassVar[int]
+    EXPLICIT_FAN_IN_TO_ADD_FIELD_NUMBER: _ClassVar[int]
+    EXPLICIT_FAN_IN_TO_DELETE_FIELD_NUMBER: _ClassVar[int]
     user_id: _plib_pb2.pUUID
-    feed_type: int
-    last_fanned_in_at: _plib_pb2.pUUID
+    timeline_type: int
+    last_fanned_in_at: int
+    fanned_in_up_to: int
     exclude_to_add: _containers.RepeatedCompositeFieldContainer[_plib_pb2.pUUID]
     exclude_to_delete: _containers.RepeatedCompositeFieldContainer[_plib_pb2.pUUID]
-    def __init__(self, user_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., feed_type: _Optional[int] = ..., last_fanned_in_at: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., exclude_to_add: _Optional[_Iterable[_Union[_plib_pb2.pUUID, _Mapping]]] = ..., exclude_to_delete: _Optional[_Iterable[_Union[_plib_pb2.pUUID, _Mapping]]] = ...) -> None: ...
+    explicit_fan_in_to_add: _containers.RepeatedCompositeFieldContainer[_plib_pb2.pUUID]
+    explicit_fan_in_to_delete: _containers.RepeatedCompositeFieldContainer[_plib_pb2.pUUID]
+    def __init__(self, user_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., timeline_type: _Optional[int] = ..., last_fanned_in_at: _Optional[int] = ..., fanned_in_up_to: _Optional[int] = ..., exclude_to_add: _Optional[_Iterable[_Union[_plib_pb2.pUUID, _Mapping]]] = ..., exclude_to_delete: _Optional[_Iterable[_Union[_plib_pb2.pUUID, _Mapping]]] = ..., explicit_fan_in_to_add: _Optional[_Iterable[_Union[_plib_pb2.pUUID, _Mapping]]] = ..., explicit_fan_in_to_delete: _Optional[_Iterable[_Union[_plib_pb2.pUUID, _Mapping]]] = ...) -> None: ...
 
 class ReadFeedRequest(_message.Message):
-    __slots__ = ("user_id", "feed_type", "before", "limit")
+    __slots__ = ("user_id", "timeline_type", "before", "limit")
     USER_ID_FIELD_NUMBER: _ClassVar[int]
-    FEED_TYPE_FIELD_NUMBER: _ClassVar[int]
+    TIMELINE_TYPE_FIELD_NUMBER: _ClassVar[int]
     BEFORE_FIELD_NUMBER: _ClassVar[int]
     LIMIT_FIELD_NUMBER: _ClassVar[int]
     user_id: _plib_pb2.pUUID
-    feed_type: int
+    timeline_type: int
     before: _plib_pb2.pUUID
     limit: int
-    def __init__(self, user_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., feed_type: _Optional[int] = ..., before: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., limit: _Optional[int] = ...) -> None: ...
+    def __init__(self, user_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., timeline_type: _Optional[int] = ..., before: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., limit: _Optional[int] = ...) -> None: ...
 
 class FeedEntry(_message.Message):
     __slots__ = ("post_author_id", "post_id", "entry_type")

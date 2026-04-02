@@ -1,5 +1,9 @@
+from collections.abc import Iterable, Iterator
+from functools import partial
+from itertools import chain
 from typing import Literal, cast
 
+import asyncio
 from enum import IntEnum
 
 from google.protobuf.wrappers_pb2 import BoolValue, Int32Value, StringValue
@@ -8,8 +12,11 @@ from google.protobuf.field_mask_pb2 import FieldMask
 from shared.py.grpc.feed import TimelineType
 from shared.py.grpc.id import id_puuid, id_t
 from shared.py.grpc.lazy import DataservicesLazyGRPC
-from shared.py.grpcgen.post_pb2 import CreatePostRequest, DeletePostRequest, DeletePostResponse, ReadPostRequest, PostResponse, ReadUserPostsRequest, UserPostsResponse, UpdatePostRequest
+from shared.py.grpcgen.plib_pb2 import pUUID
+from shared.py.grpcgen.post_pb2 import *
 from shared.py.grpcgen.post_pb2_grpc import PostServiceStub
+from shared.py.misc import bucketby
+from shared.py.tracing import tracer
 from shared.py.types import UNSET, MaybeUnset
 
 # posts are bucketed by their author so that a read my posts call will coalesce with read post call
@@ -129,3 +136,26 @@ async def edit_post(
         field_mask=field_mask,
         timeline_type=timeline_type.value,
     )))
+
+
+@tracer.start_as_current_span("posts.scatter_gather")
+async def scatter_gather_users_dehydrated_posts(
+    lazy: DataservicesLazyGRPC[PostServiceStub],
+    timeline_type: TimelineType,
+    user_ids: Iterable[pUUID],
+    limit: int,
+    before: id_t | None,
+) -> list[DehydratedPosts]:
+    buckets = await bucketby(user_ids, lazy)
+
+    partial_req = partial(ReadUsersDehydratedPostsRequest,
+        limit=limit,
+        timeline_type=timeline_type.value,
+        before=id_puuid(before) if before else None,
+    )
+
+
+    res = cast(list[UsersDehydratedPostsResponse], await asyncio.gather(*(
+        grpc.ReadUsersDehydratedPosts(partial_req(author_ids=users)) for grpc, users in buckets.items()
+    )))
+    return list(chain(*(posts.posts for posts in res)))

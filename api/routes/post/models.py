@@ -19,6 +19,7 @@ __all__ = (
     "PostResponse",
     "PostsResponse",
     "EditPostBody",
+    "FeedResponse",
 )
 
 
@@ -69,3 +70,6 @@ class PostsResponse(BaseModel):
 
 class EditPostBody(BaseModel):
     body: str | None = None
+
+class FeedResponse(BaseModel):
+    posts: list[PostResponse]

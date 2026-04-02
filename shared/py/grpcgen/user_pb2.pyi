@@ -266,6 +266,18 @@ class ReadRelationshipsRequest(_message.Message):
     relationship_type: int
     def __init__(self, user_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., relationship_type: _Optional[int] = ...) -> None: ...
 
+class ReadRelationshipsChunkedRequest(_message.Message):
+    __slots__ = ("user_id", "relationship_type", "after", "chunk_size")
+    USER_ID_FIELD_NUMBER: _ClassVar[int]
+    RELATIONSHIP_TYPE_FIELD_NUMBER: _ClassVar[int]
+    AFTER_FIELD_NUMBER: _ClassVar[int]
+    CHUNK_SIZE_FIELD_NUMBER: _ClassVar[int]
+    user_id: _plib_pb2.pUUID
+    relationship_type: int
+    after: _plib_pb2.pUUID
+    chunk_size: int
+    def __init__(self, user_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., relationship_type: _Optional[int] = ..., after: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., chunk_size: _Optional[int] = ...) -> None: ...
+
 class HalfRelationship(_message.Message):
     __slots__ = ("user_id_b", "created_at")
     USER_ID_B_FIELD_NUMBER: _ClassVar[int]

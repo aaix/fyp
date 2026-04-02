@@ -64,10 +64,10 @@ class PostServiceStub(object):
                 request_serializer=post__pb2.ReadUserPostsRequest.SerializeToString,
                 response_deserializer=post__pb2.UserPostsResponse.FromString,
                 _registered_method=True)
-        self.ReadDehydratedUserPosts = channel.unary_unary(
-                '/dataservices.postproto.PostService/ReadDehydratedUserPosts',
-                request_serializer=post__pb2.ReadUserDehydratedPostsRequest.SerializeToString,
-                response_deserializer=post__pb2.UserDehydratedPostsResponse.FromString,
+        self.ReadUsersDehydratedPosts = channel.unary_unary(
+                '/dataservices.postproto.PostService/ReadUsersDehydratedPosts',
+                request_serializer=post__pb2.ReadUsersDehydratedPostsRequest.SerializeToString,
+                response_deserializer=post__pb2.UsersDehydratedPostsResponse.FromString,
                 _registered_method=True)
 
 
@@ -110,7 +110,7 @@ class PostServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def ReadDehydratedUserPosts(self, request, context):
+    def ReadUsersDehydratedPosts(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -149,10 +149,10 @@ def add_PostServiceServicer_to_server(servicer, server):
                     request_deserializer=post__pb2.ReadUserPostsRequest.FromString,
                     response_serializer=post__pb2.UserPostsResponse.SerializeToString,
             ),
-            'ReadDehydratedUserPosts': grpc.unary_unary_rpc_method_handler(
-                    servicer.ReadDehydratedUserPosts,
-                    request_deserializer=post__pb2.ReadUserDehydratedPostsRequest.FromString,
-                    response_serializer=post__pb2.UserDehydratedPostsResponse.SerializeToString,
+            'ReadUsersDehydratedPosts': grpc.unary_unary_rpc_method_handler(
+                    servicer.ReadUsersDehydratedPosts,
+                    request_deserializer=post__pb2.ReadUsersDehydratedPostsRequest.FromString,
+                    response_serializer=post__pb2.UsersDehydratedPostsResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -328,7 +328,7 @@ class PostService(object):
             _registered_method=True)
 
     @staticmethod
-    def ReadDehydratedUserPosts(request,
+    def ReadUsersDehydratedPosts(request,
             target,
             options=(),
             channel_credentials=None,
@@ -341,9 +341,9 @@ class PostService(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/dataservices.postproto.PostService/ReadDehydratedUserPosts',
-            post__pb2.ReadUserDehydratedPostsRequest.SerializeToString,
-            post__pb2.UserDehydratedPostsResponse.FromString,
+            '/dataservices.postproto.PostService/ReadUsersDehydratedPosts',
+            post__pb2.ReadUsersDehydratedPostsRequest.SerializeToString,
+            post__pb2.UsersDehydratedPostsResponse.FromString,
             options,
             channel_credentials,
             insecure,
