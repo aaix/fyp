@@ -38,7 +38,7 @@ AccountRouter = APIRouter()
 
 grpcuser = DataservicesLazyGRPC(user_pb2_grpc.UserServiceStub)
 grpcdevice = DataservicesLazyGRPC(user_pb2_grpc.UserDeviceServiceStub)
-grpcmedia = LazyGRPC(discovery.discover_mediaservices(), media_pb2_grpc.TransformerServiceStub)
+grpcmedia = LazyGRPC(discovery.discover_mediaservices(), media_pb2_grpc.TransformerServiceStub, discovery.mediaservices_auth())
 
 
 

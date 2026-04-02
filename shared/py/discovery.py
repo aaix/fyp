@@ -1,4 +1,5 @@
 from os import environ
+import subprocess
 
 
 from shared.py.types import SingletonMixin
@@ -18,6 +19,16 @@ class DiscoveryManager(SingletonMixin):
     
     def discover_mediaservices(self) -> str:
         return environ["MEDIASERVICES_URI"]
+    
+    def mediaservices_auth(self) -> str | None:
+        if not self.is_prod():
+            return None
+        uri = self.discover_mediaservices().split(":", 1)[0]
+        proc = subprocess.run(
+            f'curl -H "Metadata-Flavor: Google" http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/identity?audience={uri}'
+        )
+        proc.check_returncode()
+        return proc.stdout.decode()
 
     def discover_otel(self) -> str:
         return environ["OTEL_URI"]

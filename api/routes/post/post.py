@@ -23,7 +23,7 @@ discovery = DiscoveryManager()
 
 PostRouter = APIRouter()
 
-grpcmedia = LazyGRPC(discovery.discover_mediaservices(), media_pb2_grpc.TransformerServiceStub)
+grpcmedia = LazyGRPC(discovery.discover_mediaservices(), media_pb2_grpc.TransformerServiceStub, discovery.mediaservices_auth())
 grpcpost = DataservicesLazyGRPC(post_pb2_grpc.PostServiceStub)
 
 

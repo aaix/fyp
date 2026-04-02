@@ -24,12 +24,13 @@ async def lazy_init():
 class LazyGRPC[T: _GRPCStub]:
     """Helper to lazily create grpc channels to avoid
     creating them before the main event loop is created"""
-    def __init__(self, uri: str, stub: type[T]):
+    def __init__(self, uri: str, stub: type[T], auth: str | None = None):
         self.factory_uri = uri
         self.factory_stub = stub
 
         self._channel: None | grpc.aio.Channel = None
         self._stub: None | T = None
+        self._auth = auth
     
     @property
     def stub(self) -> T:
@@ -41,9 +42,24 @@ class LazyGRPC[T: _GRPCStub]:
     @property
     def channel(self) -> grpc.aio.Channel:
         if self._channel is None:
-            self._channel = grpc.aio.insecure_channel(self.factory_uri)
+            self._channel = self._make_channnel()
             assert self._channel is not None
         return self._channel
+    
+    def _make_channnel(self) -> grpc.aio.Channel:
+        if not self._auth:
+            return grpc.aio.insecure_channel(self.factory_uri)
+
+        call_creds = grpc.access_token_call_credentials(self._auth)
+        channel_creds = grpc.ssl_channel_credentials()
+
+        creds = grpc.composite_channel_credentials(channel_creds, call_creds)        
+
+
+        return grpc.aio.secure_channel(
+            self.factory_uri,
+            creds
+        )
 
 
 
