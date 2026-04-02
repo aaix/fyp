@@ -33,6 +33,7 @@ message PostResponse {
     optional google.protobuf.Int64Value last_edited = 7;
     int64 num_comments = 8;
     int64 num_likes = 9;
+    bool is_private = 10;
 }
 
 message ReadPostRequest {

@@ -22,6 +22,7 @@ fn post_to_post_response(post: PostV2, post_counters: Option<PostNumCounters>) -
         last_edited: post.opt_last_edited.map(|t| {t.0.into()}),
         num_comments: post_comments,
         num_likes: post_likes,
+        is_private: post.is_private,
     }
 }
 
@@ -197,6 +198,7 @@ impl ScyllaPostService {
             last_edited: None,
             num_comments: 0,
             num_likes: 0,
+            is_private,
         }))
     }
 

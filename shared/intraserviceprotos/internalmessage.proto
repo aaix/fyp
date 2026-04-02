@@ -19,6 +19,7 @@ message IntraMessage {
         EventUserTyping user_typing = 7;
         EventMessageDelete message_delete = 8;
         EventMessageUpdate message_update = 9;
+        EventPostUpdate post_update = 10;
     }
 }
 
@@ -64,4 +65,9 @@ message EventMessageDelete {
 message EventUserTyping {
     plib.pUUID author_id = 1;
     plib.pUUID channel_id = 2;
+}
+
+message EventPostUpdate {
+    plib.pUUID post_id = 1;
+    int32 state = 2;
 }

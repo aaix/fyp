@@ -27,7 +27,7 @@ from google.protobuf import wrappers_pb2 as google_dot_protobuf_dot_wrappers__pb
 from google.protobuf import field_mask_pb2 as google_dot_protobuf_dot_field__mask__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\npost.proto\x12\x16\x64\x61taservices.postproto\x1a\nplib.proto\x1a\x1egoogle/protobuf/wrappers.proto\x1a google/protobuf/field_mask.proto\"y\n\x11\x43reatePostRequest\x12\x1e\n\tauthor_id\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\x12\x11\n\tpost_type\x18\x02 \x01(\x05\x12\x11\n\x04\x62ody\x18\x04 \x01(\tH\x00\x88\x01\x01\x12\x15\n\rtimeline_type\x18\x05 \x01(\x05\x42\x07\n\x05_body\"\xa8\x02\n\x0cPostResponse\x12\x1c\n\x07post_id\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\x12\x1e\n\tauthor_id\x18\x02 \x01(\x0b\x32\x0b.plib.pUUID\x12\x1d\n\x08\x61sset_id\x18\x03 \x01(\x0b\x32\x0b.plib.pUUID\x12\x11\n\tpost_type\x18\x04 \x01(\x05\x12/\n\x04\x62ody\x18\x06 \x01(\x0b\x32\x1c.google.protobuf.StringValueH\x00\x88\x01\x01\x12\x35\n\x0blast_edited\x18\x07 \x01(\x0b\x32\x1b.google.protobuf.Int64ValueH\x01\x88\x01\x01\x12\x14\n\x0cnum_comments\x18\x08 \x01(\x03\x12\x11\n\tnum_likes\x18\t \x01(\x03\x42\x07\n\x05_bodyB\x0e\n\x0c_last_edited\"f\n\x0fReadPostRequest\x12\x1c\n\x07post_id\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\x12\x1e\n\tauthor_id\x18\x02 \x01(\x0b\x32\x0b.plib.pUUID\x12\x15\n\rtimeline_type\x18\x03 \x01(\x05\"\x96\x02\n\x11UpdatePostRequest\x12\x1e\n\tauthor_id\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\x12\x1c\n\x07post_id\x18\x02 \x01(\x0b\x32\x0b.plib.pUUID\x12\x15\n\rtimeline_type\x18\x07 \x01(\x05\x12.\n\nfield_mask\x18\x03 \x01(\x0b\x32\x1a.google.protobuf.FieldMask\x12/\n\x04\x62ody\x18\x04 \x01(\x0b\x32\x1c.google.protobuf.StringValueH\x00\x88\x01\x01\x12\x33\n\nis_private\x18\x06 \x01(\x0b\x32\x1a.google.protobuf.BoolValueH\x01\x88\x01\x01\x42\x07\n\x05_bodyB\r\n\x0b_is_private\"h\n\x11\x44\x65letePostRequest\x12\x1c\n\x07post_id\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\x12\x1e\n\tauthor_id\x18\x02 \x01(\x0b\x32\x0b.plib.pUUID\x12\x15\n\rtimeline_type\x18\x03 \x01(\x05\"\x14\n\x12\x44\x65letePostResponse\"Q\n\x14ReadManyPostsRequest\x12\x39\n\x08requests\x18\x01 \x03(\x0b\x32\'.dataservices.postproto.ReadPostRequest\"L\n\x11ManyPostsResponse\x12\x37\n\tresponses\x18\x01 \x03(\x0b\x32$.dataservices.postproto.PostResponse\"\x89\x01\n\x14ReadUserPostsRequest\x12\x1e\n\tauthor_id\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\x12\r\n\x05limit\x18\x02 \x01(\x05\x12\x15\n\rtimeline_type\x18\x03 \x01(\x05\x12 \n\x06\x62\x65\x66ore\x18\x04 \x01(\x0b\x32\x0b.plib.pUUIDH\x00\x88\x01\x01\x42\t\n\x07_before\"H\n\x11UserPostsResponse\x12\x33\n\x05posts\x18\x01 \x03(\x0b\x32$.dataservices.postproto.PostResponse\"\x95\x01\n\x1fReadUsersDehydratedPostsRequest\x12\x1f\n\nauthor_ids\x18\x01 \x03(\x0b\x32\x0b.plib.pUUID\x12\r\n\x05limit\x18\x02 \x01(\x05\x12\x15\n\rtimeline_type\x18\x03 \x01(\x05\x12 \n\x06\x62\x65\x66ore\x18\x04 \x01(\x0b\x32\x0b.plib.pUUIDH\x00\x88\x01\x01\x42\t\n\x07_before\"V\n\x1cUsersDehydratedPostsResponse\x12\x36\n\x05posts\x18\x01 \x03(\x0b\x32\'.dataservices.postproto.DehydratedPosts\"N\n\x0f\x44\x65hydratedPosts\x12\x1c\n\x07user_id\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\x12\x1d\n\x08post_ids\x18\x02 \x03(\x0b\x32\x0b.plib.pUUID2\xeb\x05\n\x0bPostService\x12]\n\nCreatePost\x12).dataservices.postproto.CreatePostRequest\x1a$.dataservices.postproto.PostResponse\x12Y\n\x08ReadPost\x12\'.dataservices.postproto.ReadPostRequest\x1a$.dataservices.postproto.PostResponse\x12]\n\nUpdatePost\x12).dataservices.postproto.UpdatePostRequest\x1a$.dataservices.postproto.PostResponse\x12\x63\n\nDeletePost\x12).dataservices.postproto.DeletePostRequest\x1a*.dataservices.postproto.DeletePostResponse\x12h\n\rReadManyPosts\x12,.dataservices.postproto.ReadManyPostsRequest\x1a).dataservices.postproto.ManyPostsResponse\x12h\n\rReadUserPosts\x12,.dataservices.postproto.ReadUserPostsRequest\x1a).dataservices.postproto.UserPostsResponse\x12\x89\x01\n\x18ReadUsersDehydratedPosts\x12\x37.dataservices.postproto.ReadUsersDehydratedPostsRequest\x1a\x34.dataservices.postproto.UsersDehydratedPostsResponseb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\npost.proto\x12\x16\x64\x61taservices.postproto\x1a\nplib.proto\x1a\x1egoogle/protobuf/wrappers.proto\x1a google/protobuf/field_mask.proto\"y\n\x11\x43reatePostRequest\x12\x1e\n\tauthor_id\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\x12\x11\n\tpost_type\x18\x02 \x01(\x05\x12\x11\n\x04\x62ody\x18\x04 \x01(\tH\x00\x88\x01\x01\x12\x15\n\rtimeline_type\x18\x05 \x01(\x05\x42\x07\n\x05_body\"\xbc\x02\n\x0cPostResponse\x12\x1c\n\x07post_id\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\x12\x1e\n\tauthor_id\x18\x02 \x01(\x0b\x32\x0b.plib.pUUID\x12\x1d\n\x08\x61sset_id\x18\x03 \x01(\x0b\x32\x0b.plib.pUUID\x12\x11\n\tpost_type\x18\x04 \x01(\x05\x12/\n\x04\x62ody\x18\x06 \x01(\x0b\x32\x1c.google.protobuf.StringValueH\x00\x88\x01\x01\x12\x35\n\x0blast_edited\x18\x07 \x01(\x0b\x32\x1b.google.protobuf.Int64ValueH\x01\x88\x01\x01\x12\x14\n\x0cnum_comments\x18\x08 \x01(\x03\x12\x11\n\tnum_likes\x18\t \x01(\x03\x12\x12\n\nis_private\x18\n \x01(\x08\x42\x07\n\x05_bodyB\x0e\n\x0c_last_edited\"f\n\x0fReadPostRequest\x12\x1c\n\x07post_id\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\x12\x1e\n\tauthor_id\x18\x02 \x01(\x0b\x32\x0b.plib.pUUID\x12\x15\n\rtimeline_type\x18\x03 \x01(\x05\"\x96\x02\n\x11UpdatePostRequest\x12\x1e\n\tauthor_id\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\x12\x1c\n\x07post_id\x18\x02 \x01(\x0b\x32\x0b.plib.pUUID\x12\x15\n\rtimeline_type\x18\x07 \x01(\x05\x12.\n\nfield_mask\x18\x03 \x01(\x0b\x32\x1a.google.protobuf.FieldMask\x12/\n\x04\x62ody\x18\x04 \x01(\x0b\x32\x1c.google.protobuf.StringValueH\x00\x88\x01\x01\x12\x33\n\nis_private\x18\x06 \x01(\x0b\x32\x1a.google.protobuf.BoolValueH\x01\x88\x01\x01\x42\x07\n\x05_bodyB\r\n\x0b_is_private\"h\n\x11\x44\x65letePostRequest\x12\x1c\n\x07post_id\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\x12\x1e\n\tauthor_id\x18\x02 \x01(\x0b\x32\x0b.plib.pUUID\x12\x15\n\rtimeline_type\x18\x03 \x01(\x05\"\x14\n\x12\x44\x65letePostResponse\"Q\n\x14ReadManyPostsRequest\x12\x39\n\x08requests\x18\x01 \x03(\x0b\x32\'.dataservices.postproto.ReadPostRequest\"L\n\x11ManyPostsResponse\x12\x37\n\tresponses\x18\x01 \x03(\x0b\x32$.dataservices.postproto.PostResponse\"\x89\x01\n\x14ReadUserPostsRequest\x12\x1e\n\tauthor_id\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\x12\r\n\x05limit\x18\x02 \x01(\x05\x12\x15\n\rtimeline_type\x18\x03 \x01(\x05\x12 \n\x06\x62\x65\x66ore\x18\x04 \x01(\x0b\x32\x0b.plib.pUUIDH\x00\x88\x01\x01\x42\t\n\x07_before\"H\n\x11UserPostsResponse\x12\x33\n\x05posts\x18\x01 \x03(\x0b\x32$.dataservices.postproto.PostResponse\"\x95\x01\n\x1fReadUsersDehydratedPostsRequest\x12\x1f\n\nauthor_ids\x18\x01 \x03(\x0b\x32\x0b.plib.pUUID\x12\r\n\x05limit\x18\x02 \x01(\x05\x12\x15\n\rtimeline_type\x18\x03 \x01(\x05\x12 \n\x06\x62\x65\x66ore\x18\x04 \x01(\x0b\x32\x0b.plib.pUUIDH\x00\x88\x01\x01\x42\t\n\x07_before\"V\n\x1cUsersDehydratedPostsResponse\x12\x36\n\x05posts\x18\x01 \x03(\x0b\x32\'.dataservices.postproto.DehydratedPosts\"N\n\x0f\x44\x65hydratedPosts\x12\x1c\n\x07user_id\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\x12\x1d\n\x08post_ids\x18\x02 \x03(\x0b\x32\x0b.plib.pUUID2\xeb\x05\n\x0bPostService\x12]\n\nCreatePost\x12).dataservices.postproto.CreatePostRequest\x1a$.dataservices.postproto.PostResponse\x12Y\n\x08ReadPost\x12\'.dataservices.postproto.ReadPostRequest\x1a$.dataservices.postproto.PostResponse\x12]\n\nUpdatePost\x12).dataservices.postproto.UpdatePostRequest\x1a$.dataservices.postproto.PostResponse\x12\x63\n\nDeletePost\x12).dataservices.postproto.DeletePostRequest\x1a*.dataservices.postproto.DeletePostResponse\x12h\n\rReadManyPosts\x12,.dataservices.postproto.ReadManyPostsRequest\x1a).dataservices.postproto.ManyPostsResponse\x12h\n\rReadUserPosts\x12,.dataservices.postproto.ReadUserPostsRequest\x1a).dataservices.postproto.UserPostsResponse\x12\x89\x01\n\x18ReadUsersDehydratedPosts\x12\x37.dataservices.postproto.ReadUsersDehydratedPostsRequest\x1a\x34.dataservices.postproto.UsersDehydratedPostsResponseb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -37,29 +37,29 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_CREATEPOSTREQUEST']._serialized_start=116
   _globals['_CREATEPOSTREQUEST']._serialized_end=237
   _globals['_POSTRESPONSE']._serialized_start=240
-  _globals['_POSTRESPONSE']._serialized_end=536
-  _globals['_READPOSTREQUEST']._serialized_start=538
-  _globals['_READPOSTREQUEST']._serialized_end=640
-  _globals['_UPDATEPOSTREQUEST']._serialized_start=643
-  _globals['_UPDATEPOSTREQUEST']._serialized_end=921
-  _globals['_DELETEPOSTREQUEST']._serialized_start=923
-  _globals['_DELETEPOSTREQUEST']._serialized_end=1027
-  _globals['_DELETEPOSTRESPONSE']._serialized_start=1029
-  _globals['_DELETEPOSTRESPONSE']._serialized_end=1049
-  _globals['_READMANYPOSTSREQUEST']._serialized_start=1051
-  _globals['_READMANYPOSTSREQUEST']._serialized_end=1132
-  _globals['_MANYPOSTSRESPONSE']._serialized_start=1134
-  _globals['_MANYPOSTSRESPONSE']._serialized_end=1210
-  _globals['_READUSERPOSTSREQUEST']._serialized_start=1213
-  _globals['_READUSERPOSTSREQUEST']._serialized_end=1350
-  _globals['_USERPOSTSRESPONSE']._serialized_start=1352
-  _globals['_USERPOSTSRESPONSE']._serialized_end=1424
-  _globals['_READUSERSDEHYDRATEDPOSTSREQUEST']._serialized_start=1427
-  _globals['_READUSERSDEHYDRATEDPOSTSREQUEST']._serialized_end=1576
-  _globals['_USERSDEHYDRATEDPOSTSRESPONSE']._serialized_start=1578
-  _globals['_USERSDEHYDRATEDPOSTSRESPONSE']._serialized_end=1664
-  _globals['_DEHYDRATEDPOSTS']._serialized_start=1666
-  _globals['_DEHYDRATEDPOSTS']._serialized_end=1744
-  _globals['_POSTSERVICE']._serialized_start=1747
-  _globals['_POSTSERVICE']._serialized_end=2494
+  _globals['_POSTRESPONSE']._serialized_end=556
+  _globals['_READPOSTREQUEST']._serialized_start=558
+  _globals['_READPOSTREQUEST']._serialized_end=660
+  _globals['_UPDATEPOSTREQUEST']._serialized_start=663
+  _globals['_UPDATEPOSTREQUEST']._serialized_end=941
+  _globals['_DELETEPOSTREQUEST']._serialized_start=943
+  _globals['_DELETEPOSTREQUEST']._serialized_end=1047
+  _globals['_DELETEPOSTRESPONSE']._serialized_start=1049
+  _globals['_DELETEPOSTRESPONSE']._serialized_end=1069
+  _globals['_READMANYPOSTSREQUEST']._serialized_start=1071
+  _globals['_READMANYPOSTSREQUEST']._serialized_end=1152
+  _globals['_MANYPOSTSRESPONSE']._serialized_start=1154
+  _globals['_MANYPOSTSRESPONSE']._serialized_end=1230
+  _globals['_READUSERPOSTSREQUEST']._serialized_start=1233
+  _globals['_READUSERPOSTSREQUEST']._serialized_end=1370
+  _globals['_USERPOSTSRESPONSE']._serialized_start=1372
+  _globals['_USERPOSTSRESPONSE']._serialized_end=1444
+  _globals['_READUSERSDEHYDRATEDPOSTSREQUEST']._serialized_start=1447
+  _globals['_READUSERSDEHYDRATEDPOSTSREQUEST']._serialized_end=1596
+  _globals['_USERSDEHYDRATEDPOSTSRESPONSE']._serialized_start=1598
+  _globals['_USERSDEHYDRATEDPOSTSRESPONSE']._serialized_end=1684
+  _globals['_DEHYDRATEDPOSTS']._serialized_start=1686
+  _globals['_DEHYDRATEDPOSTS']._serialized_end=1764
+  _globals['_POSTSERVICE']._serialized_start=1767
+  _globals['_POSTSERVICE']._serialized_end=2514
 # @@protoc_insertion_point(module_scope)

@@ -7,6 +7,41 @@ export const POST_TYPE_IMAGE = 1;
 export const POST_TYPE_VIDEO = 2;
 export const POST_TYPE_SHORT = 3;
 
+// from api/routes/post/post.py PostUpdateType
+export const POST_UPDATE_CREATED = 0
+export const POST_UPDATE_TRANSCODING = 1
+export const POST_UPDATE_TRANSCODED = 2
+export const POST_UPDATE_FANNING_OUT = 3
+export const POST_UPDATE_FANNED_OUT = 4
+export const POST_UPDATE_COMPLETED = 5
+export const POST_UPDATE_ERROR = 99
+
+/**
+ * @param {number} t
+ * @returns {string}
+ */
+export function describePostUpdateType(t) {
+    const n = Number(t)
+    switch (n) {
+        case POST_UPDATE_CREATED:
+            return 'Post created.'
+        case POST_UPDATE_TRANSCODING:
+            return 'Transcoding media.'
+        case POST_UPDATE_TRANSCODED:
+            return 'Transcoding complete.'
+        case POST_UPDATE_FANNING_OUT:
+            return 'Publishing to feeds.'
+        case POST_UPDATE_FANNED_OUT:
+            return 'Published.'
+        case POST_UPDATE_COMPLETED:
+            return 'Done.'
+        case POST_UPDATE_ERROR:
+            return 'Processing failed.'
+        default:
+            return 'Processing…'
+    }
+}
+
 /**
  * Post manager
  *
@@ -14,6 +49,56 @@ export const POST_TYPE_SHORT = 3;
  * @typedef {PostManager}
  */
 class PostManager {
+
+    constructor() {
+        /** @type {Map<string, Set<(updateType: number) => void>>} */
+        this._postUpdateListeners = new Map()
+        /** @type {Map<string, number[]>} ordered events for this post (incl. before any listener) */
+        this._postUpdatesRecieved = new Map()
+    }
+
+    /**
+     * @param {string} postId
+     * @param {(updateType: number) => void} listener
+     * @returns {() => void}
+     */
+    subscribePostUpdates(postId, listener) {
+        const id = postId != null ? String(postId) : ''
+        if (!id || typeof listener !== 'function') return () => {}
+        let set = this._postUpdateListeners.get(id)
+        if (!set) {
+            set = new Set()
+            this._postUpdateListeners.set(id, set)
+        }
+        set.add(listener)
+
+        return () => {
+            set.delete(listener)
+            if (set.size === 0) {
+                this._postUpdateListeners.delete(id)
+            }
+        }
+    }
+
+    /**
+     * Events received before any listener subscribed (same order as live updates).
+     * @param {string} postId
+     * @returns {number[]}
+     */
+    getBufferedPostUpdates(postId) {
+        const id = postId != null ? String(postId) : ''
+        if (!id) return []
+        const buf = this._postUpdatesRecieved.get(id)
+        return buf ? [...buf] : []
+    }
+
+    /**
+     * @param {string} postId
+     */
+    clearBufferedPostUpdates(postId) {
+        const id = postId != null ? String(postId) : ''
+        if (id) this._postUpdatesRecieved.delete(id)
+    }
 
     
     /**
@@ -111,6 +196,28 @@ class PostManager {
         return await API.DELETE(
             `post/user/${encodeURIComponent(author_id)}/${encodeURIComponent(feed_type)}/${encodeURIComponent(post_id)}`
         );
+    }
+
+
+    onPostUpdate(post_id, update_type) {
+        const id = post_id != null ? String(post_id) : ''
+        if (!id) return
+
+        const t = update_type != null ? Number(update_type) : NaN
+        const buf = this._postUpdatesRecieved.get(id) ?? []
+        buf.push(t)
+        this._postUpdatesRecieved.set(id, buf)
+
+        const listeners = this._postUpdateListeners.get(id)
+        if (listeners?.size) {
+            for (const fn of [...listeners]) {
+                try {
+                    fn(t)
+                } catch (e) {
+                    console.error(e)
+                }
+            }
+        }
     }
 }
 

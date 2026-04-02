@@ -8,7 +8,7 @@ from typing import ClassVar as _ClassVar, Optional as _Optional, Union as _Union
 DESCRIPTOR: _descriptor.FileDescriptor
 
 class IntraMessage(_message.Message):
-    __slots__ = ("to", "traceparent", "session_create", "channel_create", "friendship_update", "message_create", "user_typing", "message_delete", "message_update")
+    __slots__ = ("to", "traceparent", "session_create", "channel_create", "friendship_update", "message_create", "user_typing", "message_delete", "message_update", "post_update")
     TO_FIELD_NUMBER: _ClassVar[int]
     TRACEPARENT_FIELD_NUMBER: _ClassVar[int]
     SESSION_CREATE_FIELD_NUMBER: _ClassVar[int]
@@ -18,6 +18,7 @@ class IntraMessage(_message.Message):
     USER_TYPING_FIELD_NUMBER: _ClassVar[int]
     MESSAGE_DELETE_FIELD_NUMBER: _ClassVar[int]
     MESSAGE_UPDATE_FIELD_NUMBER: _ClassVar[int]
+    POST_UPDATE_FIELD_NUMBER: _ClassVar[int]
     to: _plib_pb2.pUUID
     traceparent: _traceparent_pb2.TraceParent
     session_create: EventSessionCreate
@@ -27,7 +28,8 @@ class IntraMessage(_message.Message):
     user_typing: EventUserTyping
     message_delete: EventMessageDelete
     message_update: EventMessageUpdate
-    def __init__(self, to: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., traceparent: _Optional[_Union[_traceparent_pb2.TraceParent, _Mapping]] = ..., session_create: _Optional[_Union[EventSessionCreate, _Mapping]] = ..., channel_create: _Optional[_Union[EventChannelCreate, _Mapping]] = ..., friendship_update: _Optional[_Union[EventFriendshipUpdate, _Mapping]] = ..., message_create: _Optional[_Union[EventMessageCreate, _Mapping]] = ..., user_typing: _Optional[_Union[EventUserTyping, _Mapping]] = ..., message_delete: _Optional[_Union[EventMessageDelete, _Mapping]] = ..., message_update: _Optional[_Union[EventMessageUpdate, _Mapping]] = ...) -> None: ...
+    post_update: EventPostUpdate
+    def __init__(self, to: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., traceparent: _Optional[_Union[_traceparent_pb2.TraceParent, _Mapping]] = ..., session_create: _Optional[_Union[EventSessionCreate, _Mapping]] = ..., channel_create: _Optional[_Union[EventChannelCreate, _Mapping]] = ..., friendship_update: _Optional[_Union[EventFriendshipUpdate, _Mapping]] = ..., message_create: _Optional[_Union[EventMessageCreate, _Mapping]] = ..., user_typing: _Optional[_Union[EventUserTyping, _Mapping]] = ..., message_delete: _Optional[_Union[EventMessageDelete, _Mapping]] = ..., message_update: _Optional[_Union[EventMessageUpdate, _Mapping]] = ..., post_update: _Optional[_Union[EventPostUpdate, _Mapping]] = ...) -> None: ...
 
 class EventSessionCreate(_message.Message):
     __slots__ = ("ipaddress",)
@@ -102,3 +104,11 @@ class EventUserTyping(_message.Message):
     author_id: _plib_pb2.pUUID
     channel_id: _plib_pb2.pUUID
     def __init__(self, author_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., channel_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ...) -> None: ...
+
+class EventPostUpdate(_message.Message):
+    __slots__ = ("post_id", "state")
+    POST_ID_FIELD_NUMBER: _ClassVar[int]
+    STATE_FIELD_NUMBER: _ClassVar[int]
+    post_id: _plib_pb2.pUUID
+    state: int
+    def __init__(self, post_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., state: _Optional[int] = ...) -> None: ...

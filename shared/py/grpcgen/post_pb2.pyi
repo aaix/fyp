@@ -22,7 +22,7 @@ class CreatePostRequest(_message.Message):
     def __init__(self, author_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., post_type: _Optional[int] = ..., body: _Optional[str] = ..., timeline_type: _Optional[int] = ...) -> None: ...
 
 class PostResponse(_message.Message):
-    __slots__ = ("post_id", "author_id", "asset_id", "post_type", "body", "last_edited", "num_comments", "num_likes")
+    __slots__ = ("post_id", "author_id", "asset_id", "post_type", "body", "last_edited", "num_comments", "num_likes", "is_private")
     POST_ID_FIELD_NUMBER: _ClassVar[int]
     AUTHOR_ID_FIELD_NUMBER: _ClassVar[int]
     ASSET_ID_FIELD_NUMBER: _ClassVar[int]
@@ -31,6 +31,7 @@ class PostResponse(_message.Message):
     LAST_EDITED_FIELD_NUMBER: _ClassVar[int]
     NUM_COMMENTS_FIELD_NUMBER: _ClassVar[int]
     NUM_LIKES_FIELD_NUMBER: _ClassVar[int]
+    IS_PRIVATE_FIELD_NUMBER: _ClassVar[int]
     post_id: _plib_pb2.pUUID
     author_id: _plib_pb2.pUUID
     asset_id: _plib_pb2.pUUID
@@ -39,7 +40,8 @@ class PostResponse(_message.Message):
     last_edited: _wrappers_pb2.Int64Value
     num_comments: int
     num_likes: int
-    def __init__(self, post_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., author_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., asset_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., post_type: _Optional[int] = ..., body: _Optional[_Union[_wrappers_pb2.StringValue, _Mapping]] = ..., last_edited: _Optional[_Union[_wrappers_pb2.Int64Value, _Mapping]] = ..., num_comments: _Optional[int] = ..., num_likes: _Optional[int] = ...) -> None: ...
+    is_private: bool
+    def __init__(self, post_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., author_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., asset_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., post_type: _Optional[int] = ..., body: _Optional[_Union[_wrappers_pb2.StringValue, _Mapping]] = ..., last_edited: _Optional[_Union[_wrappers_pb2.Int64Value, _Mapping]] = ..., num_comments: _Optional[int] = ..., num_likes: _Optional[int] = ..., is_private: bool = ...) -> None: ...
 
 class ReadPostRequest(_message.Message):
     __slots__ = ("post_id", "author_id", "timeline_type")

@@ -1,5 +1,4 @@
 from os import environ
-import requests
 
 
 from shared.py.types import SingletonMixin
@@ -23,6 +22,9 @@ class DiscoveryManager(SingletonMixin):
     def mediaservices_auth(self) -> str | None:
         if not self.is_prod():
             return None
+
+        import requests
+        
         audience = "https://" + self.discover_mediaservices().split(":", 1)[0]
         print(f"getting auth for {audience=}")
         req = requests.get(

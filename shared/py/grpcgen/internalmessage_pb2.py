@@ -26,7 +26,7 @@ from . import traceparent_pb2 as traceparent__pb2
 from . import plib_pb2 as plib__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x15internalmessage.proto\x12\x1dintraservice.internalmesssage\x1a\x11traceparent.proto\x1a\nplib.proto\"\x8f\x05\n\x0cIntraMessage\x12\x17\n\x02to\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\x12\x32\n\x0btraceparent\x18\x02 \x01(\x0b\x32\x18.traceparent.TraceParentH\x01\x88\x01\x01\x12K\n\x0esession_create\x18\x03 \x01(\x0b\x32\x31.intraservice.internalmesssage.EventSessionCreateH\x00\x12K\n\x0e\x63hannel_create\x18\x04 \x01(\x0b\x32\x31.intraservice.internalmesssage.EventChannelCreateH\x00\x12Q\n\x11\x66riendship_update\x18\x05 \x01(\x0b\x32\x34.intraservice.internalmesssage.EventFriendshipUpdateH\x00\x12K\n\x0emessage_create\x18\x06 \x01(\x0b\x32\x31.intraservice.internalmesssage.EventMessageCreateH\x00\x12\x45\n\x0buser_typing\x18\x07 \x01(\x0b\x32..intraservice.internalmesssage.EventUserTypingH\x00\x12K\n\x0emessage_delete\x18\x08 \x01(\x0b\x32\x31.intraservice.internalmesssage.EventMessageDeleteH\x00\x12K\n\x0emessage_update\x18\t \x01(\x0b\x32\x31.intraservice.internalmesssage.EventMessageUpdateH\x00\x42\x07\n\x05\x65ventB\x0e\n\x0c_traceparent\"\'\n\x12\x45ventSessionCreate\x12\x11\n\tipaddress\x18\x01 \x01(\r\"\xd7\x01\n\x12\x45ventChannelCreate\x12\x1f\n\nchannel_id\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\x12#\n\x16\x65ncrypted_channel_name\x18\x02 \x01(\x0cH\x00\x88\x01\x01\x12\"\n\x15\x65ncrypted_channel_key\x18\x03 \x01(\x0cH\x01\x88\x01\x01\x12\x15\n\x08icon_url\x18\x04 \x01(\tH\x02\x88\x01\x01\x42\x19\n\x17_encrypted_channel_nameB\x18\n\x16_encrypted_channel_keyB\x0b\n\t_icon_url\"k\n\x15\x45ventFriendshipUpdate\x12\x1c\n\x07peer_id\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\x12\x1e\n\x11relationship_type\x18\x02 \x01(\rH\x00\x88\x01\x01\x42\x14\n\x12_relationship_type\"\x9d\x02\n\x12\x45ventMessageCreate\x12\x1e\n\tauthor_id\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\x12\x1f\n\nmessage_id\x18\x05 \x01(\x0b\x32\x0b.plib.pUUID\x12\x1f\n\nchannel_id\x18\x04 \x01(\x0b\x32\x0b.plib.pUUID\x12\x14\n\x07\x63ontent\x18\x02 \x01(\x0cH\x00\x88\x01\x01\x12\x1f\n\x12\x61\x64\x64itional_content\x18\x08 \x01(\x0cH\x01\x88\x01\x01\x12\x14\n\x0cmessage_type\x18\x03 \x01(\x05\x12%\n\x0bin_reply_to\x18\x07 \x01(\x0b\x32\x0b.plib.pUUIDH\x02\x88\x01\x01\x42\n\n\x08_contentB\x15\n\x13_additional_contentB\x0e\n\x0c_in_reply_to\"\xe4\x01\n\x12\x45ventMessageUpdate\x12\x1f\n\nmessage_id\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\x12\x1f\n\nchannel_id\x18\x02 \x01(\x0b\x32\x0b.plib.pUUID\x12\x18\n\x0bnew_content\x18\x03 \x01(\x0cH\x00\x88\x01\x01\x12\x1d\n\x10new_message_type\x18\x04 \x01(\x05H\x01\x88\x01\x01\x12\x1b\n\x0e\x61ttachment_url\x18\x05 \x01(\tH\x02\x88\x01\x01\x42\x0e\n\x0c_new_contentB\x13\n\x11_new_message_typeB\x11\n\x0f_attachment_url\"V\n\x12\x45ventMessageDelete\x12\x1f\n\nmessage_id\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\x12\x1f\n\nchannel_id\x18\x02 \x01(\x0b\x32\x0b.plib.pUUID\"R\n\x0f\x45ventUserTyping\x12\x1e\n\tauthor_id\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\x12\x1f\n\nchannel_id\x18\x02 \x01(\x0b\x32\x0b.plib.pUUIDb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x15internalmessage.proto\x12\x1dintraservice.internalmesssage\x1a\x11traceparent.proto\x1a\nplib.proto\"\xd6\x05\n\x0cIntraMessage\x12\x17\n\x02to\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\x12\x32\n\x0btraceparent\x18\x02 \x01(\x0b\x32\x18.traceparent.TraceParentH\x01\x88\x01\x01\x12K\n\x0esession_create\x18\x03 \x01(\x0b\x32\x31.intraservice.internalmesssage.EventSessionCreateH\x00\x12K\n\x0e\x63hannel_create\x18\x04 \x01(\x0b\x32\x31.intraservice.internalmesssage.EventChannelCreateH\x00\x12Q\n\x11\x66riendship_update\x18\x05 \x01(\x0b\x32\x34.intraservice.internalmesssage.EventFriendshipUpdateH\x00\x12K\n\x0emessage_create\x18\x06 \x01(\x0b\x32\x31.intraservice.internalmesssage.EventMessageCreateH\x00\x12\x45\n\x0buser_typing\x18\x07 \x01(\x0b\x32..intraservice.internalmesssage.EventUserTypingH\x00\x12K\n\x0emessage_delete\x18\x08 \x01(\x0b\x32\x31.intraservice.internalmesssage.EventMessageDeleteH\x00\x12K\n\x0emessage_update\x18\t \x01(\x0b\x32\x31.intraservice.internalmesssage.EventMessageUpdateH\x00\x12\x45\n\x0bpost_update\x18\n \x01(\x0b\x32..intraservice.internalmesssage.EventPostUpdateH\x00\x42\x07\n\x05\x65ventB\x0e\n\x0c_traceparent\"\'\n\x12\x45ventSessionCreate\x12\x11\n\tipaddress\x18\x01 \x01(\r\"\xd7\x01\n\x12\x45ventChannelCreate\x12\x1f\n\nchannel_id\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\x12#\n\x16\x65ncrypted_channel_name\x18\x02 \x01(\x0cH\x00\x88\x01\x01\x12\"\n\x15\x65ncrypted_channel_key\x18\x03 \x01(\x0cH\x01\x88\x01\x01\x12\x15\n\x08icon_url\x18\x04 \x01(\tH\x02\x88\x01\x01\x42\x19\n\x17_encrypted_channel_nameB\x18\n\x16_encrypted_channel_keyB\x0b\n\t_icon_url\"k\n\x15\x45ventFriendshipUpdate\x12\x1c\n\x07peer_id\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\x12\x1e\n\x11relationship_type\x18\x02 \x01(\rH\x00\x88\x01\x01\x42\x14\n\x12_relationship_type\"\x9d\x02\n\x12\x45ventMessageCreate\x12\x1e\n\tauthor_id\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\x12\x1f\n\nmessage_id\x18\x05 \x01(\x0b\x32\x0b.plib.pUUID\x12\x1f\n\nchannel_id\x18\x04 \x01(\x0b\x32\x0b.plib.pUUID\x12\x14\n\x07\x63ontent\x18\x02 \x01(\x0cH\x00\x88\x01\x01\x12\x1f\n\x12\x61\x64\x64itional_content\x18\x08 \x01(\x0cH\x01\x88\x01\x01\x12\x14\n\x0cmessage_type\x18\x03 \x01(\x05\x12%\n\x0bin_reply_to\x18\x07 \x01(\x0b\x32\x0b.plib.pUUIDH\x02\x88\x01\x01\x42\n\n\x08_contentB\x15\n\x13_additional_contentB\x0e\n\x0c_in_reply_to\"\xe4\x01\n\x12\x45ventMessageUpdate\x12\x1f\n\nmessage_id\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\x12\x1f\n\nchannel_id\x18\x02 \x01(\x0b\x32\x0b.plib.pUUID\x12\x18\n\x0bnew_content\x18\x03 \x01(\x0cH\x00\x88\x01\x01\x12\x1d\n\x10new_message_type\x18\x04 \x01(\x05H\x01\x88\x01\x01\x12\x1b\n\x0e\x61ttachment_url\x18\x05 \x01(\tH\x02\x88\x01\x01\x42\x0e\n\x0c_new_contentB\x13\n\x11_new_message_typeB\x11\n\x0f_attachment_url\"V\n\x12\x45ventMessageDelete\x12\x1f\n\nmessage_id\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\x12\x1f\n\nchannel_id\x18\x02 \x01(\x0b\x32\x0b.plib.pUUID\"R\n\x0f\x45ventUserTyping\x12\x1e\n\tauthor_id\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\x12\x1f\n\nchannel_id\x18\x02 \x01(\x0b\x32\x0b.plib.pUUID\">\n\x0f\x45ventPostUpdate\x12\x1c\n\x07post_id\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\x12\r\n\x05state\x18\x02 \x01(\x05\x62\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -34,19 +34,21 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'internalmessage_pb2', _glob
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
   _globals['_INTRAMESSAGE']._serialized_start=88
-  _globals['_INTRAMESSAGE']._serialized_end=743
-  _globals['_EVENTSESSIONCREATE']._serialized_start=745
-  _globals['_EVENTSESSIONCREATE']._serialized_end=784
-  _globals['_EVENTCHANNELCREATE']._serialized_start=787
-  _globals['_EVENTCHANNELCREATE']._serialized_end=1002
-  _globals['_EVENTFRIENDSHIPUPDATE']._serialized_start=1004
-  _globals['_EVENTFRIENDSHIPUPDATE']._serialized_end=1111
-  _globals['_EVENTMESSAGECREATE']._serialized_start=1114
-  _globals['_EVENTMESSAGECREATE']._serialized_end=1399
-  _globals['_EVENTMESSAGEUPDATE']._serialized_start=1402
-  _globals['_EVENTMESSAGEUPDATE']._serialized_end=1630
-  _globals['_EVENTMESSAGEDELETE']._serialized_start=1632
-  _globals['_EVENTMESSAGEDELETE']._serialized_end=1718
-  _globals['_EVENTUSERTYPING']._serialized_start=1720
-  _globals['_EVENTUSERTYPING']._serialized_end=1802
+  _globals['_INTRAMESSAGE']._serialized_end=814
+  _globals['_EVENTSESSIONCREATE']._serialized_start=816
+  _globals['_EVENTSESSIONCREATE']._serialized_end=855
+  _globals['_EVENTCHANNELCREATE']._serialized_start=858
+  _globals['_EVENTCHANNELCREATE']._serialized_end=1073
+  _globals['_EVENTFRIENDSHIPUPDATE']._serialized_start=1075
+  _globals['_EVENTFRIENDSHIPUPDATE']._serialized_end=1182
+  _globals['_EVENTMESSAGECREATE']._serialized_start=1185
+  _globals['_EVENTMESSAGECREATE']._serialized_end=1470
+  _globals['_EVENTMESSAGEUPDATE']._serialized_start=1473
+  _globals['_EVENTMESSAGEUPDATE']._serialized_end=1701
+  _globals['_EVENTMESSAGEDELETE']._serialized_start=1703
+  _globals['_EVENTMESSAGEDELETE']._serialized_end=1789
+  _globals['_EVENTUSERTYPING']._serialized_start=1791
+  _globals['_EVENTUSERTYPING']._serialized_end=1873
+  _globals['_EVENTPOSTUPDATE']._serialized_start=1875
+  _globals['_EVENTPOSTUPDATE']._serialized_end=1937
 # @@protoc_insertion_point(module_scope)

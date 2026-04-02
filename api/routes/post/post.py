@@ -1,6 +1,7 @@
+from typing import Annotated, Literal
 
 import asyncio
-from typing import Annotated, Literal
+from enum import IntEnum
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Header, Query, UploadFile
@@ -12,11 +13,14 @@ from api.utils import unwrap
 from shared.py.asset import delete_asset
 from shared.py.constraints import POST_MEDIA_MAX_UPLOAD_SIZE
 from shared.py.grpc import mediaservices
+from shared.py.grpc.feed import TimelineType
 from shared.py.grpc.id import id_compare
 from shared.py.grpc.lazy import DataservicesLazyGRPC, LazyGRPC
 from shared.py.grpc.post import PostType, create_post, delete_post, edit_post, read_users_posts
 from shared.py.grpc.relationship import can_i_view_peer_profile
 from shared.py.grpcgen import media_pb2_grpc, post_pb2, post_pb2_grpc
+from shared.py.grpcgen.internalmessage_pb2 import EventPostUpdate
+from shared.py.intraservice.events import send_to_remote
 from shared.py.types import UNSET
 
 discovery = DiscoveryManager()
@@ -25,6 +29,78 @@ PostRouter = APIRouter()
 
 grpcmedia = LazyGRPC(discovery.discover_mediaservices(), media_pb2_grpc.TransformerServiceStub, discovery.mediaservices_auth())
 grpcpost = DataservicesLazyGRPC(post_pb2_grpc.PostServiceStub)
+
+
+class PostUpdateType(IntEnum):
+    CREATED = 0
+    TRANSCODING = 1
+    TRANSCODED = 2
+    FANNING_OUT = 3
+    FANNED_OUT = 4
+    COMPLETED = 5
+
+    ERROR = 99
+
+async def send_post_update(post: PostParam, update: PostUpdateType):
+    await send_to_remote(post.author_id, "post_update", EventPostUpdate(
+        post_id=post.post_id,
+        state=update.value
+    ))
+
+async def new_post_task(
+    post: PostParam,
+    content_type: Literal['video/webm', 'image/webp'],
+    attachment: UploadFile,
+    timeline_type: TimelineType
+) -> PostParam:
+    
+    try:
+        await send_post_update(post, PostUpdateType.CREATED)
+        match content_type:
+            case "video/webm":
+                asset_provider = mediaservices.transform_video
+            case  "image/webp":
+                asset_provider = mediaservices.transform_image
+            case unknown:
+                unwrap(unknown)
+        
+        await send_post_update(post, PostUpdateType.TRANSCODING)
+
+        try:
+            await asset_provider(
+                grpcmedia,
+                public=False,
+                bucket_id=post.post_id,
+                asset_id=post.asset_id,
+                mime_in=attachment.content_type,
+                mime_out=content_type,
+                data= attachment,
+                dimensions=None
+            )
+        except Exception:
+            await delete_post(grpcpost, post.author_id, post.post_id, timeline_type)
+            raise
+        await send_post_update(post, PostUpdateType.TRANSCODED)
+
+        # post created successfully 
+        # now to deal with feed fan out
+
+        edited = await edit_post(grpcpost, post.author_id, post.post_id, timeline_type, is_private=False)
+        await send_post_update(post, PostUpdateType.FANNING_OUT)
+        await send_post_update(post, PostUpdateType.FANNED_OUT)
+
+
+
+        await send_post_update(post, PostUpdateType.COMPLETED)
+
+        return edited
+
+    except Exception:
+        await send_post_update(post, PostUpdateType.ERROR)
+        raise
+        
+    
+
 
 
 
@@ -36,6 +112,7 @@ async def new_post(
     timeline_type: TimelineTypeParam,
     content_length: Annotated[int, Header(lt=POST_MEDIA_MAX_UPLOAD_SIZE, gt=1)],
 ) -> PostResponse:
+    
     
     content_type = body.post_type.get_content_type()
 
@@ -49,33 +126,14 @@ async def new_post(
         timeline_type=post_type.to_feed_type()
     )
 
-    match content_type:
-        case "video/webm":
-            asset_provider = mediaservices.transform_video
-        case  "image/webp":
-            asset_provider = mediaservices.transform_image
-        case unknown:
-            unwrap(unknown)
-    
-    try:
-        await asset_provider(
-            grpcmedia,
-            public=False,
-            bucket_id=post.post_id,
-            asset_id=post.asset_id,
-            mime_in=attachment.content_type,
-            mime_out=content_type,
-            data= attachment,
-            dimensions=None
-        )
-    except Exception:
-        await delete_post(grpcpost, post.author_id, post.post_id, timeline_type)
-        raise
+    task = asyncio.create_task(new_post_task(post, content_type, attachment, timeline_type))
 
-    # post created successfully 
-    # now to deal with feed fan out
+    completed, pending = await asyncio.wait((task,), timeout=3.5)
 
-    await edit_post(grpcpost, post.author_id, post.post_id, timeline_type, is_private=False)
+    if len(completed) > 0:
+        task, = completed
+        post = task.result()
+
 
     return await PostResponse.from_rpc(post)
 

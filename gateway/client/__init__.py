@@ -147,7 +147,17 @@ class GatewayClient:
                 await self.handle_internal_message_update(e.payload)
             case "message_delete":
                 await self.handle_internal_message_delete(e.payload)
-        
+            case "post_update":
+                await self.handle_internal_post_update(e.payload)
+
+    @tracer.start_as_current_span("Client.handle_internal::post_update")
+    async def handle_internal_post_update(self, d: internalmessage_pb2.EventPostUpdate):
+        await self.send_event(events.PostUpdateEvent(
+            post_id=puuid_uuid(d.post_id) or unwrap(),
+            update_type=d.state
+        ))
+
+
     @tracer.start_as_current_span("Client.handle_internal::message_update")
     async def handle_internal_message_update(self, d: internalmessage_pb2.EventMessageUpdate):
         await self.send_event(events.MessageUpdateEvent(

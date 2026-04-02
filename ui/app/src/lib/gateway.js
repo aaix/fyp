@@ -2,6 +2,7 @@ import { decryptB64, digestOf, exportAsPem, importFromPem, RSAWrapRSAwithSym } f
 import { getCurrentSession } from "./session";
 import { keyStore } from "./session";
 import { channelManager, messageManager } from "./chat";
+import { postManager } from "./post.js";
 import { B64toUint8Array, blobToB64, hexFromBuffer } from "./utils";
 import { relationshipManager} from "./user.js"
 import API from "./api.js";
@@ -427,7 +428,10 @@ class Gateway {
                 messageManager.onMessageDelete(event);
                 break;
             case 'user_typing':
-                channelManager.onUserTyping(event.channel_id, event.author_id)
+                channelManager.onUserTyping(event.channel_id, event.author_id);
+                break;
+            case 'post_update':
+                postManager.onPostUpdate(event.post_id, event.update_type);
                 break;
             default:
                 console.log("unknown event", event.intent); 

@@ -47,6 +47,7 @@ class PostResponse(BaseModel):
     last_edited: int | None
     num_comments: int
     num_likes: int
+    is_private: bool
 
     @classmethod
     async def from_rpc(cls, rpc: post_pb2.PostResponse) -> Self:
@@ -63,6 +64,7 @@ class PostResponse(BaseModel):
             last_edited=rpc.last_edited.value if rpc.HasField("last_edited") else None,
             num_comments=rpc.num_comments,
             num_likes=rpc.num_likes,
+            is_private=rpc.is_private,
         )
 
 class PostsResponse(BaseModel):
