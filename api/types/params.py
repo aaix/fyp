@@ -86,7 +86,7 @@ UserWithProfileVisibleParam = Annotated[user_pb2.ReadUserResponse, Depends(_user
 
 
 async def _post_dependency(timeline_type: TimelineTypeParam, user_id: Annotated[UUID, Path()], post_id: Annotated[UUID, Path()]) -> post_pb2.PostResponse:
-    with ResourceNotFoundRpcHandler("message_id", post_id):
+    with ResourceNotFoundRpcHandler("post_id", post_id):
         return await read_post(grpcpost, user_id, post_id,  timeline_type)
 
 
