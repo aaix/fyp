@@ -1,5 +1,6 @@
 from os import environ
 import subprocess
+import requests
 
 
 from shared.py.types import SingletonMixin
@@ -24,14 +25,12 @@ class DiscoveryManager(SingletonMixin):
         if not self.is_prod():
             return None
         uri = ''.join(self.discover_mediaservices().split(":3119")[0:-1])
-        proc = subprocess.run([
-            "curl",
-            "-H",
-            '"Metadata-Flavor: Google"',
+        req = requests.get(
             f"http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/identity?audience={uri}",
-        ], stdout=subprocess.PIPE)
-        proc.check_returncode()
-        token =  proc.stdout.decode()
+            headers={"Metadata-Flavor": "Google"}
+        )
+        req.raise_for_status()
+        token = req.text
         print(f"fetched token {len(token)=}")
         return token
 
