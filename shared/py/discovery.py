@@ -23,7 +23,8 @@ class DiscoveryManager(SingletonMixin):
     def mediaservices_auth(self) -> str | None:
         if not self.is_prod():
             return None
-        uri = ''.join(self.discover_mediaservices().split(":3119")[0:-1])
+        uri = self.discover_mediaservices().split(":", 1)[0]
+        print(f"getting auth for {uri=}")
         req = requests.get(
             f"http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/identity?audience={uri}",
             headers={"Metadata-Flavor": "Google"}
