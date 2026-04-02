@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import PageContainer from '../components/PageContainer.jsx'
 import PostView from '../components/PostView.jsx'
 import Button from '../components/Button.jsx'
@@ -8,44 +8,14 @@ import { getCurrentSession } from '../lib/session.js'
 import {
   FEED_TYPE_MAIN,
   FEED_TYPE_SHORTS,
-  POST_TYPE_SHORT,
   POST_UPDATE_COMPLETED,
   POST_UPDATE_ERROR,
   describePostUpdateType,
+  feedTypeMatchesPostType,
   postManager,
 } from '../lib/post.js'
 
-const authorStorageKey = (postId) => `postPage.author:${postId}`
-
-function readStoredAuthorId(postId) {
-  if (!postId || typeof sessionStorage === 'undefined') return null
-  try {
-    const v = sessionStorage.getItem(authorStorageKey(postId))
-    return v != null && v !== '' ? String(v) : null
-  } catch {
-    return null
-  }
-}
-
-function writeStoredAuthorId(postId, authorId) {
-  if (!postId || authorId == null || typeof sessionStorage === 'undefined') return
-  try {
-    sessionStorage.setItem(authorStorageKey(postId), String(authorId))
-  } catch {
-    /* ignore quota / private mode */
-  }
-}
-
-function clearStoredAuthorId(postId) {
-  if (!postId || typeof sessionStorage === 'undefined') return
-  try {
-    sessionStorage.removeItem(authorStorageKey(postId))
-  } catch {
-    /* ignore */
-  }
-}
-
-/** Current user id from session (localStorage); no account/profile API call. */
+/** Current user id from session (localStorage); used only for “is mine”, not for fetching. */
 function getSessionUserId() {
   try {
     const s = getCurrentSession()
@@ -57,7 +27,7 @@ function getSessionUserId() {
 }
 
 export default function PostPage() {
-  const { postId } = useParams()
+  const { authorId: urlAuthorId, feedType: urlFeedType, postId: urlPostId } = useParams()
   const location = useLocation()
   const navigate = useNavigate()
   const statePost = location.state?.post ?? null
@@ -74,27 +44,27 @@ export default function PostPage() {
 
   const sessionUserId = getSessionUserId()
 
-  const idFromState = post?.post_id != null ? String(post.post_id) : null
-  const matchesParam = idFromState != null && postId != null && idFromState === postId
-  const authorId = post?.author_id != null ? String(post.author_id) : null
-  const feedTypeFromPost =
-    post?.post_type != null && Number(post.post_type) === POST_TYPE_SHORT ? FEED_TYPE_SHORTS : FEED_TYPE_MAIN
+  const feedTypeKey =
+    urlFeedType === FEED_TYPE_MAIN || urlFeedType === FEED_TYPE_SHORTS ? urlFeedType : null
+  const routeParamsValid = Boolean(urlAuthorId && urlPostId && feedTypeKey)
 
+  const authorId = post?.author_id != null ? String(post.author_id) : null
   const postIdFromPost = post?.post_id != null ? String(post.post_id) : null
   const postIsPrivate = post?.is_private === true
-  const authorForPipelineRefetch = post?.author_id != null ? String(post.author_id) : null
 
-  /** API route is GET /user/{author}/post/{id}; URL only has postId, so we persist author after first load. */
-  const authorIdForFetch = useMemo(() => {
-    if (!postId) return null
-    if (post?.author_id != null) return String(post.author_id)
-    const stored = readStoredAuthorId(postId)
-    if (stored) return stored
-    return sessionUserId
-  }, [postId, post?.author_id, sessionUserId])
+  const postMatchesRoute =
+    Boolean(post) &&
+    routeParamsValid &&
+    postIdFromPost === String(urlPostId) &&
+    authorId === String(urlAuthorId) &&
+    feedTypeMatchesPostType(feedTypeKey, post.post_type)
+
+  const apiPathLine =
+    routeParamsValid && feedTypeKey
+      ? `post/user/${String(urlAuthorId)}/${feedTypeKey}/${String(urlPostId)}`
+      : null
 
   useEffect(() => {
-    // Keep post in sync if navigated from another tile without unmounting.
     const next = statePost
     setPost(next)
     setEditMode(false)
@@ -104,37 +74,34 @@ export default function PostPage() {
     setActionError(null)
     setPostError(null)
     setDraftBody(next?.body != null ? String(next.body) : '')
-    if (next?.author_id != null && postId) {
-      writeStoredAuthorId(postId, next.author_id)
-    }
-  }, [location.key, statePost, postId])
+  }, [location.key, statePost])
 
-  // Always refetch from API (e.g. hard refresh) — no reliance on stale client state.
   useEffect(() => {
-    if (!postId || !authorIdForFetch) return
+    if (!routeParamsValid || !feedTypeKey) return
 
     let cancelled = false
     ;(async () => {
       try {
         setLoadingPost(true)
         setPostError(null)
-        // Direct links don't include feed type; try feed first, then shorts.
         const res =
-          (await postManager.getPost(String(authorIdForFetch), FEED_TYPE_MAIN, String(postId))) ??
-          null
-        let effective = res
-        if (!effective?.success) {
-          effective = await postManager.getPost(String(authorIdForFetch), FEED_TYPE_SHORTS, String(postId))
-        }
+          (await postManager.getPost(String(urlAuthorId), feedTypeKey, String(urlPostId))) ?? null
         if (cancelled) return
-        if (effective?.success && effective.data) {
-          setPost(effective.data)
-          if (effective.data.author_id != null) {
-            writeStoredAuthorId(postId, effective.data.author_id)
+        if (res?.success && res.data) {
+          const d = res.data
+          if (
+            String(d.post_id) !== String(urlPostId) ||
+            String(d.author_id) !== String(urlAuthorId) ||
+            !feedTypeMatchesPostType(feedTypeKey, d.post_type)
+          ) {
+            setPost(null)
+            setPostError('This post does not match the URL.')
+          } else {
+            setPost(d)
           }
         } else {
           setPost(null)
-          setPostError(effective?.error?.message ?? 'Could not load post')
+          setPostError(res?.error?.message ?? 'Could not load post')
         }
       } catch (e) {
         console.error(e)
@@ -150,44 +117,40 @@ export default function PostPage() {
     return () => {
       cancelled = true
     }
-  }, [postId, authorIdForFetch])
+  }, [routeParamsValid, feedTypeKey, urlAuthorId, urlPostId])
 
   /** Async create: gateway `post_update` events until the post is public (buffered in postManager if early). */
   useEffect(() => {
-    if (!postId || !postIdFromPost || postIdFromPost !== String(postId)) {
+    if (!routeParamsValid || !feedTypeKey) {
+      setPipelineSteps([])
+      return
+    }
+    if (!postIdFromPost || postIdFromPost !== String(urlPostId)) {
       setPipelineSteps([])
       return
     }
     if (!postIsPrivate) {
-      postManager.clearBufferedPostUpdates(String(postId))
+      postManager.clearBufferedPostUpdates(String(urlPostId))
       setPipelineSteps([])
       return
     }
 
     const syncStepsFromBuffer = () => {
-      const types = postManager.getBufferedPostUpdates(String(postId))
+      const types = postManager.getBufferedPostUpdates(String(urlPostId))
       setPipelineSteps(types.map((x) => ({ updateType: x, text: describePostUpdateType(x) })))
     }
 
     syncStepsFromBuffer()
 
-    const unsub = postManager.subscribePostUpdates(String(postId), (t) => {
+    const unsub = postManager.subscribePostUpdates(String(urlPostId), (t) => {
       syncStepsFromBuffer()
       if (t === POST_UPDATE_COMPLETED) {
         ;(async () => {
-          const aid = authorForPipelineRefetch ?? readStoredAuthorId(postId) ?? sessionUserId
-          if (!aid) return
           try {
-            let res = await postManager.getPost(String(aid), FEED_TYPE_MAIN, String(postId))
-            if (!res?.success) {
-              res = await postManager.getPost(String(aid), FEED_TYPE_SHORTS, String(postId))
-            }
+            const res = await postManager.getPost(String(urlAuthorId), feedTypeKey, String(urlPostId))
             if (res?.success && res.data) {
               setPost(res.data)
-              if (res.data.author_id != null) {
-                writeStoredAuthorId(postId, res.data.author_id)
-              }
-              postManager.clearBufferedPostUpdates(String(postId))
+              postManager.clearBufferedPostUpdates(String(urlPostId))
             }
           } catch (e) {
             console.error(e)
@@ -199,7 +162,7 @@ export default function PostPage() {
     return () => {
       unsub()
     }
-  }, [postId, postIdFromPost, postIsPrivate, authorForPipelineRefetch, sessionUserId])
+  }, [routeParamsValid, feedTypeKey, urlAuthorId, urlPostId, postIdFromPost, postIsPrivate])
 
   const isMine = Boolean(sessionUserId && authorId && sessionUserId === authorId)
 
@@ -207,7 +170,34 @@ export default function PostPage() {
   const showPipelineBanner =
     pipelineSteps.length > 0 && (post?.is_private === true || pipelineHasError)
 
-  if (post && (matchesParam || (postId != null && String(post.post_id) === String(postId)))) {
+  if (!routeParamsValid) {
+    return (
+      <PageContainer>
+        <header className="border-b border-[color:var(--card-border)] pb-3">
+          <h1 className="text-xl font-bold text-[color:var(--text-primary)]">Post</h1>
+        </header>
+        <main className="flex flex-1 flex-col gap-3 overflow-y-auto pt-4">
+          <p className="text-sm text-[color:var(--text-muted)]" role="alert">
+            Invalid post URL. Use{' '}
+            <code className="rounded bg-[color:var(--card-bg)] px-1 font-mono text-xs">
+              /post/user/&lt;author id&gt;/&lt;feed&gt;/&lt;post id&gt;
+            </code>{' '}
+            with feed <code className="font-mono">{FEED_TYPE_MAIN}</code> or{' '}
+            <code className="font-mono">{FEED_TYPE_SHORTS}</code> (same path shape as{' '}
+            <code className="font-mono">getUserPosts</code> / <code className="font-mono">getPost</code>).
+          </p>
+          <Link
+            to="/"
+            className="inline-flex w-fit items-center gap-1 text-sm font-medium text-[color:var(--accent)] no-underline hover:underline"
+          >
+            Back
+          </Link>
+        </main>
+      </PageContainer>
+    )
+  }
+
+  if (postMatchesRoute) {
     const handleBack = () => {
       try {
         if (window.history.length > 1) navigate(-1)
@@ -229,21 +219,23 @@ export default function PostPage() {
     }
 
     const handleSave = async () => {
-      if (!authorId || post?.post_id == null) return
+      if (!authorId || post?.post_id == null || !feedTypeKey) return
       try {
         setSaving(true)
         setActionError(null)
         const trimmed = typeof draftBody === 'string' ? draftBody.trim() : ''
         const nextBody = trimmed.length > 0 ? trimmed : null
-        const res = await postManager.editPost(authorId, feedTypeFromPost, String(post.post_id), nextBody)
+        const res = await postManager.editPost(
+          String(urlAuthorId),
+          feedTypeKey,
+          String(post.post_id),
+          nextBody,
+        )
         if (!res?.success || !res?.data) {
           setActionError(res?.error?.message ?? 'Could not update post')
           return
         }
         setPost(res.data)
-        if (postId && res.data.author_id != null) {
-          writeStoredAuthorId(postId, res.data.author_id)
-        }
         setEditMode(false)
       } catch (e) {
         console.error(e)
@@ -254,16 +246,15 @@ export default function PostPage() {
     }
 
     const handleDelete = async () => {
-      if (!authorId || post?.post_id == null) return
+      if (!authorId || post?.post_id == null || !feedTypeKey) return
       try {
         setDeleting(true)
         setActionError(null)
-        const res = await postManager.deletePost(authorId, feedTypeFromPost, String(post.post_id))
+        const res = await postManager.deletePost(String(urlAuthorId), feedTypeKey, String(post.post_id))
         if (!res?.success) {
           setActionError(res?.error?.message ?? 'Could not delete post')
           return
         }
-        if (postId) clearStoredAuthorId(postId)
         navigate('/', { replace: true })
       } catch (e) {
         console.error(e)
@@ -292,7 +283,17 @@ export default function PostPage() {
             Back
           </button>
           <div className="flex items-center justify-between gap-3">
-            <h1 className="text-xl font-bold text-[color:var(--text-primary)]">Post</h1>
+            <div>
+              <h1 className="text-xl font-bold text-[color:var(--text-primary)]">Post</h1>
+              {apiPathLine ? (
+                <p
+                  className="mt-1 break-all font-mono text-xs text-[color:var(--text-muted)]"
+                  title="Resource path (same segments as postManager.getPost)"
+                >
+                  {apiPathLine}
+                </p>
+              ) : null}
+            </div>
             {isMine ? (
               <div className="flex items-center gap-2">
                 {editMode ? (
@@ -355,9 +356,7 @@ export default function PostPage() {
                   <li
                     key={`${i}-${step.updateType}`}
                     className={
-                      step.updateType === POST_UPDATE_ERROR
-                        ? 'text-red-800 dark:text-red-200'
-                        : ''
+                      step.updateType === POST_UPDATE_ERROR ? 'text-red-800 dark:text-red-200' : ''
                     }
                   >
                     {step.text}
@@ -426,12 +425,18 @@ export default function PostPage() {
     )
   }
 
-  const missingAuthor = Boolean(postId && !authorIdForFetch)
-
   return (
     <PageContainer>
       <header className="border-b border-[color:var(--card-border)] pb-3">
         <h1 className="text-xl font-bold text-[color:var(--text-primary)]">Post</h1>
+        {apiPathLine ? (
+          <p
+            className="mt-1 break-all font-mono text-xs text-[color:var(--text-muted)]"
+            title="Resource path (same segments as postManager.getPost)"
+          >
+            {apiPathLine}
+          </p>
+        ) : null}
       </header>
       <main className="flex flex-1 flex-col gap-3 overflow-y-auto pt-4">
         {loadingPost ? (
@@ -444,14 +449,8 @@ export default function PostPage() {
             {postError}
           </p>
         ) : null}
-        {missingAuthor && !loadingPost ? (
-          <p className="text-sm text-[color:var(--text-muted)]">
-            Open this post from the feed or a profile once so we can load it (author id is required for the URL you
-            have).
-          </p>
-        ) : null}
-        {!loadingPost && !postError && !missingAuthor && !post ? (
-          <p className="text-sm text-[color:var(--text-muted)]">Loading…</p>
+        {!loadingPost && !postError && !post ? (
+          <p className="text-sm text-[color:var(--text-muted)]">Could not load this post.</p>
         ) : null}
         <Link
           to="/"

@@ -51,6 +51,7 @@ export default function HomePage() {
           hasMore={hasMore}
           loadingMore={loadingMore}
           onLoadMore={loadMore}
+          feedType={FEED_TYPE_MAIN}
         />
       </main>
     </PageContainer>

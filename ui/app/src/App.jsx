@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import AuthPage from './pages/AuthPage.jsx'
 import AppLayout from './components/AppLayout.jsx'
@@ -91,23 +91,39 @@ function getTitleFromPathname(pathname) {
 
 function App() {
   const [isLoggedIn, gatewayUrl, completeLogin] = useAuth()
+  const [gatewayHandshakeReady, setGatewayHandshakeReady] = useState(false)
   const location = useLocation()
 
   useEffect(() => {
     if (!isLoggedIn) {
+      setGatewayHandshakeReady(false)
+      return
+    }
+
+    if (!gatewayUrl) {
+      setGatewayHandshakeReady(true)
       return
     }
 
     let cancelled = false
-    if (!gatewayUrl) {
-      return
-    }
+    setGatewayHandshakeReady(false)
+    ;(async () => {
+      try {
+        const gateway = await gatewayFactory(gatewayUrl)
+        if (cancelled) return
+        await gateway.handshake()
+        await gateway.handshake_promise
+        if (cancelled) return
+        window.gateway = gateway
+        setGatewayHandshakeReady(true)
+      } catch (e) {
+        console.error(e)
+        if (!cancelled) {
+          setGatewayHandshakeReady(true)
+        }
+      }
+    })()
 
-    gatewayFactory(gatewayUrl).then(async (gateway) => {
-      if (cancelled) return
-      await gateway.handshake()
-      window.gateway = gateway
-    })
     return () => {
       cancelled = true
     }
@@ -134,6 +150,19 @@ function App() {
     return <AuthPage onLogin={completeLogin} />
   }
 
+  const waitingForGatewayHandshake = Boolean(gatewayUrl) && !gatewayHandshakeReady
+  if (waitingForGatewayHandshake) {
+    return (
+      <div
+        className="flex min-h-dvh w-full flex-col items-center justify-center gap-3 bg-[color:var(--bg)] px-4 text-center"
+        aria-busy="true"
+        aria-live="polite"
+      >
+        <p className="text-sm text-[color:var(--text-muted)]">Connecting to gateway…</p>
+      </div>
+    )
+  }
+
   return (
     <Routes>
       <Route element={<AppLayout />}>
@@ -144,7 +173,7 @@ function App() {
         <Route path="/search" element={<SearchPage />} />
         <Route path="/notifications" element={<NotificationsPage />} />
         <Route path="/create-post" element={<CreatePostPage />} />
-        <Route path="/post/:postId" element={<PostPage />} />
+        <Route path="/post/user/:authorId/:feedType/:postId" element={<PostPage />} />
         <Route path="/user/:userId" element={<UserPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

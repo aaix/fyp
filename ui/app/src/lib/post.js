@@ -7,6 +7,30 @@ export const POST_TYPE_IMAGE = 1;
 export const POST_TYPE_VIDEO = 2;
 export const POST_TYPE_SHORT = 3;
 
+/**
+ * App route for a post — same segments as {@link PostManager#getPost} (`post/user/…` relative to API base).
+ *
+ * @param {string} authorId
+ * @param {string} feedType {@link FEED_TYPE_MAIN} | {@link FEED_TYPE_SHORTS}
+ * @param {string} postId
+ * @returns {string}
+ */
+export function postDetailPath(authorId, feedType, postId) {
+    return `/post/user/${encodeURIComponent(String(authorId))}/${encodeURIComponent(String(feedType))}/${encodeURIComponent(String(postId))}`
+}
+
+/**
+ * @param {string} feedType
+ * @param {number} postType
+ * @returns {boolean}
+ */
+export function feedTypeMatchesPostType(feedType, postType) {
+    const pt = Number(postType)
+    if (feedType === FEED_TYPE_SHORTS) return pt === POST_TYPE_SHORT
+    if (feedType === FEED_TYPE_MAIN) return pt === POST_TYPE_IMAGE || pt === POST_TYPE_VIDEO
+    return false
+}
+
 // from api/routes/post/post.py PostUpdateType
 export const POST_UPDATE_CREATED = 0
 export const POST_UPDATE_TRANSCODING = 1

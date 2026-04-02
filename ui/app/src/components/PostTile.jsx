@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { Link } from 'react-router-dom'
 import { columnCountFromContainerWidth, distributePostsRoundRobin } from '../lib/postTileGridLayout.js'
 import { clampTileAspectRatio, postRendersAsImage, postRendersAsVideo } from '../lib/postMedia.js'
+import { FEED_TYPE_MAIN, postDetailPath } from '../lib/post.js'
 
 const TILE_ROW_GAP_CLASS = 'gap-2 md:gap-3'
 
@@ -113,11 +114,13 @@ function usePostTileColumnCount() {
  *
  * @param {object} props
  * @param {object} props.post - PostResponse shape
+ * @param {string} [props.feedType] - same as getUserPosts (`feed` | `short`)
  * @param {string} [props.className]
  */
-export default function PostTile({ post, className = '' }) {
+export default function PostTile({ post, feedType = FEED_TYPE_MAIN, className = '' }) {
   const videoRef = useRef(null)
   const id = post.post_id != null ? String(post.post_id) : ''
+  const authorId = post.author_id != null ? String(post.author_id) : ''
   const isVideo = postRendersAsVideo(post.post_type)
   const isImage = postRendersAsImage(post.post_type)
 
@@ -211,7 +214,7 @@ export default function PostTile({ post, className = '' }) {
     </div>
   )
 
-  if (!id) {
+  if (!id || !authorId) {
     return (
       <article className="w-full min-w-0 break-inside-avoid overflow-hidden rounded-card border border-[color:var(--card-border)] bg-[color:var(--card-bg)] shadow-sm">
         {inner}
@@ -227,7 +230,7 @@ export default function PostTile({ post, className = '' }) {
   return (
     <article className="w-full min-w-0 break-inside-avoid overflow-hidden rounded-card border border-[color:var(--card-border)] bg-[color:var(--card-bg)] shadow-sm transition-shadow hover:shadow-md">
       <Link
-        to={`/post/${encodeURIComponent(id)}`}
+        to={postDetailPath(authorId, feedType, id)}
         state={{ post }}
         aria-label={label}
         className="block w-full min-w-0 text-[color:inherit] no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--bg)]"
@@ -255,6 +258,7 @@ export function PostTileGrid({
   hasMore = false,
   loadingMore = false,
   onLoadMore = null,
+  feedType = FEED_TYPE_MAIN,
 }) {
   const [containerRef, columnCount] = usePostTileColumnCount()
   const loadMoreSentinelRef = useRef(null)
@@ -384,6 +388,7 @@ export function PostTileGrid({
               <PostTile
                 key={p.post_id != null ? String(p.post_id) : `tile-${colIndex}-${tileIndex}`}
                 post={p}
+                feedType={feedType}
               />
             ))}
           </div>

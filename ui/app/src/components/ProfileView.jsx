@@ -215,6 +215,7 @@ export default function ProfileView({
           hasMore={postsHasMore}
           loadingMore={postsLoadingMore}
           onLoadMore={onPostsLoadMore}
+          feedType={postsFeedType}
         />
       </section>
     </main>

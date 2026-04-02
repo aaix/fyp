@@ -10,6 +10,7 @@ import {
   POST_TYPE_IMAGE,
   POST_TYPE_SHORT,
   POST_TYPE_VIDEO,
+  postDetailPath,
   postManager,
 } from '../lib/post.js'
 import { getCurrentSession } from '../lib/session.js'
@@ -132,12 +133,13 @@ export default function CreatePostPage() {
       }
       const post = res.data
       const id = post.post_id != null ? String(post.post_id) : ''
-      if (!id) {
-        console.error('createPost: missing post_id in response', post)
+      const aid = post.author_id != null ? String(post.author_id) : ''
+      if (!id || !aid) {
+        console.error('createPost: missing post_id or author_id in response', post)
         setError('Invalid response from server.')
         return
       }
-      navigate(`/post/${encodeURIComponent(id)}`, { state: { post } })
+      navigate(postDetailPath(aid, feedType, id), { state: { post } })
     } catch (err) {
       console.error(err)
       setError(err?.message ?? 'Could not create post')
