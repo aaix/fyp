@@ -24,11 +24,16 @@ class DiscoveryManager(SingletonMixin):
         if not self.is_prod():
             return None
         uri = self.discover_mediaservices().split(":", 1)[0]
-        proc = subprocess.run(
-            f'curl -H "Metadata-Flavor: Google" http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/identity?audience={uri}'
-        )
+        proc = subprocess.run([
+            "curl",
+            "-H",
+            '"Metadata-Flavor: Google"',
+            f"http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/identity?audience={uri}",
+        ], stdout=subprocess.PIPE)
         proc.check_returncode()
-        return proc.stdout.decode()
+        token =  proc.stdout.decode()
+        print(f"fetched token {len(token)=}")
+        return token
 
     def discover_otel(self) -> str:
         return environ["OTEL_URI"]
