@@ -3,13 +3,14 @@ import asyncio
 from typing import Annotated, Literal
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query, UploadFile
+from fastapi import APIRouter, Depends, Header, Query, UploadFile
 
 from api import *
 from api.routes.post.models import *
 from api.types.params import PostParam, TimelineTypeParam, UserParam, UserWithProfileVisibleParam
 from api.utils import unwrap
 from shared.py.asset import delete_asset
+from shared.py.constraints import POST_MEDIA_MAX_UPLOAD_SIZE
 from shared.py.grpc import mediaservices
 from shared.py.grpc.id import id_compare
 from shared.py.grpc.lazy import DataservicesLazyGRPC, LazyGRPC
@@ -33,6 +34,7 @@ async def new_post(
     body: Annotated[NewPostBody, Depends(NewPostBody.from_form)],
     attachment: UploadFile,
     timeline_type: TimelineTypeParam,
+    content_length: Annotated[int, Header(lt=POST_MEDIA_MAX_UPLOAD_SIZE, gt=1)],
 ) -> PostResponse:
     
     content_type = body.post_type.get_content_type()
