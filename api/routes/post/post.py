@@ -9,6 +9,7 @@ from fastapi import APIRouter, Depends, Header, Query, Request, UploadFile
 
 from api import *
 from api.routes.post.models import *
+from api.tracing import tracer
 from api.types.params import PostParam, TimelineTypeParam, UserParam, UserWithProfileVisibleParam
 from api.utils import unwrap
 from shared.py.asset import delete_asset
@@ -48,6 +49,7 @@ async def send_post_update(post: PostParam, update: PostUpdateType):
         state=update.value
     ))
 
+@tracer.start_as_current_span("post.background.new_post_task")
 async def new_post_task(
     post: PostParam,
     content_type: Literal['video/webm', 'image/webp'],
