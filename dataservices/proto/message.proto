@@ -2,7 +2,6 @@ syntax = "proto3";
 
 package dataservices.messageproto;
 import "plib.proto";
-import "google/protobuf/field_mask.proto";
 import "google/protobuf/wrappers.proto";
 
 
