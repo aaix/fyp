@@ -1,3 +1,8 @@
+import grpc
+from google.auth.compute_engine import IDTokenCredentials
+from google.auth.transport.grpc import AuthMetadataPlugin
+from google.auth.transport.requests import Request
+
 from os import environ
 
 
@@ -19,22 +24,17 @@ class DiscoveryManager(SingletonMixin):
     def discover_mediaservices(self) -> str:
         return environ["MEDIASERVICES_URI"]
     
-    def mediaservices_auth(self) -> str | None:
+    def mediaservices_auth(self) -> grpc.CallCredentials | None:
         if not self.is_prod():
             return None
 
         import requests
         
         audience = "https://" + self.discover_mediaservices().split(":", 1)[0]
-        print(f"getting auth for {audience=}")
-        req = requests.get(
-            f"http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/identity?audience={audience}",
-            headers={"Metadata-Flavor": "Google"}
-        )
-        req.raise_for_status()
-        token = req.text
-        print(f"fetched token {len(token)=}")
-        return token
+        creds = IDTokenCredentials(Request(), target_audience=audience)
+        plugin = AuthMetadataPlugin(creds, Request())
+
+        return grpc.metadata_call_credentials(plugin)
 
     def discover_otel(self) -> str:
         return environ["OTEL_URI"]

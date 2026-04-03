@@ -2,4 +2,3 @@ fastapi[standard] == 0.124.2
 msgpack==1.1.2
 opentelemetry-instrumentation-fastapi
 python-multipart==0.0.22
-requests

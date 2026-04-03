@@ -1,6 +1,5 @@
-from collections import defaultdict
-from collections.abc import Awaitable
 import typing
+from collections.abc import Callable
 
 import uuid
 
@@ -24,7 +23,7 @@ async def lazy_init():
 class LazyGRPC[T: _GRPCStub]:
     """Helper to lazily create grpc channels to avoid
     creating them before the main event loop is created"""
-    def __init__(self, uri: str, stub: type[T], auth: str | None = None):
+    def __init__(self, uri: str, stub: type[T], auth: grpc.CallCredentials | None = None):
         self.factory_uri = uri
         self.factory_stub = stub
 
@@ -50,10 +49,9 @@ class LazyGRPC[T: _GRPCStub]:
         if not self._auth:
             return grpc.aio.insecure_channel(self.factory_uri)
 
-        call_creds = grpc.access_token_call_credentials(self._auth)
         channel_creds = grpc.ssl_channel_credentials()
 
-        creds = grpc.composite_channel_credentials(channel_creds, call_creds)        
+        creds = grpc.composite_channel_credentials(channel_creds, self._auth)        
 
 
         return grpc.aio.secure_channel(
