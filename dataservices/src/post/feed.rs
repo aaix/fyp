@@ -54,7 +54,7 @@ impl ScyllaFeedService {
         ).await?;
 
         let read_feed_prepared_before = db().await.prepare(
-            "SELECT * FROM dataservices.user_timeline_entry WHERE user_id = ? AND timeline_type = ? AND post_id > ? LIMIT ?"
+            "SELECT * FROM dataservices.user_timeline_entry WHERE user_id = ? AND timeline_type = ? AND post_id < ? LIMIT ?"
         ).await?;
 
 
@@ -160,7 +160,7 @@ impl ScyllaFeedService {
         let user_id: CqlTimeuuid = req_tuuid!(request, user_id)?;
         let owned = request.into_inner();
         let timeline_type = owned.timeline_type;
-        let maybe_before: Option<CqlTimeuuid>   = owned.before.map(Into::into);
+        let maybe_before: Option<CqlTimeuuid> = owned.before.map(Into::into);
         let limit = owned.limit;
 
 

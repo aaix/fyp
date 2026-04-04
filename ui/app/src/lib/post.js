@@ -243,6 +243,19 @@ class PostManager {
             }
         }
     }
+
+
+    async getFeed(feed_type, before) {
+        let path = `post/${feed_type}`;
+
+        if (before) {
+            const q = new URLSearchParams({ before: String(before) });
+            path += `?${q.toString()}`;
+        }
+        const res = await API.GET(path);
+
+        return res;
+    }
 }
 
 export const postManager = new PostManager();

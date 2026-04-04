@@ -1,5 +1,5 @@
 import asyncio
-from typing import Annotated, Literal
+from typing import Annotated
 
 from uuid import UUID
 
@@ -11,6 +11,7 @@ from api import feed
 from api.routes.post.models import *
 from api.types.params import TimelineTypeParam
 
+from shared.py.grpc.id import puuid_uuid
 from shared.py.grpc.lazy import DataservicesLazyGRPC
 from shared.py.grpc.post import scatter_gather_posts
 from shared.py.grpcgen import feed_pb2_grpc, post_pb2_grpc
@@ -33,11 +34,14 @@ async def get_feed(
 ) -> FeedResponse:
     entries = await feed.get_feed(s.user_id, timeline_type, before, limit=50)
 
-    posts = await scatter_gather_posts(grpcpost, timeline_type, entries)
+    unsorted_posts = await scatter_gather_posts(grpcpost, timeline_type, entries)
 
-    responses = await asyncio.gather(*map(PostResponse.from_rpc, posts))
+    responses = await asyncio.gather(*map(PostResponse.from_rpc, unsorted_posts))
 
-    return FeedResponse(posts=responses)
+    # sort manually because the scatter gather doesnt guaruntee uniqueness
+    sorted_posts = sorted(responses, key=lambda p: p.post_id.time, reverse=True)
+
+    return FeedResponse(posts=sorted_posts)
 
 
     

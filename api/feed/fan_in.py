@@ -1,10 +1,12 @@
-
 from typing import Iterable
-from collections.abc import AsyncGenerator, Iterator
+
+from collections.abc import AsyncGenerator
+
 
 import time
 import uuid
 from uuid import UUID
+from datetime import UTC, datetime
 
 from opentelemetry import trace
 
@@ -19,6 +21,7 @@ from shared.py.grpcgen.feed_pb2 import FeedMetaResponse, PartialFeedEntry
 from shared.py.grpcgen.plib_pb2 import pUUID
 from shared.py.grpcgen.user_pb2 import HalfRelationship
 from shared.py.tracing import tracer
+from shared.py.types import UNSET
 
 CONF_FOLLOWING_CHUNK_SIZE = 2 # 1000
 CONF_FAN_IN_CHUNK_SIZE = 2 # 500
@@ -67,6 +70,8 @@ async def do_feed_fan_in(
     meta: FeedMetaResponse,
 ):
 
+    last_fanned_in_at = UNSET
+
     span = trace.get_current_span()
     span.set_attribute("az.api.feed.fan_in.reason", str(reason))
 
@@ -84,6 +89,12 @@ async def do_feed_fan_in(
     # only fan in followers if we have a reason
     # otherwise wait for time based cool down if it was from explicit based
     if before or reason.time_based:
+
+        last_fanned_in_at=int(datetime.now(UTC).timestamp())
+
+        # TODO: only fan in posts after the last fan in time (minus 1 for only second prescision)
+        previous_last_fanned_in_at = meta.last_fanned_in_at or None
+
         with tracer.start_as_current_span("feed.chunk_following"):
             async for rel in get_following_chunked(user_id):
                 users.append(rel.user_id_b)
@@ -109,7 +120,7 @@ async def do_feed_fan_in(
         timeline_type,
         explicit_fan_in_to_delete=to_remove,
         fanned_in_up_to=min_uuid,
-        last_fanned_in_at=time.time_ns()
+        last_fanned_in_at=last_fanned_in_at
     )
     
 

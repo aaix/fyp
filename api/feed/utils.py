@@ -30,15 +30,14 @@ async def needs_fan_in(meta: FeedMetaResponse, before: id_t | None) -> FanInReas
     time_based = time_now - CONF_FAN_IN_DELAY > (meta.last_fanned_in_at)
 
 
-    # fan in if the user  has scrolled down to before we have fanned in
-    fanned_in_up_to = id_timestamp(meta.fanned_in_up_to)
-    fanned_in_up_to_time = fanned_in_up_to.timestamp() if fanned_in_up_to else 0
+    if before and (before := id_uuid(before)) and meta.fanned_in_up_to and (fanned_in_up_to := id_uuid(meta.fanned_in_up_to)):
+        # fan in if the user  has scrolled down to before we have fanned in
+        before_based = before <= fanned_in_up_to
 
-    before_time = id_timestamp(before) if before else None
-    if before_time:
-        # only fan up to max history days
-        floor = max(before_time.timestamp(), time_now - CONF_FEED_MAX_HISTORY)
-        before_based = floor < fanned_in_up_to_time
+        # unless it was longer than 60 days ago
+        before_time = id_timestamp(before).timestamp()
+
+        before_based = before_based and (before_time > time_now - CONF_FEED_MAX_HISTORY) 
     else:
         before_based = False
 

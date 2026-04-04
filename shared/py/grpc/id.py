@@ -1,4 +1,5 @@
 from datetime import UTC, datetime
+from typing import overload
 from uuid import UUID
 
 from shared.py.grpcgen.plib_pb2 import pUUID
@@ -8,6 +9,20 @@ __all__ = ("id_t",)
 
 
 type id_t = str | pUUID | UUID
+
+@overload
+def id_timestamp(id1: UUID) -> datetime: ...
+
+@overload
+def id_timestamp(id1: str) -> datetime: ...
+
+@overload
+def id_timestamp(id1: pUUID) -> datetime | None: ...
+
+
+
+
+
 
 def id_timestamp(id1: id_t) -> datetime | None:
     if not (uuid := id_uuid(id1)):
