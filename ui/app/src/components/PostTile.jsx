@@ -187,6 +187,8 @@ export default function PostTile({
           playsInline
           preload="metadata"
           aria-hidden
+          disablePictureInPicture
+          controlsList="nodownload nopictureinpicture"
           onLoadedMetadata={onVideoMeta}
           onError={onVideoError}
         />

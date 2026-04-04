@@ -11,6 +11,9 @@ export default function ShortsPage() {
   const [authorById, setAuthorById] = useState(() => ({}))
   const [playingId, setPlayingId] = useState(null)
   const [scrollRootEl, setScrollRootEl] = useState(null)
+  const [audioUnlocked, setAudioUnlocked] = useState(false)
+  /** Suppress one video tap right after unlock so the same gesture does not toggle pause. */
+  const suppressVideoToggleRef = useRef(false)
   const ratiosRef = useRef({})
   const loadSentinelRef = useRef(null)
 
@@ -54,6 +57,27 @@ export default function ShortsPage() {
     }
   }, [posts])
 
+  const beginAudioUnlock = useCallback(() => {
+    setAudioUnlocked((prev) => {
+      if (prev) return prev
+      suppressVideoToggleRef.current = true
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          suppressVideoToggleRef.current = false
+        })
+      })
+      return true
+    })
+  }, [])
+
+  useEffect(() => {
+    const el = scrollRootEl
+    if (!el || audioUnlocked) return
+    const onScroll = () => beginAudioUnlock()
+    el.addEventListener('scroll', onScroll, { once: true, passive: true })
+    return () => el.removeEventListener('scroll', onScroll)
+  }, [scrollRootEl, audioUnlocked, beginAudioUnlock])
+
   const onVisibilityChange = useCallback((postId, ratio) => {
     ratiosRef.current[postId] = ratio
     let bestId = null
@@ -96,6 +120,7 @@ export default function ShortsPage() {
       </header>
       <div
         ref={setScrollRootEl}
+        onPointerDownCapture={audioUnlocked ? undefined : beginAudioUnlock}
         className="snap-y snap-mandatory overflow-y-auto overscroll-y-contain max-md:h-[calc(100dvh-var(--bottom-nav-height))] max-md:min-h-0 max-md:flex-none md:mt-2 md:min-h-0 md:flex-1"
       >
         {error ? (
@@ -127,6 +152,8 @@ export default function ShortsPage() {
                   feedType={FEED_TYPE_SHORTS}
                   authorPreview={preview}
                   isPlaying={playingId === id}
+                  audioUnlocked={audioUnlocked}
+                  suppressVideoToggleRef={suppressVideoToggleRef}
                   scrollRoot={scrollRootEl}
                   onVisibilityChange={onVisibilityChange}
                 />

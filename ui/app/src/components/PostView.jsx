@@ -183,7 +183,7 @@ export default function PostView({
   const postedLine = postedMs ? new Date(postedMs).toLocaleString() : null
 
   return (
-    <Card className={`overflow-hidden ${className}`}>
+    <Card className={`min-w-0 ${className}`}>
       <div className="flex items-center gap-3 border-b border-[color:var(--card-border)] px-3 py-2.5">
         {authorLoading ? (
           <div className="h-10 w-10 flex-shrink-0 rounded-full bg-[color:var(--card-border)] skeleton-pulse" />
@@ -218,7 +218,14 @@ export default function PostView({
       <div className="bg-[color:var(--bg)]">
         {asset_url ? (
           isVideo ? (
-            <video className="max-h-[70vh] w-full object-contain" controls playsInline src={asset_url} />
+            <video
+              className="max-h-[70vh] w-full object-contain"
+              controls
+              playsInline
+              src={asset_url}
+              disablePictureInPicture
+              controlsList="nodownload nopictureinpicture"
+            />
           ) : isImage ? (
             <img src={asset_url} alt="" className="max-h-[70vh] w-full object-contain" />
           ) : (

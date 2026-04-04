@@ -1,4 +1,4 @@
-import { useParams, useLocation, Navigate } from 'react-router-dom'
+import { useParams, useLocation, Navigate, useSearchParams } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import ProfileView from '../components/ProfileView.jsx'
 import Button from '../components/Button.jsx'
@@ -142,6 +142,7 @@ function normId(id) {
 export default function UserPage() {
   const { userId } = useParams()
   const location = useLocation()
+  const [searchParams, setSearchParams] = useSearchParams()
   const stateUser = location.state?.user
 
   const [currentUserId, setCurrentUserId] = useState(null)
@@ -150,7 +151,9 @@ export default function UserPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [actionLoading, setActionLoading] = useState(false)
-  const [postsFeedType, setPostsFeedType] = useState(FEED_TYPE_MAIN)
+
+  const postsFeedType =
+    searchParams.get('feed') === 'short' ? FEED_TYPE_SHORTS : FEED_TYPE_MAIN
 
   const {
     posts,
@@ -442,8 +445,12 @@ export default function UserPage() {
         onPostsLoadMore={loadMorePosts}
         postsFeedType={postsFeedType}
         onPostsFeedTypeChange={(next) => {
-          const v = next === FEED_TYPE_SHORTS ? FEED_TYPE_SHORTS : FEED_TYPE_MAIN
-          setPostsFeedType(v)
+          const v = next === 'short' || next === FEED_TYPE_SHORTS ? FEED_TYPE_SHORTS : FEED_TYPE_MAIN
+          if (v === FEED_TYPE_SHORTS) {
+            setSearchParams({ feed: 'short' }, { replace: true })
+          } else {
+            setSearchParams({}, { replace: true })
+          }
         }}
       />
     </div>

@@ -59,11 +59,6 @@ export default function PostPage() {
     authorId === String(urlAuthorId) &&
     feedTypeMatchesPostType(feedTypeKey, post.post_type)
 
-  const apiPathLine =
-    routeParamsValid && feedTypeKey
-      ? `post/user/${String(urlAuthorId)}/${feedTypeKey}/${String(urlPostId)}`
-      : null
-
   useEffect(() => {
     const next = statePost
     setPost(next)
@@ -172,11 +167,11 @@ export default function PostPage() {
 
   if (!routeParamsValid) {
     return (
-      <PageContainer>
-        <header className="border-b border-[color:var(--card-border)] pb-3">
-          <h1 className="text-xl font-bold text-[color:var(--text-primary)]">Post</h1>
+      <PageContainer className="min-h-0 flex-1 flex-col overflow-hidden">
+        <header className="shrink-0 border-b border-[color:var(--card-border)] pb-3">
+          <h1 className="sr-only">Post</h1>
         </header>
-        <main className="flex flex-1 flex-col gap-3 overflow-y-auto pt-4">
+        <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain pt-4">
           <p className="text-sm text-[color:var(--text-muted)]" role="alert">
             Invalid post URL. Use{' '}
             <code className="rounded bg-[color:var(--card-bg)] px-1 font-mono text-xs">
@@ -266,8 +261,8 @@ export default function PostPage() {
     }
 
     return (
-      <PageContainer>
-        <header className="border-b border-[color:var(--card-border)] pb-3">
+      <PageContainer className="min-h-0 flex-1 flex-col overflow-hidden">
+        <header className="shrink-0 border-b border-[color:var(--card-border)] pb-3">
           <button
             type="button"
             onClick={handleBack}
@@ -283,17 +278,7 @@ export default function PostPage() {
             Back
           </button>
           <div className="flex items-center justify-between gap-3">
-            <div>
-              <h1 className="text-xl font-bold text-[color:var(--text-primary)]">Post</h1>
-              {apiPathLine ? (
-                <p
-                  className="mt-1 break-all font-mono text-xs text-[color:var(--text-muted)]"
-                  title="Resource path (same segments as postManager.getPost)"
-                >
-                  {apiPathLine}
-                </p>
-              ) : null}
-            </div>
+            <h1 className="sr-only">Post</h1>
             {isMine ? (
               <div className="flex items-center gap-2">
                 {editMode ? (
@@ -339,7 +324,7 @@ export default function PostPage() {
             ) : null}
           </div>
         </header>
-        <main className="flex flex-1 flex-col overflow-y-auto pt-2">
+        <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain pt-2">
           {showPipelineBanner ? (
             <div
               role={pipelineHasError ? 'alert' : 'status'}
@@ -426,19 +411,11 @@ export default function PostPage() {
   }
 
   return (
-    <PageContainer>
-      <header className="border-b border-[color:var(--card-border)] pb-3">
-        <h1 className="text-xl font-bold text-[color:var(--text-primary)]">Post</h1>
-        {apiPathLine ? (
-          <p
-            className="mt-1 break-all font-mono text-xs text-[color:var(--text-muted)]"
-            title="Resource path (same segments as postManager.getPost)"
-          >
-            {apiPathLine}
-          </p>
-        ) : null}
+    <PageContainer className="min-h-0 flex-1 flex-col overflow-hidden">
+      <header className="shrink-0 border-b border-[color:var(--card-border)] pb-3">
+        <h1 className="sr-only">Post</h1>
       </header>
-      <main className="flex flex-1 flex-col gap-3 overflow-y-auto pt-4">
+      <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain pt-4">
         {loadingPost ? (
           <p className="text-sm text-[color:var(--text-muted)]" aria-busy="true">
             Loading post…
