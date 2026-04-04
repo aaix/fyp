@@ -1,4 +1,5 @@
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
+import traceback
 
 from opentelemetry.instrumentation.grpc import GrpcAioInstrumentorClient
 
@@ -22,16 +23,24 @@ def start_instrumentation():
 
     client.instrument()
 
-def instrument_call[**P, T](f: Callable[P, T]) -> Callable[P, T]:
+def instrument_call[**P, T](f: Callable[P, Awaitable[T]]) -> Callable[P, Awaitable[T]]:
 
     if discovery.is_prod():
         return f
 
-    def wrapper(*args: P.args, **kwargs: P.kwargs):
+    async def wrapper(*args: P.args, **kwargs: P.kwargs):
         with tracer.start_as_current_span(f"autoinstrument.{f.__name__}") as span:
             for i, arg in enumerate(args):
                 span.set_attribute(f"az.shared.instrumentor.arg[{i}]", str(arg))
             for k, v in kwargs.items():
                 span.set_attribute(f"az.shared.instrumentor.kwargs.{k}", str(v))
-            return f(*args, **kwargs)
+
+            try:
+                res = await f(*args, **kwargs)
+                span.set_attribute("az.shared.instrumentor.result", str(res))
+            except Exception as e:
+                span.set_attribute("az.shared.instrumentor.exception", '\n'.join(traceback.format_exception(e)))
+                raise
+            
+            return res
     return wrapper

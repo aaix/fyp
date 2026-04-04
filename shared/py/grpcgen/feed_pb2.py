@@ -25,7 +25,7 @@ _sym_db = _symbol_database.Default()
 from . import plib_pb2 as plib__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\nfeed.proto\x12\x16\x64\x61taservices.feedproto\x1a\nplib.proto\"J\n\x13ReadFeedMetaRequest\x12\x1c\n\x07user_id\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\x12\x15\n\rtimeline_type\x18\x02 \x01(\x05\"\x8c\x02\n\x10\x46\x65\x65\x64MetaResponse\x12\x1c\n\x07user_id\x18\x02 \x01(\x0b\x32\x0b.plib.pUUID\x12\x15\n\rtimeline_type\x18\x03 \x01(\x05\x12+\n\x11last_fanned_in_at\x18\x01 \x01(\x0b\x32\x0b.plib.pUUIDH\x00\x88\x01\x01\x12\"\n\rexclude_users\x18\x04 \x03(\x0b\x32\x0b.plib.pUUID\x12*\n\x15\x65xplicit_fan_in_users\x18\x05 \x03(\x0b\x32\x0b.plib.pUUID\x12\x1c\n\x0f\x66\x61nned_in_up_to\x18\x06 \x01(\x03H\x01\x88\x01\x01\x42\x14\n\x12_last_fanned_in_atB\x12\n\x10_fanned_in_up_to\"\xde\x02\n\x15UpdateFeedMetaRequest\x12\x1c\n\x07user_id\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\x12\x15\n\rtimeline_type\x18\x02 \x01(\x05\x12\x1e\n\x11last_fanned_in_at\x18\x03 \x01(\x03H\x00\x88\x01\x01\x12\x1c\n\x0f\x66\x61nned_in_up_to\x18\x08 \x01(\x03H\x01\x88\x01\x01\x12#\n\x0e\x65xclude_to_add\x18\x04 \x03(\x0b\x32\x0b.plib.pUUID\x12&\n\x11\x65xclude_to_delete\x18\x05 \x03(\x0b\x32\x0b.plib.pUUID\x12+\n\x16\x65xplicit_fan_in_to_add\x18\x06 \x03(\x0b\x32\x0b.plib.pUUID\x12.\n\x19\x65xplicit_fan_in_to_delete\x18\x07 \x03(\x0b\x32\x0b.plib.pUUIDB\x14\n\x12_last_fanned_in_atB\x12\n\x10_fanned_in_up_to\"\x82\x01\n\x0fReadFeedRequest\x12\x1c\n\x07user_id\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\x12\x15\n\rtimeline_type\x18\x02 \x01(\x05\x12 \n\x06\x62\x65\x66ore\x18\x03 \x01(\x0b\x32\x0b.plib.pUUIDH\x00\x88\x01\x01\x12\r\n\x05limit\x18\x04 \x01(\rB\t\n\x07_before\"b\n\tFeedEntry\x12#\n\x0epost_author_id\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\x12\x1c\n\x07post_id\x18\x02 \x01(\x0b\x32\x0b.plib.pUUID\x12\x12\n\nentry_type\x18\x03 \x01(\x05\"B\n\x0c\x46\x65\x65\x64Response\x12\x32\n\x07\x65ntries\x18\x01 \x03(\x0b\x32!.dataservices.feedproto.FeedEntry\"\x9b\x01\n\x11\x41\x64\x64ToFeedsRequest\x12\x1d\n\x08user_ids\x18\x01 \x03(\x0b\x32\x0b.plib.pUUID\x12\x15\n\rtimeline_type\x18\x02 \x01(\x05\x12\x1e\n\tauthor_id\x18\x03 \x01(\x0b\x32\x0b.plib.pUUID\x12\x1c\n\x07post_id\x18\x04 \x01(\x0b\x32\x0b.plib.pUUID\x12\x12\n\nentry_type\x18\x05 \x01(\x05\"\'\n\x12\x41\x64\x64ToFeedsResponse\x12\x11\n\tsuccesses\x18\x01 \x01(\r\"P\n\x10PartialFeedEntry\x12\x1e\n\tauthor_id\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\x12\x1c\n\x07post_id\x18\x02 \x01(\x0b\x32\x0b.plib.pUUID\"\x8e\x01\n\x1aRemovePostsFromFeedRequest\x12\x1c\n\x07user_id\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\x12\x15\n\rtimeline_type\x18\x02 \x01(\x05\x12;\n\tto_remove\x18\x03 \x03(\x0b\x32(.dataservices.feedproto.PartialFeedEntry\"\x1d\n\x1bRemovePostsFromFeedResponse\"\x86\x01\n\x15\x41\x64\x64PostsToFeedRequest\x12\x1c\n\x07user_id\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\x12\x15\n\rtimeline_type\x18\x02 \x01(\x05\x12\x38\n\x06to_add\x18\x03 \x03(\x0b\x32(.dataservices.feedproto.PartialFeedEntry\"\x18\n\x16\x41\x64\x64PostsToFeedResponse2\x8b\x05\n\x0b\x46\x65\x65\x64Service\x12\x65\n\x0cReadFeedMeta\x12+.dataservices.feedproto.ReadFeedMetaRequest\x1a(.dataservices.feedproto.FeedMetaResponse\x12i\n\x0eUpdateFeedMeta\x12-.dataservices.feedproto.UpdateFeedMetaRequest\x1a(.dataservices.feedproto.FeedMetaResponse\x12Y\n\x08ReadFeed\x12\'.dataservices.feedproto.ReadFeedRequest\x1a$.dataservices.feedproto.FeedResponse\x12\x63\n\nAddToFeeds\x12).dataservices.feedproto.AddToFeedsRequest\x1a*.dataservices.feedproto.AddToFeedsResponse\x12y\n\x0eRemoveFromFeed\x12\x32.dataservices.feedproto.RemovePostsFromFeedRequest\x1a\x33.dataservices.feedproto.RemovePostsFromFeedResponse\x12o\n\x0e\x41\x64\x64PostsToFeed\x12-.dataservices.feedproto.AddPostsToFeedRequest\x1a..dataservices.feedproto.AddPostsToFeedResponseb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\nfeed.proto\x12\x16\x64\x61taservices.feedproto\x1a\nplib.proto\"J\n\x13ReadFeedMetaRequest\x12\x1c\n\x07user_id\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\x12\x15\n\rtimeline_type\x18\x02 \x01(\x05\"\x8c\x02\n\x10\x46\x65\x65\x64MetaResponse\x12\x1c\n\x07user_id\x18\x02 \x01(\x0b\x32\x0b.plib.pUUID\x12\x15\n\rtimeline_type\x18\x03 \x01(\x05\x12\x1e\n\x11last_fanned_in_at\x18\x01 \x01(\x03H\x00\x88\x01\x01\x12\"\n\rexclude_users\x18\x04 \x03(\x0b\x32\x0b.plib.pUUID\x12*\n\x15\x65xplicit_fan_in_users\x18\x05 \x03(\x0b\x32\x0b.plib.pUUID\x12)\n\x0f\x66\x61nned_in_up_to\x18\x06 \x01(\x0b\x32\x0b.plib.pUUIDH\x01\x88\x01\x01\x42\x14\n\x12_last_fanned_in_atB\x12\n\x10_fanned_in_up_to\"\xeb\x02\n\x15UpdateFeedMetaRequest\x12\x1c\n\x07user_id\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\x12\x15\n\rtimeline_type\x18\x02 \x01(\x05\x12\x1e\n\x11last_fanned_in_at\x18\x03 \x01(\x03H\x00\x88\x01\x01\x12)\n\x0f\x66\x61nned_in_up_to\x18\x08 \x01(\x0b\x32\x0b.plib.pUUIDH\x01\x88\x01\x01\x12#\n\x0e\x65xclude_to_add\x18\x04 \x03(\x0b\x32\x0b.plib.pUUID\x12&\n\x11\x65xclude_to_delete\x18\x05 \x03(\x0b\x32\x0b.plib.pUUID\x12+\n\x16\x65xplicit_fan_in_to_add\x18\x06 \x03(\x0b\x32\x0b.plib.pUUID\x12.\n\x19\x65xplicit_fan_in_to_delete\x18\x07 \x03(\x0b\x32\x0b.plib.pUUIDB\x14\n\x12_last_fanned_in_atB\x12\n\x10_fanned_in_up_to\"\x82\x01\n\x0fReadFeedRequest\x12\x1c\n\x07user_id\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\x12\x15\n\rtimeline_type\x18\x02 \x01(\x05\x12 \n\x06\x62\x65\x66ore\x18\x03 \x01(\x0b\x32\x0b.plib.pUUIDH\x00\x88\x01\x01\x12\r\n\x05limit\x18\x04 \x01(\x05\x42\t\n\x07_before\"b\n\tFeedEntry\x12#\n\x0epost_author_id\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\x12\x1c\n\x07post_id\x18\x02 \x01(\x0b\x32\x0b.plib.pUUID\x12\x12\n\nentry_type\x18\x03 \x01(\x05\"B\n\x0c\x46\x65\x65\x64Response\x12\x32\n\x07\x65ntries\x18\x01 \x03(\x0b\x32!.dataservices.feedproto.FeedEntry\"\x9b\x01\n\x11\x41\x64\x64ToFeedsRequest\x12\x1d\n\x08user_ids\x18\x01 \x03(\x0b\x32\x0b.plib.pUUID\x12\x15\n\rtimeline_type\x18\x02 \x01(\x05\x12\x1e\n\tauthor_id\x18\x03 \x01(\x0b\x32\x0b.plib.pUUID\x12\x1c\n\x07post_id\x18\x04 \x01(\x0b\x32\x0b.plib.pUUID\x12\x12\n\nentry_type\x18\x05 \x01(\x05\"\'\n\x12\x41\x64\x64ToFeedsResponse\x12\x11\n\tsuccesses\x18\x01 \x01(\r\"P\n\x10PartialFeedEntry\x12\x1e\n\tauthor_id\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\x12\x1c\n\x07post_id\x18\x02 \x01(\x0b\x32\x0b.plib.pUUID\"\x8e\x01\n\x1aRemovePostsFromFeedRequest\x12\x1c\n\x07user_id\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\x12\x15\n\rtimeline_type\x18\x02 \x01(\x05\x12;\n\tto_remove\x18\x03 \x03(\x0b\x32(.dataservices.feedproto.PartialFeedEntry\"\x1d\n\x1bRemovePostsFromFeedResponse\"\x9a\x01\n\x15\x41\x64\x64PostsToFeedRequest\x12\x1c\n\x07user_id\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\x12\x15\n\rtimeline_type\x18\x02 \x01(\x05\x12\x38\n\x06to_add\x18\x03 \x03(\x0b\x32(.dataservices.feedproto.PartialFeedEntry\x12\x12\n\nentry_type\x18\x04 \x01(\x05\"\x18\n\x16\x41\x64\x64PostsToFeedResponse2\x8b\x05\n\x0b\x46\x65\x65\x64Service\x12\x65\n\x0cReadFeedMeta\x12+.dataservices.feedproto.ReadFeedMetaRequest\x1a(.dataservices.feedproto.FeedMetaResponse\x12i\n\x0eUpdateFeedMeta\x12-.dataservices.feedproto.UpdateFeedMetaRequest\x1a(.dataservices.feedproto.FeedMetaResponse\x12Y\n\x08ReadFeed\x12\'.dataservices.feedproto.ReadFeedRequest\x1a$.dataservices.feedproto.FeedResponse\x12\x63\n\nAddToFeeds\x12).dataservices.feedproto.AddToFeedsRequest\x1a*.dataservices.feedproto.AddToFeedsResponse\x12y\n\x0eRemoveFromFeed\x12\x32.dataservices.feedproto.RemovePostsFromFeedRequest\x1a\x33.dataservices.feedproto.RemovePostsFromFeedResponse\x12o\n\x0e\x41\x64\x64PostsToFeed\x12-.dataservices.feedproto.AddPostsToFeedRequest\x1a..dataservices.feedproto.AddPostsToFeedResponseb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -37,27 +37,27 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_FEEDMETARESPONSE']._serialized_start=127
   _globals['_FEEDMETARESPONSE']._serialized_end=395
   _globals['_UPDATEFEEDMETAREQUEST']._serialized_start=398
-  _globals['_UPDATEFEEDMETAREQUEST']._serialized_end=748
-  _globals['_READFEEDREQUEST']._serialized_start=751
-  _globals['_READFEEDREQUEST']._serialized_end=881
-  _globals['_FEEDENTRY']._serialized_start=883
-  _globals['_FEEDENTRY']._serialized_end=981
-  _globals['_FEEDRESPONSE']._serialized_start=983
-  _globals['_FEEDRESPONSE']._serialized_end=1049
-  _globals['_ADDTOFEEDSREQUEST']._serialized_start=1052
-  _globals['_ADDTOFEEDSREQUEST']._serialized_end=1207
-  _globals['_ADDTOFEEDSRESPONSE']._serialized_start=1209
-  _globals['_ADDTOFEEDSRESPONSE']._serialized_end=1248
-  _globals['_PARTIALFEEDENTRY']._serialized_start=1250
-  _globals['_PARTIALFEEDENTRY']._serialized_end=1330
-  _globals['_REMOVEPOSTSFROMFEEDREQUEST']._serialized_start=1333
-  _globals['_REMOVEPOSTSFROMFEEDREQUEST']._serialized_end=1475
-  _globals['_REMOVEPOSTSFROMFEEDRESPONSE']._serialized_start=1477
-  _globals['_REMOVEPOSTSFROMFEEDRESPONSE']._serialized_end=1506
-  _globals['_ADDPOSTSTOFEEDREQUEST']._serialized_start=1509
-  _globals['_ADDPOSTSTOFEEDREQUEST']._serialized_end=1643
-  _globals['_ADDPOSTSTOFEEDRESPONSE']._serialized_start=1645
-  _globals['_ADDPOSTSTOFEEDRESPONSE']._serialized_end=1669
-  _globals['_FEEDSERVICE']._serialized_start=1672
-  _globals['_FEEDSERVICE']._serialized_end=2323
+  _globals['_UPDATEFEEDMETAREQUEST']._serialized_end=761
+  _globals['_READFEEDREQUEST']._serialized_start=764
+  _globals['_READFEEDREQUEST']._serialized_end=894
+  _globals['_FEEDENTRY']._serialized_start=896
+  _globals['_FEEDENTRY']._serialized_end=994
+  _globals['_FEEDRESPONSE']._serialized_start=996
+  _globals['_FEEDRESPONSE']._serialized_end=1062
+  _globals['_ADDTOFEEDSREQUEST']._serialized_start=1065
+  _globals['_ADDTOFEEDSREQUEST']._serialized_end=1220
+  _globals['_ADDTOFEEDSRESPONSE']._serialized_start=1222
+  _globals['_ADDTOFEEDSRESPONSE']._serialized_end=1261
+  _globals['_PARTIALFEEDENTRY']._serialized_start=1263
+  _globals['_PARTIALFEEDENTRY']._serialized_end=1343
+  _globals['_REMOVEPOSTSFROMFEEDREQUEST']._serialized_start=1346
+  _globals['_REMOVEPOSTSFROMFEEDREQUEST']._serialized_end=1488
+  _globals['_REMOVEPOSTSFROMFEEDRESPONSE']._serialized_start=1490
+  _globals['_REMOVEPOSTSFROMFEEDRESPONSE']._serialized_end=1519
+  _globals['_ADDPOSTSTOFEEDREQUEST']._serialized_start=1522
+  _globals['_ADDPOSTSTOFEEDREQUEST']._serialized_end=1676
+  _globals['_ADDPOSTSTOFEEDRESPONSE']._serialized_start=1678
+  _globals['_ADDPOSTSTOFEEDRESPONSE']._serialized_end=1702
+  _globals['_FEEDSERVICE']._serialized_start=1705
+  _globals['_FEEDSERVICE']._serialized_end=2356
 # @@protoc_insertion_point(module_scope)

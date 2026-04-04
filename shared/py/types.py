@@ -1,4 +1,4 @@
-from typing import Literal, Self
+from typing import Final, Literal, Self
 from collections.abc import Callable
 
 from threading import Lock
@@ -10,7 +10,7 @@ class UnsetType(Enum):
     def __bool__(self) -> Literal[False]:
         return False
 
-UNSET = UnsetType._unset
+UNSET: Final[Literal[UnsetType._unset]] = UnsetType._unset
 
 type MaybeUnset[T] = T | UnsetType
 

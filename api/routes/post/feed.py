@@ -1,3 +1,4 @@
+import asyncio
 from typing import Annotated, Literal
 
 from uuid import UUID
@@ -11,6 +12,7 @@ from api.routes.post.models import *
 from api.types.params import TimelineTypeParam
 
 from shared.py.grpc.lazy import DataservicesLazyGRPC
+from shared.py.grpc.post import scatter_gather_posts
 from shared.py.grpcgen import feed_pb2_grpc, post_pb2_grpc
 
 
@@ -29,9 +31,13 @@ async def get_feed(
     timeline_type: TimelineTypeParam,
     before: Annotated[UUID | None, Query()] = None,
 ) -> FeedResponse:
-    entries = await feed.get_feed(s.user_id, timeline_type, before, limit=25)
+    entries = await feed.get_feed(s.user_id, timeline_type, before, limit=50)
 
-    return FeedResponse(posts=[])
+    posts = await scatter_gather_posts(grpcpost, timeline_type, entries)
+
+    responses = await asyncio.gather(*map(PostResponse.from_rpc, posts))
+
+    return FeedResponse(posts=responses)
 
 
     

@@ -25,11 +25,11 @@ class FeedMetaResponse(_message.Message):
     FANNED_IN_UP_TO_FIELD_NUMBER: _ClassVar[int]
     user_id: _plib_pb2.pUUID
     timeline_type: int
-    last_fanned_in_at: _plib_pb2.pUUID
+    last_fanned_in_at: int
     exclude_users: _containers.RepeatedCompositeFieldContainer[_plib_pb2.pUUID]
     explicit_fan_in_users: _containers.RepeatedCompositeFieldContainer[_plib_pb2.pUUID]
-    fanned_in_up_to: int
-    def __init__(self, user_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., timeline_type: _Optional[int] = ..., last_fanned_in_at: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., exclude_users: _Optional[_Iterable[_Union[_plib_pb2.pUUID, _Mapping]]] = ..., explicit_fan_in_users: _Optional[_Iterable[_Union[_plib_pb2.pUUID, _Mapping]]] = ..., fanned_in_up_to: _Optional[int] = ...) -> None: ...
+    fanned_in_up_to: _plib_pb2.pUUID
+    def __init__(self, user_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., timeline_type: _Optional[int] = ..., last_fanned_in_at: _Optional[int] = ..., exclude_users: _Optional[_Iterable[_Union[_plib_pb2.pUUID, _Mapping]]] = ..., explicit_fan_in_users: _Optional[_Iterable[_Union[_plib_pb2.pUUID, _Mapping]]] = ..., fanned_in_up_to: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ...) -> None: ...
 
 class UpdateFeedMetaRequest(_message.Message):
     __slots__ = ("user_id", "timeline_type", "last_fanned_in_at", "fanned_in_up_to", "exclude_to_add", "exclude_to_delete", "explicit_fan_in_to_add", "explicit_fan_in_to_delete")
@@ -44,12 +44,12 @@ class UpdateFeedMetaRequest(_message.Message):
     user_id: _plib_pb2.pUUID
     timeline_type: int
     last_fanned_in_at: int
-    fanned_in_up_to: int
+    fanned_in_up_to: _plib_pb2.pUUID
     exclude_to_add: _containers.RepeatedCompositeFieldContainer[_plib_pb2.pUUID]
     exclude_to_delete: _containers.RepeatedCompositeFieldContainer[_plib_pb2.pUUID]
     explicit_fan_in_to_add: _containers.RepeatedCompositeFieldContainer[_plib_pb2.pUUID]
     explicit_fan_in_to_delete: _containers.RepeatedCompositeFieldContainer[_plib_pb2.pUUID]
-    def __init__(self, user_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., timeline_type: _Optional[int] = ..., last_fanned_in_at: _Optional[int] = ..., fanned_in_up_to: _Optional[int] = ..., exclude_to_add: _Optional[_Iterable[_Union[_plib_pb2.pUUID, _Mapping]]] = ..., exclude_to_delete: _Optional[_Iterable[_Union[_plib_pb2.pUUID, _Mapping]]] = ..., explicit_fan_in_to_add: _Optional[_Iterable[_Union[_plib_pb2.pUUID, _Mapping]]] = ..., explicit_fan_in_to_delete: _Optional[_Iterable[_Union[_plib_pb2.pUUID, _Mapping]]] = ...) -> None: ...
+    def __init__(self, user_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., timeline_type: _Optional[int] = ..., last_fanned_in_at: _Optional[int] = ..., fanned_in_up_to: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., exclude_to_add: _Optional[_Iterable[_Union[_plib_pb2.pUUID, _Mapping]]] = ..., exclude_to_delete: _Optional[_Iterable[_Union[_plib_pb2.pUUID, _Mapping]]] = ..., explicit_fan_in_to_add: _Optional[_Iterable[_Union[_plib_pb2.pUUID, _Mapping]]] = ..., explicit_fan_in_to_delete: _Optional[_Iterable[_Union[_plib_pb2.pUUID, _Mapping]]] = ...) -> None: ...
 
 class ReadFeedRequest(_message.Message):
     __slots__ = ("user_id", "timeline_type", "before", "limit")
@@ -122,14 +122,16 @@ class RemovePostsFromFeedResponse(_message.Message):
     def __init__(self) -> None: ...
 
 class AddPostsToFeedRequest(_message.Message):
-    __slots__ = ("user_id", "timeline_type", "to_add")
+    __slots__ = ("user_id", "timeline_type", "to_add", "entry_type")
     USER_ID_FIELD_NUMBER: _ClassVar[int]
     TIMELINE_TYPE_FIELD_NUMBER: _ClassVar[int]
     TO_ADD_FIELD_NUMBER: _ClassVar[int]
+    ENTRY_TYPE_FIELD_NUMBER: _ClassVar[int]
     user_id: _plib_pb2.pUUID
     timeline_type: int
     to_add: _containers.RepeatedCompositeFieldContainer[PartialFeedEntry]
-    def __init__(self, user_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., timeline_type: _Optional[int] = ..., to_add: _Optional[_Iterable[_Union[PartialFeedEntry, _Mapping]]] = ...) -> None: ...
+    entry_type: int
+    def __init__(self, user_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., timeline_type: _Optional[int] = ..., to_add: _Optional[_Iterable[_Union[PartialFeedEntry, _Mapping]]] = ..., entry_type: _Optional[int] = ...) -> None: ...
 
 class AddPostsToFeedResponse(_message.Message):
     __slots__ = ()

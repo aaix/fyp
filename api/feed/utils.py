@@ -15,6 +15,7 @@ CONF_FEED_MAX_HISTORY = 60 * 24 * 60 * 60 # 60 days
 class FanInReason:
     time_based: bool
     before_based: bool
+    explicit_based: bool
 
     def __bool__(self) -> bool:
         return self.time_based or self.before_based
@@ -26,18 +27,20 @@ async def needs_fan_in(meta: FeedMetaResponse, before: id_t | None) -> FanInReas
     time_now = datetime.now(UTC).timestamp()
 
     # for general fan on CONF_FAN_IN_DELAY
-    last_fanned_in_time = id_timestamp(meta.last_fanned_in_at)
-    time_based = time_now - CONF_FAN_IN_DELAY > (last_fanned_in_time.timestamp() if last_fanned_in_time else 0)
+    time_based = time_now - CONF_FAN_IN_DELAY > (meta.last_fanned_in_at)
 
 
     # fan in if the user  has scrolled down to before we have fanned in
-    fanned_in_up_to = meta.fanned_in_up_to
+    fanned_in_up_to = id_timestamp(meta.fanned_in_up_to)
+    fanned_in_up_to_time = fanned_in_up_to.timestamp() if fanned_in_up_to else 0
 
     before_time = id_timestamp(before) if before else None
     if before_time:
         # only fan up to max history days
         floor = max(before_time.timestamp(), time_now - CONF_FEED_MAX_HISTORY)
-        before_based = floor < fanned_in_up_to
+        before_based = floor < fanned_in_up_to_time
     else:
         before_based = False
-    return FanInReason(time_based=time_based, before_based=before_based)
+
+    explicit_based = len(meta.explicit_fan_in_users) > 0
+    return FanInReason(time_based=time_based, before_based=before_based, explicit_based=explicit_based)

@@ -24,13 +24,14 @@ grpcfeed = DataservicesLazyGRPC(feed_pb2_grpc.FeedServiceStub)
 async def get_feed(user_id: id_t, timeline_type: grpc.TimelineType, before: id_t | None, limit: int) -> Iterable[FeedEntry]:
     
     meta = feed_pb2.FeedMetaResponse()
-    with SuppressRpcErr(StatusCode.UNIMPLEMENTED):
+    with SuppressRpcErr(StatusCode.NOT_FOUND):
         meta = await grpc.read_feed_meta(grpcfeed, user_id, timeline_type)
 
 
     if reason := await utils.needs_fan_in(meta, before):
-       await fan_in.do_feed_fan_in(user_id, timeline_type, reason, before)
+       await fan_in.do_feed_fan_in(user_id, timeline_type, reason, before, meta)
     
     rpc = await grpc.read_feed(grpcfeed, user_id, timeline_type, before=before, limit=limit)
+
     return rpc.entries
     
