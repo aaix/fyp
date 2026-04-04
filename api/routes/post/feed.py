@@ -11,7 +11,6 @@ from api import feed
 from api.routes.post.models import *
 from api.types.params import TimelineTypeParam
 
-from shared.py.grpc.id import puuid_uuid
 from shared.py.grpc.lazy import DataservicesLazyGRPC
 from shared.py.grpc.post import scatter_gather_posts
 from shared.py.grpcgen import feed_pb2_grpc, post_pb2_grpc
