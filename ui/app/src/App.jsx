@@ -11,6 +11,7 @@ import UserPage from './pages/UserPage.jsx'
 import NotificationsPage from './pages/NotificationsPage.jsx'
 import CreatePostPage from './pages/CreatePostPage.jsx'
 import PostPage from './pages/PostPage.jsx'
+import ShortsPage from './pages/ShortsPage.jsx'
 
 import { gatewayFactory } from './lib/gateway.js'
 import { getCurrentSession } from './lib/session.js'
@@ -78,6 +79,8 @@ function getTitleFromPathname(pathname) {
       return 'Notifications'
     case '/create-post':
       return 'Create post'
+    case '/shorts':
+      return 'Shorts'
     default:
       if (pathname.startsWith('/user/')) {
         return null
@@ -166,6 +169,7 @@ function App() {
     <Routes>
       <Route element={<AppLayout />}>
         <Route path="/" element={<HomePage />} />
+        <Route path="/shorts" element={<ShortsPage />} />
         <Route path="/messages" element={<MessagesPage />} />
         <Route path="/account" element={<AccountPage />} />
         <Route path="/account/settings" element={<SettingsPage />} />

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { columnCountFromContainerWidth, distributePostsRoundRobin } from '../lib/postTileGridLayout.js'
 import { clampTileAspectRatio, postRendersAsImage, postRendersAsVideo } from '../lib/postMedia.js'
 import { FEED_TYPE_MAIN, postDetailPath } from '../lib/post.js'
+import UserAvatar from './UserAvatar.jsx'
 
 const TILE_ROW_GAP_CLASS = 'gap-2 md:gap-3'
 
@@ -115,9 +116,17 @@ function usePostTileColumnCount() {
  * @param {object} props
  * @param {object} props.post - PostResponse shape
  * @param {string} [props.feedType] - same as getUserPosts (`feed` | `short`)
+ * @param {boolean} [props.showAuthorOnHover] - home feed only: author chip on hover
+ * @param {{ username: string, iconUrl: string | null } | null | undefined} [props.authorPreview]
  * @param {string} [props.className]
  */
-export default function PostTile({ post, feedType = FEED_TYPE_MAIN, className = '' }) {
+export default function PostTile({
+  post,
+  feedType = FEED_TYPE_MAIN,
+  showAuthorOnHover = false,
+  authorPreview = null,
+  className = '',
+}) {
   const videoRef = useRef(null)
   const id = post.post_id != null ? String(post.post_id) : ''
   const authorId = post.author_id != null ? String(post.author_id) : ''
@@ -203,6 +212,26 @@ export default function PostTile({ post, feedType = FEED_TYPE_MAIN, className = 
           aria-hidden
         />
       ) : null}
+      {showAuthorOnHover && authorId ? (
+        <div
+          className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent px-2 pb-2 pt-8 opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100"
+          aria-hidden
+        >
+          <div className="flex min-w-0 items-center gap-1.5">
+            <UserAvatar
+              userId={authorId}
+              src={authorPreview?.iconUrl ?? null}
+              alt=""
+              className="h-6 w-6 shrink-0 rounded-full border border-white/30 object-cover"
+            />
+            <span className="min-w-0 truncate text-[0.7rem] font-medium text-white drop-shadow">
+              {authorPreview?.username
+                ? `@${String(authorPreview.username).replace(/^@+/, '')}`
+                : '…'}
+            </span>
+          </div>
+        </div>
+      ) : null}
       {isVideo ? (
         <span
           className="pointer-events-none absolute bottom-1.5 right-1.5 rounded bg-black/55 px-1.5 py-0.5 text-[0.65rem] font-medium text-white"
@@ -233,7 +262,7 @@ export default function PostTile({ post, feedType = FEED_TYPE_MAIN, className = 
         to={postDetailPath(authorId, feedType, id)}
         state={{ post }}
         aria-label={label}
-        className="block w-full min-w-0 text-[color:inherit] no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--bg)]"
+        className="group block w-full min-w-0 text-[color:inherit] no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-focus)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--bg)]"
         onMouseEnter={isVideo ? onEnter : undefined}
         onMouseLeave={isVideo ? onLeave : undefined}
         onFocus={isVideo ? onEnter : undefined}
@@ -259,6 +288,8 @@ export function PostTileGrid({
   loadingMore = false,
   onLoadMore = null,
   feedType = FEED_TYPE_MAIN,
+  showAuthorOnHover = false,
+  authorById = null,
 }) {
   const [containerRef, columnCount] = usePostTileColumnCount()
   const loadMoreSentinelRef = useRef(null)
@@ -384,13 +415,19 @@ export function PostTileGrid({
       <div className={`flex w-full min-w-0 ${TILE_ROW_GAP_CLASS}`}>
         {columns.map((colPosts, colIndex) => (
           <div key={colIndex} className={`flex min-w-0 flex-1 flex-col ${TILE_ROW_GAP_CLASS}`}>
-            {colPosts.map((p, tileIndex) => (
-              <PostTile
-                key={p.post_id != null ? String(p.post_id) : `tile-${colIndex}-${tileIndex}`}
-                post={p}
-                feedType={feedType}
-              />
-            ))}
+            {colPosts.map((p, tileIndex) => {
+              const aid = p?.author_id != null ? String(p.author_id) : ''
+              const preview = aid && authorById?.[aid] != null ? authorById[aid] : null
+              return (
+                <PostTile
+                  key={p.post_id != null ? String(p.post_id) : `tile-${colIndex}-${tileIndex}`}
+                  post={p}
+                  feedType={feedType}
+                  showAuthorOnHover={showAuthorOnHover}
+                  authorPreview={preview}
+                />
+              )
+            })}
           </div>
         ))}
       </div>
