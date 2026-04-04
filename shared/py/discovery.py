@@ -1,7 +1,7 @@
 import grpc
 from google.auth.compute_engine import IDTokenCredentials
 from google.auth.transport.grpc import AuthMetadataPlugin
-from google.auth.transport._aiohttp_requests import Request
+from google.auth.transport.requests import Request
 
 from os import environ
 
