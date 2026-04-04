@@ -26,8 +26,8 @@ async def needs_fan_in(meta: FeedMetaResponse, before: id_t | None) -> FanInReas
 
     time_now = datetime.now(UTC).timestamp()
 
-    # for general fan on CONF_FAN_IN_DELAY
-    time_based = time_now - CONF_FAN_IN_DELAY > (meta.last_fanned_in_at)
+    # for general fan on CONF_FAN_IN_DELAY (last_fanned_in_at is a ms timestamp)
+    time_based = (1000 * (time_now - CONF_FAN_IN_DELAY)) > (meta.last_fanned_in_at)
 
 
     if before and (before := id_uuid(before)) and meta.fanned_in_up_to and (fanned_in_up_to := id_uuid(meta.fanned_in_up_to)):

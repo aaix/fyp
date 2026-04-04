@@ -85,6 +85,7 @@ message ReadUsersDehydratedPostsRequest {
     int32 limit = 2;
     int32 timeline_type = 3;
     optional plib.pUUID before = 4;
+    int64 after = 5;
 }
 
 message UsersDehydratedPostsResponse {

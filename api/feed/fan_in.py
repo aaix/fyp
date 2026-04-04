@@ -90,10 +90,9 @@ async def do_feed_fan_in(
     # otherwise wait for time based cool down if it was from explicit based
     if before or reason.time_based:
 
-        last_fanned_in_at=int(datetime.now(UTC).timestamp())
+        last_fanned_in_at=int((datetime.now(UTC).timestamp() - 1) * 1000)
 
-        # TODO: only fan in posts after the last fan in time (minus 1 for only second prescision)
-        previous_last_fanned_in_at = meta.last_fanned_in_at or None
+        after = meta.last_fanned_in_at or None
 
         with tracer.start_as_current_span("feed.chunk_following"):
             async for rel in get_following_chunked(user_id):
@@ -101,12 +100,12 @@ async def do_feed_fan_in(
                 if len(users) < CONF_FAN_IN_CHUNK_SIZE:
                     continue
 
-                min_uuid = await fan_in_chunk(user_id, timeline_type, users, before, min_uuid)
+                min_uuid = await fan_in_chunk(user_id, timeline_type, users, before, min_uuid, after)
                 users.clear()
 
             if len(users) > 0:
                 # fan in the final chunk
-                min_uuid = await fan_in_chunk(user_id, timeline_type, users, before, min_uuid)
+                min_uuid = await fan_in_chunk(user_id, timeline_type, users, before, min_uuid, after)
     
     to_remove = meta.explicit_fan_in_users if reason.explicit_based else ()
 
@@ -133,6 +132,7 @@ async def fan_in_chunk(
     user_ids: Iterable[pUUID],
     before: id_t | None,
     current_min_uuid: UUID,
+    after: int | None,
 ) -> UUID:
     
     dehydrated = await scatter_gather_users_dehydrated_posts(
@@ -141,6 +141,7 @@ async def fan_in_chunk(
         user_ids,
         CONF_FEED_BACKFILL_NUM_POSTS,
         before=before,
+        after=after,
     )
 
     min_uuid = uuid.MAX

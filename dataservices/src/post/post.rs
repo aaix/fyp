@@ -1,5 +1,5 @@
 use futures::{StreamExt, future::join_all};
-use scylla::{errors::FirstRowError, statement::prepared::PreparedStatement, value::{Counter, CqlTimeuuid, MaybeUnset}};
+use scylla::{errors::FirstRowError, statement::prepared::PreparedStatement, value::{Counter, CqlTimestamp, CqlTimeuuid, MaybeUnset}};
 use tonic::{Response, Status, async_trait};
 
 use crate::{db_conn::db, errors::DSResult, helpers::{gen_timeuuid, time_now}, maybe_opt_field, models::{post_num_counters::PostNumCounters, post_v2::PostV2}, protos::{dataservices::post_service::{CreatePostRequest, DehydratedPosts, DeletePostRequest, DeletePostResponse, ManyPostsResponse, PostResponse, ReadManyPostsRequest, ReadPostRequest, ReadUserPostsRequest, ReadUsersDehydratedPostsRequest, UpdatePostRequest, UserPostsResponse, UsersDehydratedPostsResponse, post_service_server::{PostService, PostServiceServer}}}, req_tuuid};
@@ -90,11 +90,11 @@ impl ScyllaPostService {
         ).await?;
 
         let read_user_posts_dehydrated_prepared_before = db().await.prepare(
-            "SELECT post_id FROM dataservices.post_v2 WHERE author_id = ? AND timeline_type = ? AND post_id < ? LIMIT ?"
+            "SELECT post_id FROM dataservices.post_v2 WHERE author_id = ? AND timeline_type = ? AND post_id < ? AND post_id > minTimeuuid(?) LIMIT ?"
         ).await?;
 
         let read_user_posts_dehydrated_prepared_no_before = db().await.prepare(
-            "SELECT post_id FROM dataservices.post_v2 WHERE author_id = ? AND timeline_type = ? LIMIT ?"
+            "SELECT post_id FROM dataservices.post_v2 WHERE author_id = ? AND timeline_type = ? AND post_id >= minTimeuuid(?) LIMIT ?"
         ).await?;
 
         Ok(Self {
@@ -379,9 +379,10 @@ impl ScyllaPostService {
     async fn _read_user_dehydrated_posts(
         &self,
         author_id: CqlTimeuuid,
-        timeline_type: &i32,
+        timeline_type: i32,
         maybe_before: &Option<CqlTimeuuid>,
-        limit: &i32,
+        limit: i32,
+        after: CqlTimestamp,
 
     ) -> DSResult<DehydratedPosts> {
             let mut pager = match maybe_before {
@@ -390,9 +391,10 @@ impl ScyllaPostService {
                 self.read_user_posts_dehydrated_prepared_before.clone(),
                     (
                         &author_id,
-                        &timeline_type,
+                        timeline_type,
                         &before,
-                        &limit,
+                        after,
+                        limit,
                     )
                 ).await?.rows_stream::<(CqlTimeuuid,)>()?
             }
@@ -401,14 +403,15 @@ impl ScyllaPostService {
                 self.read_user_posts_dehydrated_prepared_no_before.clone(),
                     (
                         &author_id,
-                        &timeline_type,
-                        &limit,
+                        timeline_type,
+                        after,
+                        limit,
                     )
                 ).await?.rows_stream::<(CqlTimeuuid,)>()?
             }
         };
 
-        let mut post_ids = Vec::with_capacity(*limit as usize);
+        let mut post_ids = Vec::with_capacity(limit as usize);
 
         while let Some(post_id_res) = pager.next().await {
             let post_id = post_id_res?;
@@ -431,10 +434,11 @@ impl ScyllaPostService {
 
         let maybe_before: Option<CqlTimeuuid> = inner.before.map(Into::into);
         let limit = inner.limit;
+        let after = CqlTimestamp(inner.after);
 
         let futures = inner.author_ids.iter().map(|author_id| {
             self._read_user_dehydrated_posts(
-                author_id.into(), &timeline_type, &maybe_before, &limit)
+                author_id.into(), timeline_type, &maybe_before, limit, after)
         });
 
         let posts = join_all(futures).await.into_iter().filter_map(|r| {

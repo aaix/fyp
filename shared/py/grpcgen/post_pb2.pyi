@@ -114,16 +114,18 @@ class UserPostsResponse(_message.Message):
     def __init__(self, posts: _Optional[_Iterable[_Union[PostResponse, _Mapping]]] = ...) -> None: ...
 
 class ReadUsersDehydratedPostsRequest(_message.Message):
-    __slots__ = ("author_ids", "limit", "timeline_type", "before")
+    __slots__ = ("author_ids", "limit", "timeline_type", "before", "after")
     AUTHOR_IDS_FIELD_NUMBER: _ClassVar[int]
     LIMIT_FIELD_NUMBER: _ClassVar[int]
     TIMELINE_TYPE_FIELD_NUMBER: _ClassVar[int]
     BEFORE_FIELD_NUMBER: _ClassVar[int]
+    AFTER_FIELD_NUMBER: _ClassVar[int]
     author_ids: _containers.RepeatedCompositeFieldContainer[_plib_pb2.pUUID]
     limit: int
     timeline_type: int
     before: _plib_pb2.pUUID
-    def __init__(self, author_ids: _Optional[_Iterable[_Union[_plib_pb2.pUUID, _Mapping]]] = ..., limit: _Optional[int] = ..., timeline_type: _Optional[int] = ..., before: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ...) -> None: ...
+    after: int
+    def __init__(self, author_ids: _Optional[_Iterable[_Union[_plib_pb2.pUUID, _Mapping]]] = ..., limit: _Optional[int] = ..., timeline_type: _Optional[int] = ..., before: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., after: _Optional[int] = ...) -> None: ...
 
 class UsersDehydratedPostsResponse(_message.Message):
     __slots__ = ("posts",)

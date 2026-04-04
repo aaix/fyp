@@ -144,6 +144,7 @@ async def scatter_gather_users_dehydrated_posts(
     user_ids: Iterable[pUUID],
     limit: int,
     before: id_t | None,
+    after: int | None,
 ) -> list[DehydratedPosts]:
     buckets = await bucketby(user_ids, lazy)
 
@@ -151,6 +152,7 @@ async def scatter_gather_users_dehydrated_posts(
         limit=limit,
         timeline_type=timeline_type.value,
         before=id_puuid(before) if before else None,
+        after=after,
     )
 
 
