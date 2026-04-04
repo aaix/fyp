@@ -1,7 +1,7 @@
 import grpc
 from google.auth.compute_engine import IDTokenCredentials
 from google.auth.transport.grpc import AuthMetadataPlugin
-from google.auth.transport.requests import Request
+from google.auth.transport._aiohttp_requests import Request
 
 from os import environ
 
@@ -27,8 +27,6 @@ class DiscoveryManager(SingletonMixin):
     def mediaservices_auth(self) -> grpc.CallCredentials | None:
         if not self.is_prod():
             return None
-
-        import requests
         
         audience = "https://" + self.discover_mediaservices().split(":", 1)[0]
         creds = IDTokenCredentials(Request(), target_audience=audience)
