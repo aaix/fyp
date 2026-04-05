@@ -1,11 +1,10 @@
-use std::time::Duration;
 
 use async_singleflight::UnaryGroup;
 use futures::{StreamExt, future::join_all};
 use scylla::{errors::FirstRowError, statement::prepared::PreparedStatement, value::{Counter, CqlTimestamp, CqlTimeuuid, MaybeUnset}};
 use tonic::{Response, Status, async_trait};
 
-use crate::{db_conn::db, errors::DSResult, helpers::{gen_timeuuid, time_now}, maybe_opt_field, models::{post_num_counters::PostNumCounters, post_v2::PostV2}, profile_statement, protos::dataservices::post_service::{CreatePostRequest, DehydratedPosts, DeletePostRequest, DeletePostResponse, ManyPostsResponse, PostResponse, ReadManyPostsRequest, ReadPostRequest, ReadUserPostsRequest, ReadUsersDehydratedPostsRequest, UpdatePostRequest, UserPostsResponse, UsersDehydratedPostsResponse, post_service_server::{PostService, PostServiceServer}}, req_tuuid};
+use crate::{db_conn::db, errors::DSResult, helpers::{gen_timeuuid, time_now}, maybe_opt_field, models::{post_num_counters::PostNumCounters, post_v2::PostV2}, protos::dataservices::post_service::{CreatePostRequest, DehydratedPosts, DeletePostRequest, DeletePostResponse, ManyPostsResponse, PostResponse, ReadManyPostsRequest, ReadPostRequest, ReadUserPostsRequest, ReadUsersDehydratedPostsRequest, UpdatePostRequest, UserPostsResponse, UsersDehydratedPostsResponse, post_service_server::{PostService, PostServiceServer}}, req_tuuid};
 
 const POST_AFTER_FLOOR: i64 = 24 * 60 * 60 * 1000; // 1 day (in ms)
 

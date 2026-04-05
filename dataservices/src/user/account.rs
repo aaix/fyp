@@ -6,6 +6,7 @@ use crate::protos::dataservices::user_service::{BulkUserResponse, CheckUsernameR
 use crate::protos::dataservices::{user_service};
 use crate::req_tuuid;
 
+use async_singleflight::UnaryGroup;
 use futures::future;
 use futures::stream::StreamExt;
 
@@ -34,6 +35,8 @@ pub struct ScyllaUserService {
     fetch_user_id_by_username_prepared: PreparedStatement,
 
     username_searcher_prepared: PreparedStatement, 
+
+    read_user_group: UnaryGroup<CqlTimeuuid, DSResult<ReadUserResponse>>
 }
 
 impl ScyllaUserService {
@@ -89,10 +92,22 @@ impl ScyllaUserService {
             update_user_prepared,
             fetch_user_id_by_username_prepared,
             username_searcher_prepared,
+            read_user_group: UnaryGroup::new()
         })
     }
 
     async fn _read_user_reuse(
+        &self,
+        user_id: CqlTimeuuid,
+    ) -> DSResult<ReadUserResponse> {
+        self.read_user_group.work(
+            &user_id,
+            self._read_user_reuse_nocoalesce(user_id)
+        ).await
+    }
+
+
+    async fn _read_user_reuse_nocoalesce(
         &self,
         user_id: CqlTimeuuid,
     ) -> DSResult<ReadUserResponse> {

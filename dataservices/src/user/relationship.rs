@@ -1,5 +1,6 @@
 use crate::{db_conn::db, errors::DSResult, helpers::time_now, models::{relationship_v2::RelationshipV2, user_num_relationships::UserNumRelationships}, protos::dataservices::user_service::{self, CreateRelationshipRequest, DeleteRelationshipResponse, GetUserRelationshipCountsRequest, GetUserRelationshipCountsResponse, HalfRelationship, ReadRelationshipRequest, ReadRelationshipResponse, ReadRelationshipsChunkedRequest, RelationshipsResponse, ReadRelationshipsRequest, RelationshipObject, RelationshipTestResponse, TestManyRelationshipsRequest, TestManyRelationshipsResponse}, req_tuuid};
 
+use async_singleflight::UnaryGroup;
 use futures::{StreamExt, future::join_all};
 use scylla::{errors::FirstRowError, statement::prepared::PreparedStatement, value::{Counter, CqlTimeuuid}};
 use tonic::{Request, Response, Status, async_trait};
@@ -21,6 +22,8 @@ pub struct ScyllaUserRelationshipService {
     test_relationship_prepared: PreparedStatement,
     read_relationship_counters_prepared: PreparedStatement,
     read_relationships_chunked_prepared: PreparedStatement,
+
+    relationships_counters_read_group: UnaryGroup<CqlTimeuuid, DSResult<GetUserRelationshipCountsResponse>>
 }
 
 
@@ -91,6 +94,8 @@ impl ScyllaUserRelationshipService {
             test_relationship_prepared,
             read_relationship_counters_prepared,
             read_relationships_chunked_prepared,
+
+            relationships_counters_read_group: UnaryGroup::new(),
         })
     }
 }
@@ -391,13 +396,10 @@ impl ScyllaUserRelationshipService {
         Ok(Response::new(RelationshipsResponse { relationships }))
     }
 
-    async fn get_user_relationship_counts_impl(
+    async fn _get_user_relationship_counts_no_coalesce(
         &self,
-        request: tonic::Request<GetUserRelationshipCountsRequest>,
-    ) -> DSResult<
-        tonic::Response<GetUserRelationshipCountsResponse>> {
-        let user_id: CqlTimeuuid = req_tuuid!(request, user_id)?;
-        let inner = request.get_ref();
+        user_id: CqlTimeuuid,
+    ) -> DSResult<GetUserRelationshipCountsResponse>{
         let row_res = db().await.execute_unpaged(
             &self.read_relationship_counters_prepared, 
         &(
@@ -420,13 +422,30 @@ impl ScyllaUserRelationshipService {
             }
         };
 
-
-        Ok(Response::new(GetUserRelationshipCountsResponse {
-            user_id: inner.user_id,
+        Ok(GetUserRelationshipCountsResponse {
+            user_id: Some(user_id.into()),
             num_friends,
             num_followers,
             num_following,
-        }))
+        })
+    }
+
+    async fn get_user_relationship_counts_impl(
+        &self,
+        request: tonic::Request<GetUserRelationshipCountsRequest>,
+    ) -> DSResult<
+        tonic::Response<GetUserRelationshipCountsResponse>> {
+        let user_id: CqlTimeuuid = req_tuuid!(request, user_id)?;
+        
+
+        let r = self.relationships_counters_read_group.work(
+            &user_id,
+            self._get_user_relationship_counts_no_coalesce(user_id)
+        ).await?;
+
+
+
+        Ok(Response::new(r))
     }
 
     async fn read_relationships_chunked_impl(
