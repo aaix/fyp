@@ -77,6 +77,7 @@ CREATE TABLE dataservices.user_num_relationships (
     user_id TIMEUUID,
     num_friends COUNTER,
     num_followers COUNTER,
+    opt_num_following COUNTER, -- opt bc it was added later
 
     PRIMARY KEY (user_id)
 );

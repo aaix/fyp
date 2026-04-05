@@ -42,10 +42,12 @@ async def get_user_profile(s: SessionParam, user: UserParam) -> UserProfileRespo
     if im_blocked:
         followers = None
         friends = None
+        following = None
     else:
         user_counters = await read_relationship_counts(grpcrelationship, user.user_id)
         followers = user_counters.num_followers
         friends = user_counters.num_friends
+        following = user_counters.num_following
         
     if can_i_view:
         # fetch posts
@@ -60,6 +62,7 @@ async def get_user_profile(s: SessionParam, user: UserParam) -> UserProfileRespo
         ),
         followers=followers,
         friends=friends,
+        following=following,
     )
 
 @UserRouter.get("/relationships")

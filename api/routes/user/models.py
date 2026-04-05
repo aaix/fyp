@@ -30,6 +30,7 @@ class UserProfileResponse(BaseModel):
     user: UserSearchResponse
     friends: int | None
     followers: int | None
+    following: int | None
 
 class UserRelationshipResponse(BaseModel):
     peer_id: UUID

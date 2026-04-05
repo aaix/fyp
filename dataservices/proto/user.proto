@@ -239,4 +239,5 @@ message GetUserRelationshipCountsResponse {
     plib.pUUID user_id = 1;
     int64 num_friends = 2;
     int64 num_followers = 3;
+    int64 num_following = 4;
 }

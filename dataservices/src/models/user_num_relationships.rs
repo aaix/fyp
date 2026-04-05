@@ -7,4 +7,5 @@ pub struct UserNumRelationships {
     pub user_id: value::CqlTimeuuid,
     pub num_friends: value::Counter,
     pub num_followers: value::Counter,
+    pub opt_num_following: Option<value::Counter>,
 }

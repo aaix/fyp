@@ -303,11 +303,13 @@ class GetUserRelationshipCountsRequest(_message.Message):
     def __init__(self, user_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ...) -> None: ...
 
 class GetUserRelationshipCountsResponse(_message.Message):
-    __slots__ = ("user_id", "num_friends", "num_followers")
+    __slots__ = ("user_id", "num_friends", "num_followers", "num_following")
     USER_ID_FIELD_NUMBER: _ClassVar[int]
     NUM_FRIENDS_FIELD_NUMBER: _ClassVar[int]
     NUM_FOLLOWERS_FIELD_NUMBER: _ClassVar[int]
+    NUM_FOLLOWING_FIELD_NUMBER: _ClassVar[int]
     user_id: _plib_pb2.pUUID
     num_friends: int
     num_followers: int
-    def __init__(self, user_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., num_friends: _Optional[int] = ..., num_followers: _Optional[int] = ...) -> None: ...
+    num_following: int
+    def __init__(self, user_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., num_friends: _Optional[int] = ..., num_followers: _Optional[int] = ..., num_following: _Optional[int] = ...) -> None: ...

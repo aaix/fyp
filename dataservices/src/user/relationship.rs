@@ -49,7 +49,7 @@ impl ScyllaUserRelationshipService {
         let modify_relationship_counters_prepared = db().await.prepare(
             "
             UPDATE dataservices.user_num_relationships \
-            SET num_friends = num_friends + ?, num_followers = num_followers + ? \
+            SET num_friends = num_friends + ?, num_followers = num_followers + ?, opt_num_following = opt_num_following + ? \
             WHERE user_id = ?;"
         ).await?;
 
@@ -117,12 +117,12 @@ impl ScyllaUserRelationshipService {
                     // increment a
                     db().await.execute_unpaged(
                         &self.modify_relationship_counters_prepared,
-                        (Counter(1), Counter(0), &user_a_id,),
+                        (Counter(1), Counter(0), Counter(0), &user_a_id,),
                     ),
                     // increment b
                     db().await.execute_unpaged(
                         &self.modify_relationship_counters_prepared,
-                        (Counter(1), Counter(0), &user_b_id,),
+                        (Counter(1), Counter(0), Counter(0), &user_b_id,),
                     )
                 );
                 if a.is_err() {
@@ -137,15 +137,28 @@ impl ScyllaUserRelationshipService {
                 
             },
             // a is following b
-            (REL_TYPE_A_FOLLOWING_B,REL_TYPE_B_FOLLOWING_A) => {
-                db().await.execute_unpaged(
-                    &self.modify_relationship_counters_prepared,
-                    (
-                        Counter(0),
-                        Counter(1),
-                        &user_b_id,
+            (REL_TYPE_A_FOLLOWING_B, REL_TYPE_B_FOLLOWING_A) => {
+                let (a, b) = tokio::join!(
+                    // a now following more
+                    db().await.execute_unpaged(
+                        &self.modify_relationship_counters_prepared,
+                        (Counter(0), Counter(0), Counter(1), &user_a_id,),
                     ),
-                ).await?;
+                    // b now has more followers
+                    db().await.execute_unpaged(
+                        &self.modify_relationship_counters_prepared,
+                        (Counter(0), Counter(1), Counter(0), &user_b_id,),
+                    )
+                );
+                if a.is_err() {
+                    tracing::error!("error updating counter a {a:?}");
+                }
+                if b.is_err() {
+                    tracing::error!("error updating counter b {b:?}");
+                }
+                if a.is_err() && b.is_err() {
+                    b?;
+                }
             },
             // default
             _ => {}
@@ -223,12 +236,12 @@ impl ScyllaUserRelationshipService {
                     // decrement a
                     db().await.execute_unpaged(
                         &self.modify_relationship_counters_prepared,
-                        (Counter(-1), Counter(0), &user_a_id,),
+                        (Counter(-1), Counter(0), Counter(0), &user_a_id,),
                     ),
                     // decrement b
                     db().await.execute_unpaged(
                         &self.modify_relationship_counters_prepared,
-                        (Counter(-1), Counter(0), &user_b_id,),
+                        (Counter(-1), Counter(0), Counter(0), &user_b_id,),
                     )
                 );
                 if a.is_err() {
@@ -243,14 +256,27 @@ impl ScyllaUserRelationshipService {
             },
             // a is following b
             (REL_TYPE_A_FOLLOWING_B, REL_TYPE_B_FOLLOWING_A) => {
-                db().await.execute_unpaged(
-                    &self.modify_relationship_counters_prepared,
-                    (
-                        Counter(0),
-                        Counter(-1),
-                        &user_b_id,
+                let (a, b) = tokio::join!(
+                    // a now following less
+                    db().await.execute_unpaged(
+                        &self.modify_relationship_counters_prepared,
+                        (Counter(0), Counter(0), Counter(-1), &user_a_id,),
                     ),
-                ).await?;
+                    // b now has less followers
+                    db().await.execute_unpaged(
+                        &self.modify_relationship_counters_prepared,
+                        (Counter(0), Counter(-1), Counter(0), &user_b_id,),
+                    )
+                );
+                if a.is_err() {
+                    tracing::error!("error updating counter a {a:?}");
+                }
+                if b.is_err() {
+                    tracing::error!("error updating counter b {b:?}");
+                }
+                if a.is_err() && b.is_err() {
+                    b?;
+                }
             },
             // default
             _ => {}
@@ -381,16 +407,16 @@ impl ScyllaUserRelationshipService {
 
 
         // in case of no row we can default to 0
-        let (num_friends, num_followers) = match row_res {
+        let (num_friends, num_followers, num_following) = match row_res {
             Err(e) => {
                 if let FirstRowError::RowsEmpty = e {
-                    (0, 0)
+                    (0, 0, 0)
                 } else {
                     return Err(e.into());
                 }
             }
             Ok(r) => {
-                (r.num_friends.0, r.num_followers.0)
+                (r.num_friends.0, r.num_followers.0, r.opt_num_following.map(|v| v.0).unwrap_or_default())
             }
         };
 
@@ -399,6 +425,7 @@ impl ScyllaUserRelationshipService {
             user_id: inner.user_id,
             num_friends,
             num_followers,
+            num_following,
         }))
     }
 
