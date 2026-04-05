@@ -135,7 +135,6 @@ CREATE TABLE dataservices.message (
 
 
 
--- COALESCE post ON post_id
 CREATE TABLE dataservices.post (
     post_id TIMEUUID,
     author_id TIMEUUID, -- foreign key: user.user_id
@@ -147,6 +146,7 @@ CREATE TABLE dataservices.post (
     PRIMARY KEY (author_id, post_id), -- route will have to be /user/id/post/id
 ) WITH CLUSTERING ORDER BY (post_id DESC);
 
+-- COALESCE post ON post_id
 CREATE TABLE dataservices.post_v2 (
     post_id TIMEUUID,
     author_id TIMEUUID, -- foreign key: user.user_id
@@ -158,15 +158,6 @@ CREATE TABLE dataservices.post_v2 (
     opt_last_edited TIMESTAMP,
     PRIMARY KEY ((author_id, timeline_type), post_id), -- route will have to be /user/id/post/id?t=1
 ) WITH CLUSTERING ORDER BY (post_id DESC);
-
-
--- COALESCE on user_id
--- optimisation table for deciding if we need to fan in a user
-CREATE TABLE dataservices.user_latest_post (
-    user_id TIMEUUID,
-    last_post_id TIMEUUID,
-    PRIMARY KEY (user_id);
-);
 
 
 -- COALESCE post_num_comments ON post_id
