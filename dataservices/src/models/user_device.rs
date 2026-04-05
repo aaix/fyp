@@ -2,7 +2,7 @@
 #![allow(nonstandard_style)]
 use scylla::DeserializeRow;
 use scylla::value;
-#[derive(Debug, DeserializeRow)]
+#[derive(Debug, DeserializeRow, Clone)]
 pub struct UserDevice {
     pub user_id: value::CqlTimeuuid,
     pub device_id: value::CqlTimeuuid,

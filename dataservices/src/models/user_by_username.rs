@@ -2,7 +2,7 @@
 #![allow(nonstandard_style)]
 use scylla::DeserializeRow;
 use scylla::value;
-#[derive(Debug, DeserializeRow)]
+#[derive(Debug, DeserializeRow, Clone)]
 pub struct UserByUsername {
     pub username: String,
     pub user_id: value::CqlTimeuuid,

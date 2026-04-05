@@ -111,7 +111,7 @@ class RustModelGenerator(ModelGenerator):
         dependencies.add("use scylla::DeserializeRow;")
 
         struct_name = "".join(word.capitalize() for word in self.table.name.split("_"))
-        lines.append("#[derive(Debug, DeserializeRow)]")
+        lines.append("#[derive(Debug, DeserializeRow, Clone)]")
         lines.append(f"pub struct {struct_name} {{")
 
         for row in self.table.rows:

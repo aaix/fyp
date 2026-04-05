@@ -3,7 +3,7 @@
 use scylla::DeserializeRow;
 use scylla::value;
 use std::collections::HashSet;
-#[derive(Debug, DeserializeRow)]
+#[derive(Debug, DeserializeRow, Clone)]
 pub struct UserTimelineMeta {
     pub user_id: value::CqlTimeuuid,
     pub timeline_type: i32,

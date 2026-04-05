@@ -2,7 +2,7 @@
 #![allow(nonstandard_style)]
 use scylla::DeserializeRow;
 use scylla::value;
-#[derive(Debug, DeserializeRow)]
+#[derive(Debug, DeserializeRow, Clone)]
 pub struct PostLike {
     pub post_id: value::CqlTimeuuid,
     pub liker_id: value::CqlTimeuuid,
