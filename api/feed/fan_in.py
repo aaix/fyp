@@ -3,7 +3,6 @@ from typing import Iterable
 from collections.abc import AsyncGenerator
 
 
-import time
 import uuid
 from uuid import UUID
 from datetime import UTC, datetime
@@ -23,9 +22,14 @@ from shared.py.grpcgen.user_pb2 import HalfRelationship
 from shared.py.tracing import tracer
 from shared.py.types import UNSET
 
-CONF_FOLLOWING_CHUNK_SIZE = 2 # 1000
-CONF_FAN_IN_CHUNK_SIZE = 2 # 500
-CONF_FEED_BACKFILL_NUM_POSTS = 2 # 10
+# read users following in chunks of 1000
+CONF_FOLLOWING_CHUNK_SIZE = 1000
+
+# fan in 500 users
+CONF_FAN_IN_CHUNK_SIZE = 500
+
+# with 20 posts from each user
+CONF_FEED_BACKFILL_NUM_POSTS = 20
 
 # fill friends with more posts because they dont get fanned in on demand like followers
 CONF_FEED_BACKFILL_FRIENDS_NUM_POSTS = 100
