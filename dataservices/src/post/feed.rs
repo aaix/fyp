@@ -1,3 +1,5 @@
+use std::convert::identity;
+
 use futures::{StreamExt, future::join_all};
 use scylla::{statement::prepared::PreparedStatement, value::{CqlTimeuuid, MaybeUnset}};
 use tonic::{Response, async_trait};
@@ -61,6 +63,10 @@ impl ScyllaFeedService {
         let add_to_feed_prepared = db().await.prepare(
             "INSERT INTO dataservices.user_timeline_entry (user_id, timeline_type, post_author_id, post_id, entry_type)\
             VALUES (?, ?, ?, ?, ?)"
+        ).await?;
+
+        let remove_from_feed_prepared = db().await.prepare(
+            "DELETE FROM dataservices.user_timeline_entry WHERE user_id = ? AND timeline_type = ? AND post_id = ?"
         ).await?;
 
         Ok(Self {
@@ -207,12 +213,45 @@ impl ScyllaFeedService {
 
     }
 
+
     async fn add_to_feeds_impl(
         &self,
         request: tonic::Request<AddToFeedsRequest>,
     ) -> DSResult<
         tonic::Response<AddToFeedsResponse>> {
-        todo!()
+        let author_id: CqlTimeuuid = req_tuuid!(request, author_id)?;
+        let post_id: CqlTimeuuid = req_tuuid!(request, post_id)?;
+
+        let owned = request.into_inner();
+        let timeline_type = owned.timeline_type;
+        let entry_type = owned.entry_type;
+
+
+        let futures = owned.user_ids.iter().map(async |entry| {
+
+            let user_id: CqlTimeuuid = entry.into();
+            
+            let res = db().await.execute_unpaged(
+                &self.add_to_feed_prepared,
+                (
+                    user_id,
+                    timeline_type,
+                    author_id,
+                    post_id,
+                    entry_type,
+                )
+            ).await;
+
+            if let Err(e) = res {
+                tracing::error!("{e:?}");
+            }
+            Some(1)
+        });
+
+
+        let successes = join_all(futures).await.into_iter().filter_map(identity).reduce(|acc, e| acc+e).unwrap_or(0);
+
+        Ok(Response::new(AddToFeedsResponse { successes }))
     }
 
     async fn remove_from_feed_impl(

@@ -1,4 +1,6 @@
+import asyncio
 from collections.abc import Iterable, Iterator
+from functools import partial
 from typing import cast
 
 from enum import Enum, IntEnum
@@ -10,6 +12,8 @@ from shared.py.grpc.lazy import DataservicesLazyGRPC
 from shared.py.grpcgen import feed_pb2_grpc
 from shared.py.grpcgen.feed_pb2 import *
 from shared.py.grpcgen.plib_pb2 import pUUID
+from shared.py.misc import bucketby
+from shared.py.tracing import tracer
 from shared.py.types import UNSET, MaybeUnset
 
 class StrTimelineType(str, Enum):
@@ -105,3 +109,29 @@ async def add_posts_to_feed(
         to_add=posts,
         entry_type=entry_type,
     )))
+
+
+@instrument_call
+@tracer.start_as_current_span("feed.scatter_gather_add_to_feeds")
+async def scatter_gather_add_to_feeds(
+    lazy: DataservicesLazyGRPC[feed_pb2_grpc.FeedServiceStub],
+    author_id: id_t,
+    timeline_type: TimelineType,
+    post_id: id_t,
+    entry_type: EntryType,
+    user_ids: Iterable[pUUID],
+) -> int:
+    buckets = await bucketby(user_ids, lazy)
+
+    partial_req = partial(AddToFeedsRequest,
+        timeline_type=timeline_type.value,
+        post_id=id_puuid(post_id),
+        author_id=id_puuid(author_id),
+        entry_type=entry_type.value,
+    )
+
+
+    res = cast(list[AddToFeedsResponse], await asyncio.gather(*(
+        grpc.AddToFeeds(partial_req(user_ids=users)) for grpc, users in buckets.items()
+    )))
+    return sum(rpc.successes for rpc in res)

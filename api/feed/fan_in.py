@@ -25,7 +25,10 @@ from shared.py.types import UNSET
 
 CONF_FOLLOWING_CHUNK_SIZE = 2 # 1000
 CONF_FAN_IN_CHUNK_SIZE = 2 # 500
-CONF_FEED_BACKFILL_NUM_POSTS = 2
+CONF_FEED_BACKFILL_NUM_POSTS = 2 # 10
+
+# fill friends with more posts because they dont get fanned in on demand like followers
+CONF_FEED_BACKFILL_FRIENDS_NUM_POSTS = 100
 
 
 MIN_UUID_V1 = UUID("00000000-0000-1000-8000-000000000000")
@@ -75,20 +78,30 @@ async def do_feed_fan_in(
     span = trace.get_current_span()
     span.set_attribute("az.api.feed.fan_in.reason", str(reason))
 
-    users: list[pUUID] = []
-
-    if reason.explicit_based:
-        users.extend(meta.explicit_fan_in_users)
-
-
     if not reason.before_based:
         before = None
 
     min_uuid = uuid.MAX
 
+
+    # fan in explicit first because the after may mess with
+    # fanning in old posts from new friends
+    if reason.explicit_based:
+        min_uuid = await fan_in_chunk(
+            user_id,
+            timeline_type,
+            meta.explicit_fan_in_users,
+            None,
+            min_uuid,
+            None,
+            CONF_FEED_BACKFILL_FRIENDS_NUM_POSTS
+        )
+
+
     # only fan in followers if we have a reason
     # otherwise wait for time based cool down if it was from explicit based
     if before or reason.time_based:
+        users: list[pUUID] = []
 
         last_fanned_in_at=int((datetime.now(UTC).timestamp() - 1) * 1000)
 
@@ -133,13 +146,14 @@ async def fan_in_chunk(
     before: id_t | None,
     current_min_uuid: UUID,
     after: int | None,
+    to_backfill = CONF_FEED_BACKFILL_NUM_POSTS,
 ) -> UUID:
     
     dehydrated = await scatter_gather_users_dehydrated_posts(
         grpcpost,
         timeline_type,
         user_ids,
-        CONF_FEED_BACKFILL_NUM_POSTS,
+        to_backfill,
         before=before,
         after=after,
     )
@@ -160,7 +174,7 @@ async def fan_in_chunk(
         # only update the MIN value if the users posts fetched was greater or equal to the num requested
         # i.e. if the user has less posts, then all their posts are in the feed
         # so there is no reason to look back
-        if len(entry.post_ids) >= CONF_FEED_BACKFILL_NUM_POSTS and (last := puuid_uuid(entry.post_ids[-1])):
+        if len(entry.post_ids) >= to_backfill and (last := puuid_uuid(entry.post_ids[-1])):
             min_uuid = min(last, min_uuid)
 
     if len(posts) > 0:

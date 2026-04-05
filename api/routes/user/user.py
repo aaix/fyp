@@ -5,6 +5,7 @@ from fastapi import APIRouter, Query
 
 from api import *
 
+from api import feed
 from api.routes.user.models import *
 from api.types.params import UserParam
 from api.utils import now, unwrap
@@ -175,6 +176,8 @@ async def friend_user(s: SessionParam, peer: UserParam) -> UserRelationshipRespo
         # upgrade to friends
         await send_friend_update(peer.user_id, s.user_id, RelationshipType.FRIENDS)
 
+        await feed.handle_new_friend(peer.user_id, s.user_id)
+
         await r.set_friends()
         # cancel their request to me
         await PeerRelationshipManager(grpcrelationship, peer.user_id, s.user_id).cancel_request_to_peer()
@@ -210,6 +213,7 @@ async def unfriend_user(s: SessionParam, peer: UserParam) -> None:
             return
 
         if await r.are_friends():
+            await feed.handle_remove_friend(peer.user_id, s.user_id)
             await r.unfriend()
             await send_friend_update(peer.user_id, s.user_id, None)
 

@@ -18,7 +18,11 @@ class FanInReason:
     explicit_based: bool
 
     def __bool__(self) -> bool:
-        return self.time_based or self.before_based
+        return any((
+            self.time_based,
+            self.before_based,
+            self.explicit_based
+        ))
 
 
 

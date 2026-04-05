@@ -8,6 +8,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Header, Query, Request, UploadFile
 
 from api import *
+from api import feed
 from api.routes.post.models import *
 from api.tracing import tracer
 from api.types.params import PostParam, TimelineTypeParam, UserParam, UserWithProfileVisibleParam
@@ -90,6 +91,9 @@ async def new_post_task(
 
         edited = await edit_post(grpcpost, post.author_id, post.post_id, timeline_type, is_private=False)
         await send_post_update(post, PostUpdateType.FANNING_OUT)
+
+        await feed.fan_out(post.author_id, timeline_type, post.post_id)
+
         await send_post_update(post, PostUpdateType.FANNED_OUT)
 
 
