@@ -3,11 +3,11 @@ use std::time::Duration;
 use async_singleflight::UnaryGroup;
 use futures::{StreamExt, future::join_all};
 use scylla::{errors::FirstRowError, statement::prepared::PreparedStatement, value::{Counter, CqlTimestamp, CqlTimeuuid, MaybeUnset}};
-use tokio::time::sleep;
 use tonic::{Response, Status, async_trait};
 
 use crate::{db_conn::db, errors::DSResult, helpers::{gen_timeuuid, time_now}, maybe_opt_field, models::{post_num_counters::PostNumCounters, post_v2::PostV2}, profile_statement, protos::dataservices::post_service::{CreatePostRequest, DehydratedPosts, DeletePostRequest, DeletePostResponse, ManyPostsResponse, PostResponse, ReadManyPostsRequest, ReadPostRequest, ReadUserPostsRequest, ReadUsersDehydratedPostsRequest, UpdatePostRequest, UserPostsResponse, UsersDehydratedPostsResponse, post_service_server::{PostService, PostServiceServer}}, req_tuuid};
 
+const POST_AFTER_FLOOR: i64 = 24 * 60 * 60 * 1000; // 1 day (in ms)
 
 
 fn post_to_post_response(post: PostV2, post_counters: Option<PostNumCounters>) -> PostResponse {
@@ -44,8 +44,11 @@ pub struct ScyllaPostService {
     delete_post_counters_prepared: PreparedStatement,
     read_user_posts_dehydrated_prepared_before: PreparedStatement,
     read_user_posts_dehydrated_prepared_no_before: PreparedStatement,
+
     post_read_group: UnaryGroup<(CqlTimeuuid, CqlTimeuuid, i32), DSResult<PostResponse>>,
     post_counters_read_group: UnaryGroup<CqlTimeuuid, DSResult<PostNumCounters>>,
+    user_posts_read_group: UnaryGroup<(CqlTimeuuid, i32, Option<CqlTimeuuid>, i32), DSResult<Vec<PostResponse>>>,
+    user_dehydrated_posts_read_group: UnaryGroup<(CqlTimeuuid, i32, Option<CqlTimeuuid>, i32, i64), DSResult<DehydratedPosts>>
 }
 
 impl ScyllaPostService {
@@ -105,6 +108,8 @@ impl ScyllaPostService {
 
         let post_read_group = UnaryGroup::new();
         let post_counters_read_group = UnaryGroup::new();
+        let user_posts_read_group = UnaryGroup::new();
+        let user_dehydrated_posts_read_group = UnaryGroup::new();
 
         Ok(Self {
             create_post_prepared,
@@ -119,13 +124,15 @@ impl ScyllaPostService {
             read_user_posts_dehydrated_prepared_no_before,
             post_read_group,
             post_counters_read_group,
+            user_posts_read_group,
+            user_dehydrated_posts_read_group,
         })
     }
 }
 
 impl ScyllaPostService {
 
-        async fn _read_post_reuse(
+    async fn _read_post_reuse(
         &self,
         author_id: CqlTimeuuid,
         post_id: CqlTimeuuid,
@@ -144,14 +151,14 @@ impl ScyllaPostService {
         timeline_type: i32,
     ) -> DSResult<PostResponse> {
 
-        let row = profile_statement!("read_post", db().await.execute_unpaged(
+        let row = db().await.execute_unpaged(
             &self.read_post_prepared,
             (
                 author_id,
                 post_id,
                 timeline_type,
             )
-        ).await)?.into_rows_result()?.first_row::<PostV2>()?;
+        ).await?.into_rows_result()?.first_row::<PostV2>()?;
 
         let counters = self._read_post_counters_reuse_nocoalesce(post_id).await?;
 
@@ -345,19 +352,13 @@ impl ScyllaPostService {
         Ok(Response::new(ManyPostsResponse { responses: responses }))
     }
 
-    async fn read_user_posts_impl(
+    async fn _read_user_posts_nocoalesce(
         &self,
-        request: tonic::Request<ReadUserPostsRequest>,
-    ) -> DSResult<
-        tonic::Response<UserPostsResponse>> {
-        let author_id: CqlTimeuuid = req_tuuid!(request, author_id)?;
-        let inner = request.get_ref();
-
-        let timeline_type = inner.timeline_type;
-
-        let maybe_before: Option<CqlTimeuuid> = inner.before.map(Into::into);
-        let limit = inner.limit;
-
+        author_id: CqlTimeuuid,
+        timeline_type: i32,
+        maybe_before: &Option<CqlTimeuuid>,
+        limit: i32
+    ) -> DSResult<Vec<PostResponse>> {
         let pager = match maybe_before {
             Some(before) => {
                 db().await.execute_iter(
@@ -401,20 +402,45 @@ impl ScyllaPostService {
             posts.push(post);
         };
 
+        Ok(posts)
+    }
+
+
+    async fn read_user_posts_impl(
+        &self,
+        request: tonic::Request<ReadUserPostsRequest>,
+    ) -> DSResult<
+        tonic::Response<UserPostsResponse>> {
+        let author_id: CqlTimeuuid = req_tuuid!(request, author_id)?;
+        let inner = request.get_ref();
+
+        let timeline_type = inner.timeline_type;
+
+        let maybe_before: Option<CqlTimeuuid> = inner.before.map(Into::into);
+        let limit = inner.limit;
+
+        let posts = self.user_posts_read_group.work(
+            &(author_id, timeline_type, maybe_before, limit),
+            self._read_user_posts_nocoalesce(author_id, timeline_type, &maybe_before, limit)
+        ).await?;
+
         Ok(Response::new(UserPostsResponse { posts }))
 
     }
 
-    async fn _read_user_dehydrated_posts(
+    async fn _read_user_dehydrated_posts_nocoalesce(
         &self,
         author_id: CqlTimeuuid,
         timeline_type: i32,
         maybe_before: &Option<CqlTimeuuid>,
         limit: i32,
-        after: CqlTimestamp,
+        after: i64,
 
     ) -> DSResult<DehydratedPosts> {
-            let mut pager = match maybe_before {
+
+        let after_time = CqlTimestamp(after);
+
+        let mut pager = match maybe_before {
             Some(before) => {
                 db().await.execute_iter(
                 self.read_user_posts_dehydrated_prepared_before.clone(),
@@ -422,7 +448,7 @@ impl ScyllaPostService {
                         &author_id,
                         timeline_type,
                         &before,
-                        after,
+                        after_time,
                         limit,
                     )
                 ).await?.rows_stream::<(CqlTimeuuid,)>()?
@@ -433,7 +459,7 @@ impl ScyllaPostService {
                     (
                         &author_id,
                         timeline_type,
-                        after,
+                        after_time,
                         limit,
                     )
                 ).await?.rows_stream::<(CqlTimeuuid,)>()?
@@ -463,11 +489,17 @@ impl ScyllaPostService {
 
         let maybe_before: Option<CqlTimeuuid> = inner.before.map(Into::into);
         let limit = inner.limit;
-        let after = CqlTimestamp(inner.after);
 
-        let futures = inner.author_ids.iter().map(|author_id| {
-            self._read_user_dehydrated_posts(
-                author_id.into(), timeline_type, &maybe_before, limit, after)
+        // we round post after down for more efficient request coalescing
+        let after = inner.after - (inner.after % POST_AFTER_FLOOR);
+
+        let futures = inner.author_ids.iter().map(async |author_id| {
+            let author_id = author_id.into();
+            self.user_dehydrated_posts_read_group.work(
+                &(author_id, timeline_type, maybe_before, limit, after),
+                self._read_user_dehydrated_posts_nocoalesce(author_id, timeline_type, &maybe_before, limit, after)
+            ).await
+            
         });
 
         let posts = join_all(futures).await.into_iter().filter_map(|r| {
