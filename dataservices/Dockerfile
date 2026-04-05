@@ -41,4 +41,7 @@ WORKDIR /az7
 
 COPY --from=builder /az7/target/${mode}/dataservices /usr/local/bin/dataservices
 
+ARG backtrace=0
+ENV RUST_BACKTRACE=$backtrace
+
 ENTRYPOINT ["dataservices"]

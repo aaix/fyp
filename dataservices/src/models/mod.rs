@@ -10,7 +10,6 @@ pub mod channel_counter;
 pub mod message;
 pub mod post;
 pub mod post_v2;
-pub mod user_latest_post;
 pub mod post_num_counters;
 pub mod user_timeline_meta;
 pub mod user_timeline_entry;

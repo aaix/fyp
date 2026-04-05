@@ -3,7 +3,7 @@ use tonic::Status;
 
 use tracing;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct DSStatus(Status);
 
 pub type DSResult<V> = Result<V, DSStatus>;

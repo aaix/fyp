@@ -1,8 +1,12 @@
+use std::time::Duration;
+
+use async_singleflight::UnaryGroup;
 use futures::{StreamExt, future::join_all};
 use scylla::{errors::FirstRowError, statement::prepared::PreparedStatement, value::{Counter, CqlTimestamp, CqlTimeuuid, MaybeUnset}};
+use tokio::time::sleep;
 use tonic::{Response, Status, async_trait};
 
-use crate::{db_conn::db, errors::DSResult, helpers::{gen_timeuuid, time_now}, maybe_opt_field, models::{post_num_counters::PostNumCounters, post_v2::PostV2}, protos::{dataservices::post_service::{CreatePostRequest, DehydratedPosts, DeletePostRequest, DeletePostResponse, ManyPostsResponse, PostResponse, ReadManyPostsRequest, ReadPostRequest, ReadUserPostsRequest, ReadUsersDehydratedPostsRequest, UpdatePostRequest, UserPostsResponse, UsersDehydratedPostsResponse, post_service_server::{PostService, PostServiceServer}}}, req_tuuid};
+use crate::{db_conn::db, errors::DSResult, helpers::{gen_timeuuid, time_now}, maybe_opt_field, models::{post_num_counters::PostNumCounters, post_v2::PostV2}, profile_statement, protos::dataservices::post_service::{CreatePostRequest, DehydratedPosts, DeletePostRequest, DeletePostResponse, ManyPostsResponse, PostResponse, ReadManyPostsRequest, ReadPostRequest, ReadUserPostsRequest, ReadUsersDehydratedPostsRequest, UpdatePostRequest, UserPostsResponse, UsersDehydratedPostsResponse, post_service_server::{PostService, PostServiceServer}}, req_tuuid};
 
 
 
@@ -40,6 +44,8 @@ pub struct ScyllaPostService {
     delete_post_counters_prepared: PreparedStatement,
     read_user_posts_dehydrated_prepared_before: PreparedStatement,
     read_user_posts_dehydrated_prepared_no_before: PreparedStatement,
+    post_read_group: UnaryGroup<(CqlTimeuuid, CqlTimeuuid, i32), DSResult<PostResponse>>,
+    post_counters_read_group: UnaryGroup<CqlTimeuuid, DSResult<PostNumCounters>>,
 }
 
 impl ScyllaPostService {
@@ -97,6 +103,9 @@ impl ScyllaPostService {
             "SELECT post_id FROM dataservices.post_v2 WHERE author_id = ? AND timeline_type = ? AND post_id >= minTimeuuid(?) LIMIT ?"
         ).await?;
 
+        let post_read_group = UnaryGroup::new();
+        let post_counters_read_group = UnaryGroup::new();
+
         Ok(Self {
             create_post_prepared,
             read_post_prepared,
@@ -108,36 +117,56 @@ impl ScyllaPostService {
             delete_post_counters_prepared,
             read_user_posts_dehydrated_prepared_before,
             read_user_posts_dehydrated_prepared_no_before,
+            post_read_group,
+            post_counters_read_group,
         })
     }
 }
 
 impl ScyllaPostService {
 
-    async fn _read_post_reuse(
+        async fn _read_post_reuse(
+        &self,
+        author_id: CqlTimeuuid,
+        post_id: CqlTimeuuid,
+        timeline_type: i32,
+    ) -> DSResult<PostResponse> {
+        self.post_read_group.work(
+            &(author_id, post_id, timeline_type),
+            self._read_post_reuse_nocoalesce(author_id, post_id, timeline_type)
+        ).await
+    }
+
+    async fn _read_post_reuse_nocoalesce(
         &self,
         author_id: CqlTimeuuid,
         post_id: CqlTimeuuid,
         timeline_type: i32,
     ) -> DSResult<PostResponse> {
 
-        let row = db().await.execute_unpaged(
+        let row = profile_statement!("read_post", db().await.execute_unpaged(
             &self.read_post_prepared,
             (
                 author_id,
                 post_id,
                 timeline_type,
             )
-        ).await?.into_rows_result()?.first_row::<PostV2>()?;
+        ).await)?.into_rows_result()?.first_row::<PostV2>()?;
 
-        let counters = self._read_post_counters_reuse(post_id).await?;
-
+        let counters = self._read_post_counters_reuse_nocoalesce(post_id).await?;
 
         Ok(post_to_post_response(row, Some(counters)))
 
     }
 
     async fn _read_post_counters_reuse(&self, post_id: CqlTimeuuid) -> DSResult<PostNumCounters>{
+        self.post_counters_read_group.work(
+            &post_id,
+            self._read_post_counters_reuse_nocoalesce(post_id)
+        ).await
+    }
+
+    async fn _read_post_counters_reuse_nocoalesce(&self, post_id: CqlTimeuuid) -> DSResult<PostNumCounters> {
 
         let row_res = db().await.execute_unpaged(
             &self.read_post_num_counters_prepared,

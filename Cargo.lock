@@ -126,6 +126,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "async_singleflight"
+version = "0.6.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f73e25684fbd8c3133c63435327c100f7fcd0c96a172734640b7c96f77c71f21"
+dependencies = [
+ "pin-project",
+ "thiserror",
+ "tokio",
+]
+
+[[package]]
 name = "atomic"
 version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1051,6 +1062,7 @@ dependencies = [
 name = "dataservices"
 version = "0.1.0"
 dependencies = [
+ "async_singleflight",
  "bigpicture",
  "futures",
  "init-tracing-opentelemetry",
