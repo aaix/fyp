@@ -30,10 +30,12 @@ impl From<Status> for DSStatus {
 
 impl From<FirstRowError> for DSStatus {
     fn from(value: FirstRowError) -> Self {
-        tracing::error!("FirstRowError: {:?}", value);
         return match value {
             FirstRowError::RowsEmpty => Status::not_found("no row found"),
-            _ => Status::internal("deserialise data fail")
+            _ => {
+                tracing::error!("First row error {value:?}");
+                Status::internal("deserialise data fail")
+            }
         }.into()
     }
 }
