@@ -354,6 +354,34 @@ export class RelationshipManager {
         return p;
     }
 
+
+    
+    /**
+     * Page relationships for a type
+     * only intended to be used for displaying users
+     * e.g. listing my followers
+     *
+     * @async
+     * @param {number} rel_type 
+     * @param {string} after 
+     * @returns {APIResponse} 
+     */
+    async pageRelationships(rel_type, after) {
+        const params = new URLSearchParams();
+        params.append("t", rel_type);
+        if (after != null && after !== "") {
+            params.append("after", after);
+        }
+        const q = params.toString();
+
+        return await API.GET(`user/relationships/chunked?${q.toString()}`);
+    }
+
+    getMyRelationshipsCount() {
+        return API.GET("user/relationships/count"); 
+    }
+
+
     /**
      * Drops any cache for this peer and loads relationship types from the API (full profile query set).
      */

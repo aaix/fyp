@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Self
 from uuid import UUID
 
 from fastapi import Query
@@ -19,6 +19,7 @@ __all__ = (
     "UserProfileResponse",
     "RelationshipsResponse",
     "UserRelationshipResponse",
+    "RelationshipsCountResponse",
 )
 
 
@@ -28,14 +29,35 @@ type UsernameSearchQuery = Annotated[str, Query(max_length=USERNAME_MAX_LENGTH, 
 
 class UserProfileResponse(BaseModel):
     user: UserSearchResponse
-    friends: int | None
-    followers: int | None
-    following: int | None
+    relationships: RelationshipsCountResponse
+    public: bool
+    can_i_view: bool
 
 class UserRelationshipResponse(BaseModel):
     peer_id: UUID
     relationship: RelationshipType
     created_at: int
 
+    @classmethod
+    def from_rpc(cls, t: RelationshipType, rpc: user_pb2.HalfRelationship) -> Self:
+        return cls(
+            peer_id=puuid_uuid(rpc.user_id_b) or unwrap(),
+            relationship=t,
+            created_at=rpc.created_at
+        )
+
 class RelationshipsResponse(BaseModel):
     relationships: list[UserRelationshipResponse]
+
+class RelationshipsCountResponse(BaseModel):
+    following: int | None
+    followers: int | None
+    friends: int | None
+
+    @classmethod
+    def from_rpc(cls, rpc: user_pb2.GetUserRelationshipCountsResponse) -> Self:
+        return cls(
+            following=rpc.num_following,
+            followers=rpc.num_followers,
+            friends=rpc.num_friends,
+        )

@@ -1,4 +1,5 @@
 from typing import Annotated, cast
+from uuid import UUID
 
 
 from fastapi import APIRouter, Query
@@ -13,7 +14,7 @@ from api.utils import now, unwrap
 from shared.py.intraservice import client as intraclient
 from shared.py.grpc.id import id_puuid, puuid_uuid, id_t
 from shared.py.grpc.lazy import DataservicesLazyGRPC
-from shared.py.grpc.relationship import PeerRelationshipManager, RelationshipType, can_i_view_peer_profile, read_relationship_counts, read_relationships
+from shared.py.grpc.relationship import PeerRelationshipManager, RelationshipType, can_i_view_peer_profile, read_relationship_counts, read_relationships, read_relationships_chunkned
 from shared.py.pydantic.pem import PEMPublicKey
 from shared.py.grpcgen import internalmessage_pb2, user_pb2, user_pb2_grpc
 
@@ -48,10 +49,6 @@ async def get_user_profile(s: SessionParam, user: UserParam) -> UserProfileRespo
         followers = user_counters.num_followers
         friends = user_counters.num_friends
         following = user_counters.num_following
-        
-    if can_i_view:
-        # fetch posts
-        pass
 
     return UserProfileResponse(
         user=UserSearchResponse(
@@ -60,10 +57,21 @@ async def get_user_profile(s: SessionParam, user: UserParam) -> UserProfileRespo
             public_key=PEMPublicKey.from_bytes(user.public_key),
             username=user.username,
         ),
-        followers=followers,
-        friends=friends,
-        following=following,
+        relationships=RelationshipsCountResponse(
+            followers=followers,
+            following=following,
+            friends=friends,
+        ),
+        public=user.is_public,
+        can_i_view=can_i_view
     )
+
+@UserRouter.get("/relationships/count")
+async def get_my_relationships_count(s: SessionParam) -> RelationshipsCountResponse:
+    counters = await read_relationship_counts(grpcrelationship, s.user_id)
+
+    return RelationshipsCountResponse.from_rpc(counters)
+
 
 @UserRouter.get("/relationships")
 async def my_relationships(s: SessionParam, t: Annotated[RelationshipType, Query()]) -> RelationshipsResponse:
@@ -74,12 +82,25 @@ async def my_relationships(s: SessionParam, t: Annotated[RelationshipType, Query
 
     for r in res.relationships:
         out.append(
-            UserRelationshipResponse(
-                peer_id=puuid_uuid(r.user_id_b) or unwrap(),
-                created_at=r.created_at,
-                relationship=t
-            )
+            UserRelationshipResponse.from_rpc(t, r)
         )
+    return RelationshipsResponse(relationships=out)
+
+@UserRouter.get("/relationships/chunked")
+async def chunk_relationships(
+    s: SessionParam,
+    t: Annotated[RelationshipType, Query()],
+    after: Annotated[UUID | None, Query()] = None
+):
+    res = await read_relationships_chunkned(grpcrelationship, s.user_id, t, after, chunk_size=20)
+
+    out = []
+
+    for r in res.relationships:
+        out.append(
+            UserRelationshipResponse.from_rpc(t, r)
+        )
+    
     return RelationshipsResponse(relationships=out)
 
 @UserRouter.get("/relationship/{user_id}")

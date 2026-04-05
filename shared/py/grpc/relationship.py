@@ -7,7 +7,7 @@ from uuid import UUID
 
 
 from shared.py.grpc import instrument_call
-from shared.py.grpc.id import id_t, id_puuid
+from shared.py.grpc.id import id_compare, id_t, id_puuid
 from shared.py.grpc.lazy import DataservicesLazyGRPC
 from shared.py.grpcgen import user_pb2
 from shared.py.grpc.lazy import DataservicesLazyGRPC
@@ -228,6 +228,10 @@ class PeerRelationshipManager:
 
 
 async def can_i_view_peer_profile(lazy: DataservicesLazyGRPC[UserRelationshipServiceStub], me: id_t, peer: user_pb2.ReadUserResponse) -> tuple[bool, bool]:
+
+    if id_compare(peer.user_id, me):
+        return False, True
+
     if peer.is_public:
         fetch_on_entry = (RelationshipType.PEER_BLOCKED_CURRENT,) # no
     else:
