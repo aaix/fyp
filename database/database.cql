@@ -199,8 +199,10 @@ CREATE TABLE dataservices.post_comment (
     PRIMARY KEY (post_id, comment_id),
 );
 
+-- will require lwts for updating post counters
 CREATE TABLE dataservices.post_like (
     post_id TIMEUUID, -- foreign key: post.post_id
+    bucket INT, -- derived from liker id so partition size limited
     liker_id TIMEUUID, -- foreign key: user.user_id
-    PRIMARY KEY (post_id, liker_id)
+    PRIMARY KEY ((post_id, bucket), liker_id)
 );
