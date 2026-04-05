@@ -8,11 +8,13 @@ import { PostTileGrid } from './PostTile.jsx'
  * No header or settings link; the parent (AccountPage or UserPage) provides those.
  *
  * @param {Object} props
- * @param {{ username: string, iconUrl: string | null, friendsCount?: number | null, followersCount?: number | null, userId?: string | null }} props.profile
+ * @param {{ username: string, iconUrl: string | null, friendsCount?: number | null, followersCount?: number | null, followingCount?: number | null, userId?: string | null }} props.profile
  * @param {boolean} [props.loading]
  * @param {string | null} [props.error]
  * @param {string | null} [props.avatarError] - Shown when avatar upload fails (e.g. on account page).
  * @param {() => void} [props.onFriendsClick] - When set, the friends stat is a button that calls this.
+ * @param {() => void} [props.onFollowersClick]
+ * @param {() => void} [props.onFollowingClick]
  * @param {React.ReactNode} [props.actions] - Optional actions (e.g. buttons) rendered below the stats row.
  * @param {(file: File) => void} [props.onAvatarFileSelected] - When set, avatar shows hover overlay and opens file picker on click.
  * @param {boolean} [props.avatarUploading]
@@ -31,6 +33,8 @@ export default function ProfileView({
   error = null,
   avatarError = null,
   onFriendsClick = null,
+  onFollowersClick = null,
+  onFollowingClick = null,
   actions = null,
   onAvatarFileSelected = null,
   avatarUploading = false,
@@ -50,10 +54,12 @@ export default function ProfileView({
     userId = null,
     friendsCount = 0,
     followersCount = 0,
+    followingCount = 0,
   } = profile ?? {}
 
   const friendsDisplay = friendsCount === null ? '-' : friendsCount
   const followersDisplay = followersCount === null ? '-' : followersCount
+  const followingDisplay = followingCount === null ? '-' : followingCount
 
   const friendsStat = (
     <span className="flex flex-col items-center gap-0.5">
@@ -70,6 +76,15 @@ export default function ProfileView({
         {followersDisplay}
       </strong>
       <span className="text-xs text-[color:var(--text-muted)]">followers</span>
+    </span>
+  )
+
+  const followingStat = (
+    <span className="flex flex-col items-center gap-0.5">
+      <strong className="text-lg font-bold text-[color:var(--text-primary)]">
+        {followingDisplay}
+      </strong>
+      <span className="text-xs text-[color:var(--text-muted)]">following</span>
     </span>
   )
 
@@ -155,7 +170,7 @@ export default function ProfileView({
           {avatarError}
         </p>
       )}
-      <div className="mt-2 flex gap-8">
+      <div className="mt-2 flex flex-wrap justify-center gap-6 sm:gap-8">
         {onFriendsClick ? (
           <Button
             type="button"
@@ -170,7 +185,34 @@ export default function ProfileView({
         ) : (
           friendsStat
         )}
-        {followersStat}
+        {onFollowersClick ? (
+          <Button
+            type="button"
+            variant="text"
+            size="sm"
+            onClick={onFollowersClick}
+            className="flex-col gap-0.5"
+            aria-label={`${followersCount === null ? 'Unknown' : followersCount} followers. View list`}
+          >
+            {followersStat}
+          </Button>
+        ) : (
+          followersStat
+        )}
+        {onFollowingClick ? (
+          <Button
+            type="button"
+            variant="text"
+            size="sm"
+            onClick={onFollowingClick}
+            className="flex-col gap-0.5"
+            aria-label={`${followingCount === null ? 'Unknown' : followingCount} following. View list`}
+          >
+            {followingStat}
+          </Button>
+        ) : (
+          followingStat
+        )}
       </div>
       {actions != null ? <div className="mt-4 w-full">{actions}</div> : null}
       <section

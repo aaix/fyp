@@ -112,25 +112,64 @@ function countFieldFromUserPayload(v) {
   return v ?? 0
 }
 
+/** Prefer `relationships` from profile API; fall back to legacy flat fields on `user`. */
+function countsFromUserOrRelationships(user) {
+  const rel = user?.relationships
+  if (rel && typeof rel === 'object') {
+    return {
+      friendsCount: countFieldFromUserPayload(rel.friends),
+      followersCount: countFieldFromUserPayload(rel.followers),
+      followingCount: countFieldFromUserPayload(rel.following),
+    }
+  }
+  return {
+    friendsCount: countFieldFromUserPayload(user?.friends),
+    followersCount: countFieldFromUserPayload(user?.followers),
+    followingCount: countFieldFromUserPayload(user?.following),
+  }
+}
+
+function countsFromProfileRaw(raw) {
+  const rel = raw?.relationships
+  if (rel && typeof rel === 'object') {
+    return {
+      friendsCount: countFieldFromUserPayload(rel.friends),
+      followersCount: countFieldFromUserPayload(rel.followers),
+      followingCount: countFieldFromUserPayload(rel.following),
+    }
+  }
+  return {
+    friendsCount: countFieldFromUserPayload(raw?.friends),
+    followersCount: countFieldFromUserPayload(raw?.followers),
+    followingCount: countFieldFromUserPayload(raw?.following),
+  }
+}
+
 function userToProfile(user, routeUserId) {
   const uid = user?.user_id ?? routeUserId ?? null
+  const counts = user ? countsFromUserOrRelationships(user) : { friendsCount: 0, followersCount: 0, followingCount: 0 }
   if (!user && !routeUserId) {
-    return { username: '', iconUrl: null, friendsCount: 0, followersCount: 0, userId: null }
-  }
-  if (!user) {
     return {
       username: '',
       iconUrl: null,
       friendsCount: 0,
       followersCount: 0,
+      followingCount: 0,
+      userId: null,
+    }
+  }
+  if (!user) {
+    return {
+      username: '',
+      iconUrl: null,
+      ...counts,
       userId: uid ? String(uid) : null,
     }
   }
   return {
     username: user.username ?? '',
     iconUrl: user.icon_url ?? (user.user_id ? getAvatarUrl(user) : null),
-    friendsCount: countFieldFromUserPayload(user.friends),
-    followersCount: countFieldFromUserPayload(user.followers),
+    ...counts,
     userId: user.user_id ?? (routeUserId != null ? String(routeUserId) : null),
   }
 }
@@ -187,25 +226,25 @@ export default function UserPage() {
         if (profileRes?.success && profileRes?.data) {
           const raw = profileRes.data
           const user = raw?.user ?? raw
-          const friendsCount = countFieldFromUserPayload(raw.friends)
-          const followersCount = countFieldFromUserPayload(raw.followers)
+          const { friendsCount, followersCount, followingCount } = countsFromProfileRaw(raw)
           setProfile({
             username: user?.username ?? '',
             iconUrl: user ? getAvatarUrl(user) : null,
             friendsCount,
             followersCount,
+            followingCount,
             userId: user?.user_id ?? userId ?? null,
           })
         } else if (profileRes?.data) {
           const raw = profileRes.data
           const user = raw?.user ?? raw
-          const friendsCount = countFieldFromUserPayload(raw.friends)
-          const followersCount = countFieldFromUserPayload(raw.followers)
+          const { friendsCount, followersCount, followingCount } = countsFromProfileRaw(raw)
           setProfile({
             username: user?.username ?? '',
             iconUrl: user ? getAvatarUrl(user) : null,
             friendsCount,
             followersCount,
+            followingCount,
             userId: user?.user_id ?? userId ?? null,
           })
         }
@@ -248,13 +287,31 @@ export default function UserPage() {
       const profileRes = await userManager.getUserProfile(userId)
       const raw = profileRes?.data
       if (!raw) return
-      const friendsCount = raw.friends
-      const followersCount = raw.followers
-      if (friendsCount === undefined && followersCount === undefined) return
+      const rel = raw.relationships
+      let friendsCount
+      let followersCount
+      let followingCount
+      if (rel && typeof rel === 'object') {
+        friendsCount = rel.friends
+        followersCount = rel.followers
+        followingCount = rel.following
+      } else {
+        friendsCount = raw.friends
+        followersCount = raw.followers
+        followingCount = raw.following
+      }
+      if (
+        friendsCount === undefined &&
+        followersCount === undefined &&
+        followingCount === undefined
+      ) {
+        return
+      }
       setProfile((p) => ({
         ...p,
         ...(friendsCount !== undefined ? { friendsCount } : {}),
         ...(followersCount !== undefined ? { followersCount } : {}),
+        ...(followingCount !== undefined ? { followingCount } : {}),
       }))
     } catch (e) {
       console.error(e)

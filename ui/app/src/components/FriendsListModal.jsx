@@ -1,19 +1,18 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { relationshipManager, userManager } from '../lib/user.js'
 import { getAvatarUrl } from '../lib/utils.js'
 import ModalCloseButton from './ModalCloseButton.jsx'
-import UserAvatar from './UserAvatar.jsx'
 import useEscapeToClose from './useEscapeToClose.js'
+import RelationshipListRow from './RelationshipListRow.jsx'
 
 const FRIENDS = 3
 
 /**
  * Modal that lists the current user's friends (avatar + username, link to profile).
  * Fetches relationships and resolves each peer to profile inside.
- * @param {{ open: boolean, onClose: () => void }} props
+ * @param {{ open: boolean, onClose: () => void, onRelationshipChanged?: () => void }} props
  */
-export default function FriendsListModal({ open, onClose }) {
+export default function FriendsListModal({ open, onClose, onRelationshipChanged }) {
   const [list, setList] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
@@ -35,24 +34,26 @@ export default function FriendsListModal({ open, onClose }) {
           return
         }
         const relationships = res?.data?.relationships ?? []
-        const friendPeerIds = relationships.map((r) => r.peer_id)
+        const friendPeerIds = relationships.map((r) => String(r.peer_id))
 
         if (friendPeerIds.length === 0) {
           setList([])
           return
         }
 
-
         const users = await userManager.fetchUsersBulk(friendPeerIds)
         if (cancelled) return
-        const profiles = users.map((user) => ({
-          user_id: user.user_id,
-          username: user?.username ?? '',
-          icon_url: user ? getAvatarUrl(user) : null,
-        }))
+        const profiles = friendPeerIds.map((id) => {
+          const user = users.find((u) => String(u.user_id) === String(id))
+          return {
+            user_id: id,
+            username: user?.username ?? '',
+            icon_url: user ? getAvatarUrl(user) : null,
+          }
+        })
         setList(profiles)
       } catch (e) {
-        console.error(e);
+        console.error(e)
         if (!cancelled) setError(e?.message ?? 'Could not load friends')
       } finally {
         if (!cancelled) setLoading(false)
@@ -67,9 +68,6 @@ export default function FriendsListModal({ open, onClose }) {
   useEscapeToClose(open, onClose)
 
   if (!open) return null
-
-  const rowBase =
-    'flex w-full items-center gap-3 border-b border-[color:var(--card-border)] px-1 py-2 text-left text-sm text-[color:var(--text-primary)] hover:bg-[color:var(--card-bg)]'
 
   return (
     <div
@@ -107,29 +105,20 @@ export default function FriendsListModal({ open, onClose }) {
           </p>
         )}
         {!loading && !error && list.length === 0 && (
-          <p className="py-4 text-sm text-[color:var(--text-muted)]">
-            No friends yet.
-          </p>
+          <p className="py-4 text-sm text-[color:var(--text-muted)]">No friends yet.</p>
         )}
         {!loading && list.length > 0 && (
           <ul className="space-y-0.5" role="list">
             {list.map((friend) => (
-              <li key={friend.user_id}>
-                <Link
-                  to={`/user/${friend.user_id}`}
-                  state={{ user: friend }}
-                  className={rowBase}
-                  onClick={onClose}
-                >
-                  <UserAvatar
-                    userId={friend.user_id}
-                    src={friend.icon_url}
-                    alt={friend.username ? `${friend.username}'s avatar` : 'User avatar'}
-                    className="h-11 w-11 flex-shrink-0 rounded-full border border-[color:var(--card-border)] object-cover"
-                  />
-                  <span className="font-medium">@{friend.username || 'user'}</span>
-                </Link>
-              </li>
+              <RelationshipListRow
+                key={friend.user_id}
+                peerId={String(friend.user_id)}
+                username={friend.username}
+                iconUrl={friend.icon_url}
+                variant="friends"
+                onRelationshipChanged={onRelationshipChanged}
+                onNavigateToProfile={onClose}
+              />
             ))}
           </ul>
         )}

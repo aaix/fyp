@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { getCurrentSession } from '../lib/session.js'
 import { getAvatarUrl } from '../lib/utils.js'
 import { relationshipManager } from '../lib/user.js'
@@ -6,16 +6,18 @@ import ProfileView from '../components/ProfileView.jsx'
 import PageContainer from '../components/PageContainer.jsx'
 import { useUserPosts } from '../hooks/useUserPosts.js'
 import FriendsListModal from '../components/FriendsListModal.jsx'
+import RelationshipPagedModal from '../components/RelationshipPagedModal.jsx'
 import IconLinkButton from '../components/IconLinkButton.jsx'
 import { FEED_TYPE_MAIN, FEED_TYPE_SHORTS } from '../lib/post.js'
 
-const FRIENDS = 3
 const MAX_AVATAR_BYTES = 10_000_000
 
 export default function AccountPage() {
   const [profile, setProfile] = useState({
     username: '',
     friendsCount: 0,
+    followersCount: 0,
+    followingCount: 0,
     iconUrl: null,
     userId: null,
   })
@@ -24,6 +26,8 @@ export default function AccountPage() {
   const [avatarError, setAvatarError] = useState(null)
   const [avatarUploading, setAvatarUploading] = useState(false)
   const [friendsModalOpen, setFriendsModalOpen] = useState(false)
+  const [followersModalOpen, setFollowersModalOpen] = useState(false)
+  const [followingModalOpen, setFollowingModalOpen] = useState(false)
   const [postsFeedType, setPostsFeedType] = useState(FEED_TYPE_MAIN)
 
   const {
@@ -36,13 +40,29 @@ export default function AccountPage() {
   } = useUserPosts(profile.userId, postsFeedType)
   const postsGridLoading = postsLoading || (loading && !profile.userId)
 
+  const refreshRelationshipCounts = useCallback(async () => {
+    try {
+      const countRes = await relationshipManager.getMyRelationshipsCount()
+      if (!countRes?.success) return
+      const c = countRes.data ?? {}
+      setProfile((p) => ({
+        ...p,
+        ...(c.friends !== undefined ? { friendsCount: c.friends } : {}),
+        ...(c.followers !== undefined ? { followersCount: c.followers } : {}),
+        ...(c.following !== undefined ? { followingCount: c.following } : {}),
+      }))
+    } catch (e) {
+      console.error(e)
+    }
+  }, [])
+
   const loadAccountInfo = async () => {
     try {
       setError(null)
       const session = getCurrentSession()
-      const [accountRes, relRes] = await Promise.all([
+      const [accountRes, countRes] = await Promise.all([
         session.getCurrentAccount(),
-        relationshipManager.getRelationships(FRIENDS),
+        relationshipManager.getMyRelationshipsCount(),
       ])
 
       if (!accountRes?.success) {
@@ -53,16 +73,18 @@ export default function AccountPage() {
       const data = accountRes.data || {}
       const iconUrl = getAvatarUrl(data)
 
-      const friendsCount = relRes?.success ? (relRes?.data?.relationships?.length ?? 0) : 0
-
+      const c = countRes?.success ? countRes.data ?? {} : {}
+      const n = (v) => (v !== undefined ? v : 0)
       setProfile({
         username: data.username ?? '',
-        friendsCount,
+        friendsCount: countRes?.success ? n(c.friends) : 0,
+        followersCount: countRes?.success ? n(c.followers) : 0,
+        followingCount: countRes?.success ? n(c.following) : 0,
         iconUrl,
         userId: data.user_id ?? null,
       })
     } catch (e) {
-      console.error(e);
+      console.error(e)
       setError(e.message || 'Could not load account')
     } finally {
       setLoading(false)
@@ -99,9 +121,7 @@ export default function AccountPage() {
   return (
     <PageContainer>
       <header className="flex items-center justify-between gap-3 border-b border-[color:var(--card-border)] pb-3">
-        <h1 className="m-0 text-xl font-bold text-[color:var(--text-primary)]">
-          My Profile
-        </h1>
+        <h1 className="m-0 text-xl font-bold text-[color:var(--text-primary)]">My Profile</h1>
         <div className="flex items-center gap-1">
           <IconLinkButton to="/notifications" label="Friend requests" icon="notifications" />
           <IconLinkButton to="/account/settings" label="Settings" icon="settings" />
@@ -115,6 +135,8 @@ export default function AccountPage() {
         onAvatarFileSelected={handleAvatarFileSelected}
         avatarUploading={avatarUploading}
         onFriendsClick={() => setFriendsModalOpen(true)}
+        onFollowersClick={() => setFollowersModalOpen(true)}
+        onFollowingClick={() => setFollowingModalOpen(true)}
         posts={posts}
         postsLoading={postsGridLoading}
         postsError={postsError}
@@ -130,6 +152,23 @@ export default function AccountPage() {
       <FriendsListModal
         open={friendsModalOpen}
         onClose={() => setFriendsModalOpen(false)}
+        onRelationshipChanged={refreshRelationshipCounts}
+      />
+      <RelationshipPagedModal
+        open={followersModalOpen}
+        onClose={() => setFollowersModalOpen(false)}
+        relType={relationshipManager.PEER_FOLLOWING_CURRENT}
+        title="Followers"
+        rowVariant="followers"
+        onRelationshipChanged={refreshRelationshipCounts}
+      />
+      <RelationshipPagedModal
+        open={followingModalOpen}
+        onClose={() => setFollowingModalOpen(false)}
+        relType={relationshipManager.CURRENT_FOLLOWING_PEER}
+        title="Following"
+        rowVariant="following"
+        onRelationshipChanged={refreshRelationshipCounts}
       />
     </PageContainer>
   )
