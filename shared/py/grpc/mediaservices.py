@@ -6,14 +6,15 @@ from collections.abc import AsyncGenerator
 from fastapi import UploadFile
 from grpc import RpcError, StatusCode
 
-from api.responses import ApiErrExc, errors
+from api.responses import errors
 from api.utils import RpcErrHandler
 from shared.py import asset
 from shared.py.grpc.id import id_t
 from shared.py.grpc.lazy import LazyGRPC
 from shared.py.grpcgen.asset_pb2 import Asset
-from shared.py.grpcgen.media_pb2 import MediaInput, TransformImageRequest, TransformImageResponse, TransformVideoResponse
+from shared.py.grpcgen.media_pb2 import MediaInput, TransformImageResponse, TransformVideoResponse
 from shared.py.grpcgen import media_pb2_grpc
+
 
 CHUNK_SIZE = 1 * 1000 * 1000 # 1mb
 

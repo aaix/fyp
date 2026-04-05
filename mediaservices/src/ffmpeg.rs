@@ -21,15 +21,17 @@ pub async fn transcode(
 
     let mut process = Command::new("ffmpeg")
         .kill_on_drop(true)
+        .arg("-analyzeduration").arg("1000000") // 1s
+        .arg("-probesize").arg("15M") // 15mb buffer to find the frame info
         .arg("-i").arg("pipe:0")
         .arg("-c:v").arg("libvpx-vp9") // video codec
         .arg("-c:a").arg("libopus")    // audio vodec
         .arg("-f").arg("webm") // webm out
         .arg("-error-resilient").arg("1")
-        .arg("-cpu-used").arg("6")
+        .arg("-cpu-used").arg("5")
         .arg("-threads").arg("8") 
         .arg("-row-mt").arg("1")
-        .arg("-deadline").arg("realtime ")
+        .arg("-deadline").arg("realtime")
         .arg("pipe:1")
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
@@ -55,6 +57,7 @@ pub async fn transcode(
             }
 
         }
+        tracing::info!("Exhausted stream and droping stdin");
         drop(stdin); // explicit drop bc we are done with input data
         MSResult::Ok(())
     }).map_err(|j| {tracing::error!("Error joining writer {j:?}"); MSError::Unknown("Error joining writer")});
