@@ -41,6 +41,9 @@ export default function PostPage() {
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false)
   const [actionError, setActionError] = useState(null)
   const [pipelineSteps, setPipelineSteps] = useState(() => [])
+  const [likedByMe, setLikedByMe] = useState(false)
+  const [likePending, setLikePending] = useState(false)
+  const [likeError, setLikeError] = useState(null)
 
   const sessionUserId = getSessionUserId()
 
@@ -70,6 +73,11 @@ export default function PostPage() {
     setPostError(null)
     setDraftBody(next?.body != null ? String(next.body) : '')
   }, [location.key, statePost])
+
+  useEffect(() => {
+    setLikedByMe(false)
+    setLikeError(null)
+  }, [urlPostId])
 
   useEffect(() => {
     if (!routeParamsValid || !feedTypeKey) return
@@ -240,6 +248,37 @@ export default function PostPage() {
       }
     }
 
+    const handleLikeToggle = async () => {
+      if (!feedTypeKey || post?.post_id == null || likePending) return
+      setLikeError(null)
+      setLikePending(true)
+      try {
+        const res = likedByMe
+          ? await postManager.unlikePost(String(urlAuthorId), feedTypeKey, String(post.post_id))
+          : await postManager.likePost(String(urlAuthorId), feedTypeKey, String(post.post_id))
+        if (res?.success) {
+          setLikedByMe((v) => !v)
+          const refresh = await postManager.getPost(
+            String(urlAuthorId),
+            feedTypeKey,
+            String(urlPostId),
+          )
+          if (refresh?.success && refresh.data) {
+            setPost(refresh.data)
+          }
+        } else {
+          const msg = res?.error?.message ?? 'Could not update like'
+          setLikeError(msg)
+          console.error(res?.error)
+        }
+      } catch (e) {
+        console.error(e)
+        setLikeError(e?.message ?? 'Could not update like')
+      } finally {
+        setLikePending(false)
+      }
+    }
+
     const handleDelete = async () => {
       if (!authorId || post?.post_id == null || !feedTypeKey) return
       try {
@@ -392,6 +431,11 @@ export default function PostPage() {
             last_edited={post.last_edited ?? null}
             num_comments={post.num_comments ?? 0}
             num_likes={post.num_likes ?? 0}
+            likeInteractive
+            likedByMe={likedByMe}
+            likePending={likePending}
+            likeError={likeError}
+            onLikeToggle={handleLikeToggle}
           />
           <ConfirmModal
             open={confirmDeleteOpen}

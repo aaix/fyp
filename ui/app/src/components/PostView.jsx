@@ -89,6 +89,11 @@ export default function PostView({
   className = '',
   isPreview = false,
   previewAuthor = null,
+  likeInteractive = false,
+  likedByMe = false,
+  likePending = false,
+  likeError = null,
+  onLikeToggle = null,
 }) {
   const [authorUsername, setAuthorUsername] = useState(() =>
     isPreview && previewAuthor ? previewAuthor.username : '',
@@ -238,27 +243,62 @@ export default function PostView({
 
       {body ? <PostBodyText key={body} body={body} /> : null}
 
-      <div className="flex items-center gap-6 border-t border-[color:var(--card-border)] px-3 py-2.5 text-sm text-[color:var(--text-muted)]">
-        <span className="inline-flex items-center gap-1.5">
-          <span
-            className="material-symbols-outlined text-lg"
-            style={{ fontVariationSettings: '"FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24' }}
-            aria-hidden
-          >
-            favorite
+      <div className="flex flex-col gap-1 border-t border-[color:var(--card-border)] px-3 py-2.5 text-sm text-[color:var(--text-muted)]">
+        <div className="flex items-center gap-6">
+          {likeInteractive && typeof onLikeToggle === 'function' ? (
+            <button
+              type="button"
+              onClick={onLikeToggle}
+              disabled={likePending}
+              aria-pressed={likedByMe}
+              aria-label={likedByMe ? 'Unlike' : 'Like'}
+              className={`inline-flex items-center gap-1.5 rounded-button border-0 bg-transparent p-0 text-left transition-colors disabled:opacity-60 ${
+                likedByMe
+                  ? 'text-[color:var(--accent)]'
+                  : 'text-[color:var(--text-muted)] hover:text-[color:var(--text-primary)]'
+              }`}
+            >
+              <span
+                className="material-symbols-outlined text-lg"
+                style={{
+                  fontVariationSettings: likedByMe
+                    ? '"FILL" 1, "wght" 400, "GRAD" 0, "opsz" 24'
+                    : '"FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24',
+                }}
+                aria-hidden
+              >
+                favorite
+              </span>
+              <span>{num_likes ?? 0}</span>
+            </button>
+          ) : (
+            <span className="inline-flex items-center gap-1.5">
+              <span
+                className="material-symbols-outlined text-lg"
+                style={{ fontVariationSettings: '"FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24' }}
+                aria-hidden
+              >
+                favorite
+              </span>
+              <span>{num_likes ?? 0}</span>
+            </span>
+          )}
+          <span className="inline-flex items-center gap-1.5">
+            <span
+              className="material-symbols-outlined text-lg"
+              style={{ fontVariationSettings: '"FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24' }}
+              aria-hidden
+            >
+              chat_bubble
+            </span>
+            <span>{num_comments ?? 0}</span>
           </span>
-          <span>{num_likes ?? 0}</span>
-        </span>
-        <span className="inline-flex items-center gap-1.5">
-          <span
-            className="material-symbols-outlined text-lg"
-            style={{ fontVariationSettings: '"FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24' }}
-            aria-hidden
-          >
-            chat_bubble
-          </span>
-          <span>{num_comments ?? 0}</span>
-        </span>
+        </div>
+        {likeError ? (
+          <p className="text-xs text-red-600" role="alert">
+            {likeError}
+          </p>
+        ) : null}
       </div>
     </Card>
   )
