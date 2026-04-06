@@ -46,14 +46,16 @@ class PostResponse(_message.Message):
     def __init__(self, post_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., author_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., asset_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., post_type: _Optional[int] = ..., body: _Optional[_Union[_wrappers_pb2.StringValue, _Mapping]] = ..., last_edited: _Optional[_Union[_wrappers_pb2.Int64Value, _Mapping]] = ..., num_comments: _Optional[int] = ..., num_likes: _Optional[int] = ..., is_private: bool = ..., liked_by_me: _Optional[_Union[_wrappers_pb2.BoolValue, _Mapping]] = ...) -> None: ...
 
 class ReadPostRequest(_message.Message):
-    __slots__ = ("post_id", "author_id", "timeline_type")
+    __slots__ = ("post_id", "author_id", "timeline_type", "liked_by")
     POST_ID_FIELD_NUMBER: _ClassVar[int]
     AUTHOR_ID_FIELD_NUMBER: _ClassVar[int]
     TIMELINE_TYPE_FIELD_NUMBER: _ClassVar[int]
+    LIKED_BY_FIELD_NUMBER: _ClassVar[int]
     post_id: _plib_pb2.pUUID
     author_id: _plib_pb2.pUUID
     timeline_type: int
-    def __init__(self, post_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., author_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., timeline_type: _Optional[int] = ...) -> None: ...
+    liked_by: _plib_pb2.pUUID
+    def __init__(self, post_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., author_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., timeline_type: _Optional[int] = ..., liked_by: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ...) -> None: ...
 
 class UpdatePostRequest(_message.Message):
     __slots__ = ("author_id", "post_id", "timeline_type", "field_mask", "body", "is_private")
@@ -85,13 +87,23 @@ class DeletePostResponse(_message.Message):
     __slots__ = ()
     def __init__(self) -> None: ...
 
+class HalfReadPostRequest(_message.Message):
+    __slots__ = ("post_id", "author_id")
+    POST_ID_FIELD_NUMBER: _ClassVar[int]
+    AUTHOR_ID_FIELD_NUMBER: _ClassVar[int]
+    post_id: _plib_pb2.pUUID
+    author_id: _plib_pb2.pUUID
+    def __init__(self, post_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., author_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ...) -> None: ...
+
 class ReadManyPostsRequest(_message.Message):
-    __slots__ = ("requests", "liked_by")
+    __slots__ = ("requests", "timeline_type", "liked_by")
     REQUESTS_FIELD_NUMBER: _ClassVar[int]
+    TIMELINE_TYPE_FIELD_NUMBER: _ClassVar[int]
     LIKED_BY_FIELD_NUMBER: _ClassVar[int]
-    requests: _containers.RepeatedCompositeFieldContainer[ReadPostRequest]
+    requests: _containers.RepeatedCompositeFieldContainer[HalfReadPostRequest]
+    timeline_type: int
     liked_by: _plib_pb2.pUUID
-    def __init__(self, requests: _Optional[_Iterable[_Union[ReadPostRequest, _Mapping]]] = ..., liked_by: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ...) -> None: ...
+    def __init__(self, requests: _Optional[_Iterable[_Union[HalfReadPostRequest, _Mapping]]] = ..., timeline_type: _Optional[int] = ..., liked_by: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ...) -> None: ...
 
 class ManyPostsResponse(_message.Message):
     __slots__ = ("responses",)

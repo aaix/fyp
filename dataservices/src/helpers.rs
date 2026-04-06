@@ -1,7 +1,7 @@
 use std::{sync::OnceLock, time::{SystemTime, UNIX_EPOCH}};
 use scylla::value::{CqlTimestamp, CqlTimeuuid};
 use mac_address::get_mac_address;
-use uuid::{Timestamp, Uuid};
+use uuid::Uuid;
 
 
 static NODE_ID: OnceLock<[u8; 6]> = OnceLock::new();

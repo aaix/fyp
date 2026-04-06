@@ -102,6 +102,7 @@ async def read_post(
     author_id: id_t,
     post_id: id_t,
     timeline_type: TimelineType,
+    liked_by: id_t | None = None,
 ) -> PostResponse:
     
     stub = await lazy(post_id)
@@ -109,6 +110,7 @@ async def read_post(
         post_id=id_puuid(post_id),
         author_id=id_puuid(author_id),
         timeline_type=timeline_type,
+        liked_by=id_puuid(liked_by) if liked_by else None,
     )))
 
 async def edit_post(
@@ -165,10 +167,9 @@ async def scatter_gather_users_dehydrated_posts(
 def _entries_to_request(timeline_type: TimelineType, entries: Iterable[FeedEntry], liked_by: id_t | None) -> ReadManyPostsRequest:
 
     requests = [
-        ReadPostRequest(
+        HalfReadPostRequest(
             post_id=e.post_id,
-            author_id=e.post_author_id,
-            timeline_type=timeline_type.value
+            author_id=e.post_author_id
         )
         for e in entries
     ]
@@ -176,6 +177,7 @@ def _entries_to_request(timeline_type: TimelineType, entries: Iterable[FeedEntry
     return ReadManyPostsRequest(
         requests=requests,
         liked_by=id_puuid(liked_by) if liked_by else None,
+        timeline_type=timeline_type.value,
     )
 
 @tracer.start_as_current_span("posts.scatter_gather_posts")

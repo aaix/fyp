@@ -2,7 +2,6 @@ use futures::StreamExt;
 use init_tracing_opentelemetry::tracing_opentelemetry::OpenTelemetrySpanExt;
 use scylla::{statement::prepared::PreparedStatement, value::{CqlTimeuuid, MaybeUnset}};
 use tonic::{Request, Response, Status, async_trait};
-use uuid::Uuid;
 
 use crate::{db_conn::db, errors::DSResult, helpers::{calc_bucket, gen_timeuuid, time_now}, models::message::Message, profile_statement, protos::dataservices::message_service::{
     CreateMessageRequest, DeleteMessageRequest, DeleteMessageResponse, MessageObject, ReadMessageRequest, ReadMessagesRequest, ReadMessagesResponse, UpdateMessageRequest, message_service_server::{MessageService, MessageServiceServer}

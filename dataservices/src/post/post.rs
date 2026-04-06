@@ -4,7 +4,7 @@ use futures::{StreamExt, future::join_all};
 use scylla::{errors::FirstRowError, statement::prepared::PreparedStatement, value::{Counter, CqlTimestamp, CqlTimeuuid, MaybeUnset}};
 use tonic::{Response, Status, async_trait};
 
-use crate::{db_conn::db, errors::DSResult, helpers::{calc_bucket, gen_timeuuid, time_now}, maybe_opt_field, models::{post_like::{LWTPostLike, PostLike}, post_num_counters::PostNumCounters, post_v2::PostV2}, protos::dataservices::post_service::{post_service_server::{PostService, PostServiceServer}, *}, req_tuuid};
+use crate::{db_conn::db, errors::DSResult, helpers::{calc_bucket, gen_timeuuid, time_now}, maybe_opt_field, models::{post_like::LWTPostLike, post_num_counters::PostNumCounters, post_v2::PostV2}, protos::dataservices::post_service::{post_service_server::{PostService, PostServiceServer}, *}, req_tuuid};
 
 const POST_AFTER_FLOOR: i64 = 24 * 60 * 60 * 1000; // 1 day (in ms)
 
@@ -165,11 +165,31 @@ impl ScyllaPostService {
         author_id: CqlTimeuuid,
         post_id: CqlTimeuuid,
         timeline_type: i32,
+        maybe_liked_by: Option<CqlTimeuuid>,
     ) -> DSResult<PostResponse> {
-        self.post_read_group.work(
-            &(author_id, post_id, timeline_type),
+
+        let key = &(author_id, post_id, timeline_type);
+        let read_post = self.post_read_group.work(
+            key,
             self._read_post_reuse_nocoalesce(author_id, post_id, timeline_type)
-        ).await
+        );
+
+        let (post_res, like) = match maybe_liked_by {
+            Some(liked_by) => {
+                let (post, liked_res) = tokio::join!(read_post, self._read_post_liked_by(post_id, liked_by));
+
+                if let Err(ref e) = liked_res {
+                    tracing::error!("Error fetching like {e:?}");
+                }
+
+                (post, liked_res.ok())
+            },
+            None => (read_post.await, None)
+        };
+
+        let mut post = post_res?;
+        post.liked_by_me = like;
+        Ok(post)
     }
 
     async fn _read_post_reuse_nocoalesce(
@@ -281,9 +301,11 @@ impl ScyllaPostService {
         let post_id: CqlTimeuuid = req_tuuid!(request, post_id)?;
         let author_id: CqlTimeuuid = req_tuuid!(request, author_id)?;
         let timeline_type = request.get_ref().timeline_type;
+        let liked_by = request.get_ref().liked_by.map(Into::into);
 
 
-        Ok(Response::new(self._read_post_reuse(author_id, post_id, timeline_type).await?))
+
+        Ok(Response::new(self._read_post_reuse(author_id, post_id, timeline_type, liked_by).await?))
 
     }
 
@@ -324,7 +346,7 @@ impl ScyllaPostService {
             )
         ).await?;
 
-        Ok(Response::new(self._read_post_reuse(author_id, post_id, timeline_type).await?))
+        Ok(Response::new(self._read_post_reuse(author_id, post_id, timeline_type, None).await?))
 
     }
 
@@ -363,36 +385,22 @@ impl ScyllaPostService {
         tonic::Response<ManyPostsResponse>> {
 
         let maybe_liked_by: Option<CqlTimeuuid> = request.get_ref().liked_by.map(Into::into);
+        let timeline_type = request.get_ref().timeline_type;
         
         let futures = request.get_ref().requests.iter().map(async |r| {
             let author_id = r.author_id?.into();
             let post_id = r.post_id?.into();
-            let timeline_type = r.timeline_type;
     
-            let read_post = self._read_post_reuse(author_id, post_id, timeline_type);
-            let (post, like) = match maybe_liked_by {
-                Some(liked_by) => {
-                    let (post, liked_res) =tokio::join!(read_post, self._read_post_liked_by(post_id, liked_by));
+            let post_res = self._read_post_reuse(
+                author_id, post_id, timeline_type, maybe_liked_by
+            ).await;
 
-                    if let Err(ref e) = liked_res {
-                        tracing::error!("Error fetching like {e:?}");
-                    }
-
-                    (post, liked_res.ok())
-                },
-                None => (read_post.await, None)
-            };
-
-            match post {
-                Err(e) => {
-                    tracing::error!("Error reading a post {e:?}");
-                    None
-                }
-                Ok(mut r) => {
-                    r.liked_by_me = like;
-                    Some(r)
-                }
+            if let Err(ref e) = post_res {
+                tracing::error!("Error reading post {e:?}");
             }
+
+            post_res.ok()
+
         });
 
         let futures = join_all(futures).await;

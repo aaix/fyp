@@ -43,6 +43,7 @@ message ReadPostRequest {
     plib.pUUID post_id = 1;
     plib.pUUID author_id = 2;
     int32 timeline_type = 3;
+    optional plib.pUUID liked_by = 4;
 }
 
 message UpdatePostRequest {
@@ -62,8 +63,14 @@ message DeletePostRequest {
 
 message DeletePostResponse {}
 
+message HalfReadPostRequest {
+    plib.pUUID post_id = 1;
+    plib.pUUID author_id = 2;
+}
+
 message ReadManyPostsRequest {
-    repeated ReadPostRequest requests = 1;
+    repeated HalfReadPostRequest requests = 1;
+    int32 timeline_type = 3;
     optional plib.pUUID liked_by = 2;
 }
 
