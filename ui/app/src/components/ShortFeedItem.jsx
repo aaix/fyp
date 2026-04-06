@@ -1,7 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { postDetailPath } from '../lib/post.js'
+import { postDetailPath, postManager } from '../lib/post.js'
 import UserAvatar from './UserAvatar.jsx'
+
+function formatShortCount(n) {
+  const x = Number(n)
+  if (!Number.isFinite(x) || x < 0) return '0'
+  if (x < 1000) return String(Math.floor(x))
+  if (x < 10_000) return `${(x / 1000).toFixed(1).replace(/\.0$/, '')}k`
+  if (x < 1_000_000) return `${Math.floor(x / 1000)}k`
+  return `${(x / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`
+}
 
 /** Auto-hide after user pauses (play_arrow). */
 const OVERLAY_HIDE_AFTER_PAUSE_MS = 1000
@@ -21,6 +30,7 @@ const OVERLAY_HIDE_AFTER_RESUME_MS = 450
  * @param {React.MutableRefObject<boolean>} props.suppressVideoToggleRef - skip one tap after unlock
  * @param {HTMLElement | null} props.scrollRoot
  * @param {(postId: string, ratio: number) => void} props.onVisibilityChange
+ * @param {(postId: string, partial: object) => void} [props.patchPost] - merge fields into feed item after like
  */
 export default function ShortFeedItem({
   post,
@@ -31,6 +41,7 @@ export default function ShortFeedItem({
   suppressVideoToggleRef,
   scrollRoot,
   onVisibilityChange,
+  patchPost,
 }) {
   const videoRef = useRef(null)
   const shellRef = useRef(null)
@@ -39,14 +50,87 @@ export default function ShortFeedItem({
   /** After user tap: `pause` while playing (tap to pause), `play_arrow` while user-paused (tap to play); auto-hides */
   const [userPulseIcon, setUserPulseIcon] = useState(null)
   const [playbackFailed, setPlaybackFailed] = useState(false)
+  const [likePending, setLikePending] = useState(false)
+  const tapTimerRef = useRef(null)
+  const tapCountRef = useRef(0)
   const postId = post?.post_id != null ? String(post.post_id) : ''
   const authorId = post?.author_id != null ? String(post.author_id) : ''
+  const likedByMe = post?.liked_by_me === true
+  const numLikes = (() => {
+    const x = post?.num_likes
+    const n = typeof x === 'number' ? x : Number(x)
+    return Number.isFinite(n) ? n : 0
+  })()
 
   const clearUserOverlayTimer = () => {
     if (userOverlayTimerRef.current != null) {
       clearTimeout(userOverlayTimerRef.current)
       userOverlayTimerRef.current = null
     }
+  }
+
+  const clearTapTimer = () => {
+    if (tapTimerRef.current != null) {
+      clearTimeout(tapTimerRef.current)
+      tapTimerRef.current = null
+    }
+  }
+
+  const handleLikeToggle = async () => {
+    if (likePending || !patchPost || !feedType || !postId || !authorId) return
+    setLikePending(true)
+    try {
+      const res = likedByMe
+        ? await postManager.unlikePost(authorId, feedType, postId)
+        : await postManager.likePost(authorId, feedType, postId)
+      if (res?.success) {
+        patchPost(postId, {
+          liked_by_me: !likedByMe,
+          num_likes: Math.max(0, numLikes + (likedByMe ? -1 : 1)),
+        })
+      } else {
+        console.error(res?.error)
+      }
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setLikePending(false)
+    }
+  }
+
+  const handleDoubleTapLike = async () => {
+    if (likePending || !patchPost || !feedType || !postId || !authorId) return
+    if (post?.liked_by_me === true) return
+    setLikePending(true)
+    try {
+      const res = await postManager.likePost(authorId, feedType, postId)
+      if (res?.success) {
+        patchPost(postId, {
+          liked_by_me: true,
+          num_likes: Math.max(0, numLikes + 1),
+        })
+      } else {
+        console.error(res?.error)
+      }
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setLikePending(false)
+    }
+  }
+
+  const performSingleTapPauseToggle = () => {
+    setUserPaused((p) => {
+      const next = !p
+      clearUserOverlayTimer()
+      setUserPulseIcon(next ? 'play_arrow' : 'pause')
+      const hideMs = next ? OVERLAY_HIDE_AFTER_PAUSE_MS : OVERLAY_HIDE_AFTER_RESUME_MS
+      userOverlayTimerRef.current = window.setTimeout(() => {
+        setUserPulseIcon(null)
+        userOverlayTimerRef.current = null
+      }, hideMs)
+      return next
+    })
   }
 
   useEffect(() => {
@@ -102,6 +186,8 @@ export default function ShortFeedItem({
   useEffect(() => {
     if (!isPlaying) {
       clearUserOverlayTimer()
+      clearTapTimer()
+      tapCountRef.current = 0
     }
   }, [isPlaying])
 
@@ -111,22 +197,26 @@ export default function ShortFeedItem({
     if (suppressVideoToggleRef?.current) return
     if (!audioUnlocked) return
 
-    setUserPaused((p) => {
-      const next = !p
-      clearUserOverlayTimer()
-      setUserPulseIcon(next ? 'play_arrow' : 'pause')
-      const hideMs = next ? OVERLAY_HIDE_AFTER_PAUSE_MS : OVERLAY_HIDE_AFTER_RESUME_MS
-      userOverlayTimerRef.current = window.setTimeout(() => {
-        setUserPulseIcon(null)
-        userOverlayTimerRef.current = null
-      }, hideMs)
-      return next
-    })
+    tapCountRef.current += 1
+    if (tapCountRef.current === 1) {
+      tapTimerRef.current = window.setTimeout(() => {
+        if (tapCountRef.current === 1) {
+          performSingleTapPauseToggle()
+        }
+        tapCountRef.current = 0
+        tapTimerRef.current = null
+      }, 280)
+    } else if (tapCountRef.current === 2) {
+      clearTapTimer()
+      tapCountRef.current = 0
+      void handleDoubleTapLike()
+    }
   }
 
   useEffect(() => {
     return () => {
       clearUserOverlayTimer()
+      clearTapTimer()
     }
   }, [])
 
@@ -180,6 +270,36 @@ export default function ShortFeedItem({
                       {statusIcon}
                     </span>
                   </div>
+                </div>
+              ) : null}
+              {patchPost ? (
+                <div className="absolute right-2 bottom-24 z-20 flex flex-col items-center gap-0.5 md:bottom-28">
+                  <button
+                    type="button"
+                    disabled={likePending}
+                    aria-label={likedByMe ? 'Unlike' : 'Like'}
+                    aria-pressed={likedByMe}
+                    onClick={(ev) => {
+                      ev.preventDefault()
+                      ev.stopPropagation()
+                      void handleLikeToggle()
+                    }}
+                    className="flex h-12 w-12 shrink-0 touch-manipulation items-center justify-center rounded-full border-0 bg-black/45 p-0 text-white shadow-lg backdrop-blur-sm transition active:scale-95 disabled:opacity-50"
+                  >
+                    <span
+                      className="material-symbols-outlined text-[2rem] leading-none"
+                      style={{
+                        fontVariationSettings: likedByMe
+                          ? '"FILL" 1, "wght" 400, "GRAD" 0, "opsz" 24'
+                          : '"FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24',
+                      }}
+                    >
+                      favorite
+                    </span>
+                  </button>
+                  <span className="max-w-[3rem] truncate text-center text-xs font-semibold tabular-nums text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]">
+                    {formatShortCount(numLikes)}
+                  </span>
                 </div>
               ) : null}
             </>

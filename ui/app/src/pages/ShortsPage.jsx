@@ -7,7 +7,7 @@ import { getAvatarUrl } from '../lib/utils.js'
 import { userManager } from '../lib/user.js'
 
 export default function ShortsPage() {
-  const { posts, loading, error, hasMore, loadingMore, loadMore } = useFeed(FEED_TYPE_SHORTS)
+  const { posts, loading, error, hasMore, loadingMore, loadMore, patchPost } = useFeed(FEED_TYPE_SHORTS)
   const [authorById, setAuthorById] = useState(() => ({}))
   const [playingId, setPlayingId] = useState(null)
   const [scrollRootEl, setScrollRootEl] = useState(null)
@@ -156,6 +156,7 @@ export default function ShortsPage() {
                   suppressVideoToggleRef={suppressVideoToggleRef}
                   scrollRoot={scrollRootEl}
                   onVisibilityChange={onVisibilityChange}
+                  patchPost={patchPost}
                 />
               )
             })}

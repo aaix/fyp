@@ -30,6 +30,7 @@ function mergePostsById(prev, next) {
  *   hasMore: boolean,
  *   loadingMore: boolean,
  *   loadMore: () => Promise<void>,
+ *   patchPost: (postId: string, partial: object) => void,
  * }}
  */
 export function useFeed(feedType = FEED_TYPE_MAIN) {
@@ -119,5 +120,13 @@ export function useFeed(feedType = FEED_TYPE_MAIN) {
     }
   }, [stableFeedType, hasMore])
 
-  return { posts, loading, error, reload, hasMore, loadingMore, loadMore }
+  const patchPost = useCallback((postId, partial) => {
+    const id = postId != null ? String(postId) : ''
+    if (!id) return
+    setPosts((prev) =>
+      prev.map((p) => (postIdKey(p) === id ? { ...p, ...partial } : p)),
+    )
+  }, [])
+
+  return { posts, loading, error, reload, hasMore, loadingMore, loadMore, patchPost }
 }

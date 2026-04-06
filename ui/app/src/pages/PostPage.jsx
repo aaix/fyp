@@ -41,7 +41,6 @@ export default function PostPage() {
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false)
   const [actionError, setActionError] = useState(null)
   const [pipelineSteps, setPipelineSteps] = useState(() => [])
-  const [likedByMe, setLikedByMe] = useState(false)
   const [likePending, setLikePending] = useState(false)
   const [likeError, setLikeError] = useState(null)
 
@@ -75,7 +74,6 @@ export default function PostPage() {
   }, [location.key, statePost])
 
   useEffect(() => {
-    setLikedByMe(false)
     setLikeError(null)
   }, [urlPostId])
 
@@ -253,19 +251,23 @@ export default function PostPage() {
       setLikeError(null)
       setLikePending(true)
       try {
+        const likedByMe = post.liked_by_me === true
         const res = likedByMe
           ? await postManager.unlikePost(String(urlAuthorId), feedTypeKey, String(post.post_id))
           : await postManager.likePost(String(urlAuthorId), feedTypeKey, String(post.post_id))
         if (res?.success) {
-          setLikedByMe((v) => !v)
-          const refresh = await postManager.getPost(
-            String(urlAuthorId),
-            feedTypeKey,
-            String(urlPostId),
-          )
-          if (refresh?.success && refresh.data) {
-            setPost(refresh.data)
-          }
+          setPost((prev) => {
+            if (!prev) return prev
+            const was = prev.liked_by_me === true
+            const raw = prev.num_likes
+            const base = typeof raw === 'number' ? raw : Number(raw)
+            const n = Number.isFinite(base) ? base : 0
+            return {
+              ...prev,
+              liked_by_me: !was,
+              num_likes: Math.max(0, n + (was ? -1 : 1)),
+            }
+          })
         } else {
           const msg = res?.error?.message ?? 'Could not update like'
           setLikeError(msg)
@@ -432,7 +434,7 @@ export default function PostPage() {
             num_comments={post.num_comments ?? 0}
             num_likes={post.num_likes ?? 0}
             likeInteractive
-            likedByMe={likedByMe}
+            likedByMe={post.liked_by_me === true}
             likePending={likePending}
             likeError={likeError}
             onLikeToggle={handleLikeToggle}
