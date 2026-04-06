@@ -4,7 +4,7 @@ use scylla::{statement::prepared::PreparedStatement, value::{CqlTimeuuid, MaybeU
 use tonic::{Request, Response, Status, async_trait};
 use uuid::Uuid;
 
-use crate::{db_conn::db, errors::DSResult, helpers::{gen_timeuuid, time_now}, models::message::Message, profile_statement, protos::dataservices::message_service::{
+use crate::{db_conn::db, errors::DSResult, helpers::{calc_bucket, gen_timeuuid, time_now}, models::message::Message, profile_statement, protos::dataservices::message_service::{
     CreateMessageRequest, DeleteMessageRequest, DeleteMessageResponse, MessageObject, ReadMessageRequest, ReadMessagesRequest, ReadMessagesResponse, UpdateMessageRequest, message_service_server::{MessageService, MessageServiceServer}
 }, req_tuuid};
 
@@ -17,17 +17,6 @@ pub struct ScyllaMessageServiceServer {
     read_message_prepared: PreparedStatement,
     delete_message_prepared: PreparedStatement,
     update_message_prepared: PreparedStatement,
-
-}
-
-
-fn calc_message_bucket(message_id: CqlTimeuuid) -> i64 {
-    let uuid: Uuid = message_id.into();
-    let secs = uuid.get_timestamp().unwrap().to_unix().0;
-
-    // buckets of 7 days
-    let bucket = secs / (7 * 24 * 60 * 60);
-    bucket as i64
 
 }
 
@@ -131,7 +120,7 @@ impl ScyllaMessageServiceServer {
         let inner = request.into_inner();
 
         let message_id = gen_timeuuid();
-        let bucket = calc_message_bucket(message_id);
+        let bucket = calc_bucket(message_id);
 
         let message_type = inner.message_type;
         let last_edited = inner.opt_last_edited;
@@ -187,7 +176,7 @@ impl ScyllaMessageServiceServer {
     ) -> DSResult<Response<MessageObject>> {
         let message_id: CqlTimeuuid = req_tuuid!(request, message_id)?;
         let channel_id = req_tuuid!(request, channel_id)?;
-        let bucket = calc_message_bucket(message_id);
+        let bucket = calc_bucket(message_id);
         
         let row = self._read_message_reuse(&message_id, &channel_id, bucket).await?;
 
@@ -253,7 +242,7 @@ impl ScyllaMessageServiceServer {
         let mut bucket = inner.latest_bucket;
 
         // we cant go back before the channel was CREATED
-        let min_bucket = calc_message_bucket(channel_id);
+        let min_bucket = calc_bucket(channel_id);
 
         let span: tracing::Span = tracing::span!(tracing::Level::INFO, "page buckets");
 
@@ -282,7 +271,7 @@ impl ScyllaMessageServiceServer {
         let channel_id: CqlTimeuuid = req_tuuid!(request, channel_id)?;
         let message_id: CqlTimeuuid = req_tuuid!(request, message_id)?;
 
-        let bucket = calc_message_bucket(message_id);
+        let bucket = calc_bucket(message_id);
 
         db().await.execute_unpaged(
             &self.delete_message_prepared, 
@@ -299,7 +288,7 @@ impl ScyllaMessageServiceServer {
         let channel_id: CqlTimeuuid = req_tuuid!(request, channel_id)?;
         let message_id: CqlTimeuuid = req_tuuid!(request, message_id)?;
 
-        let bucket = calc_message_bucket(message_id);
+        let bucket = calc_bucket(message_id);
 
         let inner = request.get_ref();
 

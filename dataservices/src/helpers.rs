@@ -1,6 +1,7 @@
 use std::{sync::OnceLock, time::{SystemTime, UNIX_EPOCH}};
 use scylla::value::{CqlTimestamp, CqlTimeuuid};
 use mac_address::get_mac_address;
+use uuid::{Timestamp, Uuid};
 
 
 static NODE_ID: OnceLock<[u8; 6]> = OnceLock::new();
@@ -22,4 +23,14 @@ pub fn gen_uuid() -> uuid::Uuid {
 pub fn time_now() -> CqlTimestamp {
     let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap();
     return CqlTimestamp(now.as_millis() as i64);
+}
+
+pub fn calc_bucket<U: Into<Uuid>>(id: U) -> i64 {
+    let uuid = id.into();
+    let secs = uuid.get_timestamp().map(|t| t.to_unix().0).unwrap_or_default();
+
+    // buckets of 7 days
+    let bucket = secs / (7 * 24 * 60 * 60);
+    bucket as i64
+
 }
