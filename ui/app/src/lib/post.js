@@ -256,6 +256,14 @@ class PostManager {
 
         return res;
     }
+
+    likePost(author_id, feed_type, post_id) {
+        return API.PUT(`post/user/${encodeURIComponent(author_id)}/${encodeURIComponent(feed_type)}/${encodeURIComponent(post_id)}/like`)    
+    }
+
+    unlikePost(author_id, feed_type, post_id) {
+        return API.DELETE(`post/user/${encodeURIComponent(author_id)}/${encodeURIComponent(feed_type)}/${encodeURIComponent(post_id)}/like`)    
+    }
 }
 
 export const postManager = new PostManager();

@@ -6,20 +6,22 @@ from enum import IntEnum
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Header, Query, Request, UploadFile
+from grpc import RpcError, StatusCode
 
 from api import *
 from api import feed
+from api.responses import ErrorResponse
 from api.routes.post.models import *
 from api.tracing import tracer
 from api.types.params import PostParam, TimelineTypeParam, UserParam, UserWithProfileVisibleParam
-from api.utils import unwrap
+from api.utils import RpcErrHandler, unwrap
 from shared.py.asset import delete_asset
 from shared.py.constraints import POST_MEDIA_MAX_UPLOAD_SIZE
 from shared.py.grpc import mediaservices
 from shared.py.grpc.feed import TimelineType
 from shared.py.grpc.id import id_compare
 from shared.py.grpc.lazy import DataservicesLazyGRPC, LazyGRPC
-from shared.py.grpc.post import PostType, create_post, delete_post, edit_post, read_users_posts
+from shared.py.grpc.post import PostType, create_post, delete_post, edit_post, like_post, read_users_posts, unlike_post
 from shared.py.grpc.relationship import can_i_view_peer_profile
 from shared.py.grpcgen import media_pb2_grpc, post_pb2, post_pb2_grpc
 from shared.py.grpcgen.internalmessage_pb2 import EventPostUpdate
@@ -106,10 +108,6 @@ async def new_post_task(
         await send_post_update(post, PostUpdateType.ERROR)
         raise
         
-    
-
-
-
 
 @PostRouter.post("/{timeline_type}")
 async def new_post(
@@ -210,3 +208,14 @@ async def delete_my_post(s: SessionParam, post: PostParam, timeline_type: Timeli
 @PostRouter.get("/user/{user_id}/{timeline_type}/{post_id}")
 async def get_post(s: SessionParam, user: UserWithProfileVisibleParam, post: PostParam) -> PostResponse:
     return await PostResponse.from_rpc(post)
+
+
+@PostRouter.put("/user/{user_id}/{timeline_type}/{post_id}/like")
+async def r_like_post(s: SessionParam, user: UserWithProfileVisibleParam, post: PostParam) -> None:
+    with RpcErrHandler(StatusCode.INVALID_ARGUMENT, lambda e: errors.BadRequest(e.details() or "invalid argument")):
+        await like_post(grpcpost, post.post_id, s.user_id)
+
+@PostRouter.delete("/user/{user_id}/{timeline_type}/{post_id}/like")
+async def r_unlike_post(s: SessionParam, user: UserWithProfileVisibleParam, post: PostParam) -> None:
+    with RpcErrHandler(StatusCode.INVALID_ARGUMENT, lambda e: errors.BadRequest(e.details() or "invalid argument")):
+        await unlike_post(grpcpost, post.post_id, s.user_id)

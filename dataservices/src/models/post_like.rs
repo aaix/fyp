@@ -5,5 +5,14 @@ use scylla::value;
 #[derive(Debug, DeserializeRow, Clone)]
 pub struct PostLike {
     pub post_id: value::CqlTimeuuid,
+    pub bucket: i64,
     pub liker_id: value::CqlTimeuuid,
+}
+#[derive(Debug, DeserializeRow, Clone)]
+pub struct LWTPostLike {
+    #[scylla(rename = "[applied]")]
+    pub applied: bool,
+    pub post_id: Option<value::CqlTimeuuid>,
+    pub bucket: Option<i64>,
+    pub liker_id: Option<value::CqlTimeuuid>,
 }

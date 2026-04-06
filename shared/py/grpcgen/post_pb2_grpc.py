@@ -69,6 +69,16 @@ class PostServiceStub(object):
                 request_serializer=post__pb2.ReadUsersDehydratedPostsRequest.SerializeToString,
                 response_deserializer=post__pb2.UsersDehydratedPostsResponse.FromString,
                 _registered_method=True)
+        self.LikePost = channel.unary_unary(
+                '/dataservices.postproto.PostService/LikePost',
+                request_serializer=post__pb2.LikePostRequest.SerializeToString,
+                response_deserializer=post__pb2.LikePostResponse.FromString,
+                _registered_method=True)
+        self.UnlikePost = channel.unary_unary(
+                '/dataservices.postproto.PostService/UnlikePost',
+                request_serializer=post__pb2.LikePostRequest.SerializeToString,
+                response_deserializer=post__pb2.LikePostResponse.FromString,
+                _registered_method=True)
 
 
 class PostServiceServicer(object):
@@ -116,6 +126,18 @@ class PostServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def LikePost(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def UnlikePost(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_PostServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -153,6 +175,16 @@ def add_PostServiceServicer_to_server(servicer, server):
                     servicer.ReadUsersDehydratedPosts,
                     request_deserializer=post__pb2.ReadUsersDehydratedPostsRequest.FromString,
                     response_serializer=post__pb2.UsersDehydratedPostsResponse.SerializeToString,
+            ),
+            'LikePost': grpc.unary_unary_rpc_method_handler(
+                    servicer.LikePost,
+                    request_deserializer=post__pb2.LikePostRequest.FromString,
+                    response_serializer=post__pb2.LikePostResponse.SerializeToString,
+            ),
+            'UnlikePost': grpc.unary_unary_rpc_method_handler(
+                    servicer.UnlikePost,
+                    request_deserializer=post__pb2.LikePostRequest.FromString,
+                    response_serializer=post__pb2.LikePostResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -344,6 +376,60 @@ class PostService(object):
             '/dataservices.postproto.PostService/ReadUsersDehydratedPosts',
             post__pb2.ReadUsersDehydratedPostsRequest.SerializeToString,
             post__pb2.UsersDehydratedPostsResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def LikePost(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/dataservices.postproto.PostService/LikePost',
+            post__pb2.LikePostRequest.SerializeToString,
+            post__pb2.LikePostResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def UnlikePost(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/dataservices.postproto.PostService/UnlikePost',
+            post__pb2.LikePostRequest.SerializeToString,
+            post__pb2.LikePostResponse.FromString,
             options,
             channel_credentials,
             insecure,

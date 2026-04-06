@@ -4,7 +4,7 @@ use futures::{StreamExt, future::join_all};
 use scylla::{errors::FirstRowError, statement::prepared::PreparedStatement, value::{Counter, CqlTimestamp, CqlTimeuuid, MaybeUnset}};
 use tonic::{Response, Status, async_trait};
 
-use crate::{db_conn::db, errors::DSResult, helpers::{gen_timeuuid, time_now}, maybe_opt_field, models::{post_num_counters::PostNumCounters, post_v2::PostV2}, protos::dataservices::post_service::{CreatePostRequest, DehydratedPosts, DeletePostRequest, DeletePostResponse, ManyPostsResponse, PostResponse, ReadManyPostsRequest, ReadPostRequest, ReadUserPostsRequest, ReadUsersDehydratedPostsRequest, UpdatePostRequest, UserPostsResponse, UsersDehydratedPostsResponse, post_service_server::{PostService, PostServiceServer}}, req_tuuid};
+use crate::{db_conn::db, errors::DSResult, helpers::{calc_bucket, gen_timeuuid, time_now}, maybe_opt_field, models::{post_like::{LWTPostLike, PostLike}, post_num_counters::PostNumCounters, post_v2::PostV2}, protos::dataservices::post_service::{post_service_server::{PostService, PostServiceServer}, *}, req_tuuid};
 
 const POST_AFTER_FLOOR: i64 = 24 * 60 * 60 * 1000; // 1 day (in ms)
 
@@ -43,6 +43,9 @@ pub struct ScyllaPostService {
     delete_post_counters_prepared: PreparedStatement,
     read_user_posts_dehydrated_prepared_before: PreparedStatement,
     read_user_posts_dehydrated_prepared_no_before: PreparedStatement,
+    like_post_prepared: PreparedStatement,
+    unlike_post_prepared: PreparedStatement,
+    update_post_counters: PreparedStatement,
 
     post_read_group: UnaryGroup<(CqlTimeuuid, CqlTimeuuid, i32), DSResult<PostResponse>>,
     post_counters_read_group: UnaryGroup<CqlTimeuuid, DSResult<PostNumCounters>>,
@@ -105,6 +108,20 @@ impl ScyllaPostService {
             "SELECT post_id FROM dataservices.post_v2 WHERE author_id = ? AND timeline_type = ? AND post_id >= minTimeuuid(?) LIMIT ?"
         ).await?;
 
+        
+        let like_post_prepared = db().await.prepare(
+            "INSERT INTO dataservices.post_like (post_id, bucket, liker_id) VALUES (?, ?, ?) IF NOT EXISTS"
+        ).await?;
+
+        let unlike_post_prepared = db().await.prepare(
+            "DELETE FROM dataservices.post_like WHERE post_id = ? AND bucket = ? AND liker_id = ? IF EXISTS"
+        ).await?;
+
+        let update_post_counters = db().await.prepare(
+            "UPDATE dataservices.post_num_counters SET post_likes = post_likes + ?, post_comments = post_comments + ? \
+            WHERE post_id = ?"
+        ).await?;
+
         let post_read_group = UnaryGroup::new();
         let post_counters_read_group = UnaryGroup::new();
         let user_posts_read_group = UnaryGroup::new();
@@ -121,6 +138,11 @@ impl ScyllaPostService {
             delete_post_counters_prepared,
             read_user_posts_dehydrated_prepared_before,
             read_user_posts_dehydrated_prepared_no_before,
+
+            unlike_post_prepared,
+            like_post_prepared,
+            update_post_counters,
+
             post_read_group,
             post_counters_read_group,
             user_posts_read_group,
@@ -515,6 +537,76 @@ impl ScyllaPostService {
 
         Ok(Response::new(UsersDehydratedPostsResponse { posts }))
     }
+
+    async fn like_post_impl(
+        &self,
+        request: tonic::Request<LikePostRequest>,
+    ) -> DSResult<
+        tonic::Response<LikePostResponse>> {
+
+        let post_id: CqlTimeuuid = req_tuuid!(request, post_id)?;
+        let liker_id: CqlTimeuuid = req_tuuid!(request, liker_id)?;
+        let bucket = calc_bucket(liker_id);
+
+        let res = db().await.execute_unpaged(
+            &self.like_post_prepared,
+            (
+                post_id,
+                bucket,
+                liker_id
+            )
+        ).await?.into_rows_result()?.first_row::<LWTPostLike>()?;
+
+        if !res.applied {
+            return Err(Status::invalid_argument("Post already liked").into())
+        }
+
+        db().await.execute_unpaged(
+            &self.update_post_counters,
+            (
+                Counter(1),
+                Counter(0),
+                post_id
+            )
+        ).await?;
+
+
+        Ok(Response::new(LikePostResponse {  }))
+    }
+    async fn unlike_post_impl(
+        &self,
+        request: tonic::Request<LikePostRequest>,
+    ) -> DSResult<
+        tonic::Response<LikePostResponse>> {
+        let post_id: CqlTimeuuid = req_tuuid!(request, post_id)?;
+        let liker_id: CqlTimeuuid = req_tuuid!(request, liker_id)?;
+        let bucket = calc_bucket(liker_id);
+
+        let res = db().await.execute_unpaged(
+            &self.unlike_post_prepared,
+            (
+                post_id,
+                bucket,
+                liker_id
+            )
+        ).await?.into_rows_result()?.first_row::<LWTPostLike>()?;
+
+        if !res.applied {
+            return Err(Status::invalid_argument("Post was not liked").into())
+        }
+
+        db().await.execute_unpaged(
+            &self.update_post_counters,
+            (
+                Counter(-1),
+                Counter(0),
+                post_id
+            )
+        ).await?;
+
+
+        Ok(Response::new(LikePostResponse {  }))
+    }
 }
 
 #[async_trait]
@@ -581,5 +673,23 @@ impl PostService for ScyllaPostService {
         tonic::Status,
     > {
         Ok(self.read_users_dehydrated_posts_impl(request).await?)
+    }
+    async fn like_post(
+        &self,
+        request: tonic::Request<LikePostRequest>,
+    ) -> std::result::Result<
+        tonic::Response<LikePostResponse>,
+        tonic::Status,
+    > {
+        Ok(self.like_post_impl(request).await?)
+    }
+    async fn unlike_post(
+        &self,
+        request: tonic::Request<LikePostRequest>,
+    ) -> std::result::Result<
+        tonic::Response<LikePostResponse>,
+        tonic::Status,
+    > {
+        Ok(self.unlike_post_impl(request).await?)
     }
 }

@@ -140,3 +140,15 @@ class DehydratedPosts(_message.Message):
     user_id: _plib_pb2.pUUID
     post_ids: _containers.RepeatedCompositeFieldContainer[_plib_pb2.pUUID]
     def __init__(self, user_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., post_ids: _Optional[_Iterable[_Union[_plib_pb2.pUUID, _Mapping]]] = ...) -> None: ...
+
+class LikePostRequest(_message.Message):
+    __slots__ = ("post_id", "liker_id")
+    POST_ID_FIELD_NUMBER: _ClassVar[int]
+    LIKER_ID_FIELD_NUMBER: _ClassVar[int]
+    post_id: _plib_pb2.pUUID
+    liker_id: _plib_pb2.pUUID
+    def __init__(self, post_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., liker_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ...) -> None: ...
+
+class LikePostResponse(_message.Message):
+    __slots__ = ()
+    def __init__(self) -> None: ...

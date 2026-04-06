@@ -15,6 +15,8 @@ service PostService {
     rpc ReadUserPosts (ReadUserPostsRequest) returns (UserPostsResponse);
     rpc ReadUsersDehydratedPosts (ReadUsersDehydratedPostsRequest) returns (UsersDehydratedPostsResponse);
 
+    rpc LikePost (LikePostRequest) returns (LikePostResponse);
+    rpc UnlikePost (LikePostRequest) returns (LikePostResponse);
 }
 
 message CreatePostRequest {
@@ -96,3 +98,10 @@ message DehydratedPosts {
     plib.pUUID user_id = 1;
     repeated plib.pUUID post_ids = 2;
 }
+
+message LikePostRequest {
+    plib.pUUID post_id = 1;
+    plib.pUUID liker_id = 2;
+}
+
+message LikePostResponse {}

@@ -189,3 +189,28 @@ async def scatter_gather_posts(
         grpc.ReadManyPosts(_entries_to_request(timeline_type, entries)) for grpc, entries in buckets.items()
     )))
     return list(chain(*(posts.responses for posts in res)))
+
+async def like_post(
+    lazy: DataservicesLazyGRPC[PostServiceStub],
+    post_id: id_t,
+    liker_id: id_t
+):
+    # no point coalescing on post_id
+    stub = await lazy(liker_id)
+
+    cast(LikePostResponse, await stub.LikePost(LikePostRequest(
+        post_id=id_puuid(post_id),
+        liker_id=id_puuid(liker_id)
+    )))
+
+async def unlike_post(
+    lazy: DataservicesLazyGRPC[PostServiceStub],
+    post_id: id_t,
+    liker_id: id_t
+):
+    stub = await lazy(liker_id)
+
+    cast(LikePostResponse, await stub.UnlikePost(LikePostRequest(
+        post_id=id_puuid(post_id),
+        liker_id=id_puuid(liker_id)
+    )))
