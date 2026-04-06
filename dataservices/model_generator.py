@@ -123,10 +123,18 @@ class RustModelGenerator(ModelGenerator):
         lines.append("#[derive(Debug, DeserializeRow, Clone)]")
         lines.append(f"pub struct {struct_name} {{")
 
-        if lwt:
-            lines.append(f"    pub applied: bool,")
+        rows = self.table.rows
 
-        for row in self.table.rows:
+
+        if lwt:
+            lines.append(f'    #[scylla(rename = "[applied]")]')
+            lines.append(f"    pub applied: bool,")
+            rows = list(self.table.rows)
+            for row in rows:
+                row.optional = True
+
+
+        for row in rows:
             rust_type = self.map_datatype(row)
             lines.append(f"    pub {row.key}: {rust_type},")
 
