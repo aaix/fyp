@@ -162,7 +162,7 @@ async def scatter_gather_users_dehydrated_posts(
     return list(chain(*(posts.posts for posts in res)))
 
 
-def _entries_to_request(timeline_type: TimelineType, entries: Iterable[FeedEntry]) -> ReadManyPostsRequest:
+def _entries_to_request(timeline_type: TimelineType, entries: Iterable[FeedEntry], liked_by: id_t | None) -> ReadManyPostsRequest:
 
     requests = [
         ReadPostRequest(
@@ -174,19 +174,21 @@ def _entries_to_request(timeline_type: TimelineType, entries: Iterable[FeedEntry
     ]
 
     return ReadManyPostsRequest(
-        requests=requests
+        requests=requests,
+        liked_by=id_puuid(liked_by) if liked_by else None,
     )
 
 @tracer.start_as_current_span("posts.scatter_gather_posts")
 async def scatter_gather_posts(
     lazy: DataservicesLazyGRPC[PostServiceStub],
     timeline_type: TimelineType,
-    posts: Iterable[FeedEntry]
+    posts: Iterable[FeedEntry],
+    liked_by: id_t | None = None,
 ) -> list[PostResponse]:
     buckets = await bucketby(posts, lambda e: lazy(e.post_id))
 
     res = cast(list[ManyPostsResponse], await asyncio.gather(*(
-        grpc.ReadManyPosts(_entries_to_request(timeline_type, entries)) for grpc, entries in buckets.items()
+        grpc.ReadManyPosts(_entries_to_request(timeline_type, entries, liked_by)) for grpc, entries in buckets.items()
     )))
     return list(chain(*(posts.responses for posts in res)))
 

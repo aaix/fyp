@@ -9,7 +9,7 @@ use crate::{db_conn::db, errors::DSResult, helpers::{calc_bucket, gen_timeuuid, 
 const POST_AFTER_FLOOR: i64 = 24 * 60 * 60 * 1000; // 1 day (in ms)
 
 
-fn post_to_post_response(post: PostV2, post_counters: Option<PostNumCounters>) -> PostResponse {
+fn post_to_post_response(post: PostV2, post_counters: Option<PostNumCounters>, liked_by_me: Option<bool>) -> PostResponse {
 
     let (post_comments, post_likes) = match post_counters {
         Some(counters) => (counters.post_comments.0, counters.post_likes.0),
@@ -26,6 +26,7 @@ fn post_to_post_response(post: PostV2, post_counters: Option<PostNumCounters>) -
         num_comments: post_comments,
         num_likes: post_likes,
         is_private: post.is_private,
+        liked_by_me: liked_by_me,
     }
 }
 
@@ -46,6 +47,7 @@ pub struct ScyllaPostService {
     like_post_prepared: PreparedStatement,
     unlike_post_prepared: PreparedStatement,
     update_post_counters: PreparedStatement,
+    read_post_like_prepared: PreparedStatement,
 
     post_read_group: UnaryGroup<(CqlTimeuuid, CqlTimeuuid, i32), DSResult<PostResponse>>,
     post_counters_read_group: UnaryGroup<CqlTimeuuid, DSResult<PostNumCounters>>,
@@ -122,6 +124,10 @@ impl ScyllaPostService {
             WHERE post_id = ?"
         ).await?;
 
+        let read_post_like_prepared = db().await.prepare(
+            "SELECT * FROM dataservices.post_like WHERE post_id = ? AND bucket = ? AND liker_id = ?"
+        ).await?;
+
         let post_read_group = UnaryGroup::new();
         let post_counters_read_group = UnaryGroup::new();
         let user_posts_read_group = UnaryGroup::new();
@@ -142,6 +148,7 @@ impl ScyllaPostService {
             unlike_post_prepared,
             like_post_prepared,
             update_post_counters,
+            read_post_like_prepared,
 
             post_read_group,
             post_counters_read_group,
@@ -172,18 +179,22 @@ impl ScyllaPostService {
         timeline_type: i32,
     ) -> DSResult<PostResponse> {
 
-        let row = db().await.execute_unpaged(
+        let read_post = db().await.execute_unpaged(
             &self.read_post_prepared,
             (
                 author_id,
                 post_id,
                 timeline_type,
             )
-        ).await?.into_rows_result()?.first_row::<PostV2>()?;
+        );
 
-        let counters = self._read_post_counters_reuse_nocoalesce(post_id).await?;
+        let read_counters  = self._read_post_counters_reuse_nocoalesce(post_id);
 
-        Ok(post_to_post_response(row, Some(counters)))
+        let (post, counters) = tokio::join!(read_post, read_counters);
+
+        let row = post?.into_rows_result()?.first_row::<PostV2>()?;
+
+        Ok(post_to_post_response(row, Some(counters?), None))
 
     }
 
@@ -256,6 +267,7 @@ impl ScyllaPostService {
             num_comments: 0,
             num_likes: 0,
             is_private,
+            liked_by_me: Some(false),
         }))
     }
 
@@ -349,19 +361,37 @@ impl ScyllaPostService {
         request: tonic::Request<ReadManyPostsRequest>,
     ) -> DSResult<
         tonic::Response<ManyPostsResponse>> {
+
+        let maybe_liked_by: Option<CqlTimeuuid> = request.get_ref().liked_by.map(Into::into);
         
         let futures = request.get_ref().requests.iter().map(async |r| {
             let author_id = r.author_id?.into();
             let post_id = r.post_id?.into();
             let timeline_type = r.timeline_type;
-            let res = self._read_post_reuse(author_id, post_id, timeline_type).await;
+    
+            let read_post = self._read_post_reuse(author_id, post_id, timeline_type);
+            let (post, like) = match maybe_liked_by {
+                Some(liked_by) => {
+                    let (post, liked_res) =tokio::join!(read_post, self._read_post_liked_by(post_id, liked_by));
 
-            match res {
+                    if let Err(ref e) = liked_res {
+                        tracing::error!("Error fetching like {e:?}");
+                    }
+
+                    (post, liked_res.ok())
+                },
+                None => (read_post.await, None)
+            };
+
+            match post {
                 Err(e) => {
                     tracing::error!("Error reading a post {e:?}");
                     None
                 }
-                Ok(r) => Some(r)
+                Ok(mut r) => {
+                    r.liked_by_me = like;
+                    Some(r)
+                }
             }
         });
 
@@ -414,7 +444,7 @@ impl ScyllaPostService {
 
             let post_counters = self._read_post_counters_reuse(row.post_id).await?;
 
-            DSResult::Ok(post_to_post_response(row, Some(post_counters)))
+            DSResult::Ok(post_to_post_response(row, Some(post_counters), None))
         }).buffered(size);
 
         while let Some(post_res) = with_counters.next().await {
@@ -537,6 +567,26 @@ impl ScyllaPostService {
 
         Ok(Response::new(UsersDehydratedPostsResponse { posts }))
     }
+
+    async fn _read_post_liked_by(
+        &self,
+        post_id: CqlTimeuuid, liked_by: CqlTimeuuid
+    ) -> DSResult<bool> {
+
+        let bucket = calc_bucket(liked_by);
+
+        let is_liked = db().await.execute_unpaged(
+            &self.read_post_like_prepared, 
+            (
+                post_id,
+                bucket,
+                liked_by
+            )
+        ).await?.into_rows_result()?.rows_num() > 0;
+
+        Ok(is_liked)
+    }
+
 
     async fn like_post_impl(
         &self,

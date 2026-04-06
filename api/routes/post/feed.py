@@ -33,7 +33,9 @@ async def get_feed(
 ) -> FeedResponse:
     entries = await feed.get_feed(s.user_id, timeline_type, before, limit=50)
 
-    unsorted_posts = await scatter_gather_posts(grpcpost, timeline_type, entries)
+    liked_by = s.user_id if timeline_type.needs_extra_hydration() else None
+
+    unsorted_posts = await scatter_gather_posts(grpcpost, timeline_type, entries, liked_by)
 
     responses = await asyncio.gather(*map(PostResponse.from_rpc, unsorted_posts))
 

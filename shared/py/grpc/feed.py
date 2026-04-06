@@ -32,6 +32,9 @@ class TimelineType(IntEnum):
     MAIN = 0
     SHORT_FORM = 1
 
+    def needs_extra_hydration(self) -> bool:
+        return self == self.SHORT_FORM
+
 class EntryType(IntEnum):
     FANNED_IN = 1
     FANNED_OUT = 2

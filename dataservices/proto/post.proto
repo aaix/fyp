@@ -36,6 +36,7 @@ message PostResponse {
     int64 num_comments = 8;
     int64 num_likes = 9;
     bool is_private = 10;
+    optional google.protobuf.BoolValue liked_by_me = 11;
 }
 
 message ReadPostRequest {
@@ -63,6 +64,7 @@ message DeletePostResponse {}
 
 message ReadManyPostsRequest {
     repeated ReadPostRequest requests = 1;
+    optional plib.pUUID liked_by = 2;
 }
 
 message ManyPostsResponse {
