@@ -85,6 +85,8 @@ async def new_post_task(
                 thumb_dimensions=(THUMBNAIL_MAX_WIDTH, THUMBNAIL_MAX_HEIGHT)
             )
         except Exception:
+            await delete_asset(public=False, bucket_id=post.post_id, asset_id=post.asset_id)
+            await delete_asset(public=False, bucket_id=post.post_id, asset_id=post.asset_id, extra="/thumb")
             await delete_post(grpcpost, post.author_id, post.post_id, timeline_type)
             raise
         await send_post_update(post, PostUpdateType.TRANSCODED)
@@ -203,7 +205,7 @@ async def delete_my_post(s: SessionParam, post: PostParam, timeline_type: Timeli
         raise ApiErrExc(errors.Forbidden("Cannot edit another users post"))
     
     await delete_asset(public=False, bucket_id=post.post_id, asset_id=post.asset_id)
-
+    await delete_asset(public=False, bucket_id=post.post_id, asset_id=post.asset_id, extra="/thumb")
     await delete_post(grpcpost, post.author_id, post.post_id, timeline_type)
 
 @PostRouter.get("/user/{user_id}/{timeline_type}/{post_id}")

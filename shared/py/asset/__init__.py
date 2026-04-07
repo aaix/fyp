@@ -39,7 +39,7 @@ async def client():
     return _client
 
 @tracer.start_as_current_span("s3.delete_asset")
-async def delete_asset(*, public: bool, bucket_id: id_t, asset_id: id_t):
+async def delete_asset(*, public: bool, bucket_id: id_t, asset_id: id_t, extra: str | None = None):
 
     if public:
         bucket = PUBLIC_BUCKET
@@ -48,6 +48,9 @@ async def delete_asset(*, public: bool, bucket_id: id_t, asset_id: id_t):
 
 
     path = asset_path(bucket_id=bucket_id, asset_id=asset_id)
+
+    if extra:
+        path += extra
 
     s3 = await client()
     await s3.delete_object(Bucket=bucket, Key=path)
