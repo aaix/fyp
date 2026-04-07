@@ -11,4 +11,6 @@ message Asset {
     string output_type = 4;
     optional uint32 output_width = 6;
     optional uint32 output_height = 7;
+    optional uint32 thumb_max_width = 8;
+    optional uint32 thumb_max_height = 9;
 }

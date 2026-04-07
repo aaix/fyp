@@ -23,12 +23,13 @@ __all__ = (
 )
 
 
-async def create_post_url_presigned(post_id: pUUID, asset_id: pUUID) -> str:
+async def create_post_url_presigned(post_id: pUUID, asset_id: pUUID, thumb: bool = False) -> str:
     return await generate_signed_get(
         public=False,
         bucket_id=post_id,
         asset_id=asset_id,
         duration=300,
+        version="/thumb" if thumb else None,
     )
 
 
@@ -42,6 +43,7 @@ class PostResponse(BaseModel):
     post_id: UUID
     author_id: UUID
     asset_url: str
+    preview_url: str
     post_type: PostType
     body: PostBody | None
     last_edited: int | None
@@ -54,6 +56,7 @@ class PostResponse(BaseModel):
     async def from_rpc(cls, rpc: post_pb2.PostResponse) -> Self:
 
         asset_url = await create_post_url_presigned(rpc.post_id, rpc.asset_id)
+        thumb_url = await create_post_url_presigned(rpc.post_id, rpc.asset_id, True)
         
 
         return cls(
@@ -67,6 +70,7 @@ class PostResponse(BaseModel):
             num_likes=rpc.num_likes,
             is_private=rpc.is_private,
             liked_by_me=rpc.liked_by_me.value if rpc.HasField("liked_by_me") else None,
+            preview_url=thumb_url,
         )
 
 class PostsResponse(BaseModel):

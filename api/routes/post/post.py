@@ -16,7 +16,7 @@ from api.tracing import tracer
 from api.types.params import PostParam, TimelineTypeParam, UserParam, UserWithProfileVisibleParam
 from api.utils import RpcErrHandler, unwrap
 from shared.py.asset import delete_asset
-from shared.py.constraints import POST_MEDIA_MAX_UPLOAD_SIZE
+from shared.py.constraints import POST_MEDIA_MAX_UPLOAD_SIZE, THUMBNAIL_MAX_HEIGHT, THUMBNAIL_MAX_WIDTH
 from shared.py.grpc import mediaservices
 from shared.py.grpc.feed import TimelineType
 from shared.py.grpc.id import id_compare
@@ -81,7 +81,8 @@ async def new_post_task(
                 mime_in=attachment.content_type,
                 mime_out=content_type,
                 data= attachment,
-                dimensions=None
+                dimensions=None,
+                thumb_dimensions=(THUMBNAIL_MAX_WIDTH, THUMBNAIL_MAX_HEIGHT)
             )
         except Exception:
             await delete_post(grpcpost, post.author_id, post.post_id, timeline_type)

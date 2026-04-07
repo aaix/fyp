@@ -138,8 +138,28 @@ async fn transform_image(
         // we have to have the entire input and output in memory
         // because image-rs requires io::Seek
         let mut out: Vec<u8> = Vec::new();
-        crate::image::transcode(reader, input_format, output_format, &mut std::io::Cursor::new(&mut out), dimensions)
-            .map(|_| out)
+        let mut thumb_out: Vec<u8> = Vec::new();
+
+        let thumb = if let Some(height) = asset.thumb_max_height {
+            if let Some(width) = asset.thumb_max_width {
+                Some(((width, height), &mut std::io::Cursor::new(&mut thumb_out)))
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+
+
+        crate::image::transcode(
+            reader,
+            input_format,
+            output_format,
+            &mut std::io::Cursor::new(&mut out),
+            thumb,
+            dimensions
+        )
+            .map(|_| (out, thumb_out))
 
     }).instrument(transform_span);
 
@@ -152,11 +172,13 @@ async fn transform_image(
         Ok(data)
     };
 
-    let (out, _) = tokio::try_join!(transform_future(), recv_future)?;
+    let ((out, thumb_out), _) = tokio::try_join!(transform_future(), recv_future)?;
 
 
     cloudadapter::put_object(bucket, path, ByteStream::from(out), output_format.to_mime_type()).await?;
-
+    if thumb_out.len() > 0 {
+        cloudadapter::put_object(bucket, &format!("{path}/thumb"), ByteStream::from(thumb_out), output_format.to_mime_type()).await?;
+    }
 
 
     Ok(Response::new(TransformImageResponse {  }))

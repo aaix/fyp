@@ -8,6 +8,34 @@ use crate::errors::ConversionError;
 const ANIMATED_FORMATS : [ImageFormat; 3] = [ImageFormat::Png, ImageFormat::WebP, ImageFormat::Gif];
 
 
+fn make_thumbnail<'o, W: io::Seek + io::Write>(max_dimensions: (u32, u32), decoded: &DynamicImage, output: &'o mut W, output_format: ImageFormat) -> Result<(), ConversionError> {
+    let dimensions = decoded.dimensions();
+
+    if dimensions.0 > max_dimensions.0 {
+        let downscale_factor = dimensions.0 as f64 / max_dimensions.0 as f64;
+
+        let new_height = dimensions.1 as f64 / downscale_factor;
+
+        decoded.resize_to_fill(max_dimensions.0, new_height as u32, FilterType::Triangle)
+            .write_to(output, output_format)?;
+
+
+    } else if dimensions.1 > max_dimensions.1 {
+        let downscale_factor = dimensions.1 as f64 / max_dimensions.1 as f64;
+
+        let new_width = dimensions.0 as f64 / downscale_factor;
+
+        decoded.resize_to_fill(new_width as u32, max_dimensions.1, FilterType::Triangle)
+            .write_to(output, output_format)?;
+    } else {
+        // no thumbnail
+    }
+
+    Ok(())
+    
+}
+
+
 fn maybe_crop(to_dimensions: Option<(NonZeroU32, NonZeroU32)>, decoded: DynamicImage) -> DynamicImage {
     match to_dimensions {
         None => {
@@ -20,7 +48,7 @@ fn maybe_crop(to_dimensions: Option<(NonZeroU32, NonZeroU32)>, decoded: DynamicI
             // if we need to downscale
             if current_w > to_w || current_h > to_h {
                 // triangle fast and ok quality
-                decoded.resize_to_fill(to_w.into(), to_h.into(), FilterType::Triangle)
+                decoded.resize_to_fill(to_w.into(), to_h.into(), FilterType::Gaussian)
             } 
             // otherwise we crop to the aspect ratio while maintaining 1 dimension
             else {
@@ -50,6 +78,7 @@ pub fn transcode<'i, 'o, R, W>(
     input_format: Option<ImageFormat>,
     output_format: ImageFormat,
     output: &'o mut W,
+    maybe_thumb_output: Option<((u32, u32), &'o mut W)>,
     to_dimensions: Option<(NonZeroU32, NonZeroU32)>,
 ) -> Result<(), ConversionError>
 where R: 'i + io::BufRead + io::Seek, W: 'o + io::Write + io:: Seek,
@@ -66,17 +95,25 @@ where R: 'i + io::BufRead + io::Seek, W: 'o + io::Write + io:: Seek,
         Some(f) => f,
     };
 
+    let decoded = reader.decode()?;
+
+    // make thumbnail
+    if let Some((thumb_dimensions, thumb_output)) = maybe_thumb_output {
+        make_thumbnail(thumb_dimensions, &decoded, thumb_output, output_format);
+    }
+
     // short circuit if input is not animated
     if ! ANIMATED_FORMATS.contains(&format) {
-        let decoded = reader.decode()?;
         let maybe_cropped = maybe_crop(to_dimensions, decoded);
 
         maybe_cropped.write_to(output, output_format)?; 
         return Ok(())
     }
 
-    drop(reader); // we are borrowing input as mutable again so drop for clarity
+    drop(decoded); // we are borrowing input as mutable again so drop for clarity
 
+    
+    input.seek(io::SeekFrom::Start(0)).ok().ok_or(ConversionError::Unknown("Failed to reset seek position"))?;
 
     match format {
         // annimated formats

@@ -26,3 +26,6 @@ POST_MEDIA_MAX_UPLOAD_SIZE: Final[int] = 50 * 1000 * 1000 # 50 million bytes
 
 
 POST_BODY_MAX_LENGTH: Final[int] = 2000
+
+THUMBNAIL_MAX_WIDTH: Final[int] = 350
+THUMBNAIL_MAX_HEIGHT: Final[int] = 1050 

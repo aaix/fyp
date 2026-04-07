@@ -52,9 +52,12 @@ async def transform_image(
     mime_out: str,
     data: UploadFile,
     dimensions: tuple[int, int] | None,
+    thumb_dimensions: tuple[int, int] | None,
 ) -> TransformImageResponse:
     
     width, height = dimensions or (None, None)
+    thumb_w, thumb_h = thumb_dimensions or (None, None)
+
     
     first = MediaInput(asset=Asset(
         path=asset.asset_path(bucket_id=bucket_id, asset_id=asset_id),
@@ -64,6 +67,8 @@ async def transform_image(
         input_size=data.size,
         output_height=height,
         output_width=width,
+        thumb_max_height=thumb_h,
+        thumb_max_width=thumb_w,
     ))
 
     with MediaservicesErrHandler():
@@ -79,8 +84,10 @@ async def transform_video(
     mime_out: str,
     data: UploadFile,
     dimensions: tuple[int, int] | None,
+    thumb_dimensions: tuple[int, int] | None,
 ) -> TransformVideoResponse:
     width, height = dimensions or (None, None)
+    thumb_w, thumb_h = thumb_dimensions or (None, None)
     
     first = MediaInput(asset=Asset(
         path=asset.asset_path(bucket_id=bucket_id, asset_id=asset_id),
@@ -90,6 +97,8 @@ async def transform_video(
         input_size=data.size,
         output_height=height,
         output_width=width,
+        thumb_max_height=thumb_h,
+        thumb_max_width=thumb_w,
     ))
     with MediaservicesErrHandler():
         return cast(TransformVideoResponse, await grpc.stub.TransformVideo(async_bytes_generator(first, data)))

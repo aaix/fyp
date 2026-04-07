@@ -63,6 +63,7 @@ async def generate_signed_get(
     bucket_id: id_t,
     asset_id: id_t,
     duration: int = 120,
+    version: str | None = None
 ) -> str:
     s3 = await client()
 
@@ -70,6 +71,8 @@ async def generate_signed_get(
         bucket_id=bucket_id,
         asset_id=asset_id
     )
+    if version:
+        path += version
 
     if public:
         bucket = PUBLIC_BUCKET
