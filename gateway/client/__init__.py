@@ -326,11 +326,11 @@ class GatewayClient:
     @tracer.start_as_current_span("Client.handle_user_bulk_request")
     async def handle_user_bulk_request(self, ubr: UserBulkRequest):
         user_ids = ubr.user_ids
-        res = await get_bulk_users(grpcuser, user_ids)
+        users, errors = await get_bulk_users(grpcuser, user_ids)
 
         await self.send_event(events.UsersEvent(
-            users=[UserSearchResponse.from_rpc(u) for u in res.users],
-            errors=[(puuid_uuid(e.user_id) or unwrap(), e.error) for e in res.errors]
+            users=[UserSearchResponse.from_rpc(u) for u in users],
+            errors=[(puuid_uuid(e.user_id) or unwrap(), e.error) for e in errors]
         ))
 
 
