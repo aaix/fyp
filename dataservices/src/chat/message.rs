@@ -1,11 +1,11 @@
 use futures::StreamExt;
 use init_tracing_opentelemetry::tracing_opentelemetry::OpenTelemetrySpanExt;
-use scylla::{statement::prepared::PreparedStatement, value::{CqlTimeuuid, MaybeUnset}};
+use scylla::{statement::prepared::PreparedStatement, value::{MaybeUnset}};
 use tonic::{Request, Response, Status, async_trait};
 
-use crate::{db_conn::db, errors::DSResult, helpers::{calc_bucket, gen_timeuuid, time_now}, models::message::Message, profile_statement, protos::dataservices::message_service::{
+use crate::{db_conn::db, errors::DSResult, helpers::{calc_bucket, gen_timeuuid, time_now}, models::message::Message, profile_statement, protos::{dataservices::message_service::{
     CreateMessageRequest, DeleteMessageRequest, DeleteMessageResponse, MessageObject, ReadMessageRequest, ReadMessagesRequest, ReadMessagesResponse, UpdateMessageRequest, message_service_server::{MessageService, MessageServiceServer}
-}, req_tuuid};
+}, plib::AllignedCqlTimeuuid}, req_tuuid};
 
 
 #[derive(Debug)]
@@ -91,8 +91,8 @@ impl ScyllaMessageServiceServer {
 
     async fn _read_message_reuse(
         &self,
-        message_id: &CqlTimeuuid,
-        channel_id: &CqlTimeuuid,
+        message_id: &AllignedCqlTimeuuid,
+        channel_id: &AllignedCqlTimeuuid,
         bucket: i64,
     ) -> DSResult<Message> {
 
@@ -113,8 +113,8 @@ impl ScyllaMessageServiceServer {
         request: tonic::Request<CreateMessageRequest>,
     ) -> DSResult<tonic::Response<MessageObject>> {
         
-        let channel_id: CqlTimeuuid = req_tuuid!(request, channel_id)?;
-        let author_id: CqlTimeuuid = req_tuuid!(request, author_id)?;
+        let channel_id: AllignedCqlTimeuuid = req_tuuid!(request, channel_id)?;
+        let author_id: AllignedCqlTimeuuid = req_tuuid!(request, author_id)?;
         
         let inner = request.into_inner();
 
@@ -126,7 +126,7 @@ impl ScyllaMessageServiceServer {
         let content = inner.opt_content;
         let additional_content = inner.opt_additional_content;
 
-        let attachment_asset_id: Option<CqlTimeuuid> = if let Some(request_asset) = inner.request_asset {
+        let attachment_asset_id: Option<AllignedCqlTimeuuid> = if let Some(request_asset) = inner.request_asset {
             if !request_asset {
                 return Err(Status::invalid_argument("Unexpected false asset request").into());                    
             }
@@ -136,7 +136,7 @@ impl ScyllaMessageServiceServer {
         };
 
 
-        let in_reply_to: Option<CqlTimeuuid> = inner.opt_in_reply_to.map(Into::into);
+        let in_reply_to: Option<AllignedCqlTimeuuid> = inner.opt_in_reply_to.map(Into::into);
 
         db().await.execute_unpaged(
             &self.create_message_prepared,
@@ -173,7 +173,7 @@ impl ScyllaMessageServiceServer {
         &self,
         request: Request<ReadMessageRequest>,
     ) -> DSResult<Response<MessageObject>> {
-        let message_id: CqlTimeuuid = req_tuuid!(request, message_id)?;
+        let message_id: AllignedCqlTimeuuid = req_tuuid!(request, message_id)?;
         let channel_id = req_tuuid!(request, channel_id)?;
         let bucket = calc_bucket(message_id);
         
@@ -187,9 +187,9 @@ impl ScyllaMessageServiceServer {
 
     async fn _read_messages_single_iter(
         &self,
-        channel_id: &CqlTimeuuid,
+        channel_id: &AllignedCqlTimeuuid,
         bucket: i64,
-        before: Option<CqlTimeuuid>,
+        before: Option<AllignedCqlTimeuuid>,
         max_to_fetch: i32,
         output: &mut Vec<MessageObject>,
     ) -> DSResult<()> {
@@ -232,11 +232,11 @@ impl ScyllaMessageServiceServer {
         &self,
         request: tonic::Request<ReadMessagesRequest>,
     ) -> DSResult<tonic::Response<ReadMessagesResponse>> {
-        let channel_id: CqlTimeuuid = req_tuuid!(request, channel_id)?;
+        let channel_id: AllignedCqlTimeuuid = req_tuuid!(request, channel_id)?;
 
         let inner = request.get_ref();
 
-        let before: Option<CqlTimeuuid> = inner.before.map(Into::into);
+        let before: Option<AllignedCqlTimeuuid> = inner.before.map(Into::into);
         let count = inner.count as usize;
         let mut bucket = inner.latest_bucket;
 
@@ -267,8 +267,8 @@ impl ScyllaMessageServiceServer {
         &self,
         request: tonic::Request<DeleteMessageRequest>,
     ) -> DSResult<tonic::Response<DeleteMessageResponse>> {
-        let channel_id: CqlTimeuuid = req_tuuid!(request, channel_id)?;
-        let message_id: CqlTimeuuid = req_tuuid!(request, message_id)?;
+        let channel_id: AllignedCqlTimeuuid = req_tuuid!(request, channel_id)?;
+        let message_id: AllignedCqlTimeuuid = req_tuuid!(request, message_id)?;
 
         let bucket = calc_bucket(message_id);
 
@@ -284,8 +284,8 @@ impl ScyllaMessageServiceServer {
         &self,
         request: tonic::Request<UpdateMessageRequest>,
     ) -> DSResult<tonic::Response<MessageObject>> {
-        let channel_id: CqlTimeuuid = req_tuuid!(request, channel_id)?;
-        let message_id: CqlTimeuuid = req_tuuid!(request, message_id)?;
+        let channel_id: AllignedCqlTimeuuid = req_tuuid!(request, channel_id)?;
+        let message_id: AllignedCqlTimeuuid = req_tuuid!(request, message_id)?;
 
         let bucket = calc_bucket(message_id);
 

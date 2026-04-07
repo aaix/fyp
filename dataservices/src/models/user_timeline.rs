@@ -4,7 +4,7 @@ use scylla::DeserializeRow;
 use scylla::value;
 #[derive(Debug, DeserializeRow)]
 pub struct UserTimeline {
-    pub user_id: value::CqlTimeuuid,
+    pub user_id: value::AllignedCqlTimeuuid,
     pub timeline_type: i32,
-    pub post_id: value::CqlTimeuuid,
+    pub post_id: value::AllignedCqlTimeuuid,
 }

@@ -4,7 +4,7 @@ use scylla::DeserializeRow;
 use scylla::value;
 #[derive(Debug, DeserializeRow)]
 pub struct UserProfile {
-    pub user_id: value::CqlTimeuuid,
+    pub user_id: value::AllignedCqlTimeuuid,
     pub bio: String,
     pub num_friends: i32,
     pub num_followers: i32,

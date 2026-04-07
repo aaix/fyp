@@ -4,6 +4,6 @@ use scylla::DeserializeRow;
 use scylla::value;
 #[derive(Debug, DeserializeRow)]
 pub struct MultiusePostAttachment {
-    pub multiuse_post_id: value::CqlTimeuuid,
-    pub asset_id: value::CqlTimeuuid,
+    pub multiuse_post_id: value::AllignedCqlTimeuuid,
+    pub asset_id: value::AllignedCqlTimeuuid,
 }

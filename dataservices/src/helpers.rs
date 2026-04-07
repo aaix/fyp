@@ -1,19 +1,21 @@
 use std::{sync::OnceLock, time::{SystemTime, UNIX_EPOCH}};
-use scylla::value::{CqlTimestamp, CqlTimeuuid};
+use scylla::value::{CqlTimestamp};
 use mac_address::get_mac_address;
 use uuid::Uuid;
+
+use crate::protos::plib::AllignedCqlTimeuuid;
 
 
 static NODE_ID: OnceLock<[u8; 6]> = OnceLock::new();
 
 
-pub fn gen_timeuuid() -> CqlTimeuuid {
+pub fn gen_timeuuid() -> AllignedCqlTimeuuid {
     let node_id= *NODE_ID.get_or_init(|| {
         let mac = get_mac_address().unwrap().unwrap();
         println!("MAC address: {:02x?}", mac.bytes());
         mac.bytes()
     });
-    CqlTimeuuid::from(uuid::Uuid::now_v1(&node_id))
+    AllignedCqlTimeuuid::from(uuid::Uuid::now_v1(&node_id))
 }
 
 pub fn gen_uuid() -> uuid::Uuid {

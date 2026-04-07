@@ -7,10 +7,10 @@ TABLE member
 use std::collections::HashSet;
 
 use futures::{StreamExt, future::join_all};
-use scylla::{statement::prepared::PreparedStatement, value::{CqlTimeuuid, MaybeUnset}};
+use scylla::{statement::prepared::PreparedStatement, value::{MaybeUnset}};
 use tonic::{Response, Status, async_trait};
 
-use crate::{db_conn::db, errors::DSResult, helpers::gen_timeuuid, maybe_opt_field, models::{channel::Channel, channel_counter::ChannelCounter, user_channel::UserChannel}, profile_statement, protos::dataservices::channel_service::{AddChannelMembersRequest, AddChannelMembersResponse, ChannelCounterResponse, ChannelMemberObject, ChannelObjectResponse, CreateChannelRequest, DeleteChannelResponse, GetChannelsCounterRequest, GetChannelsCounterResponse, GetUserChannelsRequest, IncrementChannelCounterRequest, IncrementChannelCounterResponse, ReadChannelRequest, RemoveChannelMembersRequest, RemoveChannelMembersResponse, UpdateChannelMemberRequest, UpdateChannelMemberResponse, UpdateChannelRequest, UserChannelsResponse, channel_service_server::{ChannelService, ChannelServiceServer}}, req_ref, req_tuuid};
+use crate::{db_conn::db, errors::DSResult, helpers::gen_timeuuid, maybe_opt_field, models::{channel::Channel, channel_counter::ChannelCounter, user_channel::UserChannel}, profile_statement, protos::{dataservices::channel_service::{AddChannelMembersRequest, AddChannelMembersResponse, ChannelCounterResponse, ChannelMemberObject, ChannelObjectResponse, CreateChannelRequest, DeleteChannelResponse, GetChannelsCounterRequest, GetChannelsCounterResponse, GetUserChannelsRequest, IncrementChannelCounterRequest, IncrementChannelCounterResponse, ReadChannelRequest, RemoveChannelMembersRequest, RemoveChannelMembersResponse, UpdateChannelMemberRequest, UpdateChannelMemberResponse, UpdateChannelRequest, UserChannelsResponse, channel_service_server::{ChannelService, ChannelServiceServer}}, plib::AllignedCqlTimeuuid}, req_ref, req_tuuid};
 
 
 #[derive(Debug)]
@@ -133,8 +133,8 @@ impl ScyllaChannelServiceServer {
         let owned = request.into_inner();
 
         let channel_id = gen_timeuuid();
-        let members: HashSet<CqlTimeuuid> = HashSet::new();
-        let asset_id: Option<CqlTimeuuid> = None;
+        let members: HashSet<AllignedCqlTimeuuid> = HashSet::new();
+        let asset_id: Option<AllignedCqlTimeuuid> = None;
         let latest_bucket: i64 = 0;
 
         db().await.execute_unpaged(
@@ -153,7 +153,7 @@ impl ScyllaChannelServiceServer {
         }))
     }
 
-    async fn _read_channel_reuse(&self, channel_id: CqlTimeuuid) -> DSResult<ChannelObjectResponse> {
+    async fn _read_channel_reuse(&self, channel_id: AllignedCqlTimeuuid) -> DSResult<ChannelObjectResponse> {
 
         let res = db().await.execute_unpaged(
             &self.read_channel_prepared,
@@ -174,7 +174,7 @@ impl ScyllaChannelServiceServer {
         &self,
         request: tonic::Request<ReadChannelRequest>,
     ) -> DSResult<tonic::Response<ChannelObjectResponse>> {
-        let channel_id: CqlTimeuuid = req_tuuid!(request, channel_id)?;
+        let channel_id: AllignedCqlTimeuuid = req_tuuid!(request, channel_id)?;
 
 
         Ok(Response::new(self._read_channel_reuse(channel_id).await?))
@@ -186,7 +186,7 @@ impl ScyllaChannelServiceServer {
         request: tonic::Request<UpdateChannelRequest>,
     ) -> DSResult<tonic::Response<ChannelObjectResponse>> {
         
-        let channel_id: CqlTimeuuid = req_tuuid!(request, channel_id)?;
+        let channel_id: AllignedCqlTimeuuid = req_tuuid!(request, channel_id)?;
         let owned = request.into_inner();
 
         let map = owned.update_mask.ok_or(Status::invalid_argument("bad mask"))?;
@@ -195,7 +195,7 @@ impl ScyllaChannelServiceServer {
         let bucket: MaybeUnset<i64> = MaybeUnset::from_option(owned.last_bucket);
 
 
-        let icon_id: MaybeUnset<CqlTimeuuid> = if let Some(request_asset) = owned.request_icon {
+        let icon_id: MaybeUnset<AllignedCqlTimeuuid> = if let Some(request_asset) = owned.request_icon {
             if !request_asset {
                 return Err(Status::invalid_argument("Unexpected false asset request").into());                    
             }
@@ -212,7 +212,7 @@ impl ScyllaChannelServiceServer {
         ).await?;
 
         let futures = owned.members_to_update.iter().map(async |r| {
-            let user_id: CqlTimeuuid = r.into();
+            let user_id: AllignedCqlTimeuuid = r.into();
             db().await.execute_unpaged(
                 &self.update_user_channel_denorm_prepared,
                 (
@@ -238,7 +238,7 @@ impl ScyllaChannelServiceServer {
         request: tonic::Request<ReadChannelRequest>,
     ) -> DSResult<tonic::Response<DeleteChannelResponse>> { 
         
-        let channel_id: CqlTimeuuid = req_tuuid!(request, channel_id)?;
+        let channel_id: AllignedCqlTimeuuid = req_tuuid!(request, channel_id)?;
 
         db().await.execute_unpaged(
             &self.delete_channel_prepared,
@@ -254,20 +254,20 @@ impl ScyllaChannelServiceServer {
         request: tonic::Request<AddChannelMembersRequest>,
     ) -> DSResult<tonic::Response<AddChannelMembersResponse>> {
 
-        let channel_id: CqlTimeuuid = req_tuuid!(request, channel_id)?;
+        let channel_id: AllignedCqlTimeuuid = req_tuuid!(request, channel_id)?;
         let channel = req_ref!(request, channel)?;
 
         let inner = request.get_ref();
 
         let member_ids = inner.requests.iter().filter_map(|r| {
             r.user_id.map(Into::into)
-        }).collect::<Vec<CqlTimeuuid>>();
+        }).collect::<Vec<AllignedCqlTimeuuid>>();
 
         if member_ids.len() != inner.requests.len() {
             return Err(Status::invalid_argument("member ids are not all Some").into());
         }
 
-        let last_acked_message_id: Option<CqlTimeuuid> = None;
+        let last_acked_message_id: Option<AllignedCqlTimeuuid> = None;
 
         db().await.execute_unpaged(
             &self.add_channel_members_prepared,
@@ -277,7 +277,7 @@ impl ScyllaChannelServiceServer {
 
 
         let futures = inner.requests.iter().map(async |r| {
-            let user_id: CqlTimeuuid = r.user_id.unwrap().into();
+            let user_id: AllignedCqlTimeuuid = r.user_id.unwrap().into();
             profile_statement!(
                 "add_user_channel_prepared",
                 db().await.execute_unpaged(
@@ -288,7 +288,7 @@ impl ScyllaChannelServiceServer {
                         &r.encrypted_channel_key,
                         last_acked_message_id,
                         &channel.opt_channel_name,
-                        channel.opt_channel_icon_asset_id.map(Into::<CqlTimeuuid>::into)
+                        channel.opt_channel_icon_asset_id.map(Into::<AllignedCqlTimeuuid>::into)
                     )
                 ).await
             )
@@ -307,7 +307,7 @@ impl ScyllaChannelServiceServer {
         request: tonic::Request<GetUserChannelsRequest>,
     ) -> DSResult<tonic::Response<UserChannelsResponse>> {
 
-        let user_id: CqlTimeuuid = req_tuuid!(request, user_id)?;
+        let user_id: AllignedCqlTimeuuid = req_tuuid!(request, user_id)?;
 
         let mut pager = db().await.execute_iter(
             self.get_user_channels_prepared.clone(),
@@ -341,11 +341,11 @@ impl ScyllaChannelServiceServer {
         &self,
         request: tonic::Request<RemoveChannelMembersRequest>,
     ) -> DSResult<tonic::Response<RemoveChannelMembersResponse>> {
-        let channel_id: CqlTimeuuid = req_tuuid!(request, channel_id)?;
+        let channel_id: AllignedCqlTimeuuid = req_tuuid!(request, channel_id)?;
 
         let inner = request.get_ref();
 
-        let member_ids = inner.members.iter().map(Into::into).collect::<Vec<CqlTimeuuid>>();
+        let member_ids = inner.members.iter().map(Into::into).collect::<Vec<AllignedCqlTimeuuid>>();
 
 
         db().await.execute_unpaged(
@@ -356,7 +356,7 @@ impl ScyllaChannelServiceServer {
 
 
         let futures = inner.members.iter().map(async |r| {
-            let user_id: CqlTimeuuid = r.into();
+            let user_id: AllignedCqlTimeuuid = r.into();
             db().await.execute_unpaged(
                 &self.delete_user_channel_prepared,
                 (
@@ -377,12 +377,12 @@ impl ScyllaChannelServiceServer {
         request: tonic::Request<UpdateChannelMemberRequest>,
     ) -> DSResult<tonic::Response<UpdateChannelMemberResponse>> {
         
-        let user_id: CqlTimeuuid = req_tuuid!(request, user_id)?;
-        let channel_id: CqlTimeuuid = req_tuuid!(request, channel_id)?;
+        let user_id: AllignedCqlTimeuuid = req_tuuid!(request, user_id)?;
+        let channel_id: AllignedCqlTimeuuid = req_tuuid!(request, channel_id)?;
 
         let inner = request.get_ref();
 
-        let last_acked_message_id: MaybeUnset<CqlTimeuuid> = MaybeUnset::from_option(inner.last_acked_message_id.map(Into::into));
+        let last_acked_message_id: MaybeUnset<AllignedCqlTimeuuid> = MaybeUnset::from_option(inner.last_acked_message_id.map(Into::into));
         let counter = MaybeUnset::from_option(inner.counter);
 
 
@@ -402,7 +402,7 @@ impl ScyllaChannelServiceServer {
 
     async fn _get_single_channel_counter(
         &self,
-        channel_id: CqlTimeuuid,
+        channel_id: AllignedCqlTimeuuid,
     ) -> DSResult<ChannelCounterResponse> {
         
         let row  = db().await.execute_unpaged(
@@ -442,7 +442,7 @@ impl ScyllaChannelServiceServer {
     ) -> DSResult<
         tonic::Response<IncrementChannelCounterResponse>>
     {
-        let channel_id: CqlTimeuuid = req_tuuid!(request, channel_id)?;
+        let channel_id: AllignedCqlTimeuuid = req_tuuid!(request, channel_id)?;
 
         db().await.execute_unpaged(
             &self.increment_channel_counter_prepared,

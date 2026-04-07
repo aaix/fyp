@@ -1,10 +1,10 @@
 
 use async_singleflight::UnaryGroup;
 use futures::{StreamExt, future::join_all};
-use scylla::{errors::FirstRowError, statement::prepared::PreparedStatement, value::{Counter, CqlTimestamp, CqlTimeuuid, MaybeUnset}};
+use scylla::{errors::FirstRowError, statement::prepared::PreparedStatement, value::{Counter, CqlTimestamp, MaybeUnset}};
 use tonic::{Response, Status, async_trait};
 
-use crate::{db_conn::db, errors::DSResult, helpers::{calc_bucket, gen_timeuuid, time_now}, maybe_opt_field, models::{post_like::LWTPostLike, post_num_counters::PostNumCounters, post_v2::PostV2}, protos::dataservices::post_service::{post_service_server::{PostService, PostServiceServer}, *}, req_tuuid};
+use crate::{db_conn::db, errors::DSResult, helpers::{calc_bucket, gen_timeuuid, time_now}, maybe_opt_field, models::{post_like::LWTPostLike, post_num_counters::PostNumCounters, post_v2::PostV2}, protos::{dataservices::post_service::{post_service_server::{PostService, PostServiceServer}, *}, plib::AllignedCqlTimeuuid}, req_tuuid};
 
 const POST_AFTER_FLOOR: i64 = 24 * 60 * 60 * 1000; // 1 day (in ms)
 
@@ -49,10 +49,10 @@ pub struct ScyllaPostService {
     update_post_counters: PreparedStatement,
     read_post_like_prepared: PreparedStatement,
 
-    post_read_group: UnaryGroup<(CqlTimeuuid, CqlTimeuuid, i32), DSResult<PostResponse>>,
-    post_counters_read_group: UnaryGroup<CqlTimeuuid, DSResult<PostNumCounters>>,
-    user_posts_read_group: UnaryGroup<(CqlTimeuuid, i32, Option<CqlTimeuuid>, i32), DSResult<Vec<PostResponse>>>,
-    user_dehydrated_posts_read_group: UnaryGroup<(CqlTimeuuid, i32, Option<CqlTimeuuid>, i32, i64), DSResult<DehydratedPosts>>
+    post_read_group: UnaryGroup<(AllignedCqlTimeuuid, AllignedCqlTimeuuid, i32), DSResult<PostResponse>>,
+    post_counters_read_group: UnaryGroup<AllignedCqlTimeuuid, DSResult<PostNumCounters>>,
+    user_posts_read_group: UnaryGroup<(AllignedCqlTimeuuid, i32, Option<AllignedCqlTimeuuid>, i32), DSResult<Vec<PostResponse>>>,
+    user_dehydrated_posts_read_group: UnaryGroup<(AllignedCqlTimeuuid, i32, Option<AllignedCqlTimeuuid>, i32, i64), DSResult<DehydratedPosts>>
 }
 
 impl ScyllaPostService {
@@ -162,10 +162,10 @@ impl ScyllaPostService {
 
     async fn _read_post_reuse(
         &self,
-        author_id: CqlTimeuuid,
-        post_id: CqlTimeuuid,
+        author_id: AllignedCqlTimeuuid,
+        post_id: AllignedCqlTimeuuid,
         timeline_type: i32,
-        maybe_liked_by: Option<CqlTimeuuid>,
+        maybe_liked_by: Option<AllignedCqlTimeuuid>,
     ) -> DSResult<PostResponse> {
 
         let key = &(author_id, post_id, timeline_type);
@@ -194,8 +194,8 @@ impl ScyllaPostService {
 
     async fn _read_post_reuse_nocoalesce(
         &self,
-        author_id: CqlTimeuuid,
-        post_id: CqlTimeuuid,
+        author_id: AllignedCqlTimeuuid,
+        post_id: AllignedCqlTimeuuid,
         timeline_type: i32,
     ) -> DSResult<PostResponse> {
 
@@ -218,14 +218,14 @@ impl ScyllaPostService {
 
     }
 
-    async fn _read_post_counters_reuse(&self, post_id: CqlTimeuuid) -> DSResult<PostNumCounters>{
+    async fn _read_post_counters_reuse(&self, post_id: AllignedCqlTimeuuid) -> DSResult<PostNumCounters>{
         self.post_counters_read_group.work(
             &post_id,
             self._read_post_counters_reuse_nocoalesce(post_id)
         ).await
     }
 
-    async fn _read_post_counters_reuse_nocoalesce(&self, post_id: CqlTimeuuid) -> DSResult<PostNumCounters> {
+    async fn _read_post_counters_reuse_nocoalesce(&self, post_id: AllignedCqlTimeuuid) -> DSResult<PostNumCounters> {
 
         let row_res = db().await.execute_unpaged(
             &self.read_post_num_counters_prepared,
@@ -251,7 +251,7 @@ impl ScyllaPostService {
         request: tonic::Request<CreatePostRequest>,
     ) -> DSResult<tonic::Response<PostResponse>> {
         
-        let author_id: CqlTimeuuid = req_tuuid!(request, author_id)?;
+        let author_id: AllignedCqlTimeuuid = req_tuuid!(request, author_id)?;
         let inner = request.into_inner();
 
         let post_id = gen_timeuuid();
@@ -298,8 +298,8 @@ impl ScyllaPostService {
         tonic::Response<PostResponse>,
         tonic::Status,
     > {
-        let post_id: CqlTimeuuid = req_tuuid!(request, post_id)?;
-        let author_id: CqlTimeuuid = req_tuuid!(request, author_id)?;
+        let post_id: AllignedCqlTimeuuid = req_tuuid!(request, post_id)?;
+        let author_id: AllignedCqlTimeuuid = req_tuuid!(request, author_id)?;
         let timeline_type = request.get_ref().timeline_type;
         let liked_by = request.get_ref().liked_by.map(Into::into);
 
@@ -356,8 +356,8 @@ impl ScyllaPostService {
     ) -> DSResult<
         tonic::Response<DeletePostResponse>> {
         
-        let post_id: CqlTimeuuid = req_tuuid!(request, post_id)?;
-        let author_id: CqlTimeuuid = req_tuuid!(request, author_id)?;
+        let post_id: AllignedCqlTimeuuid = req_tuuid!(request, post_id)?;
+        let author_id: AllignedCqlTimeuuid = req_tuuid!(request, author_id)?;
         let timeline_type = request.get_ref().timeline_type;
 
 
@@ -384,7 +384,7 @@ impl ScyllaPostService {
     ) -> DSResult<
         tonic::Response<ManyPostsResponse>> {
 
-        let maybe_liked_by: Option<CqlTimeuuid> = request.get_ref().liked_by.map(Into::into);
+        let maybe_liked_by: Option<AllignedCqlTimeuuid> = request.get_ref().liked_by.map(Into::into);
         let timeline_type = request.get_ref().timeline_type;
         
         let futures = request.get_ref().requests.iter().map(async |r| {
@@ -413,9 +413,9 @@ impl ScyllaPostService {
 
     async fn _read_user_posts_nocoalesce(
         &self,
-        author_id: CqlTimeuuid,
+        author_id: AllignedCqlTimeuuid,
         timeline_type: i32,
-        maybe_before: &Option<CqlTimeuuid>,
+        maybe_before: &Option<AllignedCqlTimeuuid>,
         limit: i32
     ) -> DSResult<Vec<PostResponse>> {
         let pager = match maybe_before {
@@ -470,12 +470,12 @@ impl ScyllaPostService {
         request: tonic::Request<ReadUserPostsRequest>,
     ) -> DSResult<
         tonic::Response<UserPostsResponse>> {
-        let author_id: CqlTimeuuid = req_tuuid!(request, author_id)?;
+        let author_id: AllignedCqlTimeuuid = req_tuuid!(request, author_id)?;
         let inner = request.get_ref();
 
         let timeline_type = inner.timeline_type;
 
-        let maybe_before: Option<CqlTimeuuid> = inner.before.map(Into::into);
+        let maybe_before: Option<AllignedCqlTimeuuid> = inner.before.map(Into::into);
         let limit = inner.limit;
 
         let posts = self.user_posts_read_group.work(
@@ -489,9 +489,9 @@ impl ScyllaPostService {
 
     async fn _read_user_dehydrated_posts_nocoalesce(
         &self,
-        author_id: CqlTimeuuid,
+        author_id: AllignedCqlTimeuuid,
         timeline_type: i32,
-        maybe_before: &Option<CqlTimeuuid>,
+        maybe_before: &Option<AllignedCqlTimeuuid>,
         limit: i32,
         after: i64,
 
@@ -510,7 +510,7 @@ impl ScyllaPostService {
                         after_time,
                         limit,
                     )
-                ).await?.rows_stream::<(CqlTimeuuid,)>()?
+                ).await?.rows_stream::<(AllignedCqlTimeuuid,)>()?
             }
             None => {
                 db().await.execute_iter(
@@ -521,7 +521,7 @@ impl ScyllaPostService {
                         after_time,
                         limit,
                     )
-                ).await?.rows_stream::<(CqlTimeuuid,)>()?
+                ).await?.rows_stream::<(AllignedCqlTimeuuid,)>()?
             }
         };
 
@@ -546,7 +546,7 @@ impl ScyllaPostService {
 
         let timeline_type = inner.timeline_type;
 
-        let maybe_before: Option<CqlTimeuuid> = inner.before.map(Into::into);
+        let maybe_before: Option<AllignedCqlTimeuuid> = inner.before.map(Into::into);
         let limit = inner.limit;
 
         // we round post after down for more efficient request coalescing
@@ -578,7 +578,7 @@ impl ScyllaPostService {
 
     async fn _read_post_liked_by(
         &self,
-        post_id: CqlTimeuuid, liked_by: CqlTimeuuid
+        post_id: AllignedCqlTimeuuid, liked_by: AllignedCqlTimeuuid
     ) -> DSResult<bool> {
 
         let bucket = calc_bucket(liked_by);
@@ -602,8 +602,8 @@ impl ScyllaPostService {
     ) -> DSResult<
         tonic::Response<LikePostResponse>> {
 
-        let post_id: CqlTimeuuid = req_tuuid!(request, post_id)?;
-        let liker_id: CqlTimeuuid = req_tuuid!(request, liker_id)?;
+        let post_id: AllignedCqlTimeuuid = req_tuuid!(request, post_id)?;
+        let liker_id: AllignedCqlTimeuuid = req_tuuid!(request, liker_id)?;
         let bucket = calc_bucket(liker_id);
 
         let res = db().await.execute_unpaged(
@@ -636,8 +636,8 @@ impl ScyllaPostService {
         request: tonic::Request<LikePostRequest>,
     ) -> DSResult<
         tonic::Response<LikePostResponse>> {
-        let post_id: CqlTimeuuid = req_tuuid!(request, post_id)?;
-        let liker_id: CqlTimeuuid = req_tuuid!(request, liker_id)?;
+        let post_id: AllignedCqlTimeuuid = req_tuuid!(request, post_id)?;
+        let liker_id: AllignedCqlTimeuuid = req_tuuid!(request, liker_id)?;
         let bucket = calc_bucket(liker_id);
 
         let res = db().await.execute_unpaged(

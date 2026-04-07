@@ -1,10 +1,10 @@
 use std::convert::identity;
 
 use futures::{StreamExt, future::join_all};
-use scylla::{statement::prepared::PreparedStatement, value::{CqlTimeuuid, MaybeUnset}};
+use scylla::{statement::prepared::PreparedStatement, value::{MaybeUnset}};
 use tonic::{Response, async_trait};
 
-use crate::{db_conn::db, errors::DSResult, models::{user_timeline_entry::UserTimelineEntry, user_timeline_meta::UserTimelineMeta}, protos::dataservices::feed_service::{feed_service_server::{FeedService, FeedServiceServer}, *}, req_tuuid};
+use crate::{db_conn::db, errors::DSResult, models::{user_timeline_entry::UserTimelineEntry, user_timeline_meta::UserTimelineMeta}, protos::{dataservices::feed_service::{feed_service_server::{FeedService, FeedServiceServer}, *}, plib::AllignedCqlTimeuuid}, req_tuuid};
 
 
 
@@ -84,7 +84,7 @@ impl ScyllaFeedService {
 
     async fn _read_feed_meta_reuse(
         &self,
-        user_id: CqlTimeuuid,
+        user_id: AllignedCqlTimeuuid,
         timeline_type: i32,
     ) -> DSResult<FeedMetaResponse> {
 
@@ -114,7 +114,7 @@ impl ScyllaFeedService {
         &self,
         request: tonic::Request<ReadFeedMetaRequest>,
     ) -> DSResult<tonic::Response<FeedMetaResponse>> {
-        let user_id: CqlTimeuuid = req_tuuid!(request, user_id)?;
+        let user_id: AllignedCqlTimeuuid = req_tuuid!(request, user_id)?;
         let timeline_type = request.get_ref().timeline_type;
 
         Ok(Response::new(self._read_feed_meta_reuse(user_id, timeline_type).await?))
@@ -125,20 +125,20 @@ impl ScyllaFeedService {
         request: tonic::Request<UpdateFeedMetaRequest>,
     ) -> DSResult<
         tonic::Response<FeedMetaResponse>> {
-        let user_id: CqlTimeuuid = req_tuuid!(request, user_id)?;
+        let user_id: AllignedCqlTimeuuid = req_tuuid!(request, user_id)?;
         let owned = request.into_inner();
 
         let timeline_type = owned.timeline_type;
 
 
         let last_fanned_in_at = MaybeUnset::from_option(owned.last_fanned_in_at);
-        let fanned_in_up_to: MaybeUnset<CqlTimeuuid> = MaybeUnset::from_option(owned.fanned_in_up_to.map(Into::into));
+        let fanned_in_up_to: MaybeUnset<AllignedCqlTimeuuid> = MaybeUnset::from_option(owned.fanned_in_up_to.map(Into::into));
 
-        let exclude_to_remove: Vec<CqlTimeuuid> = owned.exclude_to_delete.into_iter().map(Into::into).collect();
-        let exclude_to_add: Vec<CqlTimeuuid> = owned.exclude_to_add.into_iter().map(Into::into).collect();
+        let exclude_to_remove: Vec<AllignedCqlTimeuuid> = owned.exclude_to_delete.into_iter().map(Into::into).collect();
+        let exclude_to_add: Vec<AllignedCqlTimeuuid> = owned.exclude_to_add.into_iter().map(Into::into).collect();
 
-        let explicit_to_remove: Vec<CqlTimeuuid> = owned.explicit_fan_in_to_delete.into_iter().map(Into::into).collect();
-        let explicit_to_add: Vec<CqlTimeuuid> = owned.explicit_fan_in_to_add.into_iter().map(Into::into).collect();
+        let explicit_to_remove: Vec<AllignedCqlTimeuuid> = owned.explicit_fan_in_to_delete.into_iter().map(Into::into).collect();
+        let explicit_to_add: Vec<AllignedCqlTimeuuid> = owned.explicit_fan_in_to_add.into_iter().map(Into::into).collect();
    
 
         db().await.execute_unpaged(
@@ -163,10 +163,10 @@ impl ScyllaFeedService {
         request: tonic::Request<ReadFeedRequest>,
     ) -> DSResult<tonic::Response<FeedResponse>> {
         
-        let user_id: CqlTimeuuid = req_tuuid!(request, user_id)?;
+        let user_id: AllignedCqlTimeuuid = req_tuuid!(request, user_id)?;
         let owned = request.into_inner();
         let timeline_type = owned.timeline_type;
-        let maybe_before: Option<CqlTimeuuid> = owned.before.map(Into::into);
+        let maybe_before: Option<AllignedCqlTimeuuid> = owned.before.map(Into::into);
         let limit = owned.limit;
 
 
@@ -219,8 +219,8 @@ impl ScyllaFeedService {
         request: tonic::Request<AddToFeedsRequest>,
     ) -> DSResult<
         tonic::Response<AddToFeedsResponse>> {
-        let author_id: CqlTimeuuid = req_tuuid!(request, author_id)?;
-        let post_id: CqlTimeuuid = req_tuuid!(request, post_id)?;
+        let author_id: AllignedCqlTimeuuid = req_tuuid!(request, author_id)?;
+        let post_id: AllignedCqlTimeuuid = req_tuuid!(request, post_id)?;
 
         let owned = request.into_inner();
         let timeline_type = owned.timeline_type;
@@ -229,7 +229,7 @@ impl ScyllaFeedService {
 
         let futures = owned.user_ids.iter().map(async |entry| {
 
-            let user_id: CqlTimeuuid = entry.into();
+            let user_id: AllignedCqlTimeuuid = entry.into();
             
             let res = db().await.execute_unpaged(
                 &self.add_to_feed_prepared,
@@ -267,7 +267,7 @@ impl ScyllaFeedService {
         request: tonic::Request<AddPostsToFeedRequest>,
     ) -> DSResult<
         tonic::Response<AddPostsToFeedResponse>> {
-        let user_id: CqlTimeuuid = req_tuuid!(request, user_id)?;
+        let user_id: AllignedCqlTimeuuid = req_tuuid!(request, user_id)?;
         let owned = request.into_inner();
         let timeline_type = owned.timeline_type;
         let entry_type = owned.entry_type;
@@ -275,8 +275,8 @@ impl ScyllaFeedService {
 
         let futures = owned.to_add.iter().map(async |entry: &PartialFeedEntry| {
 
-            let post_id: CqlTimeuuid = entry.post_id?.into();
-            let author_id: CqlTimeuuid = entry.author_id?.into();
+            let post_id: AllignedCqlTimeuuid = entry.post_id?.into();
+            let author_id: AllignedCqlTimeuuid = entry.author_id?.into();
             
             let res = db().await.execute_unpaged(
                 &self.add_to_feed_prepared,

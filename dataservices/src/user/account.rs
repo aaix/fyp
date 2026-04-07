@@ -4,6 +4,7 @@ use crate::helpers::gen_timeuuid;
 use crate::models::user::User;
 use crate::protos::dataservices::user_service::{BulkUserResponse, CheckUsernameResponse, ReadUserBulkRequest, ReadUserByUsernameRequest, UserError, UserSearchEntry, UsernameSearch};
 use crate::protos::dataservices::{user_service};
+use crate::protos::plib::AllignedCqlTimeuuid;
 use crate::req_tuuid;
 
 use async_singleflight::UnaryGroup;
@@ -14,7 +15,7 @@ use futures::stream::StreamExt;
 
 use scylla::errors::FirstRowError;
 use scylla::statement::prepared::PreparedStatement;
-use scylla::value::{CqlTimeuuid, MaybeUnset};
+use scylla::value::{MaybeUnset};
 use tonic::{Request, Response, Status};
 
 
@@ -36,7 +37,7 @@ pub struct ScyllaUserService {
 
     username_searcher_prepared: PreparedStatement, 
 
-    read_user_group: UnaryGroup<CqlTimeuuid, DSResult<ReadUserResponse>>
+    read_user_group: UnaryGroup<AllignedCqlTimeuuid, DSResult<ReadUserResponse>>
 }
 
 impl ScyllaUserService {
@@ -98,7 +99,7 @@ impl ScyllaUserService {
 
     async fn _read_user_reuse(
         &self,
-        user_id: CqlTimeuuid,
+        user_id: AllignedCqlTimeuuid,
     ) -> DSResult<ReadUserResponse> {
         self.read_user_group.work(
             &user_id,
@@ -109,7 +110,7 @@ impl ScyllaUserService {
 
     async fn _read_user_reuse_nocoalesce(
         &self,
-        user_id: CqlTimeuuid,
+        user_id: AllignedCqlTimeuuid,
     ) -> DSResult<ReadUserResponse> {
 
         let res = db().await.execute_unpaged(
@@ -140,7 +141,7 @@ impl ScyllaUserService {
         request: Request<ReadUserRequest>,
     ) -> DSResult<Response<ReadUserResponse>> {
 
-        let user_id: CqlTimeuuid = req_tuuid!(request, user_id)?;
+        let user_id: AllignedCqlTimeuuid = req_tuuid!(request, user_id)?;
 
         Ok(Response::new(self._read_user_reuse(user_id).await?))
     }
@@ -162,7 +163,7 @@ impl ScyllaUserService {
         let (applied, _, _) = db().await.execute_unpaged(
             &self.create_username_prepared,
             (&username, &user_id)
-        ).await?.into_rows_result()?.first_row::<(bool, Option<&str>, Option<CqlTimeuuid>)>()?;
+        ).await?.into_rows_result()?.first_row::<(bool, Option<&str>, Option<AllignedCqlTimeuuid>)>()?;
 
 
         if !applied {
@@ -192,7 +193,7 @@ impl ScyllaUserService {
         request: Request<UpdateUserRequest>,
     ) -> DSResult<Response<ReadUserResponse>> {
         
-        let user_id: CqlTimeuuid = req_tuuid!(request, user_id)?;
+        let user_id: AllignedCqlTimeuuid = req_tuuid!(request, user_id)?;
 
         let unpacked = request.into_inner();
 
@@ -229,7 +230,7 @@ impl ScyllaUserService {
         request: Request<DeleteUserRequest>,
     ) -> DSResult<Response<DeleteUserResponse>> {
 
-        let user_id: CqlTimeuuid = req_tuuid!(request, user_id)?;
+        let user_id: AllignedCqlTimeuuid = req_tuuid!(request, user_id)?;
 
         db().await.execute_unpaged(
             &self.delete_user_prepared,
@@ -268,7 +269,7 @@ impl ScyllaUserService {
         let user_id = match db().await.execute_unpaged(
             &self.fetch_user_id_by_username_prepared,
             (username,)
-        ).await?.into_rows_result()?.first_row::<(CqlTimeuuid,)>() {
+        ).await?.into_rows_result()?.first_row::<(AllignedCqlTimeuuid,)>() {
             Ok(user_id) => user_id.0,
             Err(e) => {
                 match e {
@@ -293,7 +294,7 @@ impl ScyllaUserService {
 
         // page here bc there may be many tombstones even though we limit to 25
         let mut stream = db().await.execute_iter(self.username_searcher_prepared.clone(), (query,)).await?
-            .rows_stream::<(CqlTimeuuid, Option<CqlTimeuuid>, Vec<u8>, String)>()?;
+            .rows_stream::<(AllignedCqlTimeuuid, Option<AllignedCqlTimeuuid>, Vec<u8>, String)>()?;
 
         // SELECT user_id, opt_avatar_asset_id, public_key, username
 

@@ -1,8 +1,8 @@
-use crate::{db_conn::db, errors::DSResult, helpers::time_now, models::{relationship_v2::RelationshipV2, user_num_relationships::UserNumRelationships}, protos::dataservices::user_service::{self, CreateRelationshipRequest, DeleteRelationshipResponse, GetUserRelationshipCountsRequest, GetUserRelationshipCountsResponse, HalfRelationship, ReadRelationshipRequest, ReadRelationshipResponse, ReadRelationshipsChunkedRequest, RelationshipsResponse, ReadRelationshipsRequest, RelationshipObject, RelationshipTestResponse, TestManyRelationshipsRequest, TestManyRelationshipsResponse}, req_tuuid};
+use crate::{db_conn::db, errors::DSResult, helpers::time_now, models::{relationship_v2::RelationshipV2, user_num_relationships::UserNumRelationships}, protos::{dataservices::user_service::{self, CreateRelationshipRequest, DeleteRelationshipResponse, GetUserRelationshipCountsRequest, GetUserRelationshipCountsResponse, HalfRelationship, ReadRelationshipRequest, ReadRelationshipResponse, ReadRelationshipsChunkedRequest, ReadRelationshipsRequest, RelationshipObject, RelationshipTestResponse, RelationshipsResponse, TestManyRelationshipsRequest, TestManyRelationshipsResponse}, plib::AllignedCqlTimeuuid}, req_tuuid};
 
 use async_singleflight::UnaryGroup;
 use futures::{StreamExt, future::join_all};
-use scylla::{errors::FirstRowError, statement::prepared::PreparedStatement, value::{Counter, CqlTimeuuid}};
+use scylla::{errors::FirstRowError, statement::prepared::PreparedStatement, value::{Counter}};
 use tonic::{Request, Response, Status, async_trait};
 use user_service::user_relationship_service_server::{UserRelationshipService, UserRelationshipServiceServer};
 
@@ -23,7 +23,7 @@ pub struct ScyllaUserRelationshipService {
     read_relationship_counters_prepared: PreparedStatement,
     read_relationships_chunked_prepared: PreparedStatement,
 
-    relationships_counters_read_group: UnaryGroup<CqlTimeuuid, DSResult<GetUserRelationshipCountsResponse>>
+    relationships_counters_read_group: UnaryGroup<AllignedCqlTimeuuid, DSResult<GetUserRelationshipCountsResponse>>
 }
 
 
@@ -105,8 +105,8 @@ impl ScyllaUserRelationshipService {
         &self,
         request: Request<CreateRelationshipRequest>,
     ) -> DSResult<Response<RelationshipObject>> {
-        let user_a_id: CqlTimeuuid = req_tuuid!(request, user_id_a)?;
-        let user_b_id: CqlTimeuuid = req_tuuid!(request, user_id_b)?;
+        let user_a_id: AllignedCqlTimeuuid = req_tuuid!(request, user_id_a)?;
+        let user_b_id: AllignedCqlTimeuuid = req_tuuid!(request, user_id_b)?;
         let created_at = time_now();
         let inner = request.get_ref();
 
@@ -197,8 +197,8 @@ impl ScyllaUserRelationshipService {
         &self,
         request: Request<ReadRelationshipRequest>,
     ) -> DSResult<Response<ReadRelationshipResponse>> {
-        let user_a: CqlTimeuuid = req_tuuid!(request, user_id_a)?;
-        let user_b: CqlTimeuuid = req_tuuid!(request, user_id_b)?;
+        let user_a: AllignedCqlTimeuuid = req_tuuid!(request, user_id_a)?;
+        let user_b: AllignedCqlTimeuuid = req_tuuid!(request, user_id_b)?;
 
         let r_types = &request.get_ref().relationship_types;
 
@@ -228,8 +228,8 @@ impl ScyllaUserRelationshipService {
         &self,
         request: Request<CreateRelationshipRequest>,
     ) -> DSResult<Response<DeleteRelationshipResponse>> {
-        let user_a_id: CqlTimeuuid = req_tuuid!(request, user_id_a)?;
-        let user_b_id: CqlTimeuuid = req_tuuid!(request, user_id_b)?;
+        let user_a_id: AllignedCqlTimeuuid = req_tuuid!(request, user_id_a)?;
+        let user_b_id: AllignedCqlTimeuuid = req_tuuid!(request, user_id_b)?;
         let inner = request.get_ref();
         let a_to_b_type = inner.a_to_b_type;
         let b_to_a_type = inner.b_to_a_type;
@@ -311,8 +311,8 @@ impl ScyllaUserRelationshipService {
         &self,
         request: Request<RelationshipObject>,
     ) -> DSResult<Response<RelationshipTestResponse>> {
-        let user_a: CqlTimeuuid = req_tuuid!(request, user_id_a)?;
-        let user_b: CqlTimeuuid = req_tuuid!(request, user_id_b)?;
+        let user_a: AllignedCqlTimeuuid = req_tuuid!(request, user_id_a)?;
+        let user_b: AllignedCqlTimeuuid = req_tuuid!(request, user_id_b)?;
         let inner = request.get_ref();
         let relationship_type = inner.relationship_type;
 
@@ -332,7 +332,7 @@ impl ScyllaUserRelationshipService {
         &self,
         request: tonic::Request<TestManyRelationshipsRequest>,
     ) -> DSResult<tonic::Response<TestManyRelationshipsResponse>> {
-        let user_id: CqlTimeuuid = req_tuuid!(request, user_id)?;
+        let user_id: AllignedCqlTimeuuid = req_tuuid!(request, user_id)?;
 
         let futures = request.get_ref().tests.iter().map(async |t| {
 
@@ -341,7 +341,7 @@ impl ScyllaUserRelationshipService {
 
             let rows = db().await.execute_unpaged(
                 &self.test_relationship_prepared,
-                (&user_id, &Into::<CqlTimeuuid>::into(user_b), &relationship_type)
+                (&user_id, &Into::<AllignedCqlTimeuuid>::into(user_b), &relationship_type)
             ).await?.into_rows_result()?;
 
             let exists: DSResult<bool> = Ok(rows.rows_num() > 0);
@@ -372,7 +372,7 @@ impl ScyllaUserRelationshipService {
         &self,
         request: Request<ReadRelationshipsRequest>,
     ) -> DSResult<Response<RelationshipsResponse>> {
-        let user_id: CqlTimeuuid = req_tuuid!(request, user_id)?;
+        let user_id: AllignedCqlTimeuuid = req_tuuid!(request, user_id)?;
 
         let r_type = request.get_ref().relationship_type;
 
@@ -398,7 +398,7 @@ impl ScyllaUserRelationshipService {
 
     async fn _get_user_relationship_counts_no_coalesce(
         &self,
-        user_id: CqlTimeuuid,
+        user_id: AllignedCqlTimeuuid,
     ) -> DSResult<GetUserRelationshipCountsResponse>{
         let row_res = db().await.execute_unpaged(
             &self.read_relationship_counters_prepared, 
@@ -435,7 +435,7 @@ impl ScyllaUserRelationshipService {
         request: tonic::Request<GetUserRelationshipCountsRequest>,
     ) -> DSResult<
         tonic::Response<GetUserRelationshipCountsResponse>> {
-        let user_id: CqlTimeuuid = req_tuuid!(request, user_id)?;
+        let user_id: AllignedCqlTimeuuid = req_tuuid!(request, user_id)?;
         
 
         let r = self.relationships_counters_read_group.work(
@@ -454,14 +454,14 @@ impl ScyllaUserRelationshipService {
     ) -> DSResult<
     tonic::Response<RelationshipsResponse>> {
 
-        let user_id: CqlTimeuuid = req_tuuid!(request, user_id)?;
+        let user_id: AllignedCqlTimeuuid = req_tuuid!(request, user_id)?;
         let inner = request.get_ref();
         let rel_type = inner.relationship_type;
         let chunk_size = inner.chunk_size;
 
         let after = match inner.after {
             Some(v) => v.into(),
-            None => CqlTimeuuid::from(*uuid::Builder::nil().with_version(uuid::Version::Mac).as_uuid()),
+            None => AllignedCqlTimeuuid::from(*uuid::Builder::nil().with_version(uuid::Version::Mac).as_uuid()),
         };
 
         let mut pager = db().await.execute_iter(

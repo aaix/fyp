@@ -7,10 +7,11 @@ use crate::errors::DSResult;
 use crate::helpers::gen_timeuuid;
 use crate::models::user_device::UserDevice;
 use crate::protos::dataservices::user_service::{self, CreateDeviceRequest, DeleteDeviceRequest, DeleteDeviceResponse, DeviceObjectResponse, ReadDeviceRequest, ReadDevicesRequest, ReadDevicesResponse, UpdateDeviceRequest};
+use crate::protos::plib::AllignedCqlTimeuuid;
 use crate::req_tuuid;
 
 use scylla::statement::prepared::PreparedStatement;
-use scylla::value::{CqlTimeuuid, MaybeUnset};
+use scylla::value::{MaybeUnset};
 use tonic::{Request, Response, Status};
 use user_service::user_device_service_server::{UserDeviceService, UserDeviceServiceServer};
 
@@ -69,8 +70,8 @@ impl ScyallaUserDeviceService {
 
     async fn _read_device(
         &self,
-        user_id: CqlTimeuuid,
-        device_id: CqlTimeuuid
+        user_id: AllignedCqlTimeuuid,
+        device_id: AllignedCqlTimeuuid
     ) -> DSResult<DeviceObjectResponse> {
 
         let res = db().await.execute_unpaged(
@@ -97,7 +98,7 @@ impl ScyallaUserDeviceService {
 
         let device_id = gen_timeuuid();
 
-        let user_id: CqlTimeuuid = req_tuuid!(request, user_id)?;
+        let user_id: AllignedCqlTimeuuid = req_tuuid!(request, user_id)?;
         let owned = request.into_inner();
         let device_name = owned.device_name;
         let device_public_key = owned.public_key;
@@ -128,8 +129,8 @@ impl ScyallaUserDeviceService {
         &self,
         request: Request<ReadDeviceRequest>
     ) -> DSResult<Response<DeviceObjectResponse>> {
-        let user_id: CqlTimeuuid = req_tuuid!(request, user_id)?;
-        let device_id: CqlTimeuuid = req_tuuid!(request, device_id)?;
+        let user_id: AllignedCqlTimeuuid = req_tuuid!(request, user_id)?;
+        let device_id: AllignedCqlTimeuuid = req_tuuid!(request, device_id)?;
 
         Ok(Response::new(self._read_device(user_id, device_id).await?))
     }
@@ -140,7 +141,7 @@ impl ScyallaUserDeviceService {
         request: Request<ReadDevicesRequest>
     ) -> DSResult<Response<ReadDevicesResponse>> {
         
-        let user_id: CqlTimeuuid = req_tuuid!(request, user_id)?;
+        let user_id: AllignedCqlTimeuuid = req_tuuid!(request, user_id)?;
 
         // we dont need pagination as there is a device limit
         let rows = db().await.execute_unpaged(
@@ -174,8 +175,8 @@ impl ScyallaUserDeviceService {
     ) -> DSResult<Response<DeviceObjectResponse>> {
 
 
-        let user_id: CqlTimeuuid = req_tuuid!(request, user_id)?;
-        let device_id: CqlTimeuuid = req_tuuid!(request, device_id)?;
+        let user_id: AllignedCqlTimeuuid = req_tuuid!(request, user_id)?;
+        let device_id: AllignedCqlTimeuuid = req_tuuid!(request, device_id)?;
 
         let owned = request.into_inner();
 
@@ -202,8 +203,8 @@ impl ScyallaUserDeviceService {
         &self,
         request: Request<DeleteDeviceRequest>
     ) -> DSResult<Response<DeleteDeviceResponse>> {
-        let user_id: CqlTimeuuid = req_tuuid!(request, user_id)?;
-        let device_id: CqlTimeuuid = req_tuuid!(request, device_id)?;
+        let user_id: AllignedCqlTimeuuid = req_tuuid!(request, user_id)?;
+        let device_id: AllignedCqlTimeuuid = req_tuuid!(request, device_id)?;
 
         db().await.execute_unpaged(
             &self.delete_device_prepared,

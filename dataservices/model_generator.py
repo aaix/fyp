@@ -99,10 +99,10 @@ class RustModelGenerator(ModelGenerator):
         "text": "String",
         "blob": "Vec<u8>",
         "varchar": "String",
-        "timeuuid": "value::CqlTimeuuid",
+        "timeuuid": "AllignedCqlTimeuuid",
         "uuid": "uuid::Uuid",
         "timestamp": "value::CqlTimestamp",
-        "set<timeuuid>": "HashSet<value::CqlTimeuuid>",
+        "set<timeuuid>": "HashSet<AllignedCqlTimeuuid>",
         "counter": "value::Counter",
     }
 
@@ -147,6 +147,9 @@ class RustModelGenerator(ModelGenerator):
 
             if "HashSet" in rust_type:
                 self.dependencies.add("use std::collections::HashSet;")
+            
+            if "AllignedCqlTimeuuid" in rust_type:
+                self.dependencies.add("use crate::protos::plib::AllignedCqlTimeuuid;")
         lines.append("}")
         return lines
 
