@@ -133,7 +133,16 @@ export default function PostTile({
   const isVideo = postRendersAsVideo(post.post_type)
   const isImage = postRendersAsImage(post.post_type)
 
+  const previewUrl =
+    post.preview_url != null && String(post.preview_url).trim() !== ''
+      ? String(post.preview_url)
+      : null
+  const assetUrl =
+    post.asset_url != null && String(post.asset_url).trim() !== '' ? String(post.asset_url) : null
+
   const [displayRatio, setDisplayRatio] = useState(null)
+  /** Image tiles: try `preview_url` first; on load error, fall back to `asset_url`. */
+  const [imagePreviewFailed, setImagePreviewFailed] = useState(false)
 
   const ratio = displayRatio ?? 1
 
@@ -147,6 +156,10 @@ export default function PostTile({
   const onImgError = useCallback(() => {
     setDisplayRatio(1)
   }, [])
+
+  useEffect(() => {
+    setImagePreviewFailed(false)
+  }, [id, previewUrl, assetUrl])
 
   const onVideoMeta = useCallback((e) => {
     const v = e.currentTarget
@@ -170,18 +183,23 @@ export default function PostTile({
     v.currentTime = 0
   }, [])
 
+  const imageTileSrc =
+    isImage && previewUrl && !imagePreviewFailed ? previewUrl : assetUrl
+  const hasImageTile = isImage && (previewUrl || assetUrl)
+  const hasVideoTile = isVideo && assetUrl
+
   const inner = (
     <div
       className={`relative w-full overflow-hidden bg-[color:var(--bg)] ${className}`}
       style={{ aspectRatio: ratio }}
     >
-      {post.asset_url && isVideo ? (
+      {hasVideoTile ? (
         <video
           ref={videoRef}
           className={`h-full w-full object-cover object-center transition-opacity duration-150 ${
             displayRatio != null ? 'opacity-100' : 'opacity-0'
           }`}
-          src={post.asset_url}
+          src={assetUrl}
           muted
           loop
           playsInline
@@ -192,23 +210,34 @@ export default function PostTile({
           onLoadedMetadata={onVideoMeta}
           onError={onVideoError}
         />
-      ) : post.asset_url && isImage ? (
+      ) : hasImageTile ? (
         <img
-          src={post.asset_url}
+          src={imageTileSrc}
           alt=""
           className={`h-full w-full object-cover object-center transition-opacity duration-150 ${
             displayRatio != null ? 'opacity-100' : 'opacity-0'
           }`}
           loading="lazy"
           onLoad={onImgLoad}
-          onError={onImgError}
+          onError={() => {
+            if (
+              previewUrl &&
+              assetUrl &&
+              !imagePreviewFailed &&
+              previewUrl !== assetUrl
+            ) {
+              setImagePreviewFailed(true)
+              return
+            }
+            onImgError()
+          }}
         />
       ) : (
         <div className="flex h-full w-full items-center justify-center px-2 text-center text-xs text-[color:var(--text-muted)]">
           Media
         </div>
       )}
-      {displayRatio === null && (isImage || isVideo) && post.asset_url ? (
+      {displayRatio === null && (hasImageTile || hasVideoTile) ? (
         <div
           className="pointer-events-none absolute inset-0 skeleton-pulse bg-[color:var(--card-border)]"
           aria-hidden
