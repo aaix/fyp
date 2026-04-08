@@ -15,3 +15,4 @@ pub mod user_timeline_meta;
 pub mod user_timeline_entry;
 pub mod post_comment;
 pub mod post_like;
+pub mod needs_gc;

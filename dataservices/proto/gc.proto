@@ -21,6 +21,7 @@ message FileGarbageResponse {}
 message ReadGarbageRequest {
     int64 bucket = 1;
     plib.pUUID after = 2;
+    int32 limit = 3;
 }
 
 message GarbageResponse {
