@@ -54,7 +54,7 @@ async def find_gateway(username: Username) -> str:
     
 
 
-    node = await gateway_bigpicture.get_node(puuid_uuid(user.user_id) or unwrap())
+    node = gateway_bigpicture.get_node(puuid_uuid(user.user_id) or unwrap())
 
     return discovery.transform_gateway_to_external(node)
     

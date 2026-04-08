@@ -37,7 +37,7 @@ async def send_to_remote(to: id_t, key: str, value: Message):
         return
     
     payload = event.SerializeToString()
-    node = await gateway_bigpicture.get_node(uuid)
+    node = gateway_bigpicture.get_node(uuid)
     if node is None:
         return
 
