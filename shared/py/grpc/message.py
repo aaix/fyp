@@ -34,7 +34,7 @@ class MessageType(IntEnum):
 
 
 async def get_message(lazy: DataservicesLazyGRPC[message_pb2_grpc.MessageServiceStub], channel_id: id_t, message_id: id_t) -> message_pb2.MessageObject:
-    stub = await lazy(channel_id)
+    stub = lazy(channel_id)
     return cast(message_pb2.MessageObject, await stub.ReadMessage(message_pb2.ReadMessageRequest(
         channel_id=id_puuid(channel_id),
         message_id=id_puuid(message_id),
@@ -50,7 +50,7 @@ async def edit_message(
 ) -> message_pb2.MessageObject:
     
 
-    stub = await lazy(channel_id)
+    stub = lazy(channel_id)
     return cast(message_pb2.MessageObject, await stub.UpdateMessage(message_pb2.UpdateMessageRequest(
         channel_id=id_puuid(channel_id),
         message_id=id_puuid(message_id),
@@ -72,7 +72,7 @@ async def create_message(
     in_reply_to: id_t | None
 ) -> message_pb2.MessageObject:
     
-    stub = await lazy(channel_id)
+    stub = lazy(channel_id)
     return cast(message_pb2.MessageObject, await stub.CreateMessage(message_pb2.CreateMessageRequest(
         channel_id=id_puuid(channel_id),
         message_type=message_type,

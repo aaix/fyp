@@ -46,7 +46,7 @@ async def read_feed_meta(
     timeline_type: TimelineType
 ) -> FeedMetaResponse:
     
-    stub = await grpc(user_id)
+    stub = grpc(user_id)
     return cast(FeedMetaResponse, await stub.ReadFeedMeta(ReadFeedMetaRequest(
         user_id=id_puuid(user_id),
         timeline_type=timeline_type
@@ -67,7 +67,7 @@ async def update_feed_meta(
     explicit_fan_in_to_delete: Iterable[pUUID] = (),
 ) -> FeedMetaResponse:
     
-    stub = await grpc(user_id)
+    stub = grpc(user_id)
 
     return cast(FeedMetaResponse, await stub.UpdateFeedMeta(UpdateFeedMetaRequest(
         user_id=id_puuid(user_id),
@@ -89,7 +89,7 @@ async def read_feed(
     limit: int
 ) -> FeedResponse:
     
-    stub = await grpc(user_id)
+    stub = grpc(user_id)
     return cast(FeedResponse, await stub.ReadFeed(ReadFeedRequest(
         user_id=id_puuid(user_id),
         timeline_type=timeline_type,
@@ -105,7 +105,7 @@ async def add_posts_to_feed(
     posts: Iterable[PartialFeedEntry],
     entry_type: int,
 ):
-    stub = await grpc(user_id)
+    stub = grpc(user_id)
     cast(AddPostsToFeedResponse, await stub.AddPostsToFeed(AddPostsToFeedRequest(
         user_id=id_puuid(user_id),
         timeline_type=timeline_type,
@@ -124,7 +124,7 @@ async def scatter_gather_add_to_feeds(
     entry_type: EntryType,
     user_ids: Iterable[pUUID],
 ) -> int:
-    buckets = await bucketby(user_ids, lazy)
+    buckets = bucketby(user_ids, lazy)
 
     partial_req = partial(AddToFeedsRequest,
         timeline_type=timeline_type.value,

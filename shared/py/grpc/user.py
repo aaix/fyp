@@ -16,20 +16,20 @@ from shared.py.pydantic.user import UserSearchResponse
 from shared.py.types import UNSET, MaybeUnset
 
 async def get_user(lazy: DataservicesLazyGRPC[UserServiceStub], user_id: id_t) -> user_pb2.ReadUserResponse:
-    stub = await lazy(user_id)
+    stub = lazy(user_id)
     return cast(user_pb2.ReadUserResponse, await stub.ReadUser(user_pb2.ReadUserRequest(
         user_id=id_puuid(user_id)
     )))
 
 async def get_user_by_username(lazy: DataservicesLazyGRPC[UserServiceStub], username: str) -> user_pb2.ReadUserResponse:
-    stub = await lazy()
+    stub = lazy()
     return cast(user_pb2.ReadUserResponse, await stub.ReadUserByUsername(user_pb2.ReadUserByUsernameRequest(
         username=username    
     )))
 
 async def get_bulk_users(lazy: DataservicesLazyGRPC[UserServiceStub], user_ids: Iterable[id_t]) -> tuple[list[user_pb2.UserSearchEntry], list[user_pb2.UserError]]:
 
-    buckets = await bucketby(filter(None, map(id_puuid, user_ids)), lazy)
+    buckets = bucketby(filter(None, map(id_puuid, user_ids)), lazy)
 
     res = cast(list[user_pb2.BulkUserResponse], await asyncio.gather(*(
         grpc.UserBulkReader(user_pb2.ReadUserBulkRequest(user_ids=users)) for grpc, users in buckets.items()
@@ -59,7 +59,7 @@ async def edit_user(
         username_v = None
     
 
-    stub = await lazy(user_id)
+    stub = lazy(user_id)
     return cast(user_pb2.ReadUserResponse, await stub.UpdateUser(user_pb2.UpdateUserRequest(
         user_id=id_puuid(user_id),
         username=username_v,

@@ -58,7 +58,7 @@ async def create_post(
     body: str | None,
 
 ) -> PostResponse:
-    stub = await lazy(author_id)
+    stub = lazy(author_id)
     return cast(PostResponse, await stub.CreatePost(CreatePostRequest(
         author_id=id_puuid(author_id),
         post_type=post_type.value,
@@ -73,7 +73,7 @@ async def delete_post(
     post_id: id_t,
     timeline_type: TimelineType,
 ):
-    stub = await lazy(author_id)
+    stub = lazy(author_id)
     cast(DeletePostResponse, await stub.DeletePost(DeletePostRequest(
         post_id=id_puuid(post_id),
         author_id=id_puuid(author_id),
@@ -88,7 +88,7 @@ async def read_users_posts(
     before: id_t | None, 
     limit: int = 15
 ) -> UserPostsResponse:
-    stub = await lazy(author_id)
+    stub = lazy(author_id)
 
     return cast(UserPostsResponse, await stub.ReadUserPosts(ReadUserPostsRequest(
         author_id=id_puuid(author_id),
@@ -105,7 +105,7 @@ async def read_post(
     liked_by: id_t | None = None,
 ) -> PostResponse:
     
-    stub = await lazy(post_id)
+    stub = lazy(post_id)
     return cast(PostResponse, await stub.ReadPost(ReadPostRequest(
         post_id=id_puuid(post_id),
         author_id=id_puuid(author_id),
@@ -123,7 +123,7 @@ async def edit_post(
     is_private: MaybeUnset[bool] = UNSET,
 ) -> PostResponse:
     
-    stub = await lazy(author_id)
+    stub = lazy(author_id)
 
     field_mask = FieldMask()
     if body is not UNSET:
@@ -187,7 +187,7 @@ async def scatter_gather_posts(
     posts: Iterable[FeedEntry],
     liked_by: id_t | None = None,
 ) -> list[PostResponse]:
-    buckets = await bucketby(posts, lambda e: lazy(e.post_id))
+    buckets = bucketby(posts, lambda e: lazy(e.post_id))
 
     res = cast(list[ManyPostsResponse], await asyncio.gather(*(
         grpc.ReadManyPosts(_entries_to_request(timeline_type, entries, liked_by)) for grpc, entries in buckets.items()
@@ -200,7 +200,7 @@ async def like_post(
     liker_id: id_t
 ):
     # no point coalescing on post_id
-    stub = await lazy(liker_id)
+    stub = lazy(liker_id)
 
     cast(LikePostResponse, await stub.LikePost(LikePostRequest(
         post_id=id_puuid(post_id),
@@ -212,7 +212,7 @@ async def unlike_post(
     post_id: id_t,
     liker_id: id_t
 ):
-    stub = await lazy(liker_id)
+    stub = lazy(liker_id)
 
     cast(LikePostResponse, await stub.UnlikePost(LikePostRequest(
         post_id=id_puuid(post_id),

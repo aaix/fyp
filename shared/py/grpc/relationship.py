@@ -36,7 +36,7 @@ async def create_relationship(
     a_to_b_type: RelationshipType,
     b_to_a_type: RelationshipType
 ) -> user_pb2.RelationshipObject:
-    stub = await lazy(user_id_a)
+    stub = lazy(user_id_a)
     return cast(user_pb2.RelationshipObject, await stub.CreateRelationship(user_pb2.CreateRelationshipRequest(
         user_id_a=id_puuid(user_id_a),
         user_id_b=id_puuid(user_id_b),
@@ -45,7 +45,7 @@ async def create_relationship(
     )))
 
 async def read_relationship(lazy: DataservicesLazyGRPC[UserRelationshipServiceStub], user_id_a: id_t, user_id_b: id_t, r_types: Iterable[RelationshipType]) -> user_pb2.ReadRelationshipResponse:
-    stub = await lazy(user_id_a)
+    stub = lazy(user_id_a)
     return cast(user_pb2.ReadRelationshipResponse, await stub.ReadRelationship(user_pb2.ReadRelationshipRequest(
         user_id_a=id_puuid(user_id_a),
         user_id_b=id_puuid(user_id_b),
@@ -53,7 +53,7 @@ async def read_relationship(lazy: DataservicesLazyGRPC[UserRelationshipServiceSt
     )))
 
 async def test_relationship(lazy: DataservicesLazyGRPC[UserRelationshipServiceStub], user_id_a: id_t, user_id_b: id_t, relationship_type: RelationshipType) -> user_pb2.RelationshipTestResponse:
-    stub = await lazy(user_id_a)
+    stub = lazy(user_id_a)
     return cast(user_pb2.RelationshipTestResponse, await stub.TestRelationship(user_pb2.RelationshipObject(
         user_id_a=id_puuid(user_id_a),
         user_id_b=id_puuid(user_id_b),
@@ -61,14 +61,14 @@ async def test_relationship(lazy: DataservicesLazyGRPC[UserRelationshipServiceSt
     )))
 
 async def test_many_relationships(lazy: DataservicesLazyGRPC[UserRelationshipServiceStub], user_id_a: id_t, tests: Iterable[user_pb2.TestManyRelationshipEntry]) -> user_pb2.TestManyRelationshipsResponse:
-    stub = await lazy(user_id_a)
+    stub = lazy(user_id_a)
     return cast(user_pb2.TestManyRelationshipsResponse, await stub.TestManyRelationships(user_pb2.TestManyRelationshipsRequest(
         user_id=id_puuid(user_id_a),
         tests=tests
     )))
 
 async def read_relationships(lazy: DataservicesLazyGRPC[UserRelationshipServiceStub], user_id: id_t, r_type: RelationshipType) -> user_pb2.RelationshipsResponse:
-    stub = await lazy(user_id)
+    stub = lazy(user_id)
     return cast(user_pb2.RelationshipsResponse, await stub.ReadRelationships(user_pb2.ReadRelationshipsRequest(
         user_id=id_puuid(user_id),
         relationship_type=r_type.value,
@@ -80,7 +80,7 @@ async def read_relationships_chunkned(
     r_type: RelationshipType, after: id_t | None,
     chunk_size: int
 ) -> user_pb2.RelationshipsResponse:
-    stub = await lazy(user_id)
+    stub = lazy(user_id)
     return cast(user_pb2.RelationshipsResponse, await stub.ReadRelationshipsChunked(user_pb2.ReadRelationshipsChunkedRequest(
         user_id=id_puuid(user_id),
         relationship_type=r_type.value,
@@ -95,7 +95,7 @@ async def delete_relationship(
     a_to_b_type: RelationshipType,
     b_to_a_type: RelationshipType,
 ) -> user_pb2.DeleteRelationshipResponse:
-    stub = await lazy(user_id_a)
+    stub = lazy(user_id_a)
     return cast(user_pb2.DeleteRelationshipResponse, await stub.DeleteRelationship(user_pb2.CreateRelationshipRequest(
         user_id_a=id_puuid(user_id_a),
         user_id_b=id_puuid(user_id_b),
@@ -107,7 +107,7 @@ async def read_relationship_counts(
     lazy: DataservicesLazyGRPC[UserRelationshipServiceStub],
     user_id: id_t,
 ) -> user_pb2.GetUserRelationshipCountsResponse:
-    stub = await lazy(user_id)
+    stub = lazy(user_id)
     return cast(user_pb2.GetUserRelationshipCountsResponse, await stub.GetUserRelationshipCounts(user_pb2.GetUserRelationshipCountsRequest(
         user_id=id_puuid(user_id)
     )))

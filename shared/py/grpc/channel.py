@@ -27,7 +27,7 @@ class ChannelType(IntEnum):
 
 
 async def get_channel(lazy: DataservicesLazyGRPC[ChannelServiceStub], channel_id: id_t) -> channel_pb2.ChannelObjectResponse:
-    stub = await lazy(channel_id)
+    stub = lazy(channel_id)
     return cast(channel_pb2.ChannelObjectResponse, await stub.ReadChannel(channel_pb2.ReadChannelRequest(
         channel_id=id_puuid(channel_id)
     )))
@@ -60,7 +60,7 @@ async def edit_channel(
         last_bucket=latest_bucket_v
     )
 
-    stub = await lazy(channel_id)
+    stub = lazy(channel_id)
     return cast(channel_pb2.ChannelObjectResponse, await stub.UpdateChannel(msg))
 
 
@@ -73,7 +73,7 @@ async def add_channel_members(
 ):
     pchannel_id = id_puuid(channel_id)
     assert channel_id
-    stub = await lazy(channel_id)
+    stub = lazy(channel_id)
     return cast(channel_pb2.AddChannelMembersResponse, await stub.AddChannelMembers(channel_pb2.AddChannelMembersRequest(
         channel_id=pchannel_id,
         channel=channel_request,
@@ -86,7 +86,7 @@ async def remove_channel_members(
     user_ids: Iterable[id_t]
 ):
     pchannel_id = id_puuid(channel_id)
-    stub = await lazy(pchannel_id)
+    stub = lazy(pchannel_id)
     return cast(channel_pb2.RemoveChannelMembersResponse, await stub.RemoveChannelMembers(channel_pb2.RemoveChannelMembersRequest(
         channel_id=pchannel_id,
         members=filter(None, map(id_puuid, user_ids))
@@ -102,7 +102,7 @@ async def edit_channel_member(
     counter: MaybeUnset[int] = UNSET,
 ) -> channel_pb2.UpdateChannelMemberResponse:
 
-    stub = await lazy(channel_id)
+    stub = lazy(channel_id)
     return  cast(channel_pb2.UpdateChannelMemberResponse, await stub.UpdateChannelMember(channel_pb2.UpdateChannelMemberRequest(
         user_id=id_puuid(user_id),
         channel_id=id_puuid(channel_id),
@@ -136,7 +136,7 @@ async def scatter_gather_channel_counters(lazy: DataservicesLazyGRPC[ChannelServ
     return cast(Iterable[channel_pb2.GetChannelsCounterResponse], res)
 
 async def increment_channel_counter(lazy: DataservicesLazyGRPC[ChannelServiceStub], channel_id: id_t):
-    stub = await lazy(channel_id)
+    stub = lazy(channel_id)
     await stub.IncrementChannelCounter(channel_pb2.IncrementChannelCounterRequest(
         channel_id=id_puuid(channel_id)
     ))
