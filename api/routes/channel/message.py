@@ -14,7 +14,7 @@ from shared.py import asset
 from shared.py.grpc.channel import edit_channel, edit_channel_member, increment_channel_counter, set_last_acked_message_id
 from shared.py.grpc.id import id_compare, puuid_opt, uuid_puuid, id_t
 from shared.py.grpc.lazy import DataservicesLazyGRPC
-from shared.py.grpc.message import MessageType, create_message, edit_message
+from shared.py.grpc.message import MessageType, create_message, edit_message, read_messages
 from shared.py.grpcgen import channel_pb2_grpc, internalmessage_pb2, message_pb2, message_pb2_grpc
 from shared.py.constraints import CHAT_ATTACHMENT_MAX_SIZE, MAX_MESSAGES_QUERYABLE
 from shared.py.intraservice import client as intraclient
@@ -181,13 +181,7 @@ async def get_messages(
     count: Annotated[int, Query(le=MAX_MESSAGES_QUERYABLE)] = MAX_MESSAGES_QUERYABLE
 ) -> MessagesResponse:
 
-    stub = grpcmessage(channel.channel_id)
-    messages = cast(message_pb2.ReadMessagesResponse, await stub.ReadMessages(message_pb2.ReadMessagesRequest(
-        channel_id=channel.channel_id,
-        before=uuid_puuid(before) if before else None,
-        count=count,
-        latest_bucket=channel.latest_bucket,
-    )))
+    messages = await read_messages(grpcmessage, channel.channel_id, before, count, channel.latest_bucket)
 
 
     return MessagesResponse(

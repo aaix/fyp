@@ -58,6 +58,19 @@ async def edit_message(
         message_type=Int32Value(value=message_type) if message_type is not UNSET else None,
     )))
 
+async def read_messages(
+    lazy: DataservicesLazyGRPC[message_pb2_grpc.MessageServiceStub],
+    channel_id: id_t,
+    before: id_t | None,
+    count: int, latest_bucket: int
+) -> message_pb2.ReadMessagesResponse:
+    stub = lazy(channel_id)
+    return cast(message_pb2.ReadMessagesResponse, await stub.ReadMessages(message_pb2.ReadMessagesRequest(
+        channel_id=id_puuid(channel_id),
+        before=id_puuid(before) if before else None,
+        count=count,
+        latest_bucket=latest_bucket,
+    )))
 
 async def create_message(
     lazy: DataservicesLazyGRPC[message_pb2_grpc.MessageServiceStub],
