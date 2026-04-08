@@ -161,7 +161,7 @@ async def delete_message(s: SessionParam, channel: ChannelAsMemberParam, message
             asset_id=message.opt_attachment_asset_id,
         )
 
-    stub = await grpcmessage(channel.channel_id)
+    stub = grpcmessage(channel.channel_id)
     cast(message_pb2.DeleteMessageResponse, await stub.DeleteMessage(message_pb2.DeleteMessageRequest(
         channel_id=channel.channel_id,
         message_id=message.message_id,
@@ -181,7 +181,7 @@ async def get_messages(
     count: Annotated[int, Query(le=MAX_MESSAGES_QUERYABLE)] = MAX_MESSAGES_QUERYABLE
 ) -> MessagesResponse:
 
-    stub = await grpcmessage(channel.channel_id)
+    stub = grpcmessage(channel.channel_id)
     messages = cast(message_pb2.ReadMessagesResponse, await stub.ReadMessages(message_pb2.ReadMessagesRequest(
         channel_id=channel.channel_id,
         before=uuid_puuid(before) if before else None,

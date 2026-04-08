@@ -17,13 +17,13 @@ from api.types.params import PostParam, TimelineTypeParam, UserParam, UserWithPr
 from api.utils import RpcErrHandler, unwrap
 from shared.py.asset import delete_asset
 from shared.py.constraints import POST_MEDIA_MAX_UPLOAD_SIZE, THUMBNAIL_MAX_HEIGHT, THUMBNAIL_MAX_WIDTH
-from shared.py.grpc import mediaservices
+from shared.py.grpc import gc, mediaservices
 from shared.py.grpc.feed import TimelineType
 from shared.py.grpc.id import id_compare
 from shared.py.grpc.lazy import DataservicesLazyGRPC, LazyGRPC
 from shared.py.grpc.post import PostType, create_post, delete_post, edit_post, like_post, read_users_posts, unlike_post
 from shared.py.grpc.relationship import can_i_view_peer_profile
-from shared.py.grpcgen import media_pb2_grpc, post_pb2, post_pb2_grpc
+from shared.py.grpcgen import gc_pb2_grpc, media_pb2_grpc, post_pb2, post_pb2_grpc
 from shared.py.grpcgen.internalmessage_pb2 import EventPostUpdate
 from shared.py.intraservice.events import send_to_remote
 from shared.py.types import UNSET
@@ -34,7 +34,7 @@ PostRouter = APIRouter()
 
 grpcmedia = LazyGRPC(discovery.discover_mediaservices(), media_pb2_grpc.TransformerServiceStub, discovery.mediaservices_auth())
 grpcpost = DataservicesLazyGRPC(post_pb2_grpc.PostServiceStub)
-
+grpcgarbage = DataservicesLazyGRPC(gc_pb2_grpc.GarbageServiceStub)
 
 class PostUpdateType(IntEnum):
     CREATED = 0
@@ -207,6 +207,7 @@ async def delete_my_post(s: SessionParam, post: PostParam, timeline_type: Timeli
     await delete_asset(public=False, bucket_id=post.post_id, asset_id=post.asset_id)
     await delete_asset(public=False, bucket_id=post.post_id, asset_id=post.asset_id, extra="/thumb")
     await delete_post(grpcpost, post.author_id, post.post_id, timeline_type)
+    await gc.file_for_gc(grpcgarbage, post.post_id, gc.GarbageType.POST)
 
 @PostRouter.get("/user/{user_id}/{timeline_type}/{post_id}")
 async def get_post(s: SessionParam, user: UserWithProfileVisibleParam, post: PostParam) -> PostResponse:

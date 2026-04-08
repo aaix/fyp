@@ -290,7 +290,7 @@ async def search_users(s: SessionParam, q: UsernameSearchQuery) -> list[UserSear
     q = q.replace('%','').replace('_','') # TODO: TEMP FIX before elasticsearch for listing all users
     if not len(q) >= 2:
         raise ApiErrExc(errors.BadRequest("bad query"))
-    stub = await grpcuser()
+    stub = grpcuser()
     res = cast(user_pb2.BulkUserResponse, await stub.UsernameSearcher(user_pb2.UsernameSearch(
         query=f"{q}%",
     )))

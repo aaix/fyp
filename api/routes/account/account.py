@@ -51,7 +51,7 @@ async def signup(r: Request, body: SignupBody) -> SignupResponse:
         StatusCode.ALREADY_EXISTS,
         lambda _: errors.BadRequest("username already exists", api_error_code=errors.ERROR_ALREADY_EXISTS)
     ):
-        stub = await grpcuser()
+        stub = grpcuser()
         res = cast(user_pb2.ReadUserResponse, await stub.CreateUser(user_pb2.CreateUserRequest(
             username=body.username,
             email=body.email,
@@ -61,7 +61,7 @@ async def signup(r: Request, body: SignupBody) -> SignupResponse:
     try:
         device = await _create_device(res.user_id, body.device)
     except Exception as e:
-        stub = await grpcuser(res.user_id)
+        stub = grpcuser(res.user_id)
         cast(user_pb2.DeleteUserResponse, await stub.DeleteUser(user_pb2.DeleteUserRequest(
             user_id=res.user_id
         )))
@@ -147,7 +147,7 @@ async def delete_device(r: Request, s: SessionParam, device_id: UUID) -> None:
     if res.device_count <= 1:
         raise ApiErrExc(errors.BadRequest("Unable to delete a users only device", api_error_code=errors.ERROR_LIMIT_REACHED))
 
-    stub = await grpcdevice(s.user_id)
+    stub = grpcdevice(s.user_id)
     res = cast(user_pb2.DeleteDeviceResponse, await stub.DeleteDevice(user_pb2.DeleteDeviceRequest(
         user_id=uuid_puuid(s.user_id),
         device_id=uuid_puuid(device_id)
@@ -155,7 +155,7 @@ async def delete_device(r: Request, s: SessionParam, device_id: UUID) -> None:
 
 @AccountRouter.patch("/device/{device_id}")
 async def patch_device(s: SessionParam, device_id: UUID, body: UpdateDeviceBody) -> DeviceResponse:
-    stub = await grpcdevice(s.user_id)
+    stub = grpcdevice(s.user_id)
     res = cast(user_pb2.DeviceObjectResponse, await stub.UpdateDevice(user_pb2.UpdateDeviceRequest(
         user_id=uuid_puuid(s.user_id),
         device_id=uuid_puuid(device_id),
@@ -174,7 +174,7 @@ async def patch_device(s: SessionParam, device_id: UUID, body: UpdateDeviceBody)
 async def my_account(s: SessionParam) -> AccountResponse:
     res = await s.full_user()
 
-    gateway = await gateway_bigpicture.get_node(s.user_id)
+    gateway = gateway_bigpicture.get_node(s.user_id)
 
     return AccountResponse.from_rpc(res, discovery.transform_gateway_to_external(gateway))
 @AccountRouter.patch("/@me")
@@ -224,6 +224,7 @@ async def set_my_icon(
         mime_out=CONF_AVATAR_CONTENT_TYPE,
         data=icon,
         dimensions=CONF_AVATAR_DIMENSIONS,
+        thumb_dimensions=None,
     )
 
     return PublicAsset(

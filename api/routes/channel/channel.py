@@ -15,13 +15,14 @@ from api.types.params import ChannelAsMemberParam, UserParam
 from api.utils import unwrap
 
 from shared.py.asset import delete_asset, generate_signed_get, generate_signed_put
+from shared.py.grpc import gc
 from shared.py.grpc.message import MessageType
 from shared.py.intraservice import client as intraclient
-from shared.py.grpc.channel import ChannelType, add_channel_members, edit_channel, remove_channel_members, scatter_gather_channel_counters
+from shared.py.grpc.channel import ChannelType, add_channel_members, edit_channel, get_channel, remove_channel_members, scatter_gather_channel_counters
 from shared.py.grpc.id import id_compare, puuid_opt, puuid_uuid, uuid_puuid
 from shared.py.grpc.lazy import DataservicesLazyGRPC
 from shared.py.grpc.relationship import RelationshipType, test_many_relationships
-from shared.py.grpcgen import channel_pb2, internalmessage_pb2
+from shared.py.grpcgen import channel_pb2, gc_pb2_grpc, internalmessage_pb2
 from shared.py.grpcgen.channel_pb2_grpc import ChannelServiceStub
 from shared.py.grpcgen.user_pb2 import TestManyRelationshipEntry
 from shared.py.grpcgen.user_pb2_grpc import UserRelationshipServiceStub
@@ -35,6 +36,8 @@ ChannelRouter = APIRouter()
 
 grpcrelationship = DataservicesLazyGRPC(UserRelationshipServiceStub)
 grpcchannel = DataservicesLazyGRPC(ChannelServiceStub)
+grpcgarbage = DataservicesLazyGRPC(gc_pb2_grpc.GarbageServiceStub)
+
 
 
 @ChannelRouter.post("/channel")
@@ -77,7 +80,7 @@ async def new_channel(s: SessionParam, body: NewChannelBody) -> ChannelResponse:
         opt_channel_name=body.channel_name,
         opt_channel_icon_asset_id=None
     )
-    stub = await grpcchannel()
+    stub = grpcchannel()
     channel = cast(channel_pb2.ChannelObjectResponse, await stub.CreateChannel(channel_request))
 
     # add the channel members
@@ -116,7 +119,7 @@ async def new_channel(s: SessionParam, body: NewChannelBody) -> ChannelResponse:
 
 @ChannelRouter.get("/channels")
 async def get_my_channels(s: SessionParam) -> ChannelsResponse:
-    stub = await grpcchannel(s.user_id)
+    stub = grpcchannel(s.user_id)
     res = cast(channel_pb2.UserChannelsResponse, await stub.GetUserChannels(channel_pb2.GetUserChannelsRequest(
         user_id=uuid_puuid(s.user_id) or unwrap()
     )))
@@ -136,7 +139,7 @@ async def get_my_channels(s: SessionParam) -> ChannelsResponse:
     )
 
 @ChannelRouter.get("/channel/{channel_id}")
-async def get_channel(s: SessionParam, channel: ChannelAsMemberParam) -> ChannelResponse:
+async def r_get_channel(s: SessionParam, channel: ChannelAsMemberParam) -> ChannelResponse:
     return await ChannelResponse.from_rpc(channel)
 
 @ChannelRouter.put("/channel/{channel_id}/typing")
@@ -292,6 +295,11 @@ async def remove_channel_member(s: SessionParam, channel: ChannelAsMemberParam, 
     content = str(puuid_uuid(user.user_id) or unwrap()).replace('-', '')
 
     await create_system_message(channel, s.user_id, MessageType.SYSTEM_REMOVE_MEMBER, content=content.encode('ascii'))
+
+    # read again incase a concurrent request added members
+    channel = await get_channel(grpcchannel, channel.channel_id)
+    if len(channel.channel_members) == 0:
+        await gc.file_for_gc(grpcgarbage, channel.channel_id, gc.GarbageType.CHANNEL)
 
     
 
