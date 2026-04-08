@@ -1,6 +1,8 @@
-from typing import LiteralString
+from collections.abc import Iterable
+
 
 import asyncio
+import threading
 import aioboto3
 from pydantic import BaseModel
 
@@ -27,16 +29,19 @@ session = aioboto3.Session(
 )
 
 
-_client = None
+
 _lock = asyncio.Lock()
+local = threading.local()
 async def client():
-    global _client
-    if _client is not None: return _client
+    
+    if hasattr(local, "asset_client"):
+        return local.asset_client
 
     async with _lock:
-        if _client is not None: return _client
-        _client = await session.client("s3", endpoint_url=ENDPOINT_URL, region_name="auto").__aenter__()
-    return _client
+        if hasattr(local, "asset_client"):
+            return local.asset_client
+        local.asset_client = await session.client("s3", endpoint_url=ENDPOINT_URL, region_name="auto").__aenter__()
+    return local.asset_client
 
 @tracer.start_as_current_span("s3.delete_asset")
 async def delete_asset(*, public: bool, bucket_id: id_t, asset_id: id_t, extra: str | None = None):
@@ -54,6 +59,25 @@ async def delete_asset(*, public: bool, bucket_id: id_t, asset_id: id_t, extra: 
 
     s3 = await client()
     await s3.delete_object(Bucket=bucket, Key=path)
+
+
+@tracer.start_as_current_span("s3.delete_many_assets")
+async def delete_many_assets(*, public: bool, bucket_id: id_t, asset_ids: Iterable[id_t]):
+
+    if public:
+        bucket = PUBLIC_BUCKET
+    else:
+        bucket = PRIVATE_BUCKET
+
+
+    objects = [
+        {
+            "Key": asset_path(bucket_id=bucket_id, asset_id=asset_id)
+        } for asset_id in asset_ids
+    ]
+
+    s3 = await client()
+    await s3.delete_objects(Bucket=bucket, Delete={"Objects": objects})
 
 
 def asset_path(*, bucket_id: id_t, asset_id: id_t) -> str:

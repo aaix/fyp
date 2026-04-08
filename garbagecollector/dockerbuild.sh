@@ -15,4 +15,4 @@ else
   base_ref="az-shared-base:latest"
 fi
 
-docker_build_ci_aware garbagecollector --build-arg "BASE_IMAGE=${base_ref}" --build-context "shared=${REPO_ROOT}/shared/" "${REPO_ROOT}/garbagecollector" -t "az-gc:${TAG}"
+docker_build_ci_aware garbagecollector --build-arg "BASE_IMAGE=${base_ref}" --build-context "shared=${REPO_ROOT}/shared/" "${REPO_ROOT}/garbagecollector" -t "az-garbagecollector:${TAG}"

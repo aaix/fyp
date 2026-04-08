@@ -7,6 +7,8 @@ service GarbageService {
     rpc FileForCollection (FileGarbageRequest) returns (FileGarbageResponse);
 
     rpc ReadGarbage (ReadGarbageRequest) returns (GarbageResponse);
+
+    rpc DeleteGarbage (DeleteGarbageRequest) returns (DeleteGarbageResponse);
 }
 
 message FileGarbageRequest {
@@ -33,3 +35,10 @@ message GarbageItem {
     plib.pUUID object_id = 2;
     int32 garbage_type = 3;
 }
+
+message DeleteGarbageRequest {
+    int64 bucket = 1;
+    plib.pUUID object_id = 2;
+}
+
+message DeleteGarbageResponse {}

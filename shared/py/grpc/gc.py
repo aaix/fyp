@@ -36,3 +36,10 @@ async def read_gc(grpc: DataservicesLazyGRPC[gc_pb2_grpc.GarbageServiceStub], bu
         after=id_puuid(after),
         limit=limit
     )))
+
+async def delete_garbage(grpc: DataservicesLazyGRPC[gc_pb2_grpc.GarbageServiceStub], bucket: int, object_id: id_t):
+    stub = grpc()
+    cast(DeleteGarbageResponse, await stub.DeleteGarbage(DeleteGarbageRequest(
+        bucket=bucket,
+        object_id=id_puuid(object_id)
+    )))

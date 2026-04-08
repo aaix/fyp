@@ -101,3 +101,15 @@ class ReadMessagesResponse(_message.Message):
     MESSAGES_FIELD_NUMBER: _ClassVar[int]
     messages: _containers.RepeatedCompositeFieldContainer[MessageObject]
     def __init__(self, messages: _Optional[_Iterable[_Union[MessageObject, _Mapping]]] = ...) -> None: ...
+
+class DeleteMessagesByBucketRequest(_message.Message):
+    __slots__ = ("channel_id", "bucket")
+    CHANNEL_ID_FIELD_NUMBER: _ClassVar[int]
+    BUCKET_FIELD_NUMBER: _ClassVar[int]
+    channel_id: _plib_pb2.pUUID
+    bucket: int
+    def __init__(self, channel_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., bucket: _Optional[int] = ...) -> None: ...
+
+class DeleteMessagesByBucketResponse(_message.Message):
+    __slots__ = ()
+    def __init__(self) -> None: ...

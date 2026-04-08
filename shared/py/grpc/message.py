@@ -72,6 +72,17 @@ async def read_messages(
         latest_bucket=latest_bucket,
     )))
 
+async def delete_messages_in_bucket(
+    lazy: DataservicesLazyGRPC[message_pb2_grpc.MessageServiceStub],
+    channel_id: id_t,
+    bucket: int
+):
+    stub = lazy(channel_id)
+    return cast(message_pb2.DeleteMessagesByBucketResponse, stub.DeleteMessagesByBucket(message_pb2.DeleteMessagesByBucketRequest(
+        channel_id=id_puuid(channel_id),
+        bucket=bucket
+    )))
+
 async def create_message(
     lazy: DataservicesLazyGRPC[message_pb2_grpc.MessageServiceStub],
     channel_id: id_t,

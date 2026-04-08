@@ -10,6 +10,7 @@ service MessageService {
     rpc UpdateMessage (UpdateMessageRequest) returns (MessageObject);
     rpc ReadMessage (ReadMessageRequest) returns (MessageObject);
     rpc DeleteMessage (DeleteMessageRequest) returns (DeleteMessageResponse);
+    rpc DeleteMessagesByBucket (DeleteMessagesByBucketRequest) returns (DeleteMessagesByBucketResponse);
 
     rpc ReadMessages (ReadMessagesRequest) returns (ReadMessagesResponse);
 }
@@ -68,3 +69,10 @@ message ReadMessagesRequest {
 message ReadMessagesResponse {
     repeated MessageObject messages = 1;
 }
+
+message DeleteMessagesByBucketRequest {
+    plib.pUUID channel_id = 1;
+    int64 bucket = 2;
+}
+
+message DeleteMessagesByBucketResponse {}

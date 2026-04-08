@@ -54,6 +54,11 @@ class MessageServiceStub(object):
                 request_serializer=message__pb2.DeleteMessageRequest.SerializeToString,
                 response_deserializer=message__pb2.DeleteMessageResponse.FromString,
                 _registered_method=True)
+        self.DeleteMessagesByBucket = channel.unary_unary(
+                '/dataservices.messageproto.MessageService/DeleteMessagesByBucket',
+                request_serializer=message__pb2.DeleteMessagesByBucketRequest.SerializeToString,
+                response_deserializer=message__pb2.DeleteMessagesByBucketResponse.FromString,
+                _registered_method=True)
         self.ReadMessages = channel.unary_unary(
                 '/dataservices.messageproto.MessageService/ReadMessages',
                 request_serializer=message__pb2.ReadMessagesRequest.SerializeToString,
@@ -88,6 +93,12 @@ class MessageServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def DeleteMessagesByBucket(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def ReadMessages(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -116,6 +127,11 @@ def add_MessageServiceServicer_to_server(servicer, server):
                     servicer.DeleteMessage,
                     request_deserializer=message__pb2.DeleteMessageRequest.FromString,
                     response_serializer=message__pb2.DeleteMessageResponse.SerializeToString,
+            ),
+            'DeleteMessagesByBucket': grpc.unary_unary_rpc_method_handler(
+                    servicer.DeleteMessagesByBucket,
+                    request_deserializer=message__pb2.DeleteMessagesByBucketRequest.FromString,
+                    response_serializer=message__pb2.DeleteMessagesByBucketResponse.SerializeToString,
             ),
             'ReadMessages': grpc.unary_unary_rpc_method_handler(
                     servicer.ReadMessages,
@@ -231,6 +247,33 @@ class MessageService(object):
             '/dataservices.messageproto.MessageService/DeleteMessage',
             message__pb2.DeleteMessageRequest.SerializeToString,
             message__pb2.DeleteMessageResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def DeleteMessagesByBucket(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/dataservices.messageproto.MessageService/DeleteMessagesByBucket',
+            message__pb2.DeleteMessagesByBucketRequest.SerializeToString,
+            message__pb2.DeleteMessagesByBucketResponse.FromString,
             options,
             channel_credentials,
             insecure,

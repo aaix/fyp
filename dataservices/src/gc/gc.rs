@@ -7,7 +7,8 @@ use crate::{db_conn::db, errors::DSResult, models::needs_gc::NeedsGc, protos::{d
 
 pub struct ScyllaGarbageServiceServer {
     insert_prepared: PreparedStatement,
-    read_prepared: PreparedStatement, 
+    read_prepared: PreparedStatement,
+    delete_garbage_prepared: PreparedStatement,
 }
 
 
@@ -33,9 +34,14 @@ impl ScyllaGarbageServiceServer {
             "SELECT * FROM dataservices.needs_gc WHERE bucket = ? AND object_id > ? ORDER BY object_id ASC LIMIT ?"
         ).await?;
 
+        let delete_garbage_prepared = db().await.prepare(
+            "DELETE FROM dataservices.needs_gc WHERE bucket = ? AND object_id = ?"
+        ).await?;
+
         Ok(Self {
             insert_prepared,
             read_prepared,
+            delete_garbage_prepared,
         })
     }
 }
@@ -104,6 +110,26 @@ impl ScyllaGarbageServiceServer {
         Ok(Response::new(GarbageResponse { for_collection }))        
 
     }
+
+    async fn delete_garbage_impl(
+        &self,
+        request: tonic::Request<DeleteGarbageRequest>,
+    ) -> DSResult<
+        tonic::Response<DeleteGarbageResponse>> {
+        let object_id: AllignedCqlTimeuuid = req_tuuid!(request, object_id)?;
+
+        let bucket = request.get_ref().bucket;
+
+        db().await.execute_unpaged(
+            &self.delete_garbage_prepared, 
+            (
+                bucket,
+                object_id
+            )
+        ).await?;
+
+        Ok(Response::new(DeleteGarbageResponse {  }))
+    }
 }
 
 
@@ -124,5 +150,15 @@ impl GarbageService for ScyllaGarbageServiceServer {
         request: tonic::Request<ReadGarbageRequest>,
     ) -> std::result::Result<tonic::Response<GarbageResponse>, tonic::Status> {
         Ok(self.read_garbage_impl(request).await?)
+    }
+
+    async fn delete_garbage(
+        &self,
+        request: tonic::Request<DeleteGarbageRequest>,
+    ) -> std::result::Result<
+        tonic::Response<DeleteGarbageResponse>,
+        tonic::Status,
+    > {
+        Ok(self.delete_garbage_impl(request).await?)
     }
 }

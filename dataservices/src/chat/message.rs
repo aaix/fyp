@@ -3,8 +3,7 @@ use init_tracing_opentelemetry::tracing_opentelemetry::OpenTelemetrySpanExt;
 use scylla::{statement::prepared::PreparedStatement, value::{MaybeUnset}};
 use tonic::{Request, Response, Status, async_trait};
 
-use crate::{db_conn::db, errors::DSResult, helpers::{calc_bucket, gen_timeuuid, time_now}, models::message::Message, profile_statement, protos::{dataservices::message_service::{
-    CreateMessageRequest, DeleteMessageRequest, DeleteMessageResponse, MessageObject, ReadMessageRequest, ReadMessagesRequest, ReadMessagesResponse, UpdateMessageRequest, message_service_server::{MessageService, MessageServiceServer}
+use crate::{db_conn::db, errors::DSResult, helpers::{calc_bucket, gen_timeuuid, time_now}, models::message::Message, profile_statement, protos::{dataservices::message_service::{*, message_service_server::{MessageService, MessageServiceServer}
 }, plib::AllignedCqlTimeuuid}, req_tuuid};
 
 
@@ -16,6 +15,7 @@ pub struct ScyllaMessageServiceServer {
     read_message_prepared: PreparedStatement,
     delete_message_prepared: PreparedStatement,
     update_message_prepared: PreparedStatement,
+    delete_messages_by_bucket_prepared: PreparedStatement,
 
 }
 
@@ -77,6 +77,11 @@ impl ScyllaMessageServiceServer {
             "UPDATE dataservices.message SET opt_content = ?, message_type = ?, opt_last_edited = ? WHERE channel_id = ? AND bucket = ? AND message_id = ?"
         ).await?;
 
+
+        let delete_messages_by_bucket_prepared = db().await.prepare(
+            "DELETE FROM dataservices.message WHERE channel_id = ? AND bucket = ?"
+        ).await?;
+
         Ok(Self {
             create_message_prepared,
             read_messages_prepared,
@@ -84,6 +89,7 @@ impl ScyllaMessageServiceServer {
             read_message_prepared,
             delete_message_prepared,
             update_message_prepared,
+            delete_messages_by_bucket_prepared,
         })
     }
 
@@ -312,6 +318,26 @@ impl ScyllaMessageServiceServer {
 
     }
 
+    async fn delete_messages_by_bucket_impl(
+        &self,
+        request: tonic::Request<DeleteMessagesByBucketRequest>,
+    ) -> DSResult<
+        tonic::Response<DeleteMessagesByBucketResponse>> {
+        let channel_id: AllignedCqlTimeuuid = req_tuuid!(request, channel_id)?;
+
+        let bucket = request.get_ref().bucket;
+
+        db().await.execute_unpaged(
+            &self.delete_messages_by_bucket_prepared,
+            (
+                channel_id,
+                bucket
+            )
+        ).await?;
+
+        Ok(Response::new(DeleteMessagesByBucketResponse {  }))
+    }
+
 }
 
 #[async_trait]
@@ -357,4 +383,13 @@ impl MessageService for ScyllaMessageServiceServer {
         Ok(self.read_messages_impl(request).await?)
     }
     
+    async fn delete_messages_by_bucket(
+        &self,
+        request: tonic::Request<DeleteMessagesByBucketRequest>,
+    ) -> std::result::Result<
+        tonic::Response<DeleteMessagesByBucketResponse>,
+        tonic::Status,
+    > {
+        Ok(self.delete_messages_by_bucket_impl(request).await?)
+    }
 }

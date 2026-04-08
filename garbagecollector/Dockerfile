@@ -13,8 +13,6 @@ COPY --from=shared ./py /az7/shared/py
 
 COPY . /az7/garbagecollector/
 
-RUN mkdir -p /az7/garbagecollector/
-
 
 RUN chmod +x /az7/garbagecollector/entrypoint.sh
 
