@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+package dataservices.gcproto;
+import "plib.proto";
+
+service GarbageService {
+    rpc FileForCollection (FileGarbageRequest) returns (FileGarbageResponse);
+
+    rpc ReadGarbage (ReadGarbageRequest) returns (GarbageResponse);
+}
+
+message FileGarbageRequest {
+    int64 bucket = 1;
+    plib.pUUID object_id = 2;
+    int32 garbage_type = 3;
+}
+
+message FileGarbageResponse {}
+
+
+message ReadGarbageRequest {
+    int64 bucket = 1;
+    plib.pUUID after = 2;
+}
+
+message GarbageResponse {
+    repeated GarbageItem for_collection = 1;
+}
+
+message GarbageItem {
+    int64 bucket = 1;
+    plib.pUUID object_id = 2;
+    int32 garbage_type = 3;
+}

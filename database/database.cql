@@ -206,3 +206,11 @@ CREATE TABLE dataservices.post_like (
     liker_id TIMEUUID, -- foreign key: user.user_id
     PRIMARY KEY ((post_id, bucket), liker_id)
 );
+
+CREATE TABLE dataservices.needs_gc (
+    bucket BIGINT, 
+    object_id TIMEUUID,
+    garbage_type INT,
+    PRIMARY KEY (bucket, object_id, garbage_type)
+) WITH CLUSTERING ORDER BY (object_id ASC)
+  AND compaction = {'class': 'TimeWindowCompactionStrategy', 'compaction_window_unit': 'DAYS', 'compaction_window_size': 1};

@@ -2,6 +2,7 @@
 pub mod chat;
 pub mod post;
 pub mod user;
+pub mod gc;
 
 // helpers
 pub mod db_conn;

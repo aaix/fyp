@@ -135,5 +135,9 @@ pub mod dataservices {
     pub mod feed_service {
         tonic::include_proto!("dataservices.feedproto");
     }
+
+    pub mod gc_service {
+        tonic::include_proto!("dataservices.gcproto");
+    }
 }
 
