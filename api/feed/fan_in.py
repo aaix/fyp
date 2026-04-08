@@ -11,7 +11,7 @@ from opentelemetry import trace
 
 from api.feed.utils import FanInReason
 from shared.py.grpc.feed import EntryType, TimelineType, add_posts_to_feed, update_feed_meta
-from shared.py.grpc.id import id_t, puuid_uuid
+from shared.py.grpc.id import MIN_UUID_V1, id_t, puuid_uuid
 from shared.py.grpc.lazy import DataservicesLazyGRPC
 from shared.py.grpc.post import scatter_gather_users_dehydrated_posts
 from shared.py.grpc.relationship import RelationshipType, read_relationships_chunkned
@@ -33,9 +33,6 @@ CONF_FEED_BACKFILL_NUM_POSTS = 20
 
 # fill friends with more posts because they dont get fanned in on demand like followers
 CONF_FEED_BACKFILL_FRIENDS_NUM_POSTS = 100
-
-
-MIN_UUID_V1 = UUID("00000000-0000-1000-8000-000000000000")
 
 
 grpcrelationship = DataservicesLazyGRPC(user_pb2_grpc.UserRelationshipServiceStub)

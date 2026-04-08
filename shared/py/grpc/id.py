@@ -5,8 +5,9 @@ from uuid import UUID
 from shared.py.grpcgen.plib_pb2 import pUUID
 
 # explicitly import id_t so the editor can suggest it as an import
-__all__ = ("id_t",)
+__all__ = ("id_t", "MIN_UUID_V1")
 
+MIN_UUID_V1 = UUID("00000000-0000-1000-8000-000000000000")
 
 type id_t = str | pUUID | UUID
 
