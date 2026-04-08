@@ -23,7 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        service: [dataservices, database, api, gateway, discoverystore, mediaservices]
+        service: [dataservices, database, api, gateway, discoverystore, mediaservices, garbagecollector]
 
     steps:
       - name: Checkout Code
