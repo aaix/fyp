@@ -148,7 +148,7 @@ async def scatter_gather_users_dehydrated_posts(
     before: id_t | None,
     after: int | None,
 ) -> list[DehydratedPosts]:
-    buckets = await bucketby(user_ids, lazy)
+    buckets = bucketby(user_ids, lazy)
 
     partial_req = partial(ReadUsersDehydratedPostsRequest,
         limit=limit,

@@ -125,10 +125,19 @@ async def set_last_acked_message_id(
         counter=counter,
     )
 
+async def delete_channel(
+    lazy: DataservicesLazyGRPC[ChannelServiceStub],
+    channel_id: id_t,
+):
+    stub = lazy()
+    cast(channel_pb2.DeleteChannelResponse, await stub.DeleteChannel(channel_pb2.DeleteChannelRequest(
+        channel_id=id_puuid(channel_id)
+    )))
+
 @tracer.start_as_current_span("channel_counters.scatter_gather")
 async def scatter_gather_channel_counters(lazy: DataservicesLazyGRPC[ChannelServiceStub], user_channels: Iterable[pUUID]):
     """Scatter gather out channel counter reads bucketed by their corresponding dataservices service"""
-    buckets = await bucketby(user_channels, lazy)
+    buckets = bucketby(user_channels, lazy)
     res = await asyncio.gather(*(
         grpc.GetChannelsCounter(channel_pb2.GetChannelsCounterRequest(channel_ids=channels)) for grpc, channels in buckets.items()
     ))
