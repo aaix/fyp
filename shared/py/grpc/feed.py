@@ -5,7 +5,6 @@ from typing import cast
 
 from enum import Enum, IntEnum
 
-from api.logger import log
 from shared.py.grpc import instrument_call
 from shared.py.grpc.id import id_puuid, id_t
 from shared.py.grpc.lazy import DataservicesLazyGRPC
