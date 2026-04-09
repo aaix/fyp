@@ -31,9 +31,6 @@ Rust service for abstracting interaction with the database, provides gRPC to oth
 
 Can provide either caching or request coalescing to avoid hot index stress on the scylla cluster
 
-### Invalidation server
-Authoratative source for invalidating user sessions (e.g. logging out or revoking devices)
-
 ### Garbage collector
 A small microservice for detecting data leaks from failed nested transactions (e.g. orphaned assets on r2)
 
