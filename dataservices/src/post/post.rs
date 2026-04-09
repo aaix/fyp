@@ -27,6 +27,7 @@ fn post_to_post_response(post: PostV2, post_counters: Option<PostNumCounters>, l
         num_likes: post_likes,
         is_private: post.is_private,
         liked_by_me: liked_by_me,
+        large: post.opt_large,
     }
 }
 
@@ -83,7 +84,7 @@ impl ScyllaPostService {
         ).await?;
 
         let update_post_prepared = db().await.prepare(
-            "UPDATE dataservices.post_v2 SET opt_body = ?, is_private = ?, opt_last_edited = ? WHERE author_id = ? AND post_id = ? AND timeline_type = ?"
+            "UPDATE dataservices.post_v2 SET opt_body = ?, is_private = ?, opt_last_edited = ?, opt_large = ? WHERE author_id = ? AND post_id = ? AND timeline_type = ?"
         ).await?;
 
         let delete_post_prepared = db().await.prepare(
@@ -288,6 +289,7 @@ impl ScyllaPostService {
             num_likes: 0,
             is_private,
             liked_by_me: Some(false),
+            large: None,
         }))
     }
 
@@ -322,6 +324,8 @@ impl ScyllaPostService {
 
         let timeline_type = owned.timeline_type;
 
+        let large = MaybeUnset::from_option(owned.large);
+
         let map = owned.field_mask.ok_or(Status::invalid_argument("bad mask"))?;
 
         let body = maybe_opt_field!(owned, body, map);
@@ -340,6 +344,7 @@ impl ScyllaPostService {
                 body,
                 is_private,
                 &last_edited,
+                large,
                 &author_id,
                 &post_id,
                 &timeline_type,

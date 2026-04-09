@@ -1,4 +1,5 @@
 from contextlib import AsyncExitStack
+import random
 from typing import Annotated, Literal, cast
 
 import asyncio
@@ -27,6 +28,10 @@ from shared.py.grpcgen import gc_pb2_grpc, media_pb2_grpc, post_pb2, post_pb2_gr
 from shared.py.grpcgen.internalmessage_pb2 import EventPostUpdate
 from shared.py.intraservice.events import send_to_remote
 from shared.py.types import UNSET
+
+
+CONF_POST_LARGE_THRESHOLD = 50_000
+
 
 discovery = DiscoveryManager()
 
@@ -218,6 +223,14 @@ async def get_post(s: SessionParam, user: UserWithProfileVisibleParam, post: Pos
 async def r_like_post(s: SessionParam, user: UserWithProfileVisibleParam, post: PostParam) -> None:
     with RpcErrHandler(StatusCode.INVALID_ARGUMENT, lambda e: errors.BadRequest(e.details() or "invalid argument")):
         await like_post(grpcpost, post.post_id, s.user_id)
+
+    # check every ~1000 likes if we meet the large threshold
+    if random.randint(0, 1000) != 314:
+        return
+    
+    if post.num_likes > CONF_POST_LARGE_THRESHOLD and not post.large.value:
+        timeline_type = PostType(post.post_type).to_feed_type()
+        await edit_post(grpcpost, post.author_id, post.post_id, timeline_type, large=True)
 
 @PostRouter.delete("/user/{user_id}/{timeline_type}/{post_id}/like")
 async def r_unlike_post(s: SessionParam, user: UserWithProfileVisibleParam, post: PostParam) -> None:

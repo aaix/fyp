@@ -9,6 +9,8 @@ __all__ = ("id_t", "MIN_UUID_V1")
 
 MIN_UUID_V1 = UUID("00000000-0000-1000-8000-000000000000")
 
+USER_EPOCH = UUID("e8421438-230c-11f1-87c5-4edf1555c7cf")
+
 type id_t = str | pUUID | UUID
 
 @overload

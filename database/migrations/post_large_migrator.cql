@@ -1,0 +1,1 @@
+ALTER TABLE dataservices.post_v2 ADD (opt_large BOOLEAN);

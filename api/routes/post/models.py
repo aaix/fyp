@@ -51,6 +51,7 @@ class PostResponse(BaseModel):
     num_likes: int
     is_private: bool
     liked_by_me: bool | None
+    large: bool | None
 
     @classmethod
     async def from_rpc(cls, rpc: post_pb2.PostResponse) -> Self:
@@ -71,6 +72,7 @@ class PostResponse(BaseModel):
             is_private=rpc.is_private,
             liked_by_me=rpc.liked_by_me.value if rpc.HasField("liked_by_me") else None,
             preview_url=thumb_url,
+            large=rpc.large.value if rpc.HasField("large") else None,
         )
 
 class PostsResponse(BaseModel):

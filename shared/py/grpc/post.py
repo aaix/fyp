@@ -121,6 +121,7 @@ async def edit_post(
     *,
     body: MaybeUnset[str | None] = UNSET,
     is_private: MaybeUnset[bool] = UNSET,
+    large: MaybeUnset[Literal[True]] = UNSET,
 ) -> PostResponse:
     
     stub = lazy(author_id)
@@ -136,6 +137,7 @@ async def edit_post(
         is_private=BoolValue(value=is_private) if is_private is not UNSET else None,
         field_mask=field_mask,
         timeline_type=timeline_type.value,
+        large=BoolValue(value=large) if large is not UNSET else None,
     )))
 
 @instrument_call

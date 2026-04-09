@@ -22,7 +22,7 @@ class CreatePostRequest(_message.Message):
     def __init__(self, author_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., post_type: _Optional[int] = ..., body: _Optional[str] = ..., timeline_type: _Optional[int] = ...) -> None: ...
 
 class PostResponse(_message.Message):
-    __slots__ = ("post_id", "author_id", "asset_id", "post_type", "body", "last_edited", "num_comments", "num_likes", "is_private", "liked_by_me")
+    __slots__ = ("post_id", "author_id", "asset_id", "post_type", "body", "last_edited", "num_comments", "num_likes", "is_private", "liked_by_me", "large")
     POST_ID_FIELD_NUMBER: _ClassVar[int]
     AUTHOR_ID_FIELD_NUMBER: _ClassVar[int]
     ASSET_ID_FIELD_NUMBER: _ClassVar[int]
@@ -33,6 +33,7 @@ class PostResponse(_message.Message):
     NUM_LIKES_FIELD_NUMBER: _ClassVar[int]
     IS_PRIVATE_FIELD_NUMBER: _ClassVar[int]
     LIKED_BY_ME_FIELD_NUMBER: _ClassVar[int]
+    LARGE_FIELD_NUMBER: _ClassVar[int]
     post_id: _plib_pb2.pUUID
     author_id: _plib_pb2.pUUID
     asset_id: _plib_pb2.pUUID
@@ -43,7 +44,8 @@ class PostResponse(_message.Message):
     num_likes: int
     is_private: bool
     liked_by_me: _wrappers_pb2.BoolValue
-    def __init__(self, post_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., author_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., asset_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., post_type: _Optional[int] = ..., body: _Optional[_Union[_wrappers_pb2.StringValue, _Mapping]] = ..., last_edited: _Optional[_Union[_wrappers_pb2.Int64Value, _Mapping]] = ..., num_comments: _Optional[int] = ..., num_likes: _Optional[int] = ..., is_private: bool = ..., liked_by_me: _Optional[_Union[_wrappers_pb2.BoolValue, _Mapping]] = ...) -> None: ...
+    large: _wrappers_pb2.BoolValue
+    def __init__(self, post_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., author_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., asset_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., post_type: _Optional[int] = ..., body: _Optional[_Union[_wrappers_pb2.StringValue, _Mapping]] = ..., last_edited: _Optional[_Union[_wrappers_pb2.Int64Value, _Mapping]] = ..., num_comments: _Optional[int] = ..., num_likes: _Optional[int] = ..., is_private: bool = ..., liked_by_me: _Optional[_Union[_wrappers_pb2.BoolValue, _Mapping]] = ..., large: _Optional[_Union[_wrappers_pb2.BoolValue, _Mapping]] = ...) -> None: ...
 
 class ReadPostRequest(_message.Message):
     __slots__ = ("post_id", "author_id", "timeline_type", "liked_by")
@@ -58,20 +60,22 @@ class ReadPostRequest(_message.Message):
     def __init__(self, post_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., author_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., timeline_type: _Optional[int] = ..., liked_by: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ...) -> None: ...
 
 class UpdatePostRequest(_message.Message):
-    __slots__ = ("author_id", "post_id", "timeline_type", "field_mask", "body", "is_private")
+    __slots__ = ("author_id", "post_id", "timeline_type", "field_mask", "body", "is_private", "large")
     AUTHOR_ID_FIELD_NUMBER: _ClassVar[int]
     POST_ID_FIELD_NUMBER: _ClassVar[int]
     TIMELINE_TYPE_FIELD_NUMBER: _ClassVar[int]
     FIELD_MASK_FIELD_NUMBER: _ClassVar[int]
     BODY_FIELD_NUMBER: _ClassVar[int]
     IS_PRIVATE_FIELD_NUMBER: _ClassVar[int]
+    LARGE_FIELD_NUMBER: _ClassVar[int]
     author_id: _plib_pb2.pUUID
     post_id: _plib_pb2.pUUID
     timeline_type: int
     field_mask: _field_mask_pb2.FieldMask
     body: _wrappers_pb2.StringValue
     is_private: _wrappers_pb2.BoolValue
-    def __init__(self, author_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., post_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., timeline_type: _Optional[int] = ..., field_mask: _Optional[_Union[_field_mask_pb2.FieldMask, _Mapping]] = ..., body: _Optional[_Union[_wrappers_pb2.StringValue, _Mapping]] = ..., is_private: _Optional[_Union[_wrappers_pb2.BoolValue, _Mapping]] = ...) -> None: ...
+    large: _wrappers_pb2.BoolValue
+    def __init__(self, author_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., post_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., timeline_type: _Optional[int] = ..., field_mask: _Optional[_Union[_field_mask_pb2.FieldMask, _Mapping]] = ..., body: _Optional[_Union[_wrappers_pb2.StringValue, _Mapping]] = ..., is_private: _Optional[_Union[_wrappers_pb2.BoolValue, _Mapping]] = ..., large: _Optional[_Union[_wrappers_pb2.BoolValue, _Mapping]] = ...) -> None: ...
 
 class DeletePostRequest(_message.Message):
     __slots__ = ("post_id", "author_id", "timeline_type")

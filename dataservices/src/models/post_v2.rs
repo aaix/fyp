@@ -13,4 +13,5 @@ pub struct PostV2 {
     pub post_type: i32,
     pub opt_body: Option<String>,
     pub opt_last_edited: Option<value::CqlTimestamp>,
+    pub opt_large: Option<bool>,
 }

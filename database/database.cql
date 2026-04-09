@@ -156,6 +156,7 @@ CREATE TABLE dataservices.post_v2 (
     post_type INT, -- 1: image, 2: video, 3: short form
     opt_body TEXT,
     opt_last_edited TIMESTAMP,
+    opt_large BOOLEAN, -- large  posts need special handling
     PRIMARY KEY ((author_id, timeline_type), post_id), -- route will have to be /user/id/post/id?t=1
 ) WITH CLUSTERING ORDER BY (post_id DESC);
 
@@ -205,6 +206,14 @@ CREATE TABLE dataservices.post_like (
     bucket BIGINT, -- derived from liker id so partition size limited
     liker_id TIMEUUID, -- foreign key: user.user_id
     PRIMARY KEY ((post_id, bucket), liker_id)
+);
+
+-- large posts dont use the bucket registry strategy, instead we assume there are likes for every bucket
+-- this avoids the double write on like for large posts
+CREATE TABLE dataservices.post_like_bucket_used (
+    post_id TIMEUUID,
+    bucket BIGINT,
+    PRIMARY KEY (post_id)
 );
 
 CREATE TABLE dataservices.needs_gc (

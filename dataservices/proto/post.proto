@@ -37,6 +37,7 @@ message PostResponse {
     int64 num_likes = 9;
     bool is_private = 10;
     optional google.protobuf.BoolValue liked_by_me = 11;
+    optional google.protobuf.BoolValue large = 12;
 }
 
 message ReadPostRequest {
@@ -53,6 +54,7 @@ message UpdatePostRequest {
     google.protobuf.FieldMask field_mask = 3;
     optional google.protobuf.StringValue body = 4;
     optional google.protobuf.BoolValue is_private = 6;
+    optional google.protobuf.BoolValue large = 8;
 }
 
 message DeletePostRequest {
