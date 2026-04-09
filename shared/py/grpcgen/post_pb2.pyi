@@ -162,12 +162,14 @@ class DehydratedPosts(_message.Message):
     def __init__(self, user_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., post_ids: _Optional[_Iterable[_Union[_plib_pb2.pUUID, _Mapping]]] = ...) -> None: ...
 
 class LikePostRequest(_message.Message):
-    __slots__ = ("post_id", "liker_id")
+    __slots__ = ("post_id", "liker_id", "log_bucket")
     POST_ID_FIELD_NUMBER: _ClassVar[int]
     LIKER_ID_FIELD_NUMBER: _ClassVar[int]
+    LOG_BUCKET_FIELD_NUMBER: _ClassVar[int]
     post_id: _plib_pb2.pUUID
     liker_id: _plib_pb2.pUUID
-    def __init__(self, post_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., liker_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ...) -> None: ...
+    log_bucket: bool
+    def __init__(self, post_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., liker_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., log_bucket: bool = ...) -> None: ...
 
 class LikePostResponse(_message.Message):
     __slots__ = ()

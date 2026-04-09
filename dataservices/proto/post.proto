@@ -113,6 +113,7 @@ message DehydratedPosts {
 message LikePostRequest {
     plib.pUUID post_id = 1;
     plib.pUUID liker_id = 2;
+    bool log_bucket = 3;
 }
 
 message LikePostResponse {}

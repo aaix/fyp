@@ -199,14 +199,16 @@ async def scatter_gather_posts(
 async def like_post(
     lazy: DataservicesLazyGRPC[PostServiceStub],
     post_id: id_t,
-    liker_id: id_t
+    liker_id: id_t,
+    log_bucket: bool,
 ):
     # no point coalescing on post_id
     stub = lazy(liker_id)
 
     cast(LikePostResponse, await stub.LikePost(LikePostRequest(
         post_id=id_puuid(post_id),
-        liker_id=id_puuid(liker_id)
+        liker_id=id_puuid(liker_id),
+        log_bucket=log_bucket,
     )))
 
 async def unlike_post(

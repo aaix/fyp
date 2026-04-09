@@ -50,6 +50,8 @@ pub struct ScyllaPostService {
     update_post_counters: PreparedStatement,
     read_post_like_prepared: PreparedStatement,
 
+    insert_post_like_bucket_prepared: PreparedStatement,
+
     post_read_group: UnaryGroup<(AllignedCqlTimeuuid, AllignedCqlTimeuuid, i32), DSResult<PostResponse>>,
     post_counters_read_group: UnaryGroup<AllignedCqlTimeuuid, DSResult<PostNumCounters>>,
     user_posts_read_group: UnaryGroup<(AllignedCqlTimeuuid, i32, Option<AllignedCqlTimeuuid>, i32), DSResult<Vec<PostResponse>>>,
@@ -129,6 +131,10 @@ impl ScyllaPostService {
             "SELECT * FROM dataservices.post_like WHERE post_id = ? AND bucket = ? AND liker_id = ?"
         ).await?;
 
+        let insert_post_like_bucket_prepared = db().await.prepare(
+            "INSERT INTO dataservices.post_like_bucket_used (post_id, bucket) VALUES (?, ?)"
+        ).await?;
+
         let post_read_group = UnaryGroup::new();
         let post_counters_read_group = UnaryGroup::new();
         let user_posts_read_group = UnaryGroup::new();
@@ -150,6 +156,7 @@ impl ScyllaPostService {
             like_post_prepared,
             update_post_counters,
             read_post_like_prepared,
+            insert_post_like_bucket_prepared,
 
             post_read_group,
             post_counters_read_group,
@@ -609,6 +616,7 @@ impl ScyllaPostService {
 
         let post_id: AllignedCqlTimeuuid = req_tuuid!(request, post_id)?;
         let liker_id: AllignedCqlTimeuuid = req_tuuid!(request, liker_id)?;
+        let log_bucket = request.get_ref().log_bucket;
         let bucket = calc_bucket(liker_id);
 
         let res = db().await.execute_unpaged(
@@ -624,14 +632,29 @@ impl ScyllaPostService {
             return Err(Status::invalid_argument("Post already liked").into())
         }
 
-        db().await.execute_unpaged(
+        let counter_future = db().await.execute_unpaged(
             &self.update_post_counters,
             (
                 Counter(1),
                 Counter(0),
                 post_id
             )
-        ).await?;
+        );
+
+        if log_bucket {
+            let bucket_future = db().await.execute_unpaged(
+                &self.insert_post_like_bucket_prepared,
+                (
+                    post_id,
+                    bucket
+                )
+            );
+            let (counter, bucket_log) = tokio::join!(counter_future, bucket_future);
+            bucket_log?;
+            counter?;
+        } else {
+            counter_future.await?;
+        }
 
 
         Ok(Response::new(LikePostResponse {  }))
