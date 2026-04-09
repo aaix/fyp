@@ -1,7 +1,7 @@
 from typing import cast
 
 import random
-from enum import IntEnum
+from enum import IntEnum, IntFlag, auto
 
 from shared.py.grpc.id import id_puuid, id_t
 from shared.py.grpcgen import gc_pb2_grpc
@@ -15,18 +15,25 @@ class GarbageType(IntEnum):
     CHANNEL = 1
     POST = 2
 
+class GarbageFlags(IntFlag):
+    LARGE = auto()
+
 
 def calculate_bucket() -> int:
     return random.randint(0, CONF_NUM_BUCKETS - 1)
 
 
-async def file_for_gc(grpc: DataservicesLazyGRPC[gc_pb2_grpc.GarbageServiceStub], object_id: id_t, garbage_type: GarbageType):
+async def file_for_gc(grpc: DataservicesLazyGRPC[gc_pb2_grpc.GarbageServiceStub], object_id: id_t, garbage_type: GarbageType, flags: GarbageFlags | None = None):
     stub = grpc()
     bucket = calculate_bucket()
+
+    flag_value = flags.value if flags is not None else 0
+
     cast(FileGarbageResponse, await stub.FileForCollection(FileGarbageRequest(
         bucket=bucket,
         object_id=id_puuid(object_id),
         garbage_type=garbage_type.value,
+        garbage_flags=flag_value,
     )))
 
 async def read_gc(grpc: DataservicesLazyGRPC[gc_pb2_grpc.GarbageServiceStub], bucket: int, after: id_t, limit: int) -> GarbageResponse:

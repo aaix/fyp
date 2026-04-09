@@ -220,6 +220,7 @@ CREATE TABLE dataservices.needs_gc (
     bucket BIGINT, 
     object_id TIMEUUID,
     garbage_type INT,
+    garbage_flags BIGINT,
     PRIMARY KEY (bucket, object_id, garbage_type)
 ) WITH CLUSTERING ORDER BY (object_id ASC)
   AND compaction = {'class': 'TimeWindowCompactionStrategy', 'compaction_window_unit': 'DAYS', 'compaction_window_size': 1};

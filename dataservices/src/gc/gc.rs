@@ -27,7 +27,7 @@ impl ScyllaGarbageServiceServer {
     pub async fn new() -> Result<ScyllaGarbageServiceServer, Box<dyn std::error::Error>> {
 
         let insert_prepared = db().await.prepare(
-            "INSERT INTO dataservices.needs_gc (bucket, object_id, garbage_type) VALUES (?, ?, ?)"
+            "INSERT INTO dataservices.needs_gc (bucket, object_id, garbage_type, garbage_flags) VALUES (?, ?, ?, ?)"
         ).await?;
 
         let read_prepared = db().await.prepare(
@@ -59,13 +59,15 @@ impl ScyllaGarbageServiceServer {
 
         let bucket = inner.bucket;
         let garbage_type = inner.garbage_type;
+        let flags = inner.garbage_flags as i64;
 
         db().await.execute_unpaged(
             &self.insert_prepared, 
             (
                 bucket,
                 object_id,
-                garbage_type
+                garbage_type,
+                flags,
             )
         ).await?;
 
@@ -102,6 +104,7 @@ impl ScyllaGarbageServiceServer {
                     bucket: row.bucket,
                     object_id: Some(row.object_id.into()),
                     garbage_type: row.garbage_type,
+                    garbage_flags: row.garbage_flags as u64,
                 }
             );
 

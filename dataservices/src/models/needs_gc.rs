@@ -7,4 +7,5 @@ pub struct NeedsGc {
     pub bucket: i64,
     pub object_id: AllignedCqlTimeuuid,
     pub garbage_type: i32,
+    pub garbage_flags: i64,
 }

@@ -1,0 +1,1 @@
+ALTER TABLE dataservices.needs_gc ADD (garbage_flags BIGINT);

@@ -8,14 +8,16 @@ from typing import ClassVar as _ClassVar, Optional as _Optional, Union as _Union
 DESCRIPTOR: _descriptor.FileDescriptor
 
 class FileGarbageRequest(_message.Message):
-    __slots__ = ("bucket", "object_id", "garbage_type")
+    __slots__ = ("bucket", "object_id", "garbage_type", "garbage_flags")
     BUCKET_FIELD_NUMBER: _ClassVar[int]
     OBJECT_ID_FIELD_NUMBER: _ClassVar[int]
     GARBAGE_TYPE_FIELD_NUMBER: _ClassVar[int]
+    GARBAGE_FLAGS_FIELD_NUMBER: _ClassVar[int]
     bucket: int
     object_id: _plib_pb2.pUUID
     garbage_type: int
-    def __init__(self, bucket: _Optional[int] = ..., object_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., garbage_type: _Optional[int] = ...) -> None: ...
+    garbage_flags: int
+    def __init__(self, bucket: _Optional[int] = ..., object_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., garbage_type: _Optional[int] = ..., garbage_flags: _Optional[int] = ...) -> None: ...
 
 class FileGarbageResponse(_message.Message):
     __slots__ = ()
@@ -38,14 +40,16 @@ class GarbageResponse(_message.Message):
     def __init__(self, for_collection: _Optional[_Iterable[_Union[GarbageItem, _Mapping]]] = ...) -> None: ...
 
 class GarbageItem(_message.Message):
-    __slots__ = ("bucket", "object_id", "garbage_type")
+    __slots__ = ("bucket", "object_id", "garbage_type", "garbage_flags")
     BUCKET_FIELD_NUMBER: _ClassVar[int]
     OBJECT_ID_FIELD_NUMBER: _ClassVar[int]
     GARBAGE_TYPE_FIELD_NUMBER: _ClassVar[int]
+    GARBAGE_FLAGS_FIELD_NUMBER: _ClassVar[int]
     bucket: int
     object_id: _plib_pb2.pUUID
     garbage_type: int
-    def __init__(self, bucket: _Optional[int] = ..., object_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., garbage_type: _Optional[int] = ...) -> None: ...
+    garbage_flags: int
+    def __init__(self, bucket: _Optional[int] = ..., object_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., garbage_type: _Optional[int] = ..., garbage_flags: _Optional[int] = ...) -> None: ...
 
 class DeleteGarbageRequest(_message.Message):
     __slots__ = ("bucket", "object_id")

@@ -15,6 +15,7 @@ message FileGarbageRequest {
     int64 bucket = 1;
     plib.pUUID object_id = 2;
     int32 garbage_type = 3;
+    uint64 garbage_flags = 4;
 }
 
 message FileGarbageResponse {}
@@ -34,6 +35,7 @@ message GarbageItem {
     int64 bucket = 1;
     plib.pUUID object_id = 2;
     int32 garbage_type = 3;
+    uint64 garbage_flags = 4;
 }
 
 message DeleteGarbageRequest {

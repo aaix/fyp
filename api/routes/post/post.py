@@ -212,7 +212,7 @@ async def delete_my_post(s: SessionParam, post: PostParam, timeline_type: Timeli
     await delete_asset(public=False, bucket_id=post.post_id, asset_id=post.asset_id)
     await delete_asset(public=False, bucket_id=post.post_id, asset_id=post.asset_id, extra="/thumb")
     await delete_post(grpcpost, post.author_id, post.post_id, timeline_type)
-    await gc.file_for_gc(grpcgarbage, post.post_id, gc.GarbageType.POST)
+    await gc.file_for_gc(grpcgarbage, post.post_id, gc.GarbageType.POST, gc.GarbageFlags.LARGE if post.large.value else gc.GarbageFlags(0))
 
 @PostRouter.get("/user/{user_id}/{timeline_type}/{post_id}")
 async def get_post(s: SessionParam, user: UserWithProfileVisibleParam, post: PostParam) -> PostResponse:
