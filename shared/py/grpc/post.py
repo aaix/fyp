@@ -222,3 +222,32 @@ async def unlike_post(
         post_id=id_puuid(post_id),
         liker_id=id_puuid(liker_id)
     )))
+
+async def delete_post_likes_by_bucket(
+    lazy: DataservicesLazyGRPC[PostServiceStub],
+    post_id: id_t,
+    bucket: int
+):
+    stub = lazy(post_id)
+    cast(DeletePostLikesByBucketResponse, await stub.DeletePostLikesByBucket(DeletePostLikesByBucketRequest(
+        post_id=id_puuid(post_id),
+        bucket=bucket,
+    )))
+
+async def delete_post_like_buckets(
+    lazy: DataservicesLazyGRPC[PostServiceStub],
+    post_id: id_t,
+):
+    stub = lazy(post_id)
+    cast(DeletePostLikeBucketsResponse, await stub.DeletePostLikeBuckets(DeletePostLikeBucketsRequest(
+        post_id=id_puuid(post_id),
+    )))
+
+async def read_post_like_buckets(
+    lazy: DataservicesLazyGRPC[PostServiceStub],
+    post_id: id_t,
+) -> PostLikeBuckets:
+    stub = lazy(post_id)
+    return cast(PostLikeBuckets, await stub.ReadPostLikeBuckets(ReadPostLikeBucketsRequest(
+        post_id=id_puuid(post_id)
+    )))

@@ -79,6 +79,21 @@ class PostServiceStub(object):
                 request_serializer=post__pb2.LikePostRequest.SerializeToString,
                 response_deserializer=post__pb2.LikePostResponse.FromString,
                 _registered_method=True)
+        self.ReadPostLikeBuckets = channel.unary_unary(
+                '/dataservices.postproto.PostService/ReadPostLikeBuckets',
+                request_serializer=post__pb2.ReadPostLikeBucketsRequest.SerializeToString,
+                response_deserializer=post__pb2.PostLikeBuckets.FromString,
+                _registered_method=True)
+        self.DeletePostLikeBuckets = channel.unary_unary(
+                '/dataservices.postproto.PostService/DeletePostLikeBuckets',
+                request_serializer=post__pb2.DeletePostLikeBucketsRequest.SerializeToString,
+                response_deserializer=post__pb2.DeletePostLikeBucketsResponse.FromString,
+                _registered_method=True)
+        self.DeletePostLikesByBucket = channel.unary_unary(
+                '/dataservices.postproto.PostService/DeletePostLikesByBucket',
+                request_serializer=post__pb2.DeletePostLikesByBucketRequest.SerializeToString,
+                response_deserializer=post__pb2.DeletePostLikesByBucketResponse.FromString,
+                _registered_method=True)
 
 
 class PostServiceServicer(object):
@@ -138,6 +153,24 @@ class PostServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def ReadPostLikeBuckets(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def DeletePostLikeBuckets(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def DeletePostLikesByBucket(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_PostServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -185,6 +218,21 @@ def add_PostServiceServicer_to_server(servicer, server):
                     servicer.UnlikePost,
                     request_deserializer=post__pb2.LikePostRequest.FromString,
                     response_serializer=post__pb2.LikePostResponse.SerializeToString,
+            ),
+            'ReadPostLikeBuckets': grpc.unary_unary_rpc_method_handler(
+                    servicer.ReadPostLikeBuckets,
+                    request_deserializer=post__pb2.ReadPostLikeBucketsRequest.FromString,
+                    response_serializer=post__pb2.PostLikeBuckets.SerializeToString,
+            ),
+            'DeletePostLikeBuckets': grpc.unary_unary_rpc_method_handler(
+                    servicer.DeletePostLikeBuckets,
+                    request_deserializer=post__pb2.DeletePostLikeBucketsRequest.FromString,
+                    response_serializer=post__pb2.DeletePostLikeBucketsResponse.SerializeToString,
+            ),
+            'DeletePostLikesByBucket': grpc.unary_unary_rpc_method_handler(
+                    servicer.DeletePostLikesByBucket,
+                    request_deserializer=post__pb2.DeletePostLikesByBucketRequest.FromString,
+                    response_serializer=post__pb2.DeletePostLikesByBucketResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -430,6 +478,87 @@ class PostService(object):
             '/dataservices.postproto.PostService/UnlikePost',
             post__pb2.LikePostRequest.SerializeToString,
             post__pb2.LikePostResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ReadPostLikeBuckets(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/dataservices.postproto.PostService/ReadPostLikeBuckets',
+            post__pb2.ReadPostLikeBucketsRequest.SerializeToString,
+            post__pb2.PostLikeBuckets.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def DeletePostLikeBuckets(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/dataservices.postproto.PostService/DeletePostLikeBuckets',
+            post__pb2.DeletePostLikeBucketsRequest.SerializeToString,
+            post__pb2.DeletePostLikeBucketsResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def DeletePostLikesByBucket(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/dataservices.postproto.PostService/DeletePostLikesByBucket',
+            post__pb2.DeletePostLikesByBucketRequest.SerializeToString,
+            post__pb2.DeletePostLikesByBucketResponse.FromString,
             options,
             channel_credentials,
             insecure,

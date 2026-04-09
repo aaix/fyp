@@ -12,7 +12,7 @@ import threading
 from garbagecollector.tracing import tracer
 from garbagecollector import processors
 
-from shared.py.grpc.gc import GarbageType, read_gc
+from shared.py.grpc.gc import GarbageFlags, GarbageType, read_gc
 from shared.py.grpc.id import MIN_UUID_V1, id_t, id_uuid
 from shared.py.grpc.lazy import DataservicesLazyGRPC, lazy_init
 from shared.py.grpcgen import gc_pb2_grpc
@@ -50,11 +50,12 @@ async def drain_queue[T](queue: asyncio.Queue[T], semaphore: asyncio.Semaphore, 
 async def process_garbage(garbage: GarbageItem):
     with tracer.start_as_current_span("process_garbage") as span:
         span.set_attribute("az.garbagecollector.object_id", str(id_uuid(garbage.object_id)))
+        flags = GarbageFlags(garbage.garbage_flags)
         match GarbageType(garbage.garbage_type):
             case GarbageType.CHANNEL:
-                await processors.process_channel(bucket, garbage.object_id)
+                await processors.process_channel(bucket, garbage.object_id, flags)
             case GarbageType.POST:
-                await processors.process_post(bucket, garbage.object_id)
+                await processors.process_post(bucket, garbage.object_id, flags)
 
 
 async def gc_loop(bucket: int, shutdown: threading.Event):

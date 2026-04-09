@@ -174,3 +174,37 @@ class LikePostRequest(_message.Message):
 class LikePostResponse(_message.Message):
     __slots__ = ()
     def __init__(self) -> None: ...
+
+class ReadPostLikeBucketsRequest(_message.Message):
+    __slots__ = ("post_id",)
+    POST_ID_FIELD_NUMBER: _ClassVar[int]
+    post_id: _plib_pb2.pUUID
+    def __init__(self, post_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ...) -> None: ...
+
+class PostLikeBuckets(_message.Message):
+    __slots__ = ("buckets",)
+    BUCKETS_FIELD_NUMBER: _ClassVar[int]
+    buckets: _containers.RepeatedScalarFieldContainer[int]
+    def __init__(self, buckets: _Optional[_Iterable[int]] = ...) -> None: ...
+
+class DeletePostLikeBucketsRequest(_message.Message):
+    __slots__ = ("post_id",)
+    POST_ID_FIELD_NUMBER: _ClassVar[int]
+    post_id: _plib_pb2.pUUID
+    def __init__(self, post_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ...) -> None: ...
+
+class DeletePostLikeBucketsResponse(_message.Message):
+    __slots__ = ()
+    def __init__(self) -> None: ...
+
+class DeletePostLikesByBucketRequest(_message.Message):
+    __slots__ = ("post_id", "bucket")
+    POST_ID_FIELD_NUMBER: _ClassVar[int]
+    BUCKET_FIELD_NUMBER: _ClassVar[int]
+    post_id: _plib_pb2.pUUID
+    bucket: int
+    def __init__(self, post_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., bucket: _Optional[int] = ...) -> None: ...
+
+class DeletePostLikesByBucketResponse(_message.Message):
+    __slots__ = ()
+    def __init__(self) -> None: ...

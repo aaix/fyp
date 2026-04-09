@@ -51,6 +51,9 @@ pub struct ScyllaPostService {
     read_post_like_prepared: PreparedStatement,
 
     insert_post_like_bucket_prepared: PreparedStatement,
+    read_post_like_buckets_prepared: PreparedStatement,
+    delete_post_like_buckets_prepared: PreparedStatement,
+    delete_post_likes_by_bucket_prepared: PreparedStatement,
 
     post_read_group: UnaryGroup<(AllignedCqlTimeuuid, AllignedCqlTimeuuid, i32), DSResult<PostResponse>>,
     post_counters_read_group: UnaryGroup<AllignedCqlTimeuuid, DSResult<PostNumCounters>>,
@@ -135,6 +138,18 @@ impl ScyllaPostService {
             "INSERT INTO dataservices.post_like_bucket_used (post_id, bucket) VALUES (?, ?)"
         ).await?;
 
+        let read_post_like_buckets_prepared = db().await.prepare(
+            "SELECT bucket FROM dataservices.post_like_bucket_used WHERE post_id = ?"
+        ).await?;
+
+        let delete_post_like_buckets_prepared = db().await.prepare(
+            "DELETE FROM dataservices.post_like_bucket_used WHERE post_id = ?"
+        ).await?;
+
+        let delete_post_likes_by_bucket_prepared = db().await.prepare(
+            "DELETE FROM dataservices.post_like WHERE post_id = ? AND bucket = ?"
+        ).await?;
+
         let post_read_group = UnaryGroup::new();
         let post_counters_read_group = UnaryGroup::new();
         let user_posts_read_group = UnaryGroup::new();
@@ -157,6 +172,9 @@ impl ScyllaPostService {
             update_post_counters,
             read_post_like_prepared,
             insert_post_like_bucket_prepared,
+            read_post_like_buckets_prepared,
+            delete_post_like_buckets_prepared,
+            delete_post_likes_by_bucket_prepared,
 
             post_read_group,
             post_counters_read_group,
@@ -693,6 +711,70 @@ impl ScyllaPostService {
 
         Ok(Response::new(LikePostResponse {  }))
     }
+
+    async fn read_post_like_buckets_impl(
+        &self,
+        request: tonic::Request<ReadPostLikeBucketsRequest>,
+    ) -> DSResult<tonic::Response<PostLikeBuckets>> {
+
+        let post_id: AllignedCqlTimeuuid = req_tuuid!(request, post_id)?;
+
+        let mut pager = db().await.execute_iter(
+            self.read_post_like_buckets_prepared.clone(), 
+            (
+                post_id,
+            )
+        ).await?.rows_stream::<(i64,)>()?;
+
+        let mut buckets = Vec::new();
+
+        while let Some(bucket_res) = pager.next().await {
+            let bucket = bucket_res?.0;
+            buckets.push(bucket);
+        }
+
+        Ok(Response::new(PostLikeBuckets { buckets }))
+    }
+
+
+    async fn delete_post_like_buckets_impl(
+        &self,
+        request: tonic::Request<DeletePostLikeBucketsRequest>,
+    ) -> DSResult<
+        tonic::Response<DeletePostLikeBucketsResponse>> {
+        let post_id: AllignedCqlTimeuuid = req_tuuid!(request, post_id)?;
+
+        db().await.execute_unpaged(
+            &self.delete_post_like_buckets_prepared, 
+            (
+                post_id,
+            )
+        ).await?;
+
+        Ok(Response::new(DeletePostLikeBucketsResponse {  }))
+
+    }
+
+    async fn delete_post_likes_by_bucket_impl(
+        &self,
+        request: tonic::Request<DeletePostLikesByBucketRequest>,
+    ) -> DSResult<
+        tonic::Response<DeletePostLikesByBucketResponse>> {
+        let post_id: AllignedCqlTimeuuid = req_tuuid!(request, post_id)?;
+
+        let bucket = request.get_ref().bucket;
+
+        db().await.execute_unpaged(
+            &self.delete_post_likes_by_bucket_prepared, 
+            (
+                post_id,
+                bucket
+            )
+        ).await?;
+
+        Ok(Response::new(DeletePostLikesByBucketResponse {  }))
+    }
+
 }
 
 #[async_trait]
@@ -777,5 +859,30 @@ impl PostService for ScyllaPostService {
         tonic::Status,
     > {
         Ok(self.unlike_post_impl(request).await?)
+    }
+    async fn read_post_like_buckets(
+        &self,
+        request: tonic::Request<ReadPostLikeBucketsRequest>,
+    ) -> std::result::Result<tonic::Response<PostLikeBuckets>, tonic::Status> {
+        Ok(self.read_post_like_buckets_impl(request).await?)
+    }
+    async fn delete_post_like_buckets(
+        &self,
+        request: tonic::Request<DeletePostLikeBucketsRequest>,
+    ) -> std::result::Result<
+        tonic::Response<DeletePostLikeBucketsResponse>,
+        tonic::Status,
+    > {
+        Ok(self.delete_post_like_buckets_impl(request).await?)
+    }
+
+    async fn delete_post_likes_by_bucket(
+        &self,
+        request: tonic::Request<DeletePostLikesByBucketRequest>,
+    ) -> std::result::Result<
+        tonic::Response<DeletePostLikesByBucketResponse>,
+        tonic::Status,
+    > {
+        Ok(self.delete_post_likes_by_bucket_impl(request).await?)
     }
 }

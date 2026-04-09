@@ -17,6 +17,10 @@ service PostService {
 
     rpc LikePost (LikePostRequest) returns (LikePostResponse);
     rpc UnlikePost (LikePostRequest) returns (LikePostResponse);
+
+    rpc ReadPostLikeBuckets (ReadPostLikeBucketsRequest) returns (PostLikeBuckets);
+    rpc DeletePostLikeBuckets (DeletePostLikeBucketsRequest) returns (DeletePostLikeBucketsResponse);
+    rpc DeletePostLikesByBucket (DeletePostLikesByBucketRequest) returns (DeletePostLikesByBucketResponse);
 }
 
 message CreatePostRequest {
@@ -117,3 +121,24 @@ message LikePostRequest {
 }
 
 message LikePostResponse {}
+
+message ReadPostLikeBucketsRequest {
+    plib.pUUID post_id = 1;
+}
+
+message PostLikeBuckets {
+    repeated int64 buckets = 1;
+}
+
+message DeletePostLikeBucketsRequest {
+    plib.pUUID post_id = 1;
+}
+
+message DeletePostLikeBucketsResponse {}
+
+message DeletePostLikesByBucketRequest {
+    plib.pUUID post_id = 1;
+    int64 bucket = 2;
+}
+
+message DeletePostLikesByBucketResponse {}

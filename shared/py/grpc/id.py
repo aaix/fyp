@@ -23,16 +23,18 @@ def id_timestamp(id1: str) -> datetime: ...
 def id_timestamp(id1: pUUID) -> datetime | None: ...
 
 
-
-
-
-
 def id_timestamp(id1: id_t) -> datetime | None:
     if not (uuid := id_uuid(id1)):
         return None
     
     greg_to_unix = 0x01b21dd213814000 # from python314/uuid
     return datetime.fromtimestamp(((uuid.time - greg_to_unix) * 100) / 1e9, UTC)
+
+
+def calc_bucket(timestamp: datetime) -> int:
+    total_seconds = (timestamp - datetime(1970,1,1, tzinfo=UTC)).total_seconds()
+
+    return int(total_seconds / (7 * 24 * 60 * 60))
 
 
 def puuid_int(uuid: pUUID) -> int | None:

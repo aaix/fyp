@@ -227,8 +227,8 @@ async def r_like_post(s: SessionParam, user: UserWithProfileVisibleParam, post: 
     with RpcErrHandler(StatusCode.INVALID_ARGUMENT, lambda e: errors.BadRequest(e.details() or "invalid argument")):
         await like_post(grpcpost, post.post_id, s.user_id, log_bucket=not post_is_large)
 
-    # check every ~1000 likes if we meet the large threshold
-    if random.randint(0, 1000) != 314:
+    # check every ~500 likes if we meet the large threshold
+    if random.randint(0, 500) != 314:
         return
     
     if post.num_likes > CONF_POST_LARGE_THRESHOLD and not post_is_large:

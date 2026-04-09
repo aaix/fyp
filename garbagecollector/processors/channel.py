@@ -1,7 +1,7 @@
 from garbagecollector.tracing import tracer
 from shared.py.asset import delete_asset, delete_many_assets
 from shared.py.grpc.channel import delete_channel, get_channel
-from shared.py.grpc.gc import delete_garbage
+from shared.py.grpc.gc import GarbageFlags, delete_garbage
 from shared.py.grpc.id import id_t, puuid_opt
 from shared.py.grpc.lazy import DataservicesLazyGRPC
 from shared.py.grpc.message import delete_messages_in_bucket, read_messages
@@ -13,7 +13,7 @@ grpcgarbage = DataservicesLazyGRPC(gc_pb2_grpc.GarbageServiceStub)
 
 
 @tracer.start_as_current_span("process_channel")
-async def process_channel(bucket: int, channel_id: id_t):
+async def process_channel(bucket: int, channel_id: id_t, flags: GarbageFlags):
     channel = await get_channel(grpcchannel, channel_id)
 
     if puuid_opt(channel.opt_channel_icon_asset_id):
