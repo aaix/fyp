@@ -49,11 +49,22 @@ services:
       S3_ACCESS_KEY_ID: ${SECRET_S3_ACCESS_KEY_ID}
       S3_ACCESS_KEY_SECRET: ${SECRET_S3_ACCESS_KEY_SECRET}
     depends_on:
-      scylla-seed:
-        condition: service_healthy
+      dataservices:
+        condition: service_started
       discoverystore-0:
         condition: service_healthy
 
+  watchdog:
+    networks:
+      - shared-network
+    image: az-watchdog:latest
+    environment:
+      OTEL_URI: "http://jaeger:4317"
+      VALKEY_URI: discoverystore-0:6379
+
+    depends_on:
+      discoverystore-0:
+        condition: service_healthy
 
   dataservices:
     deploy:

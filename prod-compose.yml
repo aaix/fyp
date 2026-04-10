@@ -47,6 +47,18 @@ services:
       discoverystore-0:
         condition: service_healthy
 
+  watchdog:
+    networks:
+      - shared-network
+    image: europe-west2-docker.pkg.dev/fyp-25coc251/az7-backend/watchdog:latest
+    environment:
+      OTEL_URI: "http://jaeger:4317"
+      VALKEY_URI: discoverystore-0:6379
+
+    depends_on:
+      discoverystore-0:
+        condition: service_healthy
+
   discoverystore-0:
     networks:
       - shared-network
