@@ -83,7 +83,7 @@ async def gc_loop(bucket: int, shutdown: threading.Event):
             to_collect = await find_garbage_to_collect(grpcgarbage, bucket, after)
             if len(to_collect) == 0:
                 with tracer.start_as_current_span("gc_wait"):
-                    await asyncio.sleep(1)
+                    await asyncio.sleep(120)
                 continue
 
             after = to_collect[-1].object_id
