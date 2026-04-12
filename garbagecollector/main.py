@@ -60,7 +60,7 @@ async def process_garbage(garbage: GarbageItem):
 
 async def gc_loop(bucket: int, shutdown: threading.Event):
     await lazy_init()
-    print(f"Starting processing on bucket {bucket}", flush=True)
+    print(f"Starting processing on bucket {bucket}")
 
     grpcgarbage = DataservicesLazyGRPC(gc_pb2_grpc.GarbageServiceStub)
 
@@ -75,7 +75,7 @@ async def gc_loop(bucket: int, shutdown: threading.Event):
     while True:
         if shutdown.is_set():
             drainer.cancel()
-            print(f"[{bucket}] Cancelled drainer", flush=True)
+            print(f"[{bucket}] Cancelled drainer")
             return
 
         with tracer.start_as_current_span("do_gc_loop") as span:

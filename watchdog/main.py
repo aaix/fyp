@@ -39,7 +39,7 @@ async def remove_node_from_picture(service: BigPictureClient, node: str):
 
     await service.store.srem(service.member_set, [node])
     await service.store.publish(node, service.leave_channel)
-    print(f"Kicked {node} from {service.member_set} due to keepalive fail", flush=True)
+    print(f"Kicked {node} from {service.member_set} due to keepalive fail")
 
 
 

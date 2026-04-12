@@ -65,7 +65,7 @@ class BigPictureClient:
 
         thread_name = threading.current_thread().name
 
-        print(f"BigPictureClient({self.member_set}): built ring of size {len(self.ring.get_nodes())}, notified {waiters} waiters, {thread_name} won the init race", flush=True)
+        print(f"BigPictureClient({self.member_set}): built ring of size {len(self.ring.get_nodes())}, notified {waiters} waiters, {thread_name} won the init race")
 
 
     def on_message(self, msg: PubSubMsg, _context: Any):
@@ -76,10 +76,10 @@ class BigPictureClient:
 
         match channel:
             case self.join_channel:
-                print(f"BigPictureClient({self.member_set}): member {data} joining", flush=True)
+                print(f"BigPictureClient({self.member_set}): member {data} joining")
                 self.ring.add_node(data)
             case self.leave_channel:
-                print(f"BigPictureClient({self.member_set}): member {data} leaving", flush=True)
+                print(f"BigPictureClient({self.member_set}): member {data} leaving")
                 self.ring.remove_node(data)
             case _: ...
     

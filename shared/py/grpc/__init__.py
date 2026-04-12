@@ -18,7 +18,7 @@ class GrpcRenameProcessor(SpanProcessor):
 
 
 def start_instrumentation():
-    print("Starting grpc instrumentation", flush=True)
+    print("Starting grpc instrumentation")
     client = GrpcAioInstrumentorClient()
 
     client.instrument()

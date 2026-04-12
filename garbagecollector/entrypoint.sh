@@ -2,4 +2,4 @@
 
 export PYTHONPATH=/az7/
 
-exec python3 /az7/garbagecollector/main.py --buckets $BUCKETS
+exec python3 -u /az7/garbagecollector/main.py --buckets $BUCKETS
