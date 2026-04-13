@@ -259,6 +259,7 @@ async def block_user(s: SessionParam, peer: UserParam) -> UserRelationshipRespon
     async with PeerRelationshipManager(grpcrelationship, s.user_id, peer.user_id, fetch_on_enter) as r:
 
         if await r.are_friends():
+            await feed.handle_remove_friend(peer.user_id, s.user_id)
             await r.unfriend()
 
         if await r.is_current_requesting():
@@ -266,6 +267,13 @@ async def block_user(s: SessionParam, peer: UserParam) -> UserRelationshipRespon
         if await r.is_peer_requesting():
             await PeerRelationshipManager(grpcrelationship, peer.user_id, s.user_id).cancel_request_to_peer()
         
+        if await r.is_current_following_peer():
+            await feed.handle_remove_friend(peer.user_id, s.user_id)
+            await r.unfollow_peer()
+        if await r.is_peer_following_current():
+            await feed.handle_remove_friend(peer.user_id, s.user_id)
+            await PeerRelationshipManager(grpcrelationship, peer.user_id, s.user_id).unfollow_peer()
+
         res = await r.block_other()
         await send_friend_update(peer.user_id, s.user_id, RelationshipType.PEER_BLOCKED_CURRENT)
 
