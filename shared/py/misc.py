@@ -63,6 +63,7 @@ class MultiRuntimeLock:
     def __init__(self):
         self.__lock = threading.Lock()
         self.locked = False
+        self.owner: PoisonableThreadssafeEvent | None = None
         self.queue: deque[PoisonableThreadssafeEvent] = deque()
     
 
@@ -71,26 +72,33 @@ class MultiRuntimeLock:
         with self.__lock:
             if not self.locked:
                 self.locked = True
+                self.owner = event
                 return
             self.queue.append(event)
 
         try:
-            # wait until another thread passes the lock to us
             return await event.wait()
-        finally:
+        except asyncio.CancelledError:
             with self.__lock:
-                if not event.is_set():
-                    event.poisoned = True
+                event.poisoned = True
+                if self.owner == event:
+                    self.__pass_to_next()
+            raise
 
     async def __aexit__(self, exc_type, exc, tb):
         with self.__lock:
             assert self.locked
-            while len(self.queue) > 0:
-                event = self.queue.pop()
-                if not event.poisoned:
-                    event.set_threadsafe()
-                    return
+            self.__pass_to_next()
+    
+    def __pass_to_next(self):
+        while len(self.queue) > 0:
+            event = self.queue.pop()
+            if not event.poisoned:
+                event.set_threadsafe()
+                self.owner = event
+                return
 
-            self.locked = False
+        self.locked = False
+        self.owner = None
 
                 
