@@ -22,7 +22,7 @@ MAX_MESSAGES_QUERYABLE: Final[int] = 50
 
 ICON_MAX_UPLOAD_SIZE: Final[int] = 10 * 1000 * 1000  # 10 million bytes
 CHAT_ATTACHMENT_MAX_SIZE: Final[int] = 50 * 1000 * 1000 # 50 million bytes
-POST_MEDIA_MAX_UPLOAD_SIZE: Final[int] = 50 * 1000 * 1000 # 50 million bytes
+POST_MEDIA_MAX_UPLOAD_SIZE: Final[int] = 80 * 1000 * 1000 # 80 million bytes
 
 
 POST_BODY_MAX_LENGTH: Final[int] = 2000
