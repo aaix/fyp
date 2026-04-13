@@ -78,7 +78,9 @@ class GatewayController:
 
         exc = HandshakeFailed(HandshakeFailed.Reason.GOING_AWAY, "node shutting down")
         futures_cancelled = 0
-        for (_, future)  in self.__new_device_waiters.values():
+
+        # clone into list for thread safety
+        for (_, future)  in list(self.__new_device_waiters.values()):
             try:
                 future.set_exception(exc)
             except InvalidStateError:
@@ -98,12 +100,12 @@ class GatewayController:
             async for msg in self.__sublisher:
                 try:
                     d = IntraMessage.FromString(msg)
-                    self.__loop.create_task(self.handle_internal(d))
+                    self.handle_internal(d)
                 except DecodeError:
                     log("failed decoding object")
 
 
-    async def handle_internal(self, msg: IntraMessage):
+    def handle_internal(self, msg: IntraMessage):
         if msg.HasField("traceparent"):
             parent = trace.set_span_in_context(span_from_traceparent(msg.traceparent))
         else:
@@ -123,6 +125,7 @@ class GatewayController:
 
             for client in self.__by_user[to]:
                 with contextlib.suppress(QueueFull):
+                    # not multiloop safe
                     client.queue.put_nowait(InternalEvent(oneof=field, payload=data, span=span))
 
     # client connection management
@@ -159,17 +162,19 @@ class GatewayController:
     async def new_device_waiting(self, request: NewDeviceClientHello, user_id: UUID, code: int, timeout=60) -> NewDeviceOK:
         future = asyncio.Future()
         key = (user_id, code)
+        # TODO: general safety of dropping old key without releasing the future
         self.__new_device_waiters[key] = (request, future)
 
         try:
             with tracer.start_as_current_span("wait for future") as span:
                 span.set_attribute("az.gateway.new_device_waiting.params", str((user_id, code)))
+                # TODO: look at multiloop safety
                 return await asyncio.wait_for(future, timeout=timeout)
         finally:
             self.__new_device_waiters.pop(key, None)
             
 
-    async def unregister(self, client: GatewayClient):
+    def unregister(self, client: GatewayClient):
         self.__pending.pop(client.id, None)
 
         if not client.user_id:
@@ -178,6 +183,8 @@ class GatewayController:
         self.__by_user[client.user_id].discard(client)
 
         # delete set if empty
+        # TODO: multiloop safety: self.__by_user[client.user_id]
+        # may have been cleaned up by now
         if not len(self.__by_user[client.user_id]):
             self.__by_user.pop(client.user_id, None)
 

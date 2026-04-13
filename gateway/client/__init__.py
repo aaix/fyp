@@ -48,6 +48,7 @@ class GatewayClient:
     def __init__(self, controller: gateway.server.GatewayController, ws: ServerConnection):
         self.id: Final[UUID] = uuid.uuid4()
         self.controller = controller
+        # TODO: not multi loop safe
         self.queue: asyncio.Queue[InternalEvent] = asyncio.Queue()
         self.ws: ServerConnection = ws
         self.open: bool = True
@@ -358,7 +359,7 @@ class GatewayClient:
             self.cleaned_up = True
 
         self.queue.shutdown()
-        await self.controller.unregister(self)
+        self.controller.unregister(self)
         self.open = False
 
 
