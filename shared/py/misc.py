@@ -1,7 +1,10 @@
+import asyncio
+import threading
 from typing import Self
 from types import TracebackType
 
-from collections.abc import Iterable, Callable, Hashable, Awaitable
+from collections.abc import Iterable, Callable, Hashable
+from collections import deque
 from contextlib import AbstractContextManager
 from collections import defaultdict
 
@@ -43,3 +46,51 @@ class SuppressRpcErr(AbstractContextManager):
             return False
         
         return self.predicate(exc_value)
+
+
+class PoisonableThreadssafeEvent(asyncio.Event):
+    __slots__  = ("poisoned","loop")
+    def __init__(self, loop):
+        super().__init__()
+        self.loop: asyncio.AbstractEventLoop = loop
+        self.poisoned = False
+
+    def set_threadsafe(self):
+        self.loop.call_soon_threadsafe(self.set)
+    
+class MultiRuntimeLock:
+    """Non reentrant, simple thread safe version of asyncio.Lock()"""
+    def __init__(self):
+        self.__lock = threading.Lock()
+        self.locked = False
+        self.queue: deque[PoisonableThreadssafeEvent] = deque()
+    
+
+    async def __aenter__(self):
+        event = PoisonableThreadssafeEvent(asyncio.get_event_loop())
+        with self.__lock:
+            if not self.locked:
+                self.locked = True
+                return
+            self.queue.append(event)
+
+        try:
+            # wait until another thread passes the lock to us
+            return await event.wait()
+        finally:
+            with self.__lock:
+                if not event.is_set():
+                    event.poisoned = True
+
+    async def __aexit__(self, exc_type, exc, tb):
+        with self.__lock:
+            assert self.locked
+            while len(self.queue) > 0:
+                event = self.queue.pop()
+                if not event.poisoned:
+                    event.set_threadsafe()
+                    return
+
+            self.locked = False
+
+                
