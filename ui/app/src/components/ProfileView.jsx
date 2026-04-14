@@ -18,6 +18,7 @@ import { PostTileGrid } from './PostTile.jsx'
  * @param {React.ReactNode} [props.actions] - Optional actions (e.g. buttons) rendered below the stats row.
  * @param {(file: File) => void} [props.onAvatarFileSelected] - When set, avatar shows hover overlay and opens file picker on click.
  * @param {boolean} [props.avatarUploading]
+ * @param {string | null} [props.avatarPreviewUrl]
  * @param {object[]} [props.posts] - User posts (PostResponse shape)
  * @param {boolean} [props.postsLoading]
  * @param {string | null} [props.postsError]
@@ -38,6 +39,7 @@ export default function ProfileView({
   actions = null,
   onAvatarFileSelected = null,
   avatarUploading = false,
+  avatarPreviewUrl = null,
   posts = [],
   postsLoading = false,
   postsError = null,
@@ -89,10 +91,11 @@ export default function ProfileView({
   )
 
   const avatarAlt = username ? `${username}'s avatar` : 'User avatar'
+  const avatarDisplayUrl = avatarPreviewUrl ?? iconUrl
   const avatarInner = (
     <UserAvatar
       userId={userId}
-      src={iconUrl}
+      src={avatarDisplayUrl}
       alt={avatarAlt}
       loading={loading}
       className="aspect-square h-full w-full rounded-full object-cover"
@@ -147,7 +150,7 @@ export default function ProfileView({
     ) : (
       <UserAvatar
         userId={userId}
-        src={iconUrl}
+        src={avatarDisplayUrl}
         alt={avatarAlt}
         loading={loading}
         className="aspect-square max-sm:h-24 max-sm:w-24 min-md:h-48 min-md:w-48 rounded-full border-2 border-[color:var(--card-border)] object-cover"

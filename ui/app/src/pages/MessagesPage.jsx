@@ -205,6 +205,7 @@ export default function MessagesPage() {
   const messagesRef = useRef([])
   const channelsRef = useRef([])
   const authorLookupInFlightRef = useRef(new Set())
+  const ownMessageAckedOnServerRef = useRef(new Map())
 
   const [replyingTo, setReplyingTo] = useState(null)
   const [deletedMessageIds, setDeletedMessageIds] = useState(() => new Set())
@@ -340,6 +341,43 @@ export default function MessagesPage() {
     }
   }, [applyChannelAckUpdate])
 
+  const findLatestOwnMessageId = useCallback(
+    (list) => {
+      if (currentUserId == null) return null
+      const rows = list ?? []
+      for (let i = rows.length - 1; i >= 0; i -= 1) {
+        const row = rows[i]
+        if (!row?.message_id) continue
+        if (row.author_id == null) continue
+        if (String(row.author_id) !== String(currentUserId)) continue
+        return row.message_id
+      }
+      return null
+    },
+    [currentUserId],
+  )
+
+  const ackOwnMessageOnServer = useCallback(async (channelId, messageId) => {
+    if (!channelId || !messageId) return
+    const key = String(channelId)
+    if (ownMessageAckedOnServerRef.current.get(key) === String(messageId)) return
+    try {
+      const res = await messageManager.ackMessageAsRead(channelId, messageId)
+      if (!res?.success) return
+      ownMessageAckedOnServerRef.current.set(key, String(messageId))
+    } catch (err) {
+      console.error(err)
+    }
+  }, [])
+
+  const ackLatestOwnMessageOnServer = useCallback(async () => {
+    const channel = selectedChannelRef.current
+    if (!channel?.channel_id) return
+    const latestOwnMessageId = findLatestOwnMessageId(messagesRef.current ?? [])
+    if (!latestOwnMessageId) return
+    await ackOwnMessageOnServer(channel.channel_id, latestOwnMessageId)
+  }, [ackOwnMessageOnServer, findLatestOwnMessageId])
+
   const scrollChatToBottom = useCallback(() => {
     requestAnimationFrame(() => {
       const root = messagesScrollRef.current
@@ -386,6 +424,12 @@ export default function MessagesPage() {
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [selectedChannelId, selectedChannel, editingName, handleEscapeInChannel])
+
+  useEffect(() => {
+    return () => {
+      void ackLatestOwnMessageOnServer()
+    }
+  }, [ackLatestOwnMessageOnServer])
 
   const handleReply = useCallback((m) => {
     setReplyingTo(m)
@@ -548,6 +592,10 @@ export default function MessagesPage() {
     const authorId = incomingMessage?.author_id
     const channelId = incomingMessage?.channel_id
     const activeChannelId = selectedChannelIdRef.current
+    const incomingFromPeer =
+      authorId != null &&
+      currentUserId != null &&
+      String(authorId) !== String(currentUserId)
     if (authorId && channelId && activeChannelId && String(channelId) === String(activeChannelId)) {
       const uid = String(authorId)
       const existing = typingTimersRef.current.get(uid)
@@ -584,7 +632,15 @@ export default function MessagesPage() {
     if (shouldApplyMemberDelta) {
       queueMicrotask(() => applyMemberDeltaFromSystemMessage(incomingMessage))
     }
-  }, [applyMemberDeltaFromSystemMessage])
+    if (incomingFromPeer && channelId && activeChannelId && String(channelId) === String(activeChannelId)) {
+      const latestOwnMessageId = findLatestOwnMessageId(messagesRef.current ?? [])
+      if (latestOwnMessageId) {
+        queueMicrotask(() => {
+          void ackOwnMessageOnServer(channelId, latestOwnMessageId)
+        })
+      }
+    }
+  }, [ackOwnMessageOnServer, applyMemberDeltaFromSystemMessage, currentUserId, findLatestOwnMessageId])
 
   const handleUserTyping = useCallback(
     (channelId, userId) => {
@@ -1188,7 +1244,12 @@ export default function MessagesPage() {
 
   const selectChannel = useCallback(
     async (channelId) => {
-      if (!isDesktop) return
+      if (
+        selectedChannelIdRef.current &&
+        String(selectedChannelIdRef.current) !== String(channelId)
+      ) {
+        void ackLatestOwnMessageOnServer()
+      }
       setSelectedChannelId(channelId)
       setSelectedChannel(null)
       setSelectedMembers([])
@@ -1234,8 +1295,21 @@ export default function MessagesPage() {
         setChannelLoading(false)
       }
     },
-    [isDesktop, channels],
+    [ackLatestOwnMessageOnServer, channels],
   )
+
+  const closeChannelView = useCallback(() => {
+    void ackLatestOwnMessageOnServer()
+    setSelectedChannelId(null)
+    setSelectedChannel(null)
+    setSelectedMembers([])
+    setMemberMenu(null)
+    setAddingMembers(false)
+    setEditingName(false)
+    setEditName('')
+    setEditNameError(null)
+    setChannelError(null)
+  }, [ackLatestOwnMessageOnServer])
 
   const handleMemberRemoved = useCallback((userId) => {
     setSelectedMembers((prev) => prev.filter((m) => m.user_id !== userId))
@@ -1386,6 +1460,7 @@ export default function MessagesPage() {
       setChannels((prev) => (prev ?? []).filter((ch) => ch.channel_id !== channelId))
 
       if (channelId === selectedChannelId) {
+        void ackLatestOwnMessageOnServer()
         setSelectedChannelId(null)
         setSelectedChannel(null)
         setSelectedMembers([])
@@ -1417,10 +1492,15 @@ export default function MessagesPage() {
     }
   }
 
+  const showChannelList = isDesktop || !selectedChannelId
+  const showChannelPanel = isDesktop || !!selectedChannelId
+
   return (
     <PageContainer>
       <main className="min-h-0 flex-1 md:flex md:gap-3 md:overflow-hidden">
-        <section className="flex min-h-0 flex-1 flex-col gap-3 overflow-x-hidden border-b border-[color:var(--card-border)] pb-3 md:w-64 md:flex-none md:border-b-0 md:pb-0 md:overflow-y-auto lg:w-80">
+        <section
+          className={`${showChannelList ? 'flex' : 'hidden'} min-h-0 flex-1 flex-col gap-3 overflow-x-hidden border-b border-[color:var(--card-border)] pb-3 md:w-64 md:flex-none md:border-b-0 md:pb-0 md:overflow-y-auto lg:w-80`}
+        >
           <div className="flex items-center justify-between gap-2 px-1 md:px-0">
             <h1 className="text-lg font-bold text-[color:var(--text-primary)]">Messages</h1>
             <Button type="button" size="sm" className="text-xs" onClick={() => setCreateOpen(true)}>
@@ -1469,7 +1549,7 @@ export default function MessagesPage() {
                   <li key={ch.channel_id} className="min-w-0">
                     <ClickableRow
                       type="button"
-                      className={`w-full overflow-hidden px-0 py-0 hover:bg-transparent ${isDesktop ? '' : 'cursor-default'}`}
+                      className="w-full overflow-hidden px-0 py-0 hover:bg-transparent"
                       onClick={() => selectChannel(ch.channel_id)}
                       onContextMenu={(e) => {
                         e.preventDefault()
@@ -1480,7 +1560,6 @@ export default function MessagesPage() {
                           name: ch.channel_name,
                         })
                       }}
-                      disabled={!isDesktop}
                     >
                       <Card
                         className={`w-full overflow-hidden px-4 py-3 transition-colors hover:bg-[color:var(--tab-active-bg)]/60 ${isSelected ? 'border-[color:var(--accent)]' : ''}`}
@@ -1523,7 +1602,9 @@ export default function MessagesPage() {
           )}
         </section>
 
-        <section className="hidden min-h-0 flex-1 md:flex md:flex-col md:overflow-hidden">
+        <section
+          className={`${showChannelPanel ? 'flex' : 'hidden'} min-h-0 flex-1 flex-col overflow-hidden`}
+        >
           {!selectedChannelId && (
             <Card className="flex h-full items-center justify-center p-6">
               <p className="text-sm text-[color:var(--text-muted)]">Select a channel to open it.</p>
@@ -1540,6 +1621,20 @@ export default function MessagesPage() {
                   className="hidden"
                   onChange={(e) => void handleChannelIconFileChange(e)}
                 />
+                {!isDesktop && (
+                  <Button
+                    type="button"
+                    variant="text"
+                    size="iconSm"
+                    className="-ml-1 text-[color:var(--text-muted)]"
+                    aria-label="Back to channels"
+                    onClick={closeChannelView}
+                  >
+                    <span className="material-symbols-outlined text-base" aria-hidden>
+                      arrow_back
+                    </span>
+                  </Button>
+                )}
                 <div className="group relative h-10 w-10 flex-shrink-0">
                   {selectedChannel ? (
                     <ChannelIcon

@@ -2,6 +2,7 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import * as httpProxy from 'http-proxy-3'
+import { VitePWA } from 'vite-plugin-pwa'
 
 function dynamicGatewayProxyPlugin() {
   const gatewayProxy = httpProxy.createProxyServer({ ws: true, changeOrigin: true })
@@ -35,7 +36,42 @@ function dynamicGatewayProxyPlugin() {
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), tailwindcss(), dynamicGatewayProxyPlugin()],
+  plugins: [
+    react(),
+    tailwindcss(),
+    dynamicGatewayProxyPlugin(),
+    VitePWA({
+      registerType: 'autoUpdate',
+      manifest: {
+        id: '/',
+        name: 'az7',
+        short_name: 'az7',
+        description: 'az7 private social app',
+        start_url: '/',
+        scope: '/',
+        display: 'standalone',
+        theme_color: '#151218',
+        background_color: '#151218',
+        icons: [
+          {
+            src: '/pwa-icon.svg',
+            sizes: '512x512',
+            type: 'image/svg+xml',
+            purpose: 'any',
+          },
+          {
+            src: '/pwa-maskable.svg',
+            sizes: '512x512',
+            type: 'image/svg+xml',
+            purpose: 'maskable',
+          },
+        ],
+      },
+      devOptions: {
+        enabled: true,
+      },
+    }),
+  ],
   server: {
     proxy: {
       '/api': {
