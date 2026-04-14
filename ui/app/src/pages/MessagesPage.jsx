@@ -357,8 +357,25 @@ export default function MessagesPage() {
     [currentUserId],
   )
 
+  const isMessageNewerThanCurrentAck = useCallback((channelId, messageId) => {
+    if (!channelId || !messageId) return false
+    const channelIdStr = String(channelId)
+    const selected =
+      selectedChannelRef.current && String(selectedChannelRef.current.channel_id) === channelIdStr
+        ? selectedChannelRef.current
+        : null
+    const fromList = (channelsRef.current ?? []).find((c) => String(c.channel_id) === channelIdStr)
+    const ackId = selected?.last_acked_message_id ?? fromList?.last_acked_message_id ?? null
+    const messageTicks = uuidV1Ticks(messageId)
+    if (messageTicks === null) return false
+    const ackTicks = uuidV1Ticks(ackId)
+    if (ackTicks === null) return true
+    return messageTicks > ackTicks
+  }, [])
+
   const ackOwnMessageOnServer = useCallback(async (channelId, messageId) => {
     if (!channelId || !messageId) return
+    if (!isMessageNewerThanCurrentAck(channelId, messageId)) return
     const key = String(channelId)
     if (ownMessageAckedOnServerRef.current.get(key) === String(messageId)) return
     try {
@@ -368,7 +385,7 @@ export default function MessagesPage() {
     } catch (err) {
       console.error(err)
     }
-  }, [])
+  }, [isMessageNewerThanCurrentAck])
 
   const ackLatestOwnMessageOnServer = useCallback(async () => {
     const channel = selectedChannelRef.current
