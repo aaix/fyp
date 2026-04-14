@@ -1421,8 +1421,8 @@ export default function MessagesPage() {
   const showChannelPanel = isDesktop || !!selectedChannelId
 
   return (
-    <PageContainer>
-      <main className="min-h-0 flex-1 md:flex md:gap-3 md:overflow-hidden">
+    <PageContainer className="overflow-hidden">
+      <main className="flex min-h-0 flex-1 flex-col overflow-hidden md:flex-row md:gap-3">
         <MessagesSidebar
           show={showChannelList}
           loading={loading}
