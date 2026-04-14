@@ -1,5 +1,6 @@
 import { Outlet } from 'react-router-dom'
 import BottomNav from './BottomNav.jsx'
+import InstallPwaPrompt from './InstallPwaPrompt.jsx'
 
 export default function AppLayout() {
   return (
@@ -8,6 +9,7 @@ export default function AppLayout() {
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         <Outlet />
       </div>
+      <InstallPwaPrompt />
     </div>
   )
 }

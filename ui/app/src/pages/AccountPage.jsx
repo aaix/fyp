@@ -8,6 +8,8 @@ import { useUserPosts } from '../hooks/useUserPosts.js'
 import FriendsListModal from '../components/FriendsListModal.jsx'
 import RelationshipPagedModal from '../components/RelationshipPagedModal.jsx'
 import IconLinkButton from '../components/IconLinkButton.jsx'
+import ConfirmModal from '../components/ConfirmModal.jsx'
+import UserAvatar from '../components/UserAvatar.jsx'
 import { FEED_TYPE_MAIN, FEED_TYPE_SHORTS } from '../lib/post.js'
 
 const MAX_AVATAR_BYTES = 10_000_000
@@ -25,6 +27,7 @@ export default function AccountPage() {
   const [error, setError] = useState(null)
   const [avatarError, setAvatarError] = useState(null)
   const [avatarUploading, setAvatarUploading] = useState(false)
+  const [avatarPreview, setAvatarPreview] = useState(null)
   const [friendsModalOpen, setFriendsModalOpen] = useState(false)
   const [followersModalOpen, setFollowersModalOpen] = useState(false)
   const [followingModalOpen, setFollowingModalOpen] = useState(false)
@@ -95,20 +98,48 @@ export default function AccountPage() {
     loadAccountInfo()
   }, [])
 
+  useEffect(() => {
+    return () => {
+      if (!avatarPreview?.url) return
+      URL.revokeObjectURL(avatarPreview.url)
+    }
+  }, [avatarPreview])
+
+  const clearAvatarPreview = useCallback(() => {
+    setAvatarPreview((prev) => {
+      if (prev?.url) URL.revokeObjectURL(prev.url)
+      return null
+    })
+  }, [])
+
   const handleAvatarFileSelected = async (file) => {
     setAvatarError(null)
+    if (!file.type.startsWith('image/')) {
+      setAvatarError('Choose a valid image file.')
+      return
+    }
     if (file.size > MAX_AVATAR_BYTES) {
       setAvatarError(`Choose an image that is ${MAX_AVATAR_BYTES / 1_000_000} MB or smaller.`)
       return
     }
+    const previewUrl = URL.createObjectURL(file)
+    setAvatarPreview((prev) => {
+      if (prev?.url) URL.revokeObjectURL(prev.url)
+      return { file, url: previewUrl }
+    })
+  }
+
+  const confirmAvatarUpload = async () => {
+    if (!avatarPreview?.file || avatarUploading) return
     setAvatarUploading(true)
     try {
       const session = getCurrentSession()
-      const res = await session.setMyAvatar(file)
+      const res = await session.setMyAvatar(avatarPreview.file)
       if (!res?.success) {
         setAvatarError(res?.error?.message || 'Could not update avatar')
         return
       }
+      clearAvatarPreview()
       await loadAccountInfo()
     } catch (e) {
       console.error(e)
@@ -134,6 +165,7 @@ export default function AccountPage() {
         avatarError={avatarError}
         onAvatarFileSelected={handleAvatarFileSelected}
         avatarUploading={avatarUploading}
+        avatarPreviewUrl={avatarPreview?.url ?? null}
         onFriendsClick={() => setFriendsModalOpen(true)}
         onFollowersClick={() => setFollowersModalOpen(true)}
         onFollowingClick={() => setFollowingModalOpen(true)}
@@ -149,6 +181,31 @@ export default function AccountPage() {
           setPostsFeedType(v)
         }}
       />
+      <ConfirmModal
+        open={!!avatarPreview}
+        title="Use this avatar?"
+        description="Preview how your profile icon will render."
+        confirmLabel={avatarUploading ? 'Saving…' : 'Save avatar'}
+        cancelLabel="Cancel"
+        confirmDisabled={avatarUploading}
+        onConfirm={confirmAvatarUpload}
+        onCancel={() => {
+          if (avatarUploading) return
+          clearAvatarPreview()
+        }}
+      >
+        <div className="flex flex-col items-center gap-3 text-center">
+          <UserAvatar
+            userId={profile.userId}
+            src={avatarPreview?.url ?? null}
+            alt="Avatar preview"
+            className="h-24 w-24 rounded-full border-2 border-[color:var(--card-border)] object-cover"
+          />
+          <p className="m-0 text-xs text-[color:var(--text-muted)]">
+            {avatarPreview?.file?.name ?? 'Selected image'}
+          </p>
+        </div>
+      </ConfirmModal>
       <FriendsListModal
         open={friendsModalOpen}
         onClose={() => setFriendsModalOpen(false)}
