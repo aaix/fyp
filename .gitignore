@@ -4,3 +4,4 @@ database/data
 *__pycache__
 .env
 .env.cloud
+ui/app/dev-dist
