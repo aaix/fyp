@@ -269,10 +269,15 @@ class Gateway {
             decryptB64(msg.device_challenge, deviceKey),
         ]);
 
+        const [acc_sign_digest, device_sign_digest] = await Promise.all([
+            digestOf(acc_sign),
+            digestOf(device_sign)
+        ])
+
         const clientAuth = {
             op: "client_auth",
-            solved_device_challenge: await blobToB64(new Blob([device_sign])),
-            solved_account_challenge: await blobToB64(new Blob([acc_sign])),
+            solved_device_challenge: await blobToB64(new Blob([device_sign_digest])),
+            solved_account_challenge: await blobToB64(new Blob([acc_sign_digest])),
         }
 
         await this.send(clientAuth);
