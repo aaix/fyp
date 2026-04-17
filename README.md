@@ -1,5 +1,13 @@
 # A private social media with encrypted messaging
 
+## AI Declaration
+Much of the frontend in the /ui/ folder was created using AI tooling
+
+## Logo/Icons
+The public/icon*.png files are in the public domain
+
+The logo, logosmall, minilogo, and minilogosmall assets were created by a friend, with license granted for use for use within this project
+
 ## Infrastructure
 
 ![Architecture diagram](/final%20architecture.drawio.png)
@@ -36,3 +44,6 @@ A small microservice for detecting data leaks from failed nested transactions (e
 
 ### Media services
 A microservice for transforming public media and uploading to r2
+
+### Watchdog
+A microservice responsible from removing unresponsive nodes from the discoverystore
