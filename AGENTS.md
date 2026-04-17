@@ -22,6 +22,7 @@ This is a private social media platform with end-to-end encrypted messaging ("az
 | **Dataservices** | Rust (edition 2024) + Tonic gRPC | Docker |
 | **Mediaservices** | (Rust edition 2024) + Tonic gRPC + ffmpeg + image-rs | Docker |
 | **Database** | ScyllaDB | Docker |
+| **Search** | Elasticsearch 8 (single-node dev) | Docker |
 
 ### Running the full stack
 
@@ -37,6 +38,7 @@ The Vite dev server proxies `/api` to the API container at `172.31.0.20:8000` an
 - **ScyllaDB startup is slow**: The seed node takes ~30-60 seconds to become healthy. The `dataservices-0` container depends on it and will wait automatically.
 - **One-command bootstrap**: `start.bash` auto-creates `.env.cloud` from `.env.cloud.example`, sets Scylla data permissions, builds missing images, starts required services, and applies schema only when missing.
 - **Docker images must be rebuilt** after code changes to backend services: run `bash build.bash` (or `FORCE_IMAGE_BUILD=1 bash start.bash`).
+- **Elasticsearch on Linux/WSL**: If the `elasticsearch` container exits during bootstrap, raise `vm.max_map_count` on the host (e.g. `sudo sysctl -w vm.max_map_count=262144`) and retry.
 - **Compose profile note**: extra Scylla nodes use profile `full-cluster`; default startup only launches services required for UI work.
 - **No healthcheck on docker-compose**: The `scylla-seed` container has a healthcheck, but `dataservices-0`, `api-0`, and `gateway-0` do not. Check `sudo docker logs <container>` to verify they started.
 

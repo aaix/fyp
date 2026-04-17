@@ -6,6 +6,7 @@ pub mod gc;
 
 // helpers
 pub mod db_conn;
+pub mod elasticsearch_conn;
 pub mod errors;
 pub mod helpers;
 pub mod macros;

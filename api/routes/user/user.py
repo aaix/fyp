@@ -1,4 +1,5 @@
-from typing import Annotated, cast
+
+from typing import Annotated
 from uuid import UUID
 
 
@@ -13,6 +14,8 @@ from api.utils import now, unwrap
 
 from shared.py.intraservice import client as intraclient
 from shared.py.grpc.id import id_puuid, puuid_uuid, id_t
+from shared.py.grpc.user import get_bulk_users
+from shared.py.search.elasticsearch_users import search_user_ids_by_username
 from shared.py.grpc.lazy import DataservicesLazyGRPC
 from shared.py.grpc.relationship import PeerRelationshipManager, RelationshipType, can_i_view_peer_profile, read_relationship_counts, read_relationships, read_relationships_chunkned
 from shared.py.pydantic.pem import PEMPublicKey
@@ -295,20 +298,22 @@ async def unblock_user(s: SessionParam, peer: UserParam) -> None:
 
 @UserRouter.get("/search")
 async def search_users(s: SessionParam, q: UsernameSearchQuery) -> list[UserSearchResponse]:
-    q = q.replace('%','').replace('_','') # TODO: TEMP FIX before elasticsearch for listing all users
-    if not len(q) >= 2:
-        raise ApiErrExc(errors.BadRequest("bad query"))
-    stub = grpcuser()
-    res = cast(user_pb2.BulkUserResponse, await stub.UsernameSearcher(user_pb2.UsernameSearch(
-        query=f"{q}%",
-    )))
+    ordered_ids = await search_user_ids_by_username(q)
 
-    users: list[UserSearchResponse] = []
 
-    for user in res.users:
-        users.append(
-            UserSearchResponse.from_rpc(user)
-        )
-    
-    return users
+    if not ordered_ids:
+        return []
+
+    users, bulk_errors = await get_bulk_users(grpcuser, ordered_ids)
+
+    rank = {uid: i for i, uid in enumerate(ordered_ids)}
+
+    def sort_key(u: user_pb2.UserSearchEntry) -> int:
+        uu = puuid_uuid(u.user_id)
+        if uu is None:
+            return len(ordered_ids)
+        return rank.get(uu, len(ordered_ids))
+
+    users.sort(key=sort_key)
+    return [UserSearchResponse.from_rpc(u) for u in users]
 

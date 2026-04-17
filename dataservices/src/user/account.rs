@@ -1,4 +1,5 @@
 use crate::db_conn::db;
+use crate::elasticsearch_conn;
 use crate::errors::{DSResult};
 use crate::helpers::gen_timeuuid;
 use crate::models::user::User;
@@ -9,9 +10,6 @@ use crate::req_tuuid;
 
 use async_singleflight::UnaryGroup;
 use futures::future;
-use futures::stream::StreamExt;
-
-
 
 use scylla::errors::FirstRowError;
 use scylla::statement::prepared::PreparedStatement;
@@ -35,7 +33,7 @@ pub struct ScyllaUserService {
     update_user_prepared: PreparedStatement,
     fetch_user_id_by_username_prepared: PreparedStatement,
 
-    username_searcher_prepared: PreparedStatement, 
+    delete_username_row_prepared: PreparedStatement,
 
     read_user_group: UnaryGroup<AllignedCqlTimeuuid, DSResult<ReadUserResponse>>
 }
@@ -78,12 +76,9 @@ impl ScyllaUserService {
             "SELECT user_id FROM dataservices.user_by_username WHERE username = ?"
         ).await?;
 
-        let mut username_searcher_prepared = db().await.prepare(
-            "SELECT user_id, opt_avatar_asset_id, public_key, username FROM dataservices.user WHERE username like ? LIMIT 25 ALLOW FILTERING"
+        let delete_username_row_prepared = db().await.prepare(
+            "DELETE FROM dataservices.user_by_username WHERE username = ?"
         ).await?;
-
-        username_searcher_prepared.set_page_size(25);
-
 
         Ok(Self {
             read_user_prepared,
@@ -92,7 +87,7 @@ impl ScyllaUserService {
             delete_user_prepared,
             update_user_prepared,
             fetch_user_id_by_username_prepared,
-            username_searcher_prepared,
+            delete_username_row_prepared,
             read_user_group: UnaryGroup::new()
         })
     }
@@ -175,8 +170,10 @@ impl ScyllaUserService {
             (&user_id, &email, &username, &public_key)
         ).await?;
 
-        
-
+        let user_id_str = uuid::Uuid::from(user_id).to_string();
+        if let Err(e) = elasticsearch_conn::index_username(&user_id_str, &username).await {
+            tracing::error!("Failed to index new user into elastic search {e:?}");
+        }
 
         Ok(Response::new(ReadUserResponse {
             user_id: Some(user_id.into()),
@@ -232,10 +229,31 @@ impl ScyllaUserService {
 
         let user_id: AllignedCqlTimeuuid = req_tuuid!(request, user_id)?;
 
+        let row = db().await.execute_unpaged(
+            &self.read_user_prepared, (&user_id,)
+        ).await?.into_rows_result()?.first_row::<User>()?;
+
+        let username = row.username;
+
+        db().await.execute_unpaged(
+            &self.delete_username_row_prepared,
+            (&username,)
+        ).await?;
+
         db().await.execute_unpaged(
             &self.delete_user_prepared,
             (&user_id,)
         ).await?;
+
+        let user_id_str = uuid::Uuid::from(user_id).to_string();
+        if let Err(e) = elasticsearch_conn::delete_username_doc(&user_id_str).await {
+            tracing::error!(
+                "Elasticsearch delete failed after user removed from database (user_id={}): {:?}",
+                user_id_str,
+                e
+            );
+        }
+
         Ok(Response::new(DeleteUserResponse {}))
     }
 
@@ -286,32 +304,12 @@ impl ScyllaUserService {
 
     async fn username_searcher_impl(
         &self,
-        request: Request<UsernameSearch>,
+        _request: Request<UsernameSearch>,
     ) -> DSResult<Response<BulkUserResponse>> {
-        // TODO: use elastisearch
-
-        let query = &request.get_ref().query;
-
-        // page here bc there may be many tombstones even though we limit to 25
-        let mut stream = db().await.execute_iter(self.username_searcher_prepared.clone(), (query,)).await?
-            .rows_stream::<(AllignedCqlTimeuuid, Option<AllignedCqlTimeuuid>, Vec<u8>, String)>()?;
-
-        // SELECT user_id, opt_avatar_asset_id, public_key, username
-
-        let mut users: Vec<UserSearchEntry> = Vec::with_capacity(25);
-
-        while let Some(next_row_res) = stream.next().await {
-            let (user_id, avatar, public_key, username) = next_row_res?;
-            users.push(UserSearchEntry {
-                user_id: Some(user_id.into()),
-                username,
-                opt_avatar_asset_id: avatar.map(|a| a.into()),
-                public_key,
-            });
-        }
-
-        Ok(Response::new(BulkUserResponse { users: users, errors: Vec::new() }))
-
+        Err(Status::unimplemented(
+            "Username search is implemented in the API using Elasticsearch",
+        )
+        .into())
     }
 
     async fn user_bulk_reader_impl(

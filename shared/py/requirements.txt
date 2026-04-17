@@ -8,6 +8,7 @@ aioboto3==15.5.0
 google-auth[requests]==2.49.1
 pydantic==2.12.5 # asset requires
 requests
+elasticsearch==8.15.1
 
 opentelemetry-api
 opentelemetry-sdk

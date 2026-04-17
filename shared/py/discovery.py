@@ -36,6 +36,9 @@ class DiscoveryManager(SingletonMixin):
 
     def discover_otel(self) -> str:
         return environ["OTEL_URI"]
+
+    def discover_elasticsearch(self) -> str:
+        return environ["ELASTICSEARCH_URI"]
     
     def transform_gateway_to_external(self, gateway: str) -> str:
         if self.is_prod():

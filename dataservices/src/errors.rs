@@ -92,6 +92,12 @@ impl From<DeserializationError> for DSStatus {
     }
 }
 
+impl From<elasticsearch::Error> for DSStatus {
+    fn from(value: elasticsearch::Error) -> Self {
+        Self(Status::unavailable("Elasticsearch unavailable"))
+    }
+}
+
 impl From<TypeCheckError> for DSStatus {
     fn from(value: TypeCheckError) -> Self {
         tracing::error!("Typecheck error: {:?}", value);
