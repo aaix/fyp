@@ -2,7 +2,7 @@
 
 ## Infrastructure
 
-![Architecture diagram](/z_docs/architecture2.drawio.png)
+![Architecture diagram](/final%20architecture.drawio.png)
 
 ### Frontend (client)
 The frontend is a vite+react static webapp currently deployed on cloudflare pages
