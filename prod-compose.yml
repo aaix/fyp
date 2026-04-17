@@ -78,6 +78,8 @@ services:
         condition: service_healthy
       discoverystore-0:
         condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
 
   gateway-0:
     networks:
@@ -95,7 +97,22 @@ services:
         condition: service_started
     ports:
       - 8081:8081
-  
+
+  elasticsearch:
+    networks:
+      - shared-network
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.3
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s -f http://127.0.0.1:9200/_cluster/health?wait_for_status=yellow&timeout=5s || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 12
+      start_period: 40s
+
   api-0:
     networks:
       - shared-network
@@ -120,6 +137,8 @@ services:
         condition: service_healthy
       dataservices:
         condition: service_started
+      elasticsearch:
+        condition: service_healthy
 
 
   scylla-seed:
