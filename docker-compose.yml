@@ -33,6 +33,10 @@ services:
       timeout: 10s
       retries: 12
       start_period: 40s
+    volumes:
+      - type: bind
+        source: ./elasticsearch/data/
+        target: /var/lib/elasticsearch
 
   jaeger:
     networks:

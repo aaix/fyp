@@ -113,6 +113,10 @@ services:
       timeout: 10s
       retries: 12
       start_period: 40s
+    volumes:
+      - type: bind
+        source: /db/elasticsearch/
+        target: /var/lib/elasticsearch
 
   api-0:
     networks:
