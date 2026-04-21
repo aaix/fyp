@@ -451,6 +451,9 @@ class GatewayClient:
         try:
             # read device and user from grpc concurrently
             device, user = await asyncio.gather(
+                # we dont need to check device.account_id == account.account_id
+                # because the account_id is part of the primary key for device
+                # so user_id_a, user_b_device_a_id would not return any device
                 get_device(grpcdevice, user_id, device_id),
                 get_user(grpcuser, user_id)
             )
