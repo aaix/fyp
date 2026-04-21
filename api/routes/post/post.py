@@ -52,10 +52,11 @@ class PostUpdateType(IntEnum):
     ERROR = 99
 
 async def send_post_update(post: PostParam, update: PostUpdateType):
-    await send_to_remote(post.author_id, "post_update", EventPostUpdate(
-        post_id=post.post_id,
-        state=update.value
-    ))
+    with tracer.start_as_current_span(f"post.send_post_update::{update.name}"):
+        await send_to_remote(post.author_id, "post_update", EventPostUpdate(
+            post_id=post.post_id,
+            state=update.value
+        ))
 
 @tracer.start_as_current_span("post.background.new_post_task")
 async def new_post_task(
