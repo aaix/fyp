@@ -12,7 +12,7 @@ function AddChannelMembersModal({
   channelId,
   existingMemberIds = [],
   onMembersAdded,
-  maxFriends = 15,
+  maxFriends = 120,
 }) {
   const [selectedUsers, setSelectedUsers] = useState([])
   const [submitting, setSubmitting] = useState(false)

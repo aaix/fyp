@@ -13,7 +13,7 @@ export default function CreateChannelModal({
   open,
   onClose,
   onCreated,
-  maxFriends = 15,
+  maxFriends = 120,
 }) {
   const [channelName, setChannelName] = useState('')
   const [selectedUsers, setselectedUsers] = useState([])

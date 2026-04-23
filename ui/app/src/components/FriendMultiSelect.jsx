@@ -13,7 +13,7 @@ import Button from './Button.jsx'
 export default function FriendMultiSelect({
   value,
   onChange,
-  maxSelected = 15,
+  maxSelected = 120,
   disabled = false,
   labelledById,
 }) {
