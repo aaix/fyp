@@ -2200,7 +2200,7 @@ export default function MessagesPage() {
         open={createOpen}
         onClose={() => setCreateOpen(false)}
         onCreated={() => loadChannels()}
-        maxFriends={15}
+        maxFriends={120}
         getEncryptedSharedKey={() => ''}
         getEncryptedMemberKey={() => ''}
       />
@@ -2254,7 +2254,7 @@ export default function MessagesPage() {
             // Swallow; members will appear after full reload/select
           }
         }}
-        maxFriends={15}
+        maxFriends={120}
       />
 
       <ConfirmModal
