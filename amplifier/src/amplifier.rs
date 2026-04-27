@@ -24,7 +24,7 @@ impl AmplifierServiceRS {
     pub async fn server() -> AmplifierServiceServer<Self> {
         let server = Self::new().await;
         if let Err(e) = &server {
-            tracing::error!("Error creating GarbageService server: {:?}", e);
+            tracing::error!("Error creating AmplifierService server: {:?}", e);
         } 
         AmplifierServiceServer::new(server.unwrap())
         
@@ -52,7 +52,7 @@ impl AmplifierServiceRS {
                 tracing::error!("{e:?}");
             },
             Ok(written) => {
-                tracing::info!("wrote {written} bytes");
+                tracing::debug!("wrote {written} bytes");
             }
         }
     }
@@ -72,7 +72,8 @@ impl AmplifierService for AmplifierServiceRS {
 
         match owned.request_type.ok_or(Status::invalid_argument("Unexpected unpopulated request type"))? {
             RequestType::Many(many) => {
-
+                // TODO
+                return Err(Status::unimplemented("Many fan out not yet implemented, use legacy fan out"))
             }
             RequestType::Single(single) => {
                 let data = single.payload;

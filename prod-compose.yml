@@ -82,6 +82,22 @@ services:
       elasticsearch:
         condition: service_healthy
 
+  amplifier:
+    deploy:
+      mode: replicated
+      replicas: ${AMPLIFIER_REPLICAS:-1}
+
+    networks:
+      - shared-network
+    image: europe-west2-docker.pkg.dev/fyp-25coc251/az7-backendamplifier:latest
+    environment:
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://jaeger:4317
+      VALKEY_URI: redis://discoverystore-0:6379
+
+    depends_on:
+      discoverystore-0:
+        condition: service_healthy
+
   gateway-0:
     networks:
       - shared-network
