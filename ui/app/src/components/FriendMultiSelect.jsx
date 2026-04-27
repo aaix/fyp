@@ -13,7 +13,7 @@ import Button from './Button.jsx'
 export default function FriendMultiSelect({
   value,
   onChange,
-  maxSelected = 15,
+  maxSelected = 120,
   disabled = false,
   labelledById,
 }) {
@@ -118,7 +118,7 @@ export default function FriendMultiSelect({
         />
         {!disabled && !canSelectMore && (
           <p className="text-xs text-[color:var(--text-muted)]">
-            Maximum reached (15). Remove someone to add another.
+            Maximum reached. Remove someone to add another.
           </p>
         )}
         {disabled && (
