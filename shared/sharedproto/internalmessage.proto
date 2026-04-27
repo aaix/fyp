@@ -9,7 +9,6 @@ import "plib.proto";
 
 
 message IntraMessage {
-    plib.pUUID to = 1;
     optional traceparent.TraceParent traceparent = 2;
     oneof event {
         EventSessionCreate session_create = 3;

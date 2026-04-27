@@ -7,6 +7,7 @@ from uuid import UUID
 from glide import GlideClusterClientConfiguration, NodeAddress, GlideClusterClient, PubSubMsg
 from uhashring import HashRing
 
+from shared.py.grpc.id import id_t, id_uuid
 from shared.py.intraservice.discoverystore import BigPictureService
 from shared.py.discovery import DiscoveryManager
 from shared.py.types import SingletonMixin
@@ -83,13 +84,15 @@ class BigPictureClient:
                 self.ring.remove_node(data)
             case _: ...
     
-    def get_node(self, key_id: UUID) -> str:
+    def get_node(self, key_id: id_t) -> str:
         """Get the corresponding node for a uuid, should be called before ring built"""
 
         if not self.ring_built:
             raise RuntimeError("Ring not built")
+        
+        key_uuid = id_uuid(key_id)
 
-        key = key_id.bytes
+        key = key_uuid.bytes if key_uuid else None
 
         return cast(str, self.ring.get_node(key))
 

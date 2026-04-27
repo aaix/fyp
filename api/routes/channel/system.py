@@ -31,7 +31,7 @@ async def create_system_message(channel: channel_pb2.ChannelObjectResponse, auth
     if not fan_out:
         return message
 
-    await intraclient.fan_out(channel.channel_id, channel.channel_members, "message_create", lambda _: EventMessageCreate(
+    await intraclient.fan_out_amplified(channel.channel_id, channel.channel_members, "message_create", EventMessageCreate(
         author_id=id_puuid(author_id),
         message_id=message.message_id,
         channel_id=channel.channel_id,

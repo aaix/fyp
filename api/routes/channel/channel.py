@@ -144,9 +144,9 @@ async def r_get_channel(s: SessionParam, channel: ChannelAsMemberParam) -> Chann
 
 @ChannelRouter.put("/channel/{channel_id}/typing")
 async def user_channel_typing(s: SessionParam, channel: ChannelAsMemberParam) -> None:
-    await intraclient.fan_out(
+    await intraclient.fan_out_amplified(
         channel.channel_id, channel.channel_members, "user_typing",
-        lambda _: internalmessage_pb2.EventUserTyping(
+        internalmessage_pb2.EventUserTyping(
             author_id=uuid_puuid(s.user_id),
             channel_id=channel.channel_id,
         )
@@ -176,7 +176,7 @@ async def patch_channel(s: SessionParam, channel: ChannelAsMemberParam, body: Ed
 
     
     if body.channel_name:
-        await intraclient.fan_out(channel.channel_id, channel.channel_members, "channel_create", lambda _user_id: internalmessage_pb2.EventChannelCreate(
+        await intraclient.fan_out_amplified(channel.channel_id, channel.channel_members, "channel_create", internalmessage_pb2.EventChannelCreate(
             channel_id=channel_id,
             encrypted_channel_name=rpc.opt_channel_name,
         ))
@@ -210,7 +210,7 @@ async def icon_uploaded(s: SessionParam, channel: ChannelAsMemberParam) -> None:
     )
 
 
-    await intraclient.fan_out(channel.channel_id, channel.channel_members, "channel_create", lambda _user_id: internalmessage_pb2.EventChannelCreate(
+    await intraclient.fan_out_amplified(channel.channel_id, channel.channel_members, "channel_create", internalmessage_pb2.EventChannelCreate(
         channel_id=channel.channel_id,
         icon_url=icon_url,
     ))

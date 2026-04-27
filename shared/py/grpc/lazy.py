@@ -7,11 +7,12 @@ import uuid
 import grpc
 
 from shared.py.grpc.id import id_t, id_uuid
-from shared.py.intraservice.discoverystore import DATASERVICES_SERVICE
+from shared.py.intraservice.discoverystore import AMPLIFIER_SERVICE, DATASERVICES_SERVICE
 from shared.py.intraservice.discoverystore.client import BigPictureClient, BigPictureClientServiceFactory
 from shared.py.types import KeyedDefaultDict, SingletonMixin
 
 dataservices_bigpicture = BigPictureClientServiceFactory(DATASERVICES_SERVICE)
+amplifier_bigpicture = BigPictureClientServiceFactory(AMPLIFIER_SERVICE)
 
 class _GRPCStub(typing.Protocol):
     def __init__(self, channel: grpc.aio.Channel): ...
@@ -99,3 +100,7 @@ class _DynamicLazyGRPC[T: _GRPCStub]:
 class DataservicesLazyGRPC[T: _GRPCStub](_DynamicLazyGRPC[T]):
     BIG_PICTURE = dataservices_bigpicture
     PORT = 3114
+
+class AmplifierLazyGRPC[T: _GRPCStub](_DynamicLazyGRPC[T]):
+    BIG_PICTURE = amplifier_bigpicture
+    PORT = 3115

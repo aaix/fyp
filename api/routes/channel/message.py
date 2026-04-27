@@ -74,7 +74,7 @@ async def r_create_message(s: SessionParam, channel: ChannelAsMemberParam, body:
     # await set_last_acked_message_id(grpcchannel, s.user_id, channel.channel_id, message.message_id)
     await increment_channel_counter(grpcchannel, channel.channel_id)
 
-    await intraclient.fan_out(channel.channel_id, channel.channel_members, "message_create", lambda m_id: internalmessage_pb2.EventMessageCreate(
+    await intraclient.fan_out_amplified(channel.channel_id, channel.channel_members, "message_create", internalmessage_pb2.EventMessageCreate(
         author_id=author_id,
         content=body.content,
         message_type=body.message_type,
@@ -139,7 +139,7 @@ async def r_edit_message(s: SessionParam, channel: ChannelAsMemberParam, message
 
 
     attachment_url = await create_channel_presigned(channel.channel_id, rpc.opt_attachment_asset_id)
-    await intraclient.fan_out(channel.channel_id, channel.channel_members, "message_update", lambda _: internalmessage_pb2.EventMessageUpdate(
+    await intraclient.fan_out_amplified(channel.channel_id, channel.channel_members, "message_update", internalmessage_pb2.EventMessageUpdate(
         channel_id=channel.channel_id,
         message_id=message.message_id,
         new_content=body.content,
@@ -167,7 +167,7 @@ async def delete_message(s: SessionParam, channel: ChannelAsMemberParam, message
         message_id=message.message_id,
     )))
 
-    await intraclient.fan_out(channel.channel_id, channel.channel_members, "message_delete", lambda _: internalmessage_pb2.EventMessageDelete(
+    await intraclient.fan_out_amplified(channel.channel_id, channel.channel_members, "message_delete", internalmessage_pb2.EventMessageDelete(
         channel_id=channel.channel_id,
         message_id=message.message_id,
     ))

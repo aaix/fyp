@@ -25,7 +25,7 @@ _sym_db = _symbol_database.Default()
 from . import plib_pb2 as plib__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\ramplify.proto\x12\x11\x61mplifier.amplify\x1a\nplib.proto\"\x8d\x01\n\rFanOutRequest\x12\x32\n\x06single\x18\x01 \x01(\x0b\x32 .amplifier.amplify.FanOutMessageH\x00\x12\x38\n\x04many\x18\x02 \x01(\x0b\x32(.amplifier.amplify.FanOutPerUserMessagesH\x00\x42\x0e\n\x0crequest_type\"A\n\rFanOutMessage\x12\x1f\n\nrecipients\x18\x01 \x03(\x0b\x32\x0b.plib.pUUID\x12\x0f\n\x07payload\x18\x02 \x01(\x0c\"L\n\x15\x46\x61nOutPerUserMessages\x12\x33\n\x08messages\x18\x01 \x03(\x0b\x32!.amplifier.amplify.PerUserMessage\":\n\x0ePerUserMessage\x12\x17\n\x02to\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\x12\x0f\n\x07message\x18\x02 \x01(\x0c\"\x10\n\x0e\x46\x61nOutResponse2a\n\x10\x41mplifierService\x12M\n\x06\x46\x61nOut\x12 .amplifier.amplify.FanOutRequest\x1a!.amplifier.amplify.FanOutResponseb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\ramplify.proto\x12\x11\x61mplifier.amplify\x1a\nplib.proto\"\x8d\x01\n\rFanOutRequest\x12\x32\n\x06single\x18\x01 \x01(\x0b\x32 .amplifier.amplify.FanOutMessageH\x00\x12\x38\n\x04many\x18\x02 \x01(\x0b\x32(.amplifier.amplify.FanOutPerUserMessagesH\x00\x42\x0e\n\x0crequest_type\"7\n\tRecipient\x12\x1c\n\x07user_id\x18\x01 \x01(\x0b\x32\x0b.plib.pUUID\x12\x0c\n\x04host\x18\x02 \x01(\t\"@\n\x0fLocalRecipients\x12\x0c\n\x04host\x18\x01 \x01(\t\x12\x1f\n\nrecipients\x18\x02 \x03(\x0b\x32\x0b.plib.pUUID\"X\n\rFanOutMessage\x12\x36\n\nrecipients\x18\x01 \x03(\x0b\x32\".amplifier.amplify.LocalRecipients\x12\x0f\n\x07payload\x18\x02 \x01(\x0c\"L\n\x15\x46\x61nOutPerUserMessages\x12\x33\n\x08messages\x18\x01 \x03(\x0b\x32!.amplifier.amplify.PerUserMessage\"K\n\x0ePerUserMessage\x12(\n\x02to\x18\x01 \x01(\x0b\x32\x1c.amplifier.amplify.Recipient\x12\x0f\n\x07message\x18\x02 \x01(\x0c\"\x10\n\x0e\x46\x61nOutResponse2a\n\x10\x41mplifierService\x12M\n\x06\x46\x61nOut\x12 .amplifier.amplify.FanOutRequest\x1a!.amplifier.amplify.FanOutResponseb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -34,14 +34,18 @@ if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
   _globals['_FANOUTREQUEST']._serialized_start=49
   _globals['_FANOUTREQUEST']._serialized_end=190
-  _globals['_FANOUTMESSAGE']._serialized_start=192
-  _globals['_FANOUTMESSAGE']._serialized_end=257
-  _globals['_FANOUTPERUSERMESSAGES']._serialized_start=259
-  _globals['_FANOUTPERUSERMESSAGES']._serialized_end=335
-  _globals['_PERUSERMESSAGE']._serialized_start=337
-  _globals['_PERUSERMESSAGE']._serialized_end=395
-  _globals['_FANOUTRESPONSE']._serialized_start=397
-  _globals['_FANOUTRESPONSE']._serialized_end=413
-  _globals['_AMPLIFIERSERVICE']._serialized_start=415
-  _globals['_AMPLIFIERSERVICE']._serialized_end=512
+  _globals['_RECIPIENT']._serialized_start=192
+  _globals['_RECIPIENT']._serialized_end=247
+  _globals['_LOCALRECIPIENTS']._serialized_start=249
+  _globals['_LOCALRECIPIENTS']._serialized_end=313
+  _globals['_FANOUTMESSAGE']._serialized_start=315
+  _globals['_FANOUTMESSAGE']._serialized_end=403
+  _globals['_FANOUTPERUSERMESSAGES']._serialized_start=405
+  _globals['_FANOUTPERUSERMESSAGES']._serialized_end=481
+  _globals['_PERUSERMESSAGE']._serialized_start=483
+  _globals['_PERUSERMESSAGE']._serialized_end=558
+  _globals['_FANOUTRESPONSE']._serialized_start=560
+  _globals['_FANOUTRESPONSE']._serialized_end=576
+  _globals['_AMPLIFIERSERVICE']._serialized_start=578
+  _globals['_AMPLIFIERSERVICE']._serialized_end=675
 # @@protoc_insertion_point(module_scope)

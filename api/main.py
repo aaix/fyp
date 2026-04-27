@@ -28,7 +28,7 @@ from api.routes.post.post import PostRouter
 
 # shared
 from shared.py.grpc import lazy
-from shared.py.intraservice.discoverystore import GATEWAY_SERVICE
+from shared.py.intraservice.discoverystore import AMPLIFIER_SERVICE, GATEWAY_SERVICE
 from shared.py.intraservice.discoverystore.client import BigPictureClientServiceFactory
 
 loop = asyncio.get_event_loop()
@@ -55,6 +55,7 @@ app = FastAPI(
     on_startup=(
         BigPictureClientServiceFactory(GATEWAY_SERVICE).valkey_connect,
         lazy.lazy_init,
+        BigPictureClientServiceFactory(AMPLIFIER_SERVICE).valkey_connect
     )
 )
 

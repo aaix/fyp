@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package intraservice.amplifiedmessage;
+import "plib.proto";
+
+
+
+message AmplifiedIntraMessage {
+    bytes intramessage = 1;
+    repeated plib.pUUID recipients = 2;
+}

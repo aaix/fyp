@@ -85,6 +85,22 @@ services:
       discoverystore-0:
         condition: service_healthy
 
+  amplifier:
+    deploy:
+      mode: replicated
+      replicas: ${AMPLIFIER_REPLICAS:-1}
+
+    networks:
+      - shared-network
+    image: az-amplifier:latest
+    environment:
+      OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://jaeger:4317
+      VALKEY_URI: redis://discoverystore-0:6379
+
+    depends_on:
+      discoverystore-0:
+        condition: service_healthy
+
   dataservices:
     deploy:
       mode: replicated

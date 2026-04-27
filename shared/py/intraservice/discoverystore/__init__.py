@@ -18,3 +18,4 @@ class BigPictureService:
 
 GATEWAY_SERVICE = BigPictureService("gateway.join", "gateway.leave", "gateway.members")
 DATASERVICES_SERVICE = BigPictureService("dataservices.join", "dataservices.leave", "dataservices.members")
+AMPLIFIER_SERVICE = BigPictureService("amplifier.join", "amplifier.leave", "amplifier.members")

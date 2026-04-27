@@ -15,8 +15,19 @@ message FanOutRequest {
     }
 }
 
+
+message Recipient {
+    plib.pUUID user_id = 1;
+    string host = 2;
+}
+
+message LocalRecipients {
+    string host = 1;
+    repeated plib.pUUID recipients = 2;
+}
+
 message FanOutMessage {
-    repeated plib.pUUID recipients = 1;
+    repeated LocalRecipients recipients = 1;
     bytes payload = 2;
 }
 
@@ -25,7 +36,7 @@ message FanOutPerUserMessages {
 }
 
 message PerUserMessage {
-    plib.pUUID to = 1;
+    Recipient to = 1;
     bytes message = 2;
 }
 

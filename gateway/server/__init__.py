@@ -23,6 +23,7 @@ from shared.py.discovery import DiscoveryManager
 from shared.py.grpc.id import puuid_uuid
 from shared.py.grpc.lazy import lazy_init
 from shared.py.grpc.traceparent import span_from_traceparent
+from shared.py.grpcgen.amplified_pb2 import AmplifiedIntraMessage
 from shared.py.grpcgen.internalmessage_pb2 import IntraMessage
 from shared.py.intraservice import server as intraserver
 from shared.py.intraservice.discoverystore import DATASERVICES_SERVICE, GATEWAY_SERVICE
@@ -99,34 +100,41 @@ class GatewayController:
         async with self.__sublisher:
             async for msg in self.__sublisher:
                 try:
-                    d = IntraMessage.FromString(msg)
-                    self.handle_internal(d)
+                    d = AmplifiedIntraMessage.FromString(msg)
+                    self.handle_amplified_internal(d)
                 except DecodeError:
                     log("failed decoding object")
 
 
-    def handle_internal(self, msg: IntraMessage):
+    def handle_amplified_internal(self, amplified:AmplifiedIntraMessage):
+        msg = IntraMessage.FromString(amplified.intramessage)
+
         if msg.HasField("traceparent"):
             parent = trace.set_span_in_context(span_from_traceparent(msg.traceparent))
         else:
             parent = None
-        with tracer.start_as_current_span("Controller.handle_internal", context=parent) as span:
-            to = puuid_uuid(msg.to)
-            if not to:
-                return
-            if not to in self.__by_user:
-                self.__internal_burnt += 1
-                return
-            self.__internal_fanned += 1
-            
-            if not (field := msg.WhichOneof("event")):
-                return
-            data = getattr(msg, field)
 
-            for client in self.__by_user[to]:
-                with contextlib.suppress(QueueFull):
-                    # not multiloop safe
-                    client.queue.put_nowait(InternalEvent(oneof=field, payload=data, span=span))
+        with tracer.start_as_current_span("Controller.handle_amplified_internal", context=parent):
+            for recipient in amplified.recipients:
+                if to := puuid_uuid(recipient):
+                    self.handle_internal(to, msg)
+
+
+    @tracer.start_as_current_span("Controller.handle_internal")
+    def handle_internal(self, to: UUID, msg: IntraMessage):
+        if not to in self.__by_user:
+            self.__internal_burnt += 1
+            return
+        self.__internal_fanned += 1
+        
+        if not (field := msg.WhichOneof("event")):
+            return
+        data = getattr(msg, field)
+
+        for client in self.__by_user[to]:
+            with contextlib.suppress(QueueFull):
+                # not multiloop safe
+                client.queue.put_nowait(InternalEvent(oneof=field, payload=data, span=trace.get_current_span()))
 
     # client connection management
 

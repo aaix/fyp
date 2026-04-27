@@ -15,13 +15,29 @@ class FanOutRequest(_message.Message):
     many: FanOutPerUserMessages
     def __init__(self, single: _Optional[_Union[FanOutMessage, _Mapping]] = ..., many: _Optional[_Union[FanOutPerUserMessages, _Mapping]] = ...) -> None: ...
 
+class Recipient(_message.Message):
+    __slots__ = ("user_id", "host")
+    USER_ID_FIELD_NUMBER: _ClassVar[int]
+    HOST_FIELD_NUMBER: _ClassVar[int]
+    user_id: _plib_pb2.pUUID
+    host: str
+    def __init__(self, user_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., host: _Optional[str] = ...) -> None: ...
+
+class LocalRecipients(_message.Message):
+    __slots__ = ("host", "recipients")
+    HOST_FIELD_NUMBER: _ClassVar[int]
+    RECIPIENTS_FIELD_NUMBER: _ClassVar[int]
+    host: str
+    recipients: _containers.RepeatedCompositeFieldContainer[_plib_pb2.pUUID]
+    def __init__(self, host: _Optional[str] = ..., recipients: _Optional[_Iterable[_Union[_plib_pb2.pUUID, _Mapping]]] = ...) -> None: ...
+
 class FanOutMessage(_message.Message):
     __slots__ = ("recipients", "payload")
     RECIPIENTS_FIELD_NUMBER: _ClassVar[int]
     PAYLOAD_FIELD_NUMBER: _ClassVar[int]
-    recipients: _containers.RepeatedCompositeFieldContainer[_plib_pb2.pUUID]
+    recipients: _containers.RepeatedCompositeFieldContainer[LocalRecipients]
     payload: bytes
-    def __init__(self, recipients: _Optional[_Iterable[_Union[_plib_pb2.pUUID, _Mapping]]] = ..., payload: _Optional[bytes] = ...) -> None: ...
+    def __init__(self, recipients: _Optional[_Iterable[_Union[LocalRecipients, _Mapping]]] = ..., payload: _Optional[bytes] = ...) -> None: ...
 
 class FanOutPerUserMessages(_message.Message):
     __slots__ = ("messages",)
@@ -33,9 +49,9 @@ class PerUserMessage(_message.Message):
     __slots__ = ("to", "message")
     TO_FIELD_NUMBER: _ClassVar[int]
     MESSAGE_FIELD_NUMBER: _ClassVar[int]
-    to: _plib_pb2.pUUID
+    to: Recipient
     message: bytes
-    def __init__(self, to: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., message: _Optional[bytes] = ...) -> None: ...
+    def __init__(self, to: _Optional[_Union[Recipient, _Mapping]] = ..., message: _Optional[bytes] = ...) -> None: ...
 
 class FanOutResponse(_message.Message):
     __slots__ = ()

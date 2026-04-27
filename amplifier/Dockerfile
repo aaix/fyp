@@ -23,6 +23,7 @@ RUN cargo chef cook ${release} --recipe-path recipe.json
 FROM cacher AS builder
 ARG release="--release"
 COPY --from=planner /az7/recipe.json recipe.json
+COPY --from=shared ./sharedproto /az7/shared/sharedproto/
 RUN apt-get update && apt-get install -y protobuf-compiler gcc
 
 COPY --from=shared ./rs /az7/shared/rs/
