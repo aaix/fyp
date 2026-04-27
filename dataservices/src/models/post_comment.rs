@@ -2,12 +2,11 @@
 #![allow(nonstandard_style)]
 use crate::protos::plib::AllignedCqlTimeuuid;
 use scylla::DeserializeRow;
-use scylla::value;
 #[derive(Debug, DeserializeRow, Clone)]
 pub struct PostComment {
-    pub comment_id: AllignedCqlTimeuuid,
     pub post_id: AllignedCqlTimeuuid,
+    pub bucket: i32,
+    pub comment_id: AllignedCqlTimeuuid,
     pub author_id: AllignedCqlTimeuuid,
-    pub body: String,
-    pub opt_last_edited: Option<value::CqlTimestamp>,
+    pub content: String,
 }

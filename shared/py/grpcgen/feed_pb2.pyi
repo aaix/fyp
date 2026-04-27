@@ -114,8 +114,8 @@ class RemovePostsFromFeedRequest(_message.Message):
     TO_REMOVE_FIELD_NUMBER: _ClassVar[int]
     user_id: _plib_pb2.pUUID
     timeline_type: int
-    to_remove: _containers.RepeatedCompositeFieldContainer[PartialFeedEntry]
-    def __init__(self, user_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., timeline_type: _Optional[int] = ..., to_remove: _Optional[_Iterable[_Union[PartialFeedEntry, _Mapping]]] = ...) -> None: ...
+    to_remove: _containers.RepeatedCompositeFieldContainer[_plib_pb2.pUUID]
+    def __init__(self, user_id: _Optional[_Union[_plib_pb2.pUUID, _Mapping]] = ..., timeline_type: _Optional[int] = ..., to_remove: _Optional[_Iterable[_Union[_plib_pb2.pUUID, _Mapping]]] = ...) -> None: ...
 
 class RemovePostsFromFeedResponse(_message.Message):
     __slots__ = ()

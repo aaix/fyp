@@ -82,7 +82,7 @@ message PartialFeedEntry {
 message RemovePostsFromFeedRequest {
     plib.pUUID user_id = 1;
     int32 timeline_type = 2;
-    repeated PartialFeedEntry to_remove = 3;
+    repeated plib.pUUID to_remove = 3;
 }
 
 message RemovePostsFromFeedResponse {}

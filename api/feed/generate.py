@@ -24,7 +24,7 @@ grpcfeed = DataservicesLazyGRPC(feed_pb2_grpc.FeedServiceStub)
 
 
 @tracer.start_as_current_span("feed.generate_feed")
-async def get_feed(user_id: id_t, timeline_type: grpc.TimelineType, before: id_t | None, limit: int) -> Iterator[FeedEntry]:
+async def get_feed(user_id: id_t, timeline_type: grpc.TimelineType, before: id_t | None, limit: int) -> list[FeedEntry]:
     
     meta = feed_pb2.FeedMetaResponse()
     with SuppressRpcErr(StatusCode.NOT_FOUND):
@@ -32,7 +32,7 @@ async def get_feed(user_id: id_t, timeline_type: grpc.TimelineType, before: id_t
 
     to_exclude = set(filter(None, (puuid_uuid(u) for u in meta.exclude_users)))
 
-    slices = []
+    slices: list[Sequence[FeedEntry]] = []
 
     # take initial feed
     unique_authors, entries = await take_feed_slice(user_id, timeline_type, before, limit, meta)
@@ -46,8 +46,25 @@ async def get_feed(user_id: id_t, timeline_type: grpc.TimelineType, before: id_t
         unique_authors, entries = await take_feed_slice(user_id, timeline_type, before, limit, meta)
 
         slices.append(entries)
+    
+    include_posts: list[FeedEntry] = []
+    exclude_posts: list[FeedEntry] = []
+    for entry in  chain(*slices):
+        if puuid_uuid(entry.post_author_id) not in to_exclude:
+            include_posts.append(entry)
+            continue
 
-    return (entry for entry in chain(*slices) if puuid_uuid(entry.post_author_id) not in to_exclude)
+        exclude_posts.append(entry)
+
+    if len(exclude_posts) > 0:
+        await grpc.remove_posts_from_feed(
+            grpcfeed,
+            user_id,
+            timeline_type,
+            (p.post_id for p in exclude_posts),
+        )
+
+    return include_posts
 
 
 @tracer.start_as_current_span("feed.take_feed_slice")

@@ -137,3 +137,20 @@ async def scatter_gather_add_to_feeds(
         grpc.AddToFeeds(partial_req(user_ids=users)) for grpc, users in buckets.items()
     )))
     return sum(rpc.successes for rpc in res)
+
+@instrument_call
+@tracer.start_as_current_span("feed.remove_posts_from_feed")
+async def remove_posts_from_feed(
+    lazy: DataservicesLazyGRPC[feed_pb2_grpc.FeedServiceStub],
+    user_id: id_t,
+    timeline_type: TimelineType,
+    posts: Iterable[pUUID],
+) -> RemovePostsFromFeedResponse:
+    stub = lazy(user_id)
+
+
+    return cast(RemovePostsFromFeedResponse, await stub.RemoveFromFeed(RemovePostsFromFeedRequest(
+        user_id=id_puuid(user_id),
+        timeline_type=timeline_type.value,
+        to_remove=posts
+    )))

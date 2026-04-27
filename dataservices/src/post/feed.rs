@@ -18,6 +18,7 @@ pub struct ScyllaFeedService {
     read_feed_prepared_no_before: PreparedStatement,
     read_feed_prepared_before: PreparedStatement,
     add_to_feed_prepared: PreparedStatement,
+    remove_from_feed_prepared: PreparedStatement,
 }
 
 impl ScyllaFeedService {
@@ -75,6 +76,7 @@ impl ScyllaFeedService {
             read_feed_prepared_before,
             read_feed_prepared_no_before,
             add_to_feed_prepared,
+            remove_from_feed_prepared,
         })
     }
 }
@@ -259,7 +261,36 @@ impl ScyllaFeedService {
         request: tonic::Request<RemovePostsFromFeedRequest>,
     ) -> DSResult<
         tonic::Response<RemovePostsFromFeedResponse>> {
-        todo!()
+
+        let user_id: AllignedCqlTimeuuid = req_tuuid!(request, user_id)?;
+        let owned = request.into_inner();
+        let timeline_type = owned.timeline_type;
+
+
+        let futures = owned.to_remove.iter().map(async |entry| {
+
+            let post_id: AllignedCqlTimeuuid = entry.into();
+            
+            let res = db().await.execute_unpaged(
+                &self.remove_from_feed_prepared,
+                (
+                    user_id,
+                    timeline_type,
+                    post_id,
+                )
+            ).await;
+
+            if let Err(e) = res {
+                tracing::error!("{e:?}");
+            }
+            Some(())
+        });
+
+
+        join_all(futures).await;
+
+        Ok(Response::new(RemovePostsFromFeedResponse {  }))
+
     }
 
     async fn add_posts_to_feed_impl(
