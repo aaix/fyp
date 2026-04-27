@@ -89,7 +89,7 @@ services:
 
     networks:
       - shared-network
-    image: europe-west2-docker.pkg.dev/fyp-25coc251/az7-backendamplifier:latest
+    image: europe-west2-docker.pkg.dev/fyp-25coc251/az7-backend/amplifier:latest
     environment:
       OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: http://jaeger:4317
       VALKEY_URI: redis://discoverystore-0:6379
