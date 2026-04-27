@@ -187,18 +187,24 @@ CREATE TABLE dataservices.user_timeline_entry (
     post_id TIMEUUID,
     entry_type INT, --0: fanned out, --1: fanned in
     PRIMARY KEY ((user_id, timeline_type), post_id)
-) WITH CLUSTERING ORDER BY (post_id DESC);
+) WITH CLUSTERING ORDER BY (post_id DESC)
+AND default_time_to_live = 7776000 -- 90 days
+AND compaction = {
+    'class': 'TimeWindowCompactionStrategy',
+    'compaction_window_unit': 'DAYS',
+    'compaction_window_size': 5
+};
 
 
 -- COALESCE post_comment ON comment_id
 CREATE TABLE dataservices.post_comment (
+    post_id TIMEUUID,
+    bucket int,
     comment_id TIMEUUID,
-    post_id TIMEUUID, -- foreign key: post.post_id
-    author_id TIMEUUID, -- foreign key: user.user_id
-    body TEXT,
-    opt_last_edited TIMESTAMP,
-    PRIMARY KEY (post_id, comment_id),
-);
+    author_id TIMEUUID,
+    content TEXT,
+    PRIMARY KEY ((post_id, bucket) comment_id)
+) WITH CLUSTERING ORDER BY (comment_id DESC);
 
 -- will require lwts for updating post counters
 CREATE TABLE dataservices.post_like (
