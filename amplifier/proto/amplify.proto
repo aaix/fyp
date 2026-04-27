@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package amplifier.amplify;
+
+import "plib.proto";
+
+service AmplifierService {
+    rpc FanOut (FanOutRequest) returns (FanOutResponse);
+}
+
+message FanOutRequest {
+    oneof request_type {
+        FanOutMessage single = 1;
+        FanOutPerUserMessages many = 2;
+    }
+}
+
+message FanOutMessage {
+    repeated plib.pUUID recipients = 1;
+    bytes payload = 2;
+}
+
+message FanOutPerUserMessages {
+    repeated PerUserMessage messages = 1;
+}
+
+message PerUserMessage {
+    plib.pUUID to = 1;
+    bytes message = 2;
+}
+
+
+message FanOutResponse {}

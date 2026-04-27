@@ -9,6 +9,7 @@ COPY --from=shared ./rs /az7/shared/rs/
 COPY --from=root Cargo.lock .
 COPY --from=root Cargo.toml .
 RUN sed -i '/"mediaservices"/d' Cargo.toml
+RUN sed -i '/"amplifier"/d' Cargo.toml
 RUN cargo chef prepare --recipe-path recipe.json
 
 # dependency builder
@@ -22,6 +23,8 @@ RUN cargo chef cook ${release} --recipe-path recipe.json
 FROM cacher AS builder
 ARG release="--release"
 COPY --from=planner /az7/recipe.json recipe.json
+COPY --from=shared ./sharedproto /az7/shared/sharedproto/
+
 RUN apt-get update && apt-get install -y protobuf-compiler gcc
 
 # precompiled dependencies

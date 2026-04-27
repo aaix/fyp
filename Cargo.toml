@@ -2,6 +2,7 @@
 members = [
     "mediaservices",
     "dataservices",
-    "shared/rs/bigpicture"
+    "shared/rs/bigpicture", 
+    "amplifier"
 ]
 resolver = "3"
