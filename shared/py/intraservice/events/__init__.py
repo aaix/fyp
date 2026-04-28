@@ -46,7 +46,7 @@ async def send_to_remote(to: id_t, key: str, value: Message):
         return
 
 
-    if (span := trace.get_current_span()).is_recording():
+    if (span := trace.get_current_span()) and span.is_recording():
         span.set_attribute("az.bigpicture.to", node)
         span.set_attribute("az.bigpicture.payload.size", len(intra_payload))
         span.set_attribute("az.bigpicture.payload.type", key)
