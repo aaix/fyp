@@ -23,15 +23,16 @@ _sym_db = _symbol_database.Default()
 
 
 from . import plib_pb2 as plib__pb2
+from . import traceparent_pb2 as traceparent__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0f\x61mplified.proto\x12\x1dintraservice.amplifiedmessage\x1a\nplib.proto\"N\n\x15\x41mplifiedIntraMessage\x12\x14\n\x0cintramessage\x18\x01 \x01(\x0c\x12\x1f\n\nrecipients\x18\x02 \x03(\x0b\x32\x0b.plib.pUUIDb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0f\x61mplified.proto\x12\x1dintraservice.amplifiedmessage\x1a\nplib.proto\x1a\x11traceparent.proto\"\x92\x01\n\x15\x41mplifiedIntraMessage\x12\x14\n\x0cintramessage\x18\x01 \x01(\x0c\x12\x32\n\x0btraceparent\x18\x03 \x01(\x0b\x32\x18.traceparent.TraceParentH\x00\x88\x01\x01\x12\x1f\n\nrecipients\x18\x02 \x03(\x0b\x32\x0b.plib.pUUIDB\x0e\n\x0c_traceparentb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'amplified_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
-  _globals['_AMPLIFIEDINTRAMESSAGE']._serialized_start=62
-  _globals['_AMPLIFIEDINTRAMESSAGE']._serialized_end=140
+  _globals['_AMPLIFIEDINTRAMESSAGE']._serialized_start=82
+  _globals['_AMPLIFIEDINTRAMESSAGE']._serialized_end=228
 # @@protoc_insertion_point(module_scope)

@@ -49,6 +49,7 @@ dependencies = [
  "futures",
  "init-tracing-opentelemetry",
  "local-ip-address",
+ "opentelemetry",
  "prost",
  "prost-types",
  "tokio",
@@ -2631,6 +2632,7 @@ dependencies = [
  "js-sys",
  "pin-project-lite",
  "thiserror",
+ "tracing",
 ]
 
 [[package]]

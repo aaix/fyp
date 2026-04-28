@@ -13,3 +13,6 @@ pub mod intraservice {
         tonic::include_proto!("intraservice.amplifiedmessage");
     }
 }
+pub mod traceparent {
+    tonic::include_proto!("traceparent");
+}

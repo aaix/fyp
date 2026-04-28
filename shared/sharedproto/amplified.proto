@@ -2,10 +2,12 @@ syntax = "proto3";
 
 package intraservice.amplifiedmessage;
 import "plib.proto";
+import "traceparent.proto";
 
 
 
 message AmplifiedIntraMessage {
     bytes intramessage = 1;
+    optional traceparent.TraceParent traceparent = 3;
     repeated plib.pUUID recipients = 2;
 }

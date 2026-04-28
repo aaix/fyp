@@ -3,13 +3,11 @@ syntax = "proto3";
 package intraservice.internalmesssage;
 
 
-import "traceparent.proto";
 import "plib.proto";
 
 
 
 message IntraMessage {
-    optional traceparent.TraceParent traceparent = 2;
     oneof event {
         EventSessionCreate session_create = 3;
         EventChannelCreate channel_create = 4;

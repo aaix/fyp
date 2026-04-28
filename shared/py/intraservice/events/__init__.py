@@ -32,9 +32,7 @@ async def send_to_remote(to: id_t, key: str, value: Message):
     """Discover the recipient, serialise and send the event"""
 
 
-    event = IntraMessage(
-        traceparent=get_current_traceparent()
-    )
+    event = IntraMessage()
 
 
 
@@ -78,9 +76,7 @@ async def fan_out_amplified(bucket: id_t, recipients: Iterable[pUUID], event_nam
     to = bucketby(filter(None, recipients), gateway_bigpicture.get_node)
 
 
-    event = IntraMessage(
-        traceparent=get_current_traceparent(),
-    )
+    event = IntraMessage()
 
     getattr(event, event_name).SetInParent()
     getattr(event, event_name).CopyFrom(message)

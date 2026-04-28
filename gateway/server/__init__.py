@@ -109,8 +109,8 @@ class GatewayController:
     def handle_amplified_internal(self, amplified:AmplifiedIntraMessage):
         msg = IntraMessage.FromString(amplified.intramessage)
 
-        if msg.HasField("traceparent"):
-            parent = trace.set_span_in_context(span_from_traceparent(msg.traceparent))
+        if amplified.HasField("traceparent"):
+            parent = trace.set_span_in_context(span_from_traceparent(amplified.traceparent))
         else:
             parent = None
 

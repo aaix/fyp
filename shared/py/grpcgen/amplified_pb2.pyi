@@ -1,4 +1,5 @@
 import plib_pb2 as _plib_pb2
+import traceparent_pb2 as _traceparent_pb2
 from google.protobuf.internal import containers as _containers
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
@@ -8,9 +9,11 @@ from typing import ClassVar as _ClassVar, Optional as _Optional, Union as _Union
 DESCRIPTOR: _descriptor.FileDescriptor
 
 class AmplifiedIntraMessage(_message.Message):
-    __slots__ = ("intramessage", "recipients")
+    __slots__ = ("intramessage", "traceparent", "recipients")
     INTRAMESSAGE_FIELD_NUMBER: _ClassVar[int]
+    TRACEPARENT_FIELD_NUMBER: _ClassVar[int]
     RECIPIENTS_FIELD_NUMBER: _ClassVar[int]
     intramessage: bytes
+    traceparent: _traceparent_pb2.TraceParent
     recipients: _containers.RepeatedCompositeFieldContainer[_plib_pb2.pUUID]
-    def __init__(self, intramessage: _Optional[bytes] = ..., recipients: _Optional[_Iterable[_Union[_plib_pb2.pUUID, _Mapping]]] = ...) -> None: ...
+    def __init__(self, intramessage: _Optional[bytes] = ..., traceparent: _Optional[_Union[_traceparent_pb2.TraceParent, _Mapping]] = ..., recipients: _Optional[_Iterable[_Union[_plib_pb2.pUUID, _Mapping]]] = ...) -> None: ...

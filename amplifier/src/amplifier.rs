@@ -5,10 +5,10 @@ use prost::Message;
 use tokio::net::UdpSocket;
 use tonic::{Response, Status, async_trait};
 
-use crate::protos::{
+use crate::{protos::{
     amplifier::amplify::{amplifier_service_server::{AmplifierService, AmplifierServiceServer}, fan_out_request::*, *},
     intraservice::amplifiedmessage::AmplifiedIntraMessage
-};
+}, utils::get_current_traceparent};
 
 const SEND_PORT: u16 = 3117;
 const PUUID_SIZE: usize = 24;
@@ -68,6 +68,7 @@ impl AmplifierService for AmplifierServiceRS {
 
         let owned = request.into_inner();
 
+        let traceparent = get_current_traceparent();
 
 
         match owned.request_type.ok_or(Status::invalid_argument("Unexpected unpopulated request type"))? {
@@ -98,7 +99,8 @@ impl AmplifierService for AmplifierServiceRS {
                     for recipients in r.recipients.chunks(recipients_per_chunk) {
                         let message = AmplifiedIntraMessage {
                             intramessage: data.clone(),
-                            recipients: recipients.into()
+                            recipients: recipients.into(),
+                            traceparent,
                         };
 
                         self.send_to(host, message).await;
