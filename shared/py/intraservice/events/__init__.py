@@ -55,7 +55,8 @@ async def send_to_remote(to: id_t, key: str, value: Message):
 
     fake_amplified = AmplifiedIntraMessage(
         recipients=(recipient,) if recipient else (),
-        intramessage=intra_payload
+        intramessage=intra_payload,
+        traceparent=get_current_traceparent()
     )
 
     await publisher.send_to(node, fake_amplified.SerializeToString())
