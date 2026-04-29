@@ -189,6 +189,7 @@ CREATE TABLE dataservices.user_timeline_entry (
     PRIMARY KEY ((user_id, timeline_type), post_id)
 ) WITH CLUSTERING ORDER BY (post_id DESC)
 AND default_time_to_live = 7776000 -- 90 days
+-- TODO: is this compaction strategy ok if we delete filtered entries
 AND compaction = {
     'class': 'TimeWindowCompactionStrategy',
     'compaction_window_unit': 'DAYS',
