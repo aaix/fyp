@@ -9,6 +9,20 @@ from shared.py.grpcgen import feed_pb2_grpc
 
 grpcfeed = DataservicesLazyGRPC(feed_pb2_grpc.FeedServiceStub)
 
+
+async def handle_new_following(follower: id_t, following: id_t):
+
+    pfollowing = id_puuid(following)
+    if not pfollowing:
+        return
+
+    futures = (
+        update_feed_meta(grpcfeed, follower, timeline_type, explicit_fan_in_to_add=(pfollowing,), exclude_to_delete=(pfollowing,)) for timeline_type in TimelineType
+    )
+
+    await asyncio.gather(*futures)
+
+
 async def handle_new_friend(user1: id_t, user2: id_t):
 
     p1 = id_puuid(user1) or unwrap()

@@ -156,6 +156,7 @@ async def follow_user(s: SessionParam, peer: UserParam) -> UserRelationshipRespo
         if await r.is_current_following_peer():
             raise ApiErrExc(errors.BadRequest("You are already following this user", api_error_code=errors.ERROR_ALREADY_EXISTS))
         await r.follow_peer()
+        await feed.handle_new_following(s.user_id, peer.user_id)
 
 
     return UserRelationshipResponse(peer_id=peer_id, relationship=RelationshipType.CURRENT_REQUESTING_PEER, created_at=now())
