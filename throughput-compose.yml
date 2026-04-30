@@ -200,34 +200,25 @@ services:
       - type: bind
         source: ./database/main.yaml
         target: /etc/scylla/scylla.yaml
+    volumes:
+      - type: bind
+        source: /db/
+        target: /var/lib/scylla
+      - type: bind
+        source: /etc/scylla.d/io.conf
+        target: /etc/scylla.d/io.conf:ro
+    environment:
+      SEED: 172.31.0.199
+      SMP:  12
+      MEM:  24G
+      SCYLLA_ARGS:  --overprovisioned 1 --developer-mode 0
+    ulimits:
+      nproc: 65535
+      nofile:
+        soft: 1000000
+        hard: 1000000
+    privileged: true
+    network_mode: "host"
     hostname: scylla-seed
     environment:
       SEED: "172.31.0.199"
-
-  scylla-node1:
-    <<: *scylla-base
-    volumes:
-      - type: bind
-        source: /db/scylla1/
-        target: /var/lib/scylla
-      - type: bind
-        source: ./database/main.yaml
-        target: /etc/scylla/scylla.yaml
-    networks:
-      shared-network:
-          ipv4_address: 172.31.0.203
-
-  scylla-node2:
-    <<: *scylla-base
-    profiles:
-      - full-cluster
-    volumes:
-      - type: bind
-        source: /db/data/scylla2/
-        target: /var/lib/scylla
-      - type: bind
-        source: ./database/main.yaml
-        target: /etc/scylla/scylla.yaml
-    networks:
-      shared-network:
-          ipv4_address: 172.31.0.202
