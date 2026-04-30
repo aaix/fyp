@@ -13,6 +13,8 @@ x-scylla-base: &scylla-base
   depends_on:
     - scylla-seed
   stop_grace_period: 120s
+  environment:
+    SCYLLA_ARGS: "--reactor-backend=epoll"
 
 
 services:
@@ -178,6 +180,8 @@ services:
         source: ./database/main.yaml
         target: /etc/scylla/scylla.yaml
     hostname: scylla-seed
+    environment:
+      SCYLLA_ARGS: "--reactor-backend=epoll"
 
   scylla-node1:
     <<: *scylla-base
