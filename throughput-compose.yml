@@ -206,7 +206,7 @@ services:
         target: /var/lib/scylla
       - type: bind
         source: /etc/scylla.d/io.conf
-        target: /etc/scylla.d/io.conf:ro
+        target: /etc/scylla.d/io.conf
     environment:
       SEED: 172.31.0.199
       SMP:  12
