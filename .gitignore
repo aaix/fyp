@@ -5,3 +5,4 @@ database/data
 .env
 .env.cloud
 ui/app/dev-dist
+temp*

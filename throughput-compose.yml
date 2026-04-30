@@ -216,5 +216,3 @@ services:
     privileged: true
     network_mode: "host"
     hostname: scylla-seed
-    environment:
-      SEED: "172.31.0.199"
