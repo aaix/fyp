@@ -15,4 +15,5 @@ else
         --host 0.0.0.0 \
         --port 8000 \
         --app-dir /az7
+        --workers 8
 fi
