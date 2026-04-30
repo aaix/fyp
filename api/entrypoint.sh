@@ -2,6 +2,7 @@
 
 
 MODE=${DEPLOYMENT_MODE:-dev}
+WORKERS=${NUM_WORKERS:-8}
 
 if [ "$MODE" = "prod" ]; then
     exec python3 -u -m uvicorn api.main:app \
@@ -10,11 +11,13 @@ if [ "$MODE" = "prod" ]; then
         --proxy-headers \
         --forwarded-allow-ips='*' \
         --app-dir /az7 \
-        --workers 8
+        --workers $WORKERS \
+        --log-level warning
 else
     exec python3 -u -m uvicorn api.main:app \
         --host 0.0.0.0 \
         --port 8000 \
         --app-dir /az7 \
-        --workers 8
+        --workers $WORKERS \
+        --log-level warning
 fi

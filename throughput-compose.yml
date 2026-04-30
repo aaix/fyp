@@ -159,6 +159,8 @@ services:
 
       ELASTICSEARCH_URI: http://elasticsearch:9200
 
+      NUM_WORKERS: 16
+
     depends_on:
       discoverystore-0:
         condition: service_healthy
