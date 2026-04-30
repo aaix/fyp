@@ -15,6 +15,7 @@ x-scylla-base: &scylla-base
   stop_grace_period: 60s
   environment:
     SEED: "scylla-seed"
+    SCYLLA_ARGS: "--reactor-backend=epoll"
 
 
 services:
