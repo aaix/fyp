@@ -195,14 +195,10 @@ services:
     image: europe-west2-docker.pkg.dev/fyp-25coc251/az7-backend/database:latest
     volumes:
       - type: bind
-        source: /db/data/scylla0/
-        target: /var/lib/scylla
-      - type: bind
-        source: ./database/main.yaml
+        source: /db/conf/main.yaml
         target: /etc/scylla/scylla.yaml
-    volumes:
       - type: bind
-        source: /db/
+        source: /db/data
         target: /var/lib/scylla
       - type: bind
         source: /etc/scylla.d/io.conf
