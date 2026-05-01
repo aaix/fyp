@@ -18,6 +18,10 @@ async fn main() {
     println!("Hello, world!");
     gen_uuid();
 
+
+    #[cfg(debug_assertions)]
+    println!("Running in debug mode");
+
     let listen_addr = "0.0.0.0:3114".parse().unwrap();
 
     let valkey_uri = std::env::var("VALKEY_URI").expect("Could not get valkey uri");

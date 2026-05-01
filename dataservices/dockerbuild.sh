@@ -4,7 +4,7 @@ REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 # shellcheck source=docker-build.inc.sh
 source "${REPO_ROOT}/docker-build.inc.sh"
 python "${REPO_ROOT}/dataservices/model_generator.py"
-if [ "${GITHUB_ACTIONS:-}" != "true" ]; then
+if [ "${GITHUB_ACTIONS:-}" != "true" ] && [ "${DATASERVICES_FORCE_RELEASE_MODE:-}" != "true" ]; then
   release=""
   mode="debug"
   backtrace="full"
