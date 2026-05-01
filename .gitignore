@@ -7,3 +7,4 @@ database/data
 ui/app/dev-dist
 temp*
 hey
+profiles/*

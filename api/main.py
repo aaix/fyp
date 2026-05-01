@@ -1,5 +1,11 @@
-import asyncio
 from typing import Literal
+
+import asyncio
+import cProfile
+import os
+import time
+
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError 
@@ -49,14 +55,42 @@ middlewares = ( # outer
 ) # inner
 
 
+@asynccontextmanager
+async def api_lifetime(app: FastAPI):
+    profiling_enabled = int(os.environ.get("PROFILING_ENABLED", 0))
+
+    profiler = None
+    if profiling_enabled:
+        profiler = enable_profiling()
+
+    await BigPictureClientServiceFactory(GATEWAY_SERVICE).valkey_connect()
+    await lazy.lazy_init()
+    await BigPictureClientServiceFactory(AMPLIFIER_SERVICE).valkey_connect()
+    asyncio.get_event_loop().slow_callback_duration = 0.01
+
+    yield
+
+    if profiler is not None:
+        disable_profiling(profiler)
+
+
+
+def enable_profiling() -> cProfile.Profile:
+    profiler = cProfile.Profile()
+    print("Started profiling", flush=True)
+    profiler.enable()
+    return profiler
+
+def disable_profiling(profiler: cProfile.Profile):
+    profiler.disable()
+    profiler.dump_stats(f"/az7/profiles/{int(time.time())}")
+    print("Stopped profiling", flush=True)
+
+
 app = FastAPI(
     middleware=middlewares,
     default_response_class=SuccessResponse,
-    on_startup=(
-        BigPictureClientServiceFactory(GATEWAY_SERVICE).valkey_connect,
-        lazy.lazy_init,
-        BigPictureClientServiceFactory(AMPLIFIER_SERVICE).valkey_connect
-    )
+    lifespan=api_lifetime,
 )
 
 # routers

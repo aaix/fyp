@@ -162,6 +162,16 @@ services:
 
       ELASTICSEARCH_URI: http://elasticsearch:9200
 
+      NUM_WORKERS: 4
+      # PYTHONASYNCIODEBUG: 1
+      PROFILING_ENABLED: 0
+      # OTEL_SDK_DISABLED: true
+    
+    volumes:
+      - type: bind
+        source: ./profiles/
+        target: /az7/profiles/
+
     depends_on:
       discoverystore-0:
         condition: service_healthy
