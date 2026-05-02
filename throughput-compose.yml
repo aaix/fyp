@@ -138,9 +138,6 @@ services:
       S3_ACCESS_KEY_SECRET: ${SECRET_S3_ACCESS_KEY_SECRET}
 
   api:
-    deploy:
-      mode: replicated
-      replicas: ${API_REPLICAS:-1}
     networks:
       - shared-network
     image: europe-west2-docker.pkg.dev/fyp-25coc251/az7-backend/api:latest
@@ -159,7 +156,9 @@ services:
 
       ELASTICSEARCH_URI: http://elasticsearch:9200
 
-      NUM_WORKERS: 16
+      NUM_WORKERS: 30
+      DEPLOYMENT_MODE: prod
+      OTEL_SDK_DISABLED: true
 
     depends_on:
       discoverystore-0:
@@ -169,7 +168,7 @@ services:
       elasticsearch:
         condition: service_healthy
     ports:
-      - 8000:8000
+      - 80:8000
   
   gateway:
     deploy:
@@ -203,7 +202,7 @@ services:
         source: /db/data
         target: /var/lib/scylla
       - type: bind
-        source: /etc/scylla.d/io.conf
+        source: /db/conf/io.conf
         target: /etc/scylla.d/io.conf
     environment:
       SEED: 172.31.0.199
