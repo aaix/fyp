@@ -204,7 +204,7 @@ CREATE TABLE dataservices.post_comment (
     comment_id TIMEUUID,
     author_id TIMEUUID,
     content TEXT,
-    PRIMARY KEY ((post_id, bucket) comment_id)
+    PRIMARY KEY ((post_id, bucket), comment_id)
 ) WITH CLUSTERING ORDER BY (comment_id DESC);
 
 -- will require lwts for updating post counters
