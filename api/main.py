@@ -4,6 +4,7 @@ import asyncio
 import cProfile
 import os
 import time
+import sys
 
 from contextlib import asynccontextmanager
 
@@ -40,6 +41,15 @@ from shared.py.intraservice.discoverystore.client import BigPictureClientService
 loop = asyncio.get_event_loop()
 
 discovery = DiscoveryManager()
+
+
+jit = False
+if hasattr(sys, "_jit"):
+    jit = sys._jit.is_enabled() # pyright: ignore[reportAttributeAccessIssue]
+
+
+print(f"Using jit: {jit}, requested jit {os.environ.get('PYTHON_JIT')=}", flush=True)
+
 
 # middlewares
 middlewares = ( # outer
