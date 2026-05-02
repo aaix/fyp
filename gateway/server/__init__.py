@@ -139,9 +139,10 @@ class GatewayController:
             try:
                 # not multiloop safe
                 client.queue.put_nowait(InternalEvent(oneof=field, payload=data, span=trace.get_current_span()))
+                span.set_attribute("az.gateway.queue.size", client.queue.qsize())
             except QueueFull:
                 span.set_attribute("error", True)
-                span.set_attribute("az.gateway.queuefull", str(client.id))
+                span.set_attribute("az.gateway.queue.full", str(client.id))
     # client connection management
 
 
