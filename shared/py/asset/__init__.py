@@ -23,9 +23,6 @@ PUBLIC_BUCKET, PRIVATE_BUCKET = discovery.find_s3_buckets()
 ENDPOINT_HOST = ENDPOINT_URL.replace("https://", "")
 
 
-print(ENDPOINT_HOST, flush=True)
-print(ENDPOINT_URL, flush=True)
-
 __all__ = (
     "client",
     "PUBLIC_BUCKET",
