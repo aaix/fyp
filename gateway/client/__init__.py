@@ -43,13 +43,14 @@ grpcuser = DataservicesLazyGRPC(user_pb2_grpc.UserServiceStub)
 grpcdevice = DataservicesLazyGRPC(user_pb2_grpc.UserDeviceServiceStub)
 
 
+CONF_MAX_INTERNAL_MESSAGE_QUEUE = 250
 
 class GatewayClient:
     def __init__(self, controller: gateway.server.GatewayController, ws: ServerConnection):
         self.id: Final[UUID] = uuid.uuid4()
         self.controller = controller
         # TODO: not multi loop safe
-        self.queue: asyncio.Queue[InternalEvent] = asyncio.Queue()
+        self.queue: asyncio.Queue[InternalEvent] = asyncio.Queue(maxsize=CONF_MAX_INTERNAL_MESSAGE_QUEUE)
         self.ws: ServerConnection = ws
         self.open: bool = True
         self.handshake_complete = False
