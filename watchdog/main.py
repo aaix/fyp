@@ -4,11 +4,12 @@ from opentelemetry.trace import get_current_span
 
 from watchdog.tracing import tracer
 
-from shared.py.intraservice.discoverystore import DATASERVICES_SERVICE, GATEWAY_SERVICE
+from shared.py.intraservice.discoverystore import AMPLIFIER_SERVICE, DATASERVICES_SERVICE, GATEWAY_SERVICE
 from shared.py.intraservice.discoverystore.client import BigPictureClient, BigPictureClientServiceFactory
 
 dataservices_bigpicture = BigPictureClientServiceFactory(DATASERVICES_SERVICE)
 gateway_bigpicture = BigPictureClientServiceFactory(GATEWAY_SERVICE)
+amplifier_bigpicture = BigPictureClientServiceFactory(AMPLIFIER_SERVICE)
 
 
 CONF_NUM_PINGS = 10
@@ -18,7 +19,7 @@ async def main():
     await dataservices_bigpicture.valkey_connect()
     await gateway_bigpicture.valkey_connect()
 
-    services = (dataservices_bigpicture, gateway_bigpicture)
+    services = (dataservices_bigpicture, gateway_bigpicture, amplifier_bigpicture)
 
     while True:
         for service in services:
