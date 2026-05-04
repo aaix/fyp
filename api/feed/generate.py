@@ -25,6 +25,10 @@ grpcfeed = DataservicesLazyGRPC(feed_pb2_grpc.FeedServiceStub)
 
 @tracer.start_as_current_span("feed.generate_feed")
 async def get_feed(user_id: id_t, timeline_type: grpc.TimelineType, before: id_t | None, limit: int) -> list[FeedEntry]:
+    """
+    Generate feed if needed, potentially taking multiple chunks, then remove excluded posts from the feed
+    may return more or less than limit due to exclusions
+    """
     
     meta = feed_pb2.FeedMetaResponse()
     with SuppressRpcErr(StatusCode.NOT_FOUND):
@@ -68,7 +72,13 @@ async def get_feed(user_id: id_t, timeline_type: grpc.TimelineType, before: id_t
 
 
 @tracer.start_as_current_span("feed.take_feed_slice")
-async def take_feed_slice(user_id: id_t, timeline_type: grpc.TimelineType, before: id_t | None, limit: int, meta: FeedMetaResponse) -> tuple[set[UUID], Sequence[FeedEntry]]:
+async def take_feed_slice(
+    user_id: id_t,
+    timeline_type: grpc.TimelineType,
+    before: id_t | None,
+    limit: int, meta: FeedMetaResponse
+) -> tuple[set[UUID], Sequence[FeedEntry]]:
+    """Do a feed fan in if required, and return a single feed chunk"""
     if reason := await utils.needs_fan_in(meta, before):
        await fan_in.do_feed_fan_in(user_id, timeline_type, reason, before, meta)
     

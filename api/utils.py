@@ -20,6 +20,7 @@ __all__ = (
 )
 
 def unwrap(additional_info: SupportsStr | None = None) -> Never:
+    """Helper to cooerce Option[T] into T or error"""
     with tracer.start_as_current_span("unwrap info") as span:
         stack = '\n'.join(traceback.format_stack())
         span.set_attribute("az.api.unwrap.exc_stack", stack)

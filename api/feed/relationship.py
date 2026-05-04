@@ -11,6 +11,7 @@ grpcfeed = DataservicesLazyGRPC(feed_pb2_grpc.FeedServiceStub)
 
 
 async def handle_new_following(follower: id_t, following: id_t):
+    """Updates the follower's feed meta to explicitly fan in"""
 
     pfollowing = id_puuid(following)
     if not pfollowing:
@@ -24,6 +25,7 @@ async def handle_new_following(follower: id_t, following: id_t):
 
 
 async def handle_new_friend(user1: id_t, user2: id_t):
+    """Updates both friends feed meta to explicitly fan in"""
 
     p1 = id_puuid(user1) or unwrap()
     p2 = id_puuid(user2) or unwrap()
@@ -41,6 +43,7 @@ async def handle_new_friend(user1: id_t, user2: id_t):
     )
 
 async def handle_remove_friend(user1: id_t, user2: id_t):
+    """Update both friends feed meta to exclude"""
 
     p1 = id_puuid(user1) or unwrap()
     p2 = id_puuid(user2) or unwrap()

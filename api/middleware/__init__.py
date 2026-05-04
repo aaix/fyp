@@ -8,6 +8,7 @@ from api.tracing import tracer
 
 
 class InstrumentedMiddleware(BaseHTTPMiddleware):
+    """"Parent for middleware classes that adds tracing automatically"""
 
     async def dispatch_traced(self, request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
         raise NotImplementedError("subclass should define dispatch_traced")

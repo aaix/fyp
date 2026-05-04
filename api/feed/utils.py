@@ -27,7 +27,6 @@ class FanInReason:
 
 
 async def needs_fan_in(meta: FeedMetaResponse, before: id_t | None) -> FanInReason:
-
     time_now = datetime.now(UTC).timestamp()
 
     # for general fan on CONF_FAN_IN_DELAY (last_fanned_in_at is a ms timestamp)

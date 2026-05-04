@@ -25,6 +25,7 @@ __all__ = (
 
 
 class JWTMiddleware(InstrumentedMiddleware):
+    """Populate request.state.session with the user's session, if it exists and is valid"""
     async def dispatch_traced(self, request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
         if not (token := request.headers.get("Authorization")):
             request.state.session = None

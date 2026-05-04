@@ -42,9 +42,10 @@ class Session:
     
     @classmethod
     def from_encode(cls, b: bytes) -> Self:
-        data = msgpack.unpackb(b)
+        data = msgpack.unpackb(b) # msgpack is more performant and smaller than json
         return cls(
-            user_id=UUID(bytes=data["u"]),            issued=data["i"],
+            user_id=UUID(bytes=data["u"]),
+            issued=data["i"],
             version=data["v"]
         )
 

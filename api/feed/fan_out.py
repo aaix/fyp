@@ -12,6 +12,10 @@ grpcfeed = DataservicesLazyGRPC(feed_pb2_grpc.FeedServiceStub)
 
 
 async def fan_out(author_id: id_t, timeline_type: TimelineType, post_id: id_t) -> int:
+    """
+    Unchunked scatter-gather insert of post into user relationships feeds
+    relationships are not chunked
+    """
     rels = await read_relationships(grpcrelationship, author_id, RelationshipType.FRIENDS)
     friends = list(r.user_id_b for r in rels.relationships)
 

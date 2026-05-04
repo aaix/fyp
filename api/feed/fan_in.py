@@ -41,6 +41,10 @@ grpcfeed = DataservicesLazyGRPC(feed_pb2_grpc.FeedServiceStub)
 
 
 async def get_following_chunked(user_id: id_t) -> AsyncGenerator[HalfRelationship]:
+    """
+    Provides an async iterator over the users relationships
+    relationships are fetched in chunks using CONF_FOLLOWING_CHUNK_SIZE
+    """
     chunk = await read_relationships_chunkned(
         grpcrelationship,
         user_id,

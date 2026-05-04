@@ -10,6 +10,7 @@ from api.responses import errors
 
 
 class HeaderValidationMiddleware(InstrumentedMiddleware):
+    """Mandate appropriate content type"""
     async def dispatch_traced(self, request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
 
         path = request.url.path

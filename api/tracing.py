@@ -1,3 +1,5 @@
+"""Importing this module sets up tracing and enables auto grpc tracing"""
+
 from fastapi import FastAPI
 from opentelemetry import trace
 from opentelemetry.sdk.resources import SERVICE_NAME, Resource
