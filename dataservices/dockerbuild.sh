@@ -1,7 +1,7 @@
 TAG=${1:-latest}
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-# shellcheck source=docker-build.inc.sh
+
 source "${REPO_ROOT}/docker-build.inc.sh"
 python "${REPO_ROOT}/dataservices/model_generator.py"
 if [ "${GITHUB_ACTIONS:-}" != "true" ] && [ "${DATASERVICES_FORCE_RELEASE_MODE:-}" != "true" ]; then

@@ -1,9 +1,4 @@
-# shellcheck shell=bash
-# Source from repo-root service dockerbuild.sh scripts.
-# When GITHUB_ACTIONS=true, use buildx + GitHub Actions cache; otherwise plain `docker build`.
-# Requires the default buildx docker-container driver: `type=gha` is not supported with the docker driver
-# (see https://docs.docker.com/build/cache/backends/gha/).
-
+# docker build provider
 docker_build_ci_aware() {
   local scope=$1
   shift

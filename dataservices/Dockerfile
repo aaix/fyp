@@ -27,9 +27,6 @@ COPY --from=shared ./sharedproto /az7/shared/sharedproto/
 
 RUN apt-get update && apt-get install -y protobuf-compiler gcc
 
-# precompiled dependencies
-# COPY --from=cacher /az7/target /az7/target
-# COPY --from=cacher /usr/local/cargo /usr/local/cargo
 
 COPY --from=shared ./rs /az7/shared/rs/
 COPY . /az7/dataservices/
