@@ -1,7 +1,3 @@
-/*
-TABLE user_device
-*/
-
 use crate::db_conn::db;
 use crate::errors::DSResult;
 use crate::helpers::gen_timeuuid;

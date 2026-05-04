@@ -4,6 +4,7 @@ use scylla::client::session_builder::SessionBuilder;
 
 static CONN: OnceCell<Session> = OnceCell::const_new();
 
+/// lazily initialised database connection
 pub async fn db() -> &'static Session {
     CONN.get_or_init(|| async {
         let uri = std::env::var("SCYLLA_URI").unwrap();

@@ -9,6 +9,7 @@ use crate::protos::plib::AllignedCqlTimeuuid;
 static NODE_ID: OnceLock<[u8; 6]> = OnceLock::new();
 
 
+/// get a timeuuid based, lazy init the mac address if needed
 pub fn gen_timeuuid() -> AllignedCqlTimeuuid {
     let node_id= *NODE_ID.get_or_init(|| {
         let mac = get_mac_address().unwrap().unwrap();

@@ -8,6 +8,7 @@ pub mod plib {
 
     #[repr(align(8))]
     #[derive(Debug, Clone, Copy, Eq)]
+    /// Custom cql type that maintains the same alignment as pUUID type to allow for 0 alloc conversion
     pub struct AllignedCqlTimeuuid(pub CqlTimeuuid);
 
     impl<'frame, 'metadata> DeserializeValue<'frame, 'metadata> for AllignedCqlTimeuuid {

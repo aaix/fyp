@@ -1,3 +1,5 @@
+"""Helper tool to generate rust models from database.cql"""
+
 from itertools import chain
 import json
 

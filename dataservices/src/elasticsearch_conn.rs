@@ -16,6 +16,7 @@ pub const USERNAMES_INDEX: &str = "usernames";
 static ES: OnceCell<Elasticsearch> = OnceCell::const_new();
 static INDEX_ENSURE: OnceLock<Mutex<bool>> = OnceLock::new();
 
+/// lazily initialised elasticsearh client
 pub async fn es_client() -> &'static Elasticsearch {
     ES.get_or_init(|| async {
         let uri = std::env::var("ELASTICSEARCH_URI").expect("ELASTICSEARCH_URI must be set");
@@ -86,13 +87,14 @@ pub async fn index_username(user_id: &str, username: &str) -> DSResult<()> {
     Ok(())
 }
 
-/// Remove username document; ignores 404 (already deleted).
 pub async fn delete_username_doc(user_id: &str) -> DSResult<()> {
     let client = es_client().await;
     let res = client
         .delete(DeleteParts::IndexId(USERNAMES_INDEX, user_id))
         .send()
         .await?;
+
+    // fail silently
     if res.status_code() == StatusCode::NOT_FOUND {
         return Ok(());
     }

@@ -1,9 +1,3 @@
-/*
-TABLE channel
-
-TABLE member
-*/
-
 use std::collections::HashSet;
 
 use futures::{StreamExt, future::join_all};
