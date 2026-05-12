@@ -1,7 +1,7 @@
 ARG BASE_IMAGE=az-shared-base:latest
 FROM ${BASE_IMAGE}
 
-RUN apt-get update && apt-get install -y iputils-ping
+RUN apt-get update && apt-get install -y iputils-ping && rm -rf /var/cache/apt
 
 
 RUN mkdir -p /az7/watchdog/

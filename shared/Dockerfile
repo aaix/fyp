@@ -45,6 +45,7 @@ COPY --from=builder /opt/python3.14 /opt/python3.14
 
 ENV PATH="/opt/python3.14/bin:$PATH"
 
+# TODO: this is massive
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     ca-certificates \
@@ -57,8 +58,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libsqlite3-dev \
     libreadline-dev \
     libffi-dev \
-    libbz2-dev
-
+    libbz2-dev \
+    && rm -rf /var/cache/apt
 
 RUN mkdir -p /az7/shared/
 

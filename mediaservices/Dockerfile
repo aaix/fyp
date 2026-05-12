@@ -29,7 +29,7 @@ RUN cargo build --release --offline
 
 FROM debian:12.13-slim AS runtime
 WORKDIR /app
-RUN apt-get update && apt-get install -y ca-certificates ffmpeg
+RUN apt-get update && apt-get install -y ca-certificates ffmpeg && rm -rf /var/cache/apt
 
 COPY --from=builder /app/target/release/mediaservices /usr/local/bin/mediaservices
 
