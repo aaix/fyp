@@ -136,8 +136,8 @@ services:
         source: /db/elasticsearch/var/
         target: /var/lib/elasticsearch/
       - type: bind
-        source: /db/elasticsearch/usr/
-        target: /usr/share/elasticsearch/
+        source: /db/elasticsearch/usr/data/
+        target: /usr/share/elasticsearch/data/
 
   api-0:
     networks:
