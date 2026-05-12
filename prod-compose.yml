@@ -133,8 +133,11 @@ services:
       start_period: 40s
     volumes:
       - type: bind
-        source: /db/elasticsearch/
-        target: /var/lib/elasticsearch
+        source: /db/elasticsearch/var/
+        target: /var/lib/elasticsearch/
+      - type: bind
+        source: /db/elasticsearch/usr/
+        target: /usr/share/elasticsearch/
 
   api-0:
     networks:
