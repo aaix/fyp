@@ -8,8 +8,7 @@ function lengthPrefixedBlob(version, parts) {
     if (!length) {
       throw new Error('no part length')
     }
-    // Use byteLength: ArrayBuffer (e.g. from subtle.encrypt) has no .length — skipping this
-    // check used to wrap lengths in Uint16 and corrupt payloads > 64KiB.
+
     if (part.byteLength > 65535) {
       throw new Error('part is too long')
     }
@@ -44,10 +43,10 @@ function unwrapLengthPrefixed(buffer) {
   return { version, parts }
 }
 
-/** Wire format version for channel attachments (Uint32 lengths; supports large ciphertext + optional metadata). */
+// sym attachments can be large so must have a 32 bit prefix for big lengths
 const SYM_ATTACHMENT_FORMAT_VERSION = 4
 
-/** Single-byte sentinel: "missing" optional UTF-8 field when the sibling field is present (4-part layout). */
+// use null to signify that meta is not present
 const SYM_ATTACHMENT_META_ABSENT = 0x00
 
 function partToU8(part) {
@@ -192,12 +191,10 @@ function decodeAttachmentMetaPart(part) {
 }
 
 /**
- * AES-GCM encrypt for channel attachments; uses 32-bit part lengths (format v4) so payloads
- * can exceed 64KiB. Optional UTF-8 metadata is length-prefixed after ciphertext:
- * - 2 parts: iv + ciphertext only (same as v3 layout, version bumped)
- * - 3 parts: iv + ciphertext + content-type only
- * - 4 parts: iv + ciphertext + content-type or sentinel + file-name or sentinel
- * Use only for attachment upload; not for message `content` blobs.
+ * AES-GCM encrypt messsage attachments
+ * - 2 parts: iv + ciphertext only (same as v3)
+ * - 3 parts: iv + ciphertext + content-type
+ * - 4 parts: iv + ciphertext + content-type or null + file-name or null
  * @param {string | null} [content_type=null]
  * @param {string | null} [file_name=null]
  */
@@ -234,8 +231,7 @@ export async function encryptSymAttachment(key, plaintext, content_type = null, 
 }
 
 /**
- * Decrypt attachment ciphertext from S3. Supports format v4 (optional metadata), v3 (Uint32 lengths),
- * and v1 (Uint16, legacy small attachments).
+ * Decrypt attachment ciphertext from cloud using v4 or v3 and v1 format
  * @returns {Promise<{ plaintext: ArrayBuffer, contentType: string | null, fileName: string | null }>}
  */
 export async function decryptSymAttachment(buff, key) {

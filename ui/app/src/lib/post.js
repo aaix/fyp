@@ -8,7 +8,7 @@ export const POST_TYPE_VIDEO = 2;
 export const POST_TYPE_SHORT = 3;
 
 /**
- * App route for a post — same segments as {@link PostManager#getPost} (`post/user/…` relative to API base).
+ * generate the url route for a post to be displayed in the UI
  *
  * @param {string} authorId
  * @param {string} feedType {@link FEED_TYPE_MAIN} | {@link FEED_TYPE_SHORTS}
@@ -77,7 +77,7 @@ class PostManager {
     constructor() {
         /** @type {Map<string, Set<(updateType: number) => void>>} */
         this._postUpdateListeners = new Map()
-        /** @type {Map<string, number[]>} ordered events for this post (incl. before any listener) */
+        /** @type {Map<string, number[]>} ordered events per post */
         this._postUpdatesRecieved = new Map()
     }
 
@@ -105,7 +105,7 @@ class PostManager {
     }
 
     /**
-     * Events received before any listener subscribed (same order as live updates).
+     * get post events received before any listener subscribed
      * @param {string} postId
      * @returns {number[]}
      */
