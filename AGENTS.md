@@ -41,6 +41,11 @@ The Vite dev server proxies `/api` to the API container at `172.31.0.20:8000` an
 - **Elasticsearch on Linux/WSL**: If the `elasticsearch` container exits during bootstrap, raise `vm.max_map_count` on the host (e.g. `sudo sysctl -w vm.max_map_count=262144`) and retry.
 - **Compose profile note**: extra Scylla nodes use profile `full-cluster`; default startup only launches services required for UI work.
 - **No healthcheck on docker-compose**: The `scylla-seed` container has a healthcheck, but `dataservices-0`, `api-0`, and `gateway-0` do not. Check `sudo docker logs <container>` to verify they started.
+- **`start.bash` service name bug**: The script references `dataservices-0` and `gateway-0` but docker-compose.yml defines them as `dataservices` and `gateway`. If `start.bash` fails with "no such service", run compose manually: `sudo docker compose --env-file .env.cloud up -d jaeger scylla-seed discoverystore-0 dataservices api-0 gateway`.
+- **Schema race condition**: `dataservices` may start before the schema is applied. After applying schema with `cqlsh -f /schema.cql`, restart `dataservices` (and optionally `api-0` and `gateway`).
+- **Docker in Cloud VM**: Docker requires `fuse-overlayfs` storage driver and `iptables-legacy` in Cloud Agent VMs. The dockerd must be started with `sudo dockerd` before running `start.bash`.
+- **S3 credentials optional**: The `SECRET_S3_ACCESS_KEY_ID` and `SECRET_S3_ACCESS_KEY_SECRET` warnings during compose up are non-blocking; media upload features won't work without them but all other functionality works fine.
+- **Database data dirs**: The `database/data/scylla{0..4}/` directories must exist before docker-compose can mount them. Create with `mkdir -p database/data/scylla{0..4}`.
 
 ### Standard commands
 
